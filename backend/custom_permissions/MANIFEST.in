@@ -1,0 +1,26 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include requirements.txt
+include setup.py
+recursive-include custom_permissions *.py
+recursive-include custom_permissions *.html
+recursive-include custom_permissions *.css
+recursive-include custom_permissions *.js
+recursive-include custom_permissions *.txt
+recursive-include custom_permissions *.md
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude * *.pyd
+recursive-exclude * .git
+recursive-exclude * .gitignore
+recursive-exclude * .DS_Store
+recursive-exclude * *.egg-info
+recursive-exclude * .tox
+recursive-exclude * .coverage
+recursive-exclude * htmlcov
+recursive-exclude * .pytest_cache
+recursive-exclude * .mypy_cache
+recursive-exclude * .vscode
+recursive-exclude * .idea 

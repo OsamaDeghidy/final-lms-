@@ -1,0 +1,480 @@
+.creative-submit {
+  background: linear-gradient(120deg, #ede7f6 0%, #fff 100%);
+  border-radius: 18px;
+  box-shadow: 0 4px 32px 0 rgba(126,87,194,0.10);
+  padding: 32px 0 40px 0;
+}
+
+.creative-card {
+  border-radius: 18px !important;
+  box-shadow: 0 2px 16px 0 rgba(126,87,194,0.13) !important;
+  border: none !important;
+  overflow: hidden;
+}
+
+.assignment-details-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.creative-submit-btn {
+  background: linear-gradient(90deg, #7c4dff 0%, #43a047 100%) !important;
+  border: none !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  padding: 10px 32px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px 0 rgba(67,160,71,0.10);
+  transition: background 0.2s, box-shadow 0.2s;
+  margin-top: 8px;
+}
+
+.creative-submit-btn:disabled {
+  background: #bdbdbd !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Assignments Container */
+.assignments-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+/* Assignments Tabs */
+.assignments-tabs {
+  margin-bottom: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.assignments-tabs .MuiTabs-root {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.assignments-tabs .MuiTab-root {
+  font-weight: 600;
+  text-transform: none;
+  font-size: 1rem;
+  min-height: 64px;
+  color: #666;
+  transition: all 0.3s ease;
+}
+
+.assignments-tabs .MuiTab-root.Mui-selected {
+  color: #673ab7;
+  font-weight: 700;
+}
+
+.assignments-tabs .MuiTabs-indicator {
+  background: linear-gradient(90deg, #673ab7 0%, #9c27b0 100%);
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Assignment Cards */
+.assignment-card {
+  transition: all 0.3s ease;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid #e0e0e0;
+}
+
+.assignment-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.assignment-card .MuiCardHeader-root {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 24px;
+}
+
+.assignment-card .MuiCardContent-root {
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* Creative Submit Button */
+.creative-submit-btn {
+  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 20px rgba(103, 58, 183, 0.3) !important;
+}
+
+.creative-submit-btn:hover {
+  background: linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 25px rgba(103, 58, 183, 0.4) !important;
+}
+
+.creative-submit-btn:disabled {
+  background: #e0e0e0 !important;
+  color: #999 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Creative Card */
+.creative-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+  transition: all 0.3s ease !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  border: 1px solid #e0e0e0 !important;
+}
+
+.creative-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+}
+
+.creative-card .ant-card-head {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.creative-card .ant-card-body {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  border-radius: 0 0 16px 16px !important;
+}
+
+/* Status Chips */
+.status-chip {
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  height: 24px !important;
+  transition: all 0.3s ease !important;
+}
+
+.status-chip:hover {
+  transform: scale(1.05) !important;
+}
+
+/* Progress Bars */
+.progress-bar {
+  height: 8px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(90deg, #e0e0e0 0%, #f0f0f0 100%) !important;
+}
+
+.progress-bar .MuiLinearProgress-bar {
+  border-radius: 4px !important;
+  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%) !important;
+}
+
+/* Question Cards */
+.question-card {
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+  transition: all 0.3s ease !important;
+  border: 1px solid #e0e0e0 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+}
+
+.question-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+}
+
+/* Form Fields */
+.form-field {
+  border-radius: 12px !important;
+}
+
+.form-field .MuiOutlinedInput-root {
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.form-field .MuiOutlinedInput-root:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+.form-field .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 4px 20px rgba(103, 58, 183, 0.2) !important;
+}
+
+/* Buttons */
+.gradient-button {
+  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 12px 24px !important;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 20px rgba(103, 58, 183, 0.3) !important;
+}
+
+.gradient-button:hover {
+  background: linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 25px rgba(103, 58, 183, 0.4) !important;
+}
+
+.outline-button {
+  border: 2px solid #673ab7 !important;
+  color: #673ab7 !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  padding: 10px 22px !important;
+  text-transform: none !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  background: transparent !important;
+}
+
+.outline-button:hover {
+  background: rgba(103, 58, 183, 0.1) !important;
+  border-color: #5e35b1 !important;
+  color: #5e35b1 !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Icons */
+.icon-primary {
+  color: #673ab7 !important;
+}
+
+.icon-success {
+  color: #2e7d32 !important;
+}
+
+.icon-warning {
+  color: #f57c00 !important;
+}
+
+.icon-error {
+  color: #d32f2f !important;
+}
+
+/* Alerts */
+.custom-alert {
+  border-radius: 12px !important;
+  border: none !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+}
+
+.custom-alert .MuiAlert-icon {
+  font-size: 24px !important;
+}
+
+/* Tables */
+.custom-table {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+}
+
+.custom-table .MuiTableHead-root {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+}
+
+.custom-table .MuiTableCell-head {
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.custom-table .MuiTableRow-root:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+}
+
+/* Dialogs */
+.custom-dialog {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.custom-dialog .MuiDialogTitle-root {
+  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  color: white !important;
+  padding: 24px 32px !important;
+}
+
+.custom-dialog .MuiDialogContent-root {
+  padding: 32px !important;
+  background: #f8f9fa !important;
+}
+
+.custom-dialog .MuiDialogActions-root {
+  padding: 24px 32px !important;
+  background: #f8f9fa !important;
+}
+
+/* Stepper */
+.custom-stepper {
+  border-radius: 16px !important;
+  padding: 24px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
+}
+
+.custom-stepper .MuiStepLabel-root {
+  font-weight: 600 !important;
+}
+
+.custom-stepper .MuiStepLabel-root.Mui-active {
+  color: #673ab7 !important;
+}
+
+.custom-stepper .MuiStepLabel-root.Mui-completed {
+  color: #2e7d32 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .assignments-container {
+    padding: 16px;
+  }
+  
+  .assignment-card {
+    margin-bottom: 16px;
+  }
+  
+  .creative-submit-btn {
+    width: 100% !important;
+    margin-top: 16px !important;
+  }
+  
+  .gradient-button,
+  .outline-button {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .assignments-container {
+    padding: 12px;
+  }
+  
+  .assignment-card .MuiCardHeader-root,
+  .assignment-card .MuiCardContent-root {
+    padding: 16px;
+  }
+  
+  .custom-dialog .MuiDialogTitle-root,
+  .custom-dialog .MuiDialogContent-root,
+  .custom-dialog .MuiDialogActions-root {
+    padding: 16px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Loading States */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.loading-spinner {
+  color: #673ab7 !important;
+}
+
+/* Focus States */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(103, 58, 183, 0.3) !important;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .assignment-card {
+    border: 2px solid #000 !important;
+  }
+  
+  .creative-submit-btn {
+    border: 2px solid #000 !important;
+  }
+  
+  .status-chip {
+    border: 1px solid #000 !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .assignment-card,
+  .creative-submit-btn,
+  .gradient-button,
+  .outline-button,
+  .question-card {
+    transition: none !important;
+  }
+  
+  .fade-in,
+  .slide-in {
+    animation: none !important;
+  }
+} 

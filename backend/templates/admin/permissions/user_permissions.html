@@ -1,0 +1,658 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .permissions-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .user-selector, .permissions-table-container {
+        flex: 1;
+    }
+    .permissions-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .permissions-table th, .permissions-table td {
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 15px;
+        text-align: center;
+    }
+    .permissions-table th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .permissions-table tr:hover {
+        background: rgba(102, 126, 234, 0.05);
+    }
+    .section-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 1.1rem !important;
+    }
+    .feature-name {
+        text-align: right;
+        font-weight: 500;
+        color: #333;
+    }
+    .permission-checkbox {
+        cursor: pointer;
+        transform: scale(1.2);
+    }
+    .save-btn {
+        margin-top: 20px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .save-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .save-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .select2-container {
+        width: 100% !important;
+        margin-bottom: 20px;
+    }
+    .user-selection {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 25px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+    .user-info {
+        background: rgba(102, 126, 234, 0.1);
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 20px;
+        border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+    .permission-section {
+        margin-bottom: 30px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .permission-section h3 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin: 0;
+        padding: 20px;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+    .alert-message {
+        margin: 15px 0;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        direction: rtl;
+    }
+    .alert-message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .alert-message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .close-message {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        font-size: 1.2em;
+        margin-right: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    
+    <!-- User Selection Section -->
+    <div class="user-selection">
+        <h2 style="margin-top: 0; color: #333; font-weight: 600;">{% trans 'اختيار المستخدم' %}</h2>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <select id="user-select" class="select2" style="width: 100%;">
+                    <option value="">{% trans '-- اختر مستخدم --' %}</option>
+                    {% for u in users %}
+                        <option value="{% url 'custom_admin:user-permissions' u.id %}" 
+                                {% if selected_user and u.id == selected_user.id %}selected{% endif %} 
+                                data-email="{{ u.email|default:'' }}"
+                                data-last-login="{{ u.last_login|date:'Y-m-d H:i'|default:'-' }}"
+                                data-joined="{{ u.date_joined|date:'Y-m-d' }}">
+                            {{ u.get_full_name|default:u.username }} ({{ u.username }})
+                            {% if u.is_superuser %} - {% trans 'مدير عام' %}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="button" id="refresh-users" class="button" style="padding: 8px 15px; height: 38px;">
+                    <i class="fas fa-sync-alt"></i> {% trans 'تحديث' %}
+                </button>
+            </div>
+        </div>
+        
+        {% if selected_user %}
+        <div class="user-info">
+            <h3 style="margin-bottom: 15px; color: #333;">{{ selected_user.get_full_name|default:selected_user.username }}</h3>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div><strong>{% trans 'اسم المستخدم' %}:</strong> {{ selected_user.username }}</div>
+                <div><strong>{% trans 'البريد الإلكتروني' %}:</strong> {{ selected_user.email|default:'-' }}</div>
+                <div><strong>{% trans 'آخر تسجيل دخول' %}:</strong> {{ selected_user.last_login|default:'-'|date:"Y-m-d H:i" }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Custom Permissions Section -->
+    <div class="permissions-container">
+        <div class="permissions-table-container">
+            {% if selected_user %}
+            <form method="post" id="permissions-form">
+                {% csrf_token %}
+                
+                <!-- إدارة المستخدمين -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-users"></i> إدارة المستخدمين</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">المعلمين</td>
+                                <td><input type="checkbox" name="permissions" value="view_instructors" class="permission-checkbox" {% if 'view_instructors' in user_permissions %}checked{% endif %}></td>
+                                <td><input type="checkbox" name="permissions" value="add_instructors" class="permission-checkbox" {% if 'add_instructors' in user_permissions %}checked{% endif %}></td>
+                                <td><input type="checkbox" name="permissions" value="edit_instructors" class="permission-checkbox" {% if 'edit_instructors' in user_permissions %}checked{% endif %}></td>
+                                <td><input type="checkbox" name="permissions" value="delete_instructors" class="permission-checkbox" {% if 'delete_instructors' in user_permissions %}checked{% endif %}></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">الطلاب</td>
+                                <td><input type="checkbox" name="permissions" value="view_students" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_students" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_students" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_students" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة الكورسات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-book"></i> إدارة الكورسات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">جميع الكورسات</td>
+                                <td><input type="checkbox" name="permissions" value="view_all_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_all_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_all_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_all_courses" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">كورساتي فقط</td>
+                                <td><input type="checkbox" name="permissions" value="view_my_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_my_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_my_courses" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_my_courses" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة المحتوى -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-layer-group"></i> إدارة المحتوى</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">الدروس</td>
+                                <td><input type="checkbox" name="permissions" value="view_lessons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_lessons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_lessons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_lessons" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">الوحدات</td>
+                                <td><input type="checkbox" name="permissions" value="view_modules" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_modules" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_modules" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_modules" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة الاختبارات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-question-circle"></i> إدارة الاختبارات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">الاختبارات</td>
+                                <td><input type="checkbox" name="permissions" value="view_quizzes" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_quizzes" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_quizzes" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_quizzes" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">الأسئلة</td>
+                                <td><input type="checkbox" name="permissions" value="view_questions" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_questions" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_questions" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_questions" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة الطلبات والمدفوعات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-shopping-cart"></i> إدارة الطلبات والمدفوعات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">الطلبات</td>
+                                <td><input type="checkbox" name="permissions" value="view_orders" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_orders" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_orders" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_orders" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">المدفوعات</td>
+                                <td><input type="checkbox" name="permissions" value="view_payments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_payments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_payments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_payments" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">الكوبونات</td>
+                                <td><input type="checkbox" name="permissions" value="view_coupons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_coupons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_coupons" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_coupons" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة الشهادات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-certificate"></i> إدارة الشهادات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">الشهادات</td>
+                                <td><input type="checkbox" name="permissions" value="view_certificates" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_certificates" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_certificates" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_certificates" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة التقييمات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-star"></i> إدارة التقييمات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">تقييمات الكورسات</td>
+                                <td><input type="checkbox" name="permissions" value="view_reviews" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_reviews" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_reviews" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_reviews" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة المحاضرات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-video"></i> إدارة المحاضرات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">المحاضرات</td>
+                                <td><input type="checkbox" name="permissions" value="view_meetings" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_meetings" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_meetings" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_meetings" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- إدارة المقالات -->
+                <div class="permission-section">
+                    <h3><i class="fas fa-newspaper"></i> إدارة المقالات</h3>
+                    <table class="permissions-table">
+                        <thead>
+                            <tr>
+                                <th>{% trans 'الوظيفة' %}</th>
+                                <th>{% trans 'عرض' %}</th>
+                                <th>{% trans 'إضافة' %}</th>
+                                <th>{% trans 'تعديل' %}</th>
+                                <th>{% trans 'حذف' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="feature-name">المقالات</td>
+                                <td><input type="checkbox" name="permissions" value="view_articles" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_articles" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_articles" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_articles" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">التصنيفات</td>
+                                <td><input type="checkbox" name="permissions" value="view_article_categories" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_article_categories" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_article_categories" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_article_categories" class="permission-checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td class="feature-name">التعليقات</td>
+                                <td><input type="checkbox" name="permissions" value="view_article_comments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="add_article_comments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="edit_article_comments" class="permission-checkbox"></td>
+                                <td><input type="checkbox" name="permissions" value="delete_article_comments" class="permission-checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="submit-row">
+                    <button type="submit" class="save-btn">
+                        <i class="fas fa-save"></i> {% trans 'حفظ الصلاحيات' %}
+                    </button>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-info">
+                {% trans 'لم يتم العثور على مستخدمين.' %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialize select2 with RTL support
+    $('.select2').select2({
+        placeholder: '{% trans "اختر مستخدم" %}',
+        allowClear: true,
+        dir: 'rtl',
+        width: '100%',
+        dropdownAutoWidth: true,
+        templateResult: formatUserOption,
+        templateSelection: formatUserSelection
+    });
+    
+    // Format how options are displayed in the dropdown
+    function formatUserOption(user) {
+        if (!user.id) {
+            return user.text;
+        }
+        
+        const $option = $(user.element);
+        const isSuperuser = user.text.includes('مدير عام');
+        const $container = $(
+            '<div style="display: flex; justify-content: space-between; width: 100%;">' +
+            '   <span>' + user.text + '</span>' +
+            '   <span style="color: #666; font-size: 0.9em;">' + $option.data('email') + '</span>' +
+            '</div>'
+        );
+        
+        if (isSuperuser) {
+            $container.find('span:first').prepend(
+                '<span style="color: #dc3545; margin-left: 5px;"><i class="fas fa-shield-alt"></i></span> '
+            );
+        }
+        
+        return $container;
+    }
+    
+    // Format how the selected option is displayed
+    function formatUserSelection(user) {
+        if (!user.id) {
+            return user.text;
+        }
+        const $option = $(user.element);
+        return $option.data('fullname') || user.text;
+    }
+    
+    // Handle user selection change
+    $('#user-select').on('change', function() {
+        const url = $(this).val();
+        if (url) {
+            window.location.href = url;
+        } else {
+            // Clear all checkboxes when no user is selected
+            $('.permission-checkbox').prop('checked', false);
+        }
+    });
+    
+
+    
+
+    
+    // Handle refresh button click
+    $('#refresh-users').on('click', function() {
+        window.location.reload();
+    });
+    
+    // Handle form submission
+    $('#permissions-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const $form = $(this);
+        const $submitBtn = $form.find('button[type="submit"]');
+        const originalText = $submitBtn.html();
+        
+        // Get selected user ID
+        const selectedUserId = $('#user-select').val().split('/').pop().replace('/', '');
+        if (!selectedUserId) {
+            showMessage('error', '{% trans "يرجى اختيار مستخدم أولاً" %}');
+            return;
+        }
+        
+        // Add user_id to form data
+        const formData = $form.serialize() + '&user_id=' + selectedUserId;
+        
+        // Show loading state
+        $submitBtn.prop('disabled', true).html(
+            '<i class="fas fa-spinner fa-spin"></i> {% trans "جاري الحفظ..." %}'
+        );
+        
+        $.ajax({
+            url: '/permissions/user-permissions/' + selectedUserId + '/',
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    showMessage('success', response.message || '{% trans "تم تحديث الصلاحيات بنجاح!" %}');
+                } else {
+                    showMessage('error', response.error || '{% trans "خطأ في تحديث الصلاحيات." %}');
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = '{% trans "حدث خطأ. يرجى المحاولة مرة أخرى." %}';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                }
+                showMessage('error', errorMsg);
+                console.error('Error:', xhr.responseText);
+            },
+            complete: function() {
+                // Restore button state
+                $submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+    
+    // Show/hide loading state during AJAX operations
+    $(document).ajaxStart(function() {
+        $('body').addClass('loading');
+    }).ajaxStop(function() {
+        $('body').removeClass('loading');
+    });
+    
+    function showMessage(type, message) {
+        // Remove any existing messages
+        $('.alert-message').remove();
+        
+        // Create message element
+        const alertClass = type === 'success' ? 'success' : 'error';
+        const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+        
+        const $message = $(
+            '<div class="alert-message ' + alertClass + '">' +
+            '<i class="fas fa-' + icon + '" style="font-size: 1.2em;"></i>' +
+            '<span style="flex: 1;">' + message + '</span>' +
+            '<button type="button" class="close-message">' +
+            '   <i class="fas fa-times"></i>' +
+            '</button>' +
+            '</div>'
+        );
+        
+        // Add message to the page
+        $('.content').prepend($message);
+        
+        // Handle close button click
+        $message.find('.close-message').on('click', function() {
+            $message.fadeOut(200, function() {
+                $(this).remove();
+            });
+        });
+        
+        // Auto-hide after 5 seconds
+        const timeout = setTimeout(() => {
+            $message.fadeOut(200, function() {
+                $(this).remove();
+            });
+        }, 5000);
+        
+        // Clear timeout on hover
+        $message.hover(
+            function() { clearTimeout(timeout); },
+            function() {
+                timeout = setTimeout(() => {
+                    $message.fadeOut(200, function() {
+                        $(this).remove();
+                    });
+                }, 1000);
+            }
+        );
+    }
+});
+</script>
+{% endblock %}

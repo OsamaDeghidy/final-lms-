@@ -1,0 +1,217 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Override the max-width constraint */
+    .main.shifted > #nav-sidebar + .content {
+        max-width: none !important;
+        margin-right: 0 !important;
+        width: calc(100% - 250px) !important;
+    }
+    
+    /* Make the content area take full width */
+    #changelist #toolbar {
+        margin: 0 0 10px 0;
+    }
+    
+    /* Style for the filter toggle button */
+    .filter-toggle {
+        background: #79aec8;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+    
+    .filter-toggle:hover {
+        background: #609ab6;
+    }
+    
+    /* Make the results table take full width */
+    #changelist .results {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Adjust the changelist form container */
+    #changelist-form {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Make the table use all available space */
+    #result_list {
+        width: 100% !important;
+        table-layout: auto;
+    }
+    
+    /* Adjust the filter layout */
+    @media (min-width: 1024px) {
+        #changelist {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: flex-start;
+        }
+        
+        #changelist-filter {
+            width: 280px;
+            margin-left: 20px;
+            flex-shrink: 0;
+        }
+        
+        #changelist #changelist-form {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+    
+    /* Hide the filter by default on small screens */
+    @media (max-width: 767px) {
+        #changelist-filter {
+            display: none;
+        }
+        #changelist-filter.visible {
+            display: block;
+        }
+    }
+    
+    /* Adjust the layout for the change list */
+    #changelist {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    #changelist .actions {
+        margin: 0 0 15px 0;
+    }
+    
+    @media (min-width: 768px) {
+        #changelist {
+            flex-direction: row-reverse;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        
+        #changelist .actions {
+            order: 1;
+            width: 100%;
+        }
+        
+        #changelist #toolbar {
+            order: 2;
+            width: 100%;
+        }
+        
+        #changelist #changelist-filter {
+            order: 3;
+            width: 280px;
+            margin-left: 20px;
+            margin-right: 0;
+        }
+        
+        #changelist #changelist-form {
+            order: 4;
+            flex: 1;
+            min-width: 0;
+            max-width: none;
+        }
+        
+        .filter-toggle {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    <div id="content-main">
+        <div class="module" id="changelist">
+            {% block object-tools %}
+                <ul class="object-tools">
+                    {% block object-tools-items %}
+                        {% if has_add_permission %}
+                            <li>
+                                {% url cl.opts|admin_urlname:'add' as add_url %}
+                                <a href="{% add_preserved_filters add_url is_popup to_field %}" class="addlink">
+                                    {% blocktranslate with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktranslate %}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endblock %}
+                </ul>
+            {% endblock %}
+            
+            {% block search %}{% search_form cl %}{% endblock %}
+            {% block date_hierarchy %}{% date_hierarchy cl %}{% endblock %}
+
+            <button type="button" class="filter-toggle" id="filter-toggle">
+                {% translate 'Toggle filters' %}
+            </button>
+
+            <form id="changelist-form" method="post" {% if cl.formset and cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>
+                {% csrf_token %}
+                {% if cl.formset %}
+                    <div>{{ cl.formset.management_form }}</div>
+                {% endif %}
+
+                {% block result_list %}
+                    {% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}
+                    {% result_list cl %}
+                    {% if action_form and actions_on_bottom and cl.show_admin_actions %}{% admin_actions %}{% endif %}
+                {% endblock %}
+                {% block pagination %}{% pagination cl %}{% endblock %}
+            </form>
+
+            {% block filters %}
+                {% if cl.has_filters %}
+                    <div id="changelist-filter">
+                        <h2>{% translate 'Filter' %}</h2>
+                        {% for spec in cl.filter_specs %}
+                            {% admin_list_filter cl spec %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle filter visibility
+    const filterToggle = document.getElementById('filter-toggle');
+    const filterPanel = document.getElementById('changelist-filter');
+    
+    if (filterToggle && filterPanel) {
+        filterToggle.addEventListener('click', function() {
+            filterPanel.classList.toggle('visible');
+        });
+    }
+    
+    // Close filter when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth <= 767 && 
+            !filterPanel.contains(event.target) && 
+            event.target !== filterToggle) {
+            filterPanel.classList.remove('visible');
+        }
+    });
+    
+    // Close filter when a filter is selected on mobile
+    const filterLinks = document.querySelectorAll('#changelist-filter a');
+    filterLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth <= 767) {
+                filterPanel.classList.remove('visible');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

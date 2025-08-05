@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Django application
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=core.settings
+    depends_on:
+      - db
+    networks:
+      - lms-network
+
+  # Database
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=lms_db
+      - POSTGRES_USER=lms_user
+      - POSTGRES_PASSWORD=lms_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - lms-network
+
+  # Redis for caching
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - lms-network
+
+  # Celery worker (optional)
+  celery:
+    build: .
+    command: celery -A core worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=core.settings
+    depends_on:
+      - db
+      - redis
+    networks:
+      - lms-network
+
+  # Celery beat (optional)
+  celery-beat:
+    build: .
+    command: celery -A core beat -l info
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=core.settings
+    depends_on:
+      - db
+      - redis
+    networks:
+      - lms-network
+
+volumes:
+  postgres_data:
+
+networks:
+  lms-network:
+    driver: bridge 

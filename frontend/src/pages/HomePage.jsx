@@ -1,0 +1,54 @@
+import { Box } from '@mui/material';
+import { Helmet } from 'react-helmet-async';
+import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
+import HeroBanner from '../components/home/HeroBanner';
+import CourseSlider from '../components/home/CourseSlider';
+import TestimonialsSection from '../components/home/TestimonialsSection';
+import LearningMethodsSection from '../components/home/LearningMethodsSection';
+
+
+const HomePage = () => {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <Helmet>
+        <title>الرئيسية | منصة التطوير المهني التعليمية</title>
+        <meta 
+          name="description" 
+          content="منصة تعليمية متكاملة تقدم دورات تدريبية احترافية في مختلف المجالات. تعلم من أفضل المدربين واحصل على شهادات معتمدة." 
+        />
+        <meta name="keywords" content="تعليم عن بعد, دورات تدريبية, تعلم اونلاين, شهادات معتمدة, تطوير مهني" />
+      </Helmet>
+      
+      {/* Header */}
+      <Header />
+      
+      <Box component="main" sx={{ flex: 1 }}>
+        {/* Hero Banner Section */}
+        <Box component="section" id="home">
+          <HeroBanner />
+        </Box>
+
+        {/* Learning Methods Section */}
+        <Box component="section" id="learning-methods">
+          <LearningMethodsSection />
+        </Box>
+ 
+        {/* Featured Courses Section */}
+        <Box component="section" id="featured-courses" sx={{ bgcolor: 'background.default' }}>
+          <CourseSlider />
+        </Box>
+
+        {/* Testimonials Section */}
+        <Box component="section" id="testimonials" sx={{ bgcolor: 'background.default' }}>
+          <TestimonialsSection />
+        </Box>
+
+      </Box>
+      {/* Footer */}
+      <Footer />
+    </Box>
+  );
+};
+
+export default HomePage;

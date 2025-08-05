@@ -1,0 +1,35 @@
+# Custom Permissions System Requirements
+# متطلبات نظام الصلاحيات المخصصة
+
+# Core Django
+Django>=4.0,<5.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Development tools
+pytest>=7.0.0
+pytest-django>=4.5.0
+coverage>=6.0.0
+black>=22.0.0
+flake8>=5.0.0
+isort>=5.10.0
+pylint>=2.15.0
+
+# Security
+bandit>=1.7.0
+safety>=2.3.0
+
+# Documentation
+Sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Testing
+factory-boy>=3.2.0
+faker>=18.0.0
+
+# Optional: For production
+gunicorn>=20.1.0
+whitenoise>=6.2.0
+redis>=4.3.0
+celery>=5.2.0 
