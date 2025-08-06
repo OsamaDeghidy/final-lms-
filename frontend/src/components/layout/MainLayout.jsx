@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout as logoutAction } from '../../store/slices/authSlice';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Divider, Badge, InputBase, Paper
@@ -56,6 +57,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { getUserRole } = useAuth(); // Changed to use getUserRole from useAuth
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const profileRef = useRef(null);
@@ -106,12 +108,13 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
     };
   }, []);
   
-  // Get user role from localStorage or Redux store
-  const userRole = localStorage.getItem('userRole') || 'student'; // Default to student if not found
+  // Get user role from useAuth hook
+  const userRole = getUserRole();
   
   // Select navigation items based on user role
   const getNavItems = () => {
     switch(userRole) {
+      case 'instructor':
       case 'teacher':
         return teacherNavItems;
       case 'student':

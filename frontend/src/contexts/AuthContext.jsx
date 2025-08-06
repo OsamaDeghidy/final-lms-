@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { login, logout as logoutAction } from '../store/slices/authSlice';
+import { login, logout as logoutAction, getProfile } from '../store/slices/authSlice';
 
 // Create the auth context
 export const AuthContext = createContext();
@@ -9,7 +9,7 @@ export const AuthContext = createContext();
 // Auth provider component
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated, loading } = useSelector(state => state.auth);
+  const { user, profile, user_details, isAuthenticated, loading } = useSelector(state => state.auth);
   const navigate = useNavigate();
 
   // Initialize auth state from Redux
@@ -19,14 +19,19 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user');
         
-        if (token && userData && !user) {
-          // If we have a token but no user in Redux, try to log in
-          const user = JSON.parse(userData);
-          // This will update the Redux store
-          await dispatch(login.fulfilled(user, '', { 
-            email: user.email, 
-            password: '123456' // Default password for auto-login
-          }));
+        if (token && userData) {
+          // If we have a token but no user or profile in Redux, try to get profile
+          if (!user || !profile) {
+            try {
+              await dispatch(getProfile());
+            } catch (error) {
+              console.error('Error getting profile:', error);
+              // If getting profile fails, clear localStorage
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('userRole');
+            }
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -34,7 +39,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     initializeAuth();
-  }, [dispatch, user]);
+  }, [dispatch, user, profile]);
 
   // Login function that syncs with Redux
   const loginUser = useCallback(async (credentials) => {
@@ -48,35 +53,52 @@ export const AuthProvider = ({ children }) => {
   }, [dispatch]);
 
   // Logout function that syncs with Redux
-  const logoutUser = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    dispatch(logoutAction());
-    navigate('/login');
+  const logoutUser = useCallback(async () => {
+    try {
+      await dispatch(logoutAction());
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear local storage and redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      navigate('/login');
+    }
   }, [dispatch, navigate]);
 
   // Check if user has a specific role
   const hasRole = useCallback((role) => {
-    if (!user) return false;
-    return user.role === role || user.role === 'admin';
-  }, [user]);
+    if (!profile) return false;
+    const userRole = profile.status?.toLowerCase() || user_details?.type?.toLowerCase();
+    return userRole === role || userRole === 'admin';
+  }, [profile, user_details]);
 
   // Check if user has any of the required roles
   const hasAnyRole = useCallback((requiredRoles) => {
-    if (!user) return false;
-    return requiredRoles.includes(user.role) || user.role === 'admin';
-  }, [user]);
+    if (!profile) return false;
+    const userRole = profile.status?.toLowerCase() || user_details?.type?.toLowerCase();
+    return requiredRoles.includes(userRole) || userRole === 'admin';
+  }, [profile, user_details]);
+
+  // Get user role
+  const getUserRole = useCallback(() => {
+    if (!profile) return 'guest';
+    return profile.status?.toLowerCase() || user_details?.type?.toLowerCase() || 'student';
+  }, [profile, user_details]);
 
   // Expose the auth state and methods
   const value = {
     user,
+    profile,
+    user_details,
     isAuthenticated,
     loading,
     login: loginUser,
     logout: logoutUser,
     hasRole,
     hasAnyRole,
+    getUserRole,
     updateUser: (userData) => {
       // This is a no-op since we're using Redux for state management
       // The actual update should be done through Redux actions
@@ -99,5 +121,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export default AuthContext;

@@ -210,31 +210,31 @@ const Login = () => {
     if (!validate()) return;
     
     setIsLoading(true);
+    setSubmitError('');
+    
     try {
       const result = await dispatch(login(formData));
       
       if (login.fulfilled.match(result)) {
-        // Get the user role from the response or localStorage
-        const userRole = result.payload?.role || localStorage.getItem('userRole');
+        // Get the user role from the profile status
+        const userRole = result.payload?.profile?.status?.toLowerCase() || 
+                        result.payload?.user_details?.type?.toLowerCase() || 
+                        'student';
         
         // Redirect based on user role
-        if (userRole === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (userRole === 'teacher') {
+        if (userRole === 'admin' || userRole === 'instructor') {
           navigate('/teacher/dashboard');
         } else {
           navigate('/student/dashboard');
         }
       } else if (login.rejected.match(result)) {
-        // Error is already handled by the auth slice
-        console.error('Login failed:', result.error.message);
+        // Handle error from the auth slice
+        const errorMessage = result.error || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+        setSubmitError(errorMessage);
       }
     } catch (err) {
       console.error('Login error:', err);
-      setErrors({
-        ...errors,
-        submit: 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.'
-      });
+      setSubmitError('حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.');
     } finally {
       if (isMounted) {
         setIsLoading(false);

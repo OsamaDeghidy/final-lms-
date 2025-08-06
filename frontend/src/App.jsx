@@ -94,7 +94,7 @@ import EditArticle from './pages/teacher/articles/EditArticle';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, getUserRole } = useAuth();
   const location = useLocation();
   
   console.log('ProtectedRoute - isAuthenticated:', isAuthenticated);
@@ -118,9 +118,22 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
   
   // If specific roles are required and user doesn't have any of them
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-    console.log(`ProtectedRoute - User role ${user?.role} not in allowed roles:`, allowedRoles);
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles.length > 0) {
+    const userRole = getUserRole();
+    console.log('ProtectedRoute - User role:', userRole);
+    
+    // Check if user role matches any of the allowed roles
+    // Handle both 'instructor' and 'teacher' as equivalent
+    const hasAllowedRole = allowedRoles.some(allowedRole => {
+      if (allowedRole === 'teacher' && userRole === 'instructor') return true;
+      if (allowedRole === 'instructor' && userRole === 'teacher') return true;
+      return allowedRole === userRole;
+    });
+    
+    if (!hasAllowedRole) {
+      console.log(`ProtectedRoute - User role ${userRole} not in allowed roles:`, allowedRoles);
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
   
   console.log('ProtectedRoute - Access granted');
@@ -129,7 +142,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
 // Public Route Component (only for non-authenticated users)
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, getUserRole } = useAuth();
   
   if (loading) {
     return (
@@ -141,10 +154,11 @@ const PublicRoute = ({ children }) => {
   
   // If user is authenticated, redirect to dashboard based on role
   if (isAuthenticated) {
-    const userRole = localStorage.getItem('userRole');
+    const userRole = getUserRole();
     let redirectPath = '/student/dashboard'; // Default to student dashboard
     
-    if (userRole === 'teacher') {
+    // Handle both 'instructor' and 'teacher' as equivalent
+    if (userRole === 'instructor' || userRole === 'teacher') {
       redirectPath = '/teacher/dashboard';
     }
     
@@ -297,7 +311,7 @@ const AppContent = () => {
                   
                   {/* Protected Routes - Teacher */}
                   <Route path="/teacher/*" element={
-                    <ProtectedRoute allowedRoles={['teacher']}>
+                    <ProtectedRoute allowedRoles={['teacher', 'instructor']}>
                       <MainLayout toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode}>
                         <Routes>
                           <Route index element={<TeacherDashboard />} />

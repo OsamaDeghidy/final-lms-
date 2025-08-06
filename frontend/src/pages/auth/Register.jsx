@@ -331,22 +331,17 @@ const Register = () => {
     setError('');
     
     try {
+      // Prepare user data according to the backend API structure
       const userData = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone,
-        status: formData.userType,
-        ...(formData.userType === 'Organization' && {
-          organization: {
-            name: formData.organizationName,
-            website: formData.website,
-          }
-        }),
+        confirm_password: formData.confirmPassword,
+        name: `${formData.firstName} ${formData.lastName}`,
+        phone: formData.phone || '',
+        status: formData.userType === 'Instructor' ? 'Instructor' : 'Student',
         ...(formData.userType === 'Instructor' && {
-          bio: formData.bio,
-          qualification: '' // Add qualification field to form if needed
+          bio: formData.bio || '',
+          qualification: formData.qualification || ''
         })
       };
       
@@ -354,21 +349,23 @@ const Register = () => {
       const resultAction = await dispatch(register(userData));
       
       if (register.fulfilled.match(resultAction)) {
-        // Redirect to login page after successful registration
-        navigate('/login', { 
-          state: { 
-            registrationSuccess: true,
-            email: formData.email,
-            message: 'Registration successful! Please check your email to verify your account.'
-          } 
-        });
+        // Registration successful - redirect to dashboard or login
+        const userRole = resultAction.payload?.profile?.status?.toLowerCase() || 'student';
+        
+        if (userRole === 'instructor') {
+          navigate('/teacher/dashboard');
+        } else {
+          navigate('/student/dashboard');
+        }
       } else if (register.rejected.match(resultAction)) {
-        throw new Error(resultAction.error.message || 'Registration failed');
+        // Handle error from the auth slice
+        const errorMessage = resultAction.error || 'فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.';
+        setError(errorMessage);
       }
       
     } catch (err) {
       console.error('Registration failed:', err);
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || 'فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.');
       
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: 'smooth' });

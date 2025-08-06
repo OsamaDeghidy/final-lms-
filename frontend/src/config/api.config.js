@@ -6,7 +6,7 @@ console.log('Environment variables:', {
 });
 
 export const API_CONFIG = {
-  baseURL: 'http://localhost:8000', // Force the correct URL
+  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? '' : 'http://localhost:8000'),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,17 +15,21 @@ export const API_CONFIG = {
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    PROFILE: '/auth/me',
+    LOGIN: '/auth/login/',
+    REGISTER: '/auth/register/',
+    LOGOUT: '/auth/logout/',
+    PROFILE: '/auth/profile/',
+    UPDATE_PROFILE: '/auth/profile/update/',
+    CHANGE_PASSWORD: '/auth/change-password/',
+    CHECK_EMAIL: '/auth/check-email/',
   },
   COURSES: {
-    BASE: '/courses',
-    POPULAR: '/courses/popular',
-    FEATURED: '/courses/featured',
+    BASE: '/courses/',
+    POPULAR: '/courses/popular/',
+    FEATURED: '/courses/featured/',
   },
   USERS: {
-    BASE: '/users',
-    ENROLLMENTS: '/users/enrollments',
+    BASE: '/users/',
+    ENROLLMENTS: '/users/enrollments/',
   },
 };

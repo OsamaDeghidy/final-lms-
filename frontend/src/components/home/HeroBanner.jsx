@@ -11,8 +11,8 @@ import {
 } from '@mui/icons-material';
 import api from '../../services/api.service';
 
-// Import the banner image
-import bannerImage from '../../assets/images/bannar.jpeg';
+// Import the banner image (fallback)
+import fallbackBannerImage from '../../assets/images/bannar.jpeg';
 
 // Keyframe animations
 const gradientBG = keyframes`
@@ -362,6 +362,7 @@ const HeroBanner = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [slides, setSlides] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [bottomSlideIndex, setBottomSlideIndex] = useState(0);
 
   // Fetch banners from API
   useEffect(() => {
@@ -412,6 +413,19 @@ const HeroBanner = () => {
     
     return () => clearInterval(interval);
   }, [autoPlay, slides.length]);
+
+  // Auto-play functionality for bottom slideshow
+  useEffect(() => {
+    if (slides.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setBottomSlideIndex((prevIndex) => 
+        prevIndex === slides.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 4000); // Change slide every 4 seconds
+
+    return () => clearInterval(interval);
+  }, [slides]);
 
   const handleNext = () => {
     if (slides.length === 0) return;
@@ -544,7 +558,7 @@ const HeroBanner = () => {
       </HeroContent>
     </HeroSection>
     
-    {/* Prominent Banner Section */}
+    {/* Prominent Banner Section - Slideshow */}
     <Box sx={{
       width: 'calc(100% - 32px)',
       maxWidth: '1400px',
@@ -562,24 +576,83 @@ const HeroBanner = () => {
       '&:hover': {
         transform: 'translateY(-6px)',
         boxShadow: '0 20px 40px rgba(0,0,0,0.15)'
-      },
-      '& img': {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        objectPosition: 'center',
-        display: 'block',
-        transition: 'all 0.5s ease',
-      },
-      '&:hover img': {
-        transform: 'scale(1.03)'
       }
     }}>
-      <img 
-        src={bannerImage} 
-        alt="Promotional Banner" 
-        style={{ display: 'block' }}
-      />
+      {/* Slideshow Container */}
+      <Box sx={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden'
+      }}>
+        {slides.map((slide, index) => (
+          <Box
+            key={slide.id}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              transform: `translateX(${(index - bottomSlideIndex) * 100}%)`,
+              transition: 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+              '& img': {
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                display: 'block',
+                transition: 'all 0.5s ease',
+                filter: 'brightness(0.9)',
+              },
+              '&:hover img': {
+                transform: 'scale(1.03)',
+                filter: 'brightness(1.1)',
+              }
+            }}
+          >
+            <img 
+              src={slide.image || fallbackBannerImage} 
+              alt={slide.title || "Promotional Banner"} 
+              style={{ display: 'block' }}
+            />
+          </Box>
+        ))}
+        
+        {/* Navigation Dots */}
+        {slides.length > 1 && (
+          <Box sx={{
+            position: 'absolute',
+            bottom: '15px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            gap: '8px',
+            zIndex: 2
+          }}>
+            {slides.map((_, index) => (
+              <Box
+                key={index}
+                onClick={() => setBottomSlideIndex(index)}
+                sx={{
+                  width: index === bottomSlideIndex ? '24px' : '12px',
+                  height: '12px',
+                  borderRadius: index === bottomSlideIndex ? '6px' : '50%',
+                  backgroundColor: index === bottomSlideIndex ? '#fff' : 'rgba(255,255,255,0.5)',
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                  boxShadow: index === bottomSlideIndex ? '0 0 10px rgba(255,255,255,0.8)' : 'none',
+                  '&:hover': {
+                    backgroundColor: index === bottomSlideIndex ? '#fff' : 'rgba(255,255,255,0.8)',
+                    transform: 'scale(1.3)',
+                    boxShadow: '0 0 15px rgba(255,255,255,0.9)'
+                  }
+                }}
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
     </Box>
     </>
   );

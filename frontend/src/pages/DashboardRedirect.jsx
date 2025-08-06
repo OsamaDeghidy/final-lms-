@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const DashboardRedirect = () => {
-  // Get user role from localStorage or your auth context
-  const userRole = localStorage.getItem('userRole');
+  const { getUserRole } = useAuth();
+  
+  // Get user role from useAuth hook
+  const userRole = getUserRole();
   
   // Redirect based on user role
   useEffect(() => {
@@ -16,6 +19,7 @@ const DashboardRedirect = () => {
     switch(userRole) {
       case 'student':
         return '/student/dashboard';
+      case 'instructor':
       case 'teacher':
         return '/teacher/dashboard';
       default:
