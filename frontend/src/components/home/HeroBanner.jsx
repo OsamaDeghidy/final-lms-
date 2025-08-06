@@ -9,6 +9,7 @@ import {
   Code, Laptop, Smartphone, PlayCircle, ArrowBackIos, 
   ArrowForwardIos, Circle, Star, School, EmojiEvents 
 } from '@mui/icons-material';
+import api from '../../services/api.service';
 
 // Import the banner image
 import bannerImage from '../../assets/images/bannar.jpeg';
@@ -351,30 +352,6 @@ const FloatingIcon = styled('div')(({ theme, top, left, size = 40, delay }) => (
   },
 }));
 
-const slides = [
-  {
-    id: 1,
-    title: 'تعلم البرمجة باحترافية',
-    subtitle: 'دورات متخصصة في تطوير الويب وتطبيقات الموبايل',
-    image: 'https://img.freepik.com/free-vector/web-development-programmer-engineering-coding-website-augmented-reality-interface-screens-developer-project-engineer-programming-software-application-design-cartoon-illustration_107791-3863.jpg?w=600&t=st=1650000000',
-    bgImage: 'https://img.freepik.com/free-vector/hand-drawn-web-developers_23-2148819605.jpg?w=900&t=st=1650000000',
-  },
-  {
-    id: 2,
-    title: 'تطوير مهاراتك المهنية',
-    subtitle: 'احصل على شهادات معتمدة في مختلف التخصصات',
-    image: 'https://img.freepik.com/free-vector/young-woman-studying-online_74855-19740.jpg?w=600&t=st=1650000000',
-    bgImage: 'https://img.freepik.com/free-vector/online-certification-illustration_23-2148577295.jpg?w=900&t=st=1650000000',
-  },
-  {
-    id: 3,
-    title: 'تعلم من الخبراء',
-    subtitle: 'دورات تدريبية مع أفضل المدربين في العالم العربي',
-    image: 'https://img.freepik.com/free-vector/online-tutorials-concept_52683-37481.jpg?w=600&t=st=1650000000',
-    bgImage: 'https://img.freepik.com/free-vector/online-education-concept-illustration_114360-3751.jpg?w=900&t=st=1650000000',
-  }
-];
-
 const HeroBanner = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -383,23 +360,66 @@ const HeroBanner = () => {
   const [hovered, setHovered] = useState(false);
   const containerRef = useRef(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch banners from API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        console.log('Fetching banners from API...');
+        console.log('API base URL:', api.defaults.baseURL);
+        console.log('Full URL:', `${api.defaults.baseURL}/extras/banners/active/`);
+        
+        const response = await api.get('/extras/banners/active/');
+        console.log('API Response:', response.data);
+        
+        // Check if response has results property (paginated response)
+        const bannersData = response.data.results || response.data;
+        console.log('Banners data:', bannersData);
+        
+        // Transform the data to match the expected format
+        const transformedSlides = bannersData.map(banner => ({
+          id: banner.id,
+          title: banner.title,
+          subtitle: banner.description || '',
+          image: banner.image_url
+        }));
+        console.log('Transformed slides:', transformedSlides);
+        setSlides(transformedSlides);
+      } catch (error) {
+        console.error('Error fetching banners:', error);
+        console.error('Error details:', error.response?.data || error.message);
+        console.error('Error status:', error.response?.status);
+        console.error('Error config:', error.config);
+        console.error('Error headers:', error.response?.headers);
+        setSlides([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBanners();
+  }, []);
 
   // Auto slide functionality
   useEffect(() => {
-    if (!autoPlay) return;
+    if (!autoPlay || slides.length === 0) return;
     
     const interval = setInterval(() => {
       setActiveSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [autoPlay]);
+  }, [autoPlay, slides.length]);
 
   const handleNext = () => {
+    if (slides.length === 0) return;
     setActiveSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
   };
 
   const handlePrev = () => {
+    if (slides.length === 0) return;
     setActiveSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
   };
 
@@ -407,7 +427,7 @@ const HeroBanner = () => {
     setActiveSlide(index);
   };
 
-  const currentSlide = slides[activeSlide];
+  const currentSlide = slides[activeSlide] || { title: '', subtitle: '' };
 
   // Handle mouse move for parallax effect
   const handleMouseMove = (e) => {
@@ -424,6 +444,32 @@ const HeroBanner = () => {
     transform: `translate(${(mousePosition.x - window.innerWidth / 2) / factor}px, ${(mousePosition.y - window.innerHeight / 2) / factor}px)`,
     transition: 'transform 0.1s ease-out'
   });
+
+  // Show loading state
+  if (loading) {
+    return (
+      <HeroSection>
+        <HeroContent maxWidth="md">
+          <Typography variant="h6" sx={{ color: '#fff' }}>
+            جاري تحميل البانرات...
+          </Typography>
+        </HeroContent>
+      </HeroSection>
+    );
+  }
+
+  // Show empty state if no banners
+  if (slides.length === 0) {
+    return (
+      <HeroSection>
+        <HeroContent maxWidth="md">
+          <Typography variant="h6" sx={{ color: '#fff' }}>
+            لا توجد بانرات متاحة حالياً
+          </Typography>
+        </HeroContent>
+      </HeroSection>
+    );
+  }
 
   return (
     <>

@@ -1,5 +1,12 @@
+// Debug environment variables
+console.log('Environment variables:', {
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  MODE: import.meta.env.MODE,
+  DEV: import.meta.env.DEV,
+});
+
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: 'http://localhost:8000', // Force the correct URL
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
