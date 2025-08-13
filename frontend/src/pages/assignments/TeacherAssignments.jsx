@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Grid, Card, Button, Chip, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Paper,
-  LinearProgress, Alert, Divider, List, ListItem, ListItemText,
+  LinearProgress, Alert, Snackbar, Divider, List, ListItem, ListItemText,
   ListItemIcon, Badge, Tooltip, Avatar, Fab
 } from '@mui/material';
 import {
@@ -21,6 +21,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import './Assignments.css';
+import assignmentsAPI from '../../services/assignment.service';
 
 // Styled Components
 const StatusChip = styled(Chip)(({ status }) => ({
@@ -44,102 +45,53 @@ const StatusChip = styled(Chip)(({ status }) => ({
 
 const TeacherAssignments = () => {
   const [tabValue, setTabValue] = useState(0);
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  // Removed create dialog; use page route instead
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const navigate = useNavigate();
 
-  // Sample data based on the Django model
-  const assignments = [
-    {
-      id: 1,
-      title: 'واجب الرياضيات - الجبر الخطي',
-      description: 'حل مسائل من 1 إلى 10 في الكتاب مع شرح الخطوات بالتفصيل.',
-      course: 'الرياضيات 101',
-      module: 'الجبر الخطي',
-      due_date: '2024-01-25T23:59:00',
-      points: 100,
-      allow_late_submissions: true,
-      late_submission_penalty: 10,
-      has_questions: true,
-      has_file_upload: true,
-      assignment_file: 'math_assignment.pdf',
-      is_active: true,
-      created_at: '2024-01-15T10:00:00',
-      submissions_count: 18,
-      graded_count: 12,
-      total_students: 25,
-      average_grade: 85.5,
-      questions_count: 5,
-      total_points: 100,
-    },
-    {
-      id: 2,
-      title: 'تقرير العلوم - دورة الماء',
-      description: 'إعداد تقرير شامل عن دورة الماء في الطبيعة مع الرسوم التوضيحية.',
-      course: 'العلوم البيئية',
-      module: 'دورة الماء',
-      due_date: '2024-01-28T23:59:00',
-      points: 150,
-      allow_late_submissions: false,
-      late_submission_penalty: 0,
-      has_questions: false,
-      has_file_upload: true,
-      assignment_file: 'science_report_guide.pdf',
-      is_active: true,
-      created_at: '2024-01-18T14:00:00',
-      submissions_count: 10,
-      graded_count: 3,
-      total_students: 22,
-      average_grade: 78.2,
-      questions_count: 0,
-      total_points: 150,
-    },
-    {
-      id: 3,
-      title: 'موضوع تعبير - العطلة الصيفية',
-      description: 'كتابة موضوع تعبير عن العطلة الصيفية بحد أدنى 500 كلمة.',
-      course: 'اللغة العربية',
-      module: 'التعبير الكتابي',
-      due_date: '2024-01-20T23:59:00',
-      points: 80,
-      allow_late_submissions: true,
-      late_submission_penalty: 5,
-      has_questions: false,
-      has_file_upload: true,
-      assignment_file: 'essay_requirements.pdf',
-      is_active: false,
-      created_at: '2024-01-10T09:00:00',
-      submissions_count: 20,
-      graded_count: 20,
-      total_students: 20,
-      average_grade: 82.1,
-      questions_count: 0,
-      total_points: 80,
-    },
-    {
-      id: 4,
-      title: 'اختبار البرمجة - Python',
-      description: 'حل مشاكل برمجية باستخدام Python مع شرح الكود.',
-      course: 'مقدمة في البرمجة',
-      module: 'Python Basics',
-      due_date: '2024-01-30T23:59:00',
-      points: 200,
-      allow_late_submissions: false,
-      late_submission_penalty: 0,
-      has_questions: true,
-      has_file_upload: true,
-      assignment_file: 'python_assignment.pdf',
-      is_active: true,
-      created_at: '2024-01-20T16:00:00',
-      submissions_count: 0,
-      graded_count: 0,
-      total_students: 30,
-      average_grade: 0,
-      questions_count: 8,
-      total_points: 200,
-    },
-  ];
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      setLoading(true);
+      try {
+        const data = await assignmentsAPI.getAssignments();
+        const items = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : data?.assignments || []);
+        // Normalize for UI consumption
+        const normalized = items.map((a) => ({
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          course: a.course_title || a.course || '',
+          module: a.module_name || a.module || '',
+          due_date: a.due_date,
+          points: a.points,
+          allow_late_submissions: a.allow_late_submissions,
+          has_questions: a.has_questions,
+          has_file_upload: a.has_file_upload,
+          assignment_file: a.assignment_file,
+          is_active: a.is_active,
+          created_at: a.created_at,
+          // Optional stats if provided by API; fallback zeros
+          submissions_count: a.submissions_count || 0,
+          graded_count: a.graded_count || 0,
+          total_students: a.total_students || 0,
+          average_grade: a.average_grade || 0,
+          questions_count: a.questions_count || 0,
+          total_points: a.total_points || a.points || 0,
+        }));
+        setAssignments(normalized);
+      } catch (err) {
+        setSnackbar({ open: true, message: 'تعذر تحميل الواجبات', severity: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssignments();
+  }, []);
 
   const assignmentStats = {
     totalAssignments: assignments.length,
@@ -168,7 +120,7 @@ const TeacherAssignments = () => {
   };
 
   const handleCreateAssignment = () => {
-    setOpenCreateDialog(true);
+    navigate('/teacher/assignments/new');
   };
 
   const handleAssignmentDetails = (assignment) => {
@@ -353,7 +305,7 @@ const TeacherAssignments = () => {
         </Tabs>
       </Paper>
 
-      {/* Create Assignment Button - Fixed */}
+      {/* Create Assignment Button - Fixed (navigates to page) */}
       <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
         <Fab
           color="primary"
@@ -592,82 +544,72 @@ const TeacherAssignments = () => {
                     </Box>
                   )}
 
-                  {/* Actions - Fixed at bottom with better spacing */}
-                  <Box sx={{ 
-                    mt: 'auto', 
-                    pt: 3,
-                    pb: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.5,
-                    borderTop: '1px solid #f0f0f0'
-                  }}>
-                    <Button
-                      variant="contained"
-                      size="medium"
-                      startIcon={<AssessmentIcon />}
-                      onClick={() => handleViewSubmissions(assignment.id)}
-                      sx={{
-                        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-                        color: 'white',
-                        fontWeight: 600,
-                        py: 1,
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)',
-                        }
-                      }}
-                    >
-                      تصحيح الواجبات
-                    </Button>
-                    
-                    {/* Secondary Actions Row */}
-                    <Box sx={{ 
-                      display: 'flex', 
-                      gap: 1, 
-                      flexWrap: 'wrap',
-                      justifyContent: 'center'
-                    }}>
+                  {/* Actions - Inline grid buttons (side by side) */}
+                  <Box sx={{ mt: 'auto', pt: 3, pb: 1, borderTop: '1px solid #f0f0f0' }}>
+                    <Grid container spacing={1.5}>
                       {assignment.assignment_file && (
+                        <Grid item xs={12} sm={4}>
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DownloadIcon />}
+                            onClick={() => handleDownloadFile(assignment.assignment_file)}
+                            sx={{
+                              borderColor: '#ff6b6b',
+                              color: '#ff6b6b',
+                              fontWeight: 600,
+                              '&:hover': {
+                                borderColor: '#ff5252',
+                                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                              }
+                            }}
+                          >
+                            تحميل الملف
+                          </Button>
+                        </Grid>
+                      )}
+                      <Grid item xs={12} sm={assignment.assignment_file ? 4 : 6}>
                         <Button
+                          fullWidth
                           variant="outlined"
                           size="small"
-                          startIcon={<DownloadIcon />}
-                          onClick={() => handleDownloadFile(assignment.assignment_file)}
+                          startIcon={<EditIcon />}
+                          onClick={() => handleEditAssignment(assignment.id)}
                           sx={{
-                            borderColor: '#ff6b6b',
-                            color: '#ff6b6b',
+                            borderColor: '#673ab7',
+                            color: '#673ab7',
                             fontWeight: 600,
-                            flex: 1,
-                            minWidth: '120px',
                             '&:hover': {
-                              borderColor: '#ff5252',
-                              backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                              borderColor: '#5e35b1',
+                              backgroundColor: 'rgba(103, 58, 183, 0.1)',
                             }
                           }}
                         >
-                          تحميل الملف
+                          تعديل الواجب
                         </Button>
-                      )}
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<EditIcon />}
-                        onClick={() => handleEditAssignment(assignment.id)}
-                        sx={{
-                          borderColor: '#673ab7',
-                          color: '#673ab7',
-                          fontWeight: 600,
-                          flex: 1,
-                          minWidth: '120px',
-                          '&:hover': {
-                            borderColor: '#5e35b1',
-                            backgroundColor: 'rgba(103, 58, 183, 0.1)',
-                          }
-                        }}
-                      >
-                        تعديل الواجب
-                      </Button>
-                    </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={assignment.assignment_file ? 4 : 6}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          size="medium"
+                          startIcon={<AssessmentIcon />}
+                          onClick={() => handleViewSubmissions(assignment.id)}
+                          sx={{
+                            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                            color: 'white',
+                            fontWeight: 600,
+                            py: 1,
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)',
+                            }
+                          }}
+                        >
+                          تصحيح الواجبات
+                        </Button>
+                      </Grid>
+                    </Grid>
                   </Box>
                 </Box>
               </Card>
@@ -676,126 +618,19 @@ const TeacherAssignments = () => {
         })}
       </Grid>
 
-      {/* Create Assignment Dialog */}
-      <Dialog
-        open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
-        }}
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          backgroundColor: 'primary.main', 
-          color: 'white', 
-          py: 3, 
-          px: 4 
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CreateIcon sx={{ fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={700}>
-              إنشاء واجب جديد
-            </Typography>
-          </Box>
-          <IconButton onClick={() => setOpenCreateDialog(false)} sx={{ color: 'white' }}>
-            <CancelIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa' }}>
-          <Box component="form" autoComplete="off" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <TextField
-              fullWidth
-              label="عنوان الواجب"
-              variant="outlined"
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-            <TextField
-              fullWidth
-              label="وصف الواجب"
-              variant="outlined"
-              multiline
-              rows={3}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-            <FormControl fullWidth>
-              <InputLabel>المقرر</InputLabel>
-              <Select
-                label="المقرر"
-                defaultValue=""
-                sx={{ borderRadius: 2 }}
-              >
-                <MenuItem value="math">الرياضيات 101</MenuItem>
-                <MenuItem value="science">العلوم البيئية</MenuItem>
-                <MenuItem value="arabic">اللغة العربية</MenuItem>
-                <MenuItem value="programming">مقدمة في البرمجة</MenuItem>
-              </Select>
-            </FormControl>
-            <TextField
-              fullWidth
-              label="الدرجة المخصصة"
-              type="number"
-              variant="outlined"
-              defaultValue={100}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-            <TextField
-              fullWidth
-              label="تاريخ ووقت التسليم"
-              type="datetime-local"
-              variant="outlined"
-              InputLabelProps={{ shrink: true }}
-              InputProps={{ sx: { borderRadius: 2 } }}
-            />
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="المدة (بالدقائق)"
-                type="number"
-                variant="outlined"
-                defaultValue={60}
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-              <TextField
-                fullWidth
-                label="الحد الأقصى للمحاولات"
-                type="number"
-                variant="outlined"
-                defaultValue={1}
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-            </Box>
-          </Box>
-        </DialogContent>
-                    <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
-          <Button
-            onClick={() => setOpenCreateDialog(false)}
-            variant="outlined"
-            sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
-          >
-            إلغاء
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => setOpenCreateDialog(false)}
-            sx={{ 
-              borderRadius: 2, 
-              px: 4, 
-              py: 1.5, 
-              fontWeight: 700, 
-              background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
-              '&:hover': { 
-                background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)' 
-              } 
-            }}
-          >
-            إنشاء الواجب
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Alert onClose={() => setSnackbar((s) => ({ ...s, open: false }))} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Create Assignment Dialog removed; using page route */}
 
       {/* Assignment Details Dialog */}
       <Dialog

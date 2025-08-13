@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Course, Category, Tags, Enrollment
+from .models import Course, Category, Tag, Enrollment
 from users.models import Instructor
 from django.db.models import Count
 
@@ -18,46 +18,74 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Tags
-        fields = ['id', 'name', 'color']
+        model = Tag
+        fields = ['id', 'name']
         read_only_fields = ['id']
 
 
 class CourseBasicSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     instructors = serializers.SerializerMethodField()
-    tags = TagsSerializer(many=True, read_only=True)
+    tags = serializers.SerializerMethodField()
     enrolled_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
         fields = [
-            'id', 'name', 'description', 'small_description', 'image', 'price',
-            'category', 'category_name', 'instructors', 'tags',
-            'level', 'status', 'is_complete_course', 'created_at', 'rating', 'enrolled_count'
+            'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'price',
+            'discount_price', 'category', 'category_name', 'instructors', 'tags',
+            'level', 'status', 'is_complete_course', 'created_at', 'rating', 'enrolled_count',
+            'is_free', 'is_featured', 'is_certified', 'total_enrollments', 'average_rating'
         ]
-        read_only_fields = ['id', 'created_at', 'rating']
+        read_only_fields = ['id', 'created_at', 'rating', 'total_enrollments', 'average_rating']
     
     def get_instructors(self, obj):
         instructors = []
-        for instructor in obj.instructors.all():
-            if hasattr(instructor, 'profile') and instructor.profile:
-                instructors.append({
-                    'id': instructor.id,
-                    'name': instructor.profile.name
-                })
+        try:
+            for instructor in obj.instructors.all():
+                try:
+                    if hasattr(instructor, 'profile') and instructor.profile:
+                        instructors.append({
+                            'id': instructor.id,
+                            'name': instructor.profile.name or '',
+                            'bio': instructor.profile.shortBio or '',  # Changed from bio to shortBio
+                            'profile_pic': instructor.profile.image_profile.url if instructor.profile.image_profile else None  # Changed from profile_pic to image_profile
+                        })
+                    else:
+                        # If instructor doesn't have a profile, still include basic info
+                        instructors.append({
+                            'id': instructor.id,
+                            'name': str(instructor),
+                            'bio': '',
+                            'profile_pic': None
+                        })
+                except Exception as e:
+                    # Log the error but continue with other instructors
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error processing instructor {instructor.id}: {str(e)}")
+                    continue
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in get_instructors: {str(e)}")
         return instructors
     
+    def get_tags(self, obj):
+        try:
+            return [{'id': tag.id, 'name': tag.name} for tag in obj.tags.all()]
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in get_tags: {str(e)}")
+            return []
+    
     def get_enrolled_count(self, obj):
-        return obj.enroller_user.count()
+        return obj.total_enrollments
     
     def get_rating(self, obj):
-        from django.db.models import Avg
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
-        return 0.0
+        return obj.average_rating
 
 
 class CourseInstructorSerializer(serializers.Serializer):
@@ -69,50 +97,108 @@ class CourseInstructorSerializer(serializers.Serializer):
 class CourseDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     instructors = serializers.SerializerMethodField()
-    tags = TagsSerializer(many=True, read_only=True)
+    tags = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
         fields = [
-            'id', 'name', 'description', 'small_description', 'image', 'video_url',
-            'price', 'category', 'instructors', 'tags', 'level', 'status', 'is_complete_course', 'created_at',
-            'updated_at', 'is_enrolled'
+            'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'promotional_video',
+            'price', 'discount_price', 'category', 'instructors', 'tags', 'level', 'status', 
+            'is_complete_course', 'created_at', 'updated_at', 'is_enrolled', 'is_free', 
+            'is_featured', 'is_certified', 'total_enrollments', 'average_rating', 'language',
+            'syllabus_pdf', 'materials_pdf'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_enrollments', 'average_rating']
     
     def get_instructors(self, obj):
         instructors = []
-        for instructor in obj.instructors.all():
-            if hasattr(instructor, 'profile') and instructor.profile:
-                instructors.append({
-                    'id': instructor.id,
-                    'name': instructor.profile.name,
-                    'bio': instructor.profile.bio,
-                    'profile_pic': instructor.profile.profile_pic.url if instructor.profile.profile_pic else None
-                })
+        try:
+            for instructor in obj.instructors.all():
+                try:
+                    if hasattr(instructor, 'profile') and instructor.profile:
+                        instructors.append({
+                            'id': instructor.id,
+                            'name': instructor.profile.name or '',
+                            'bio': instructor.profile.shortBio or '',  # Changed from bio to shortBio
+                            'profile_pic': instructor.profile.image_profile.url if instructor.profile.image_profile else None  # Changed from profile_pic to image_profile
+                        })
+                    else:
+                        # If instructor doesn't have a profile, still include basic info
+                        instructors.append({
+                            'id': instructor.id,
+                            'name': str(instructor),
+                            'bio': '',
+                            'profile_pic': None
+                        })
+                except Exception as e:
+                    # Log the error but continue with other instructors
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error processing instructor {instructor.id}: {str(e)}")
+                    continue
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in get_instructors: {str(e)}")
         return instructors
     
+    def get_tags(self, obj):
+        try:
+            return [{'id': tag.id, 'name': tag.name} for tag in obj.tags.all()]
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in get_tags: {str(e)}")
+            return []
+    
     def get_is_enrolled(self, obj):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            return obj.enroller_user.filter(id=request.user.id).exists()
-        return False
+        try:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and request.user.is_authenticated:
+                return obj.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists()
+            return False
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in get_is_enrolled: {str(e)}")
+            return False
 
 
 class CourseCreateSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+    syllabus_pdf = serializers.FileField(required=False, allow_null=True)
+    materials_pdf = serializers.FileField(required=False, allow_null=True)
+    tags = serializers.ListField(child=serializers.CharField(), required=False, write_only=True)
+    
     class Meta:
         model = Course
         fields = [
-            'title', 'description', 'short_description', 'subtitle', 'category', 
-            'tags', 'level', 'status', 'language', 'price', 'is_free', 'is_complete_course',
-            'requirements', 'what_you_will_learn', 'target_audience'
+            'title', 'subtitle', 'description', 'short_description', 'category', 
+            'tags', 'level', 'status', 'language', 'price', 'discount_price', 'is_free', 
+            'is_complete_course', 'is_featured', 'is_certified', 'image', 
+            'promotional_video', 'syllabus_pdf', 'materials_pdf'
         ]
         extra_kwargs = {
             'status': {'default': 'draft'},
-            'is_free': {'default': True},
+            'is_free': {'default': False},
             'is_complete_course': {'default': True},
+            'is_featured': {'default': False},
+            'is_certified': {'default': False},
         }
+    
+    def validate(self, data):
+        # Ensure free courses have price 0
+        if data.get('is_free', False):
+            data['price'] = 0
+            data['discount_price'] = None
+        
+        # Validate discount price
+        if data.get('discount_price') and data.get('price'):
+            if data['discount_price'] >= data['price']:
+                raise serializers.ValidationError("Discount price must be less than regular price")
+        
+        return data
     
     def create(self, validated_data):
         tags_data = validated_data.pop('tags', [])
@@ -120,42 +206,99 @@ class CourseCreateSerializer(serializers.ModelSerializer):
         # Set instructor from request user
         user = self.context['request'].user
         try:
-            instructor = Instructor.objects.get(profile__user=user)
+            # Check if user is an instructor
+            if hasattr(user, 'profile'):
+                if user.profile.status == 'Instructor':
+                    instructor = Instructor.objects.get(profile=user.profile)
+                elif user.is_staff or user.profile.status == 'Admin':
+                    # For staff/admin, we'll create a course without instructor for now
+                    instructor = None
+                else:
+                    raise serializers.ValidationError("User is not authorized to create courses")
+            else:
+                raise serializers.ValidationError("User profile not found")
         except Instructor.DoesNotExist:
-            raise serializers.ValidationError("User is not an instructor")
+            raise serializers.ValidationError("Instructor profile not found")
         
-        # Create the course
-        course = Course.objects.create(**validated_data)
-        
-        # Add the instructor to the course
-        course.instructors.add(instructor)
-        
-        # Add tags if any
-        if tags_data:
-            course.tags.set(tags_data)
+        try:
+            # Create the course
+            course = Course.objects.create(**validated_data)
             
-        return course
+            # Add the instructor to the course if exists
+            if instructor:
+                course.instructors.add(instructor)
+            
+            # Add tags if any
+            if tags_data:
+                for tag_name in tags_data:
+                    try:
+                        # Try to get existing tag first
+                        tag = Tag.objects.filter(name__iexact=tag_name).first()
+                        if not tag:
+                            # Create new tag with unique slug
+                            tag = Tag.objects.create(name=tag_name)
+                        course.tags.add(tag)
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Error creating/adding tag {tag_name}: {str(e)}")
+                        continue
+            
+            return course
+        except Exception as e:
+            # Log the error and re-raise it
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error creating course: {str(e)}", exc_info=True)
+            raise
 
 
 class CourseUpdateSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+    syllabus_pdf = serializers.FileField(required=False, allow_null=True)
+    materials_pdf = serializers.FileField(required=False, allow_null=True)
+    tags = serializers.ListField(child=serializers.CharField(), required=False, write_only=True)
+    
     class Meta:
         model = Course
         fields = [
-            'name', 'description', 'small_description', 'image', 'video_url',
-            'price', 'category', 'tags', 'level', 'status', 'is_complete_course'
+            'title', 'subtitle', 'description', 'short_description', 'category', 
+            'tags', 'level', 'status', 'language', 'price', 'discount_price', 'is_free', 
+            'is_complete_course', 'is_featured', 'is_certified', 'image', 
+            'promotional_video', 'syllabus_pdf', 'materials_pdf'
         ]
     
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags', None)
-        
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        
-        if tags_data is not None:
-            instance.tags.set(tags_data)
-        
-        return instance
+        try:
+            tags_data = validated_data.pop('tags', None)
+            
+            for attr, value in validated_data.items():
+                setattr(instance, attr, value)
+            instance.save()
+            
+            if tags_data is not None:
+                # Clear existing tags and add new ones
+                instance.tags.clear()
+                for tag_name in tags_data:
+                    try:
+                        # Try to get existing tag first
+                        tag = Tag.objects.filter(name__iexact=tag_name).first()
+                        if not tag:
+                            # Create new tag with unique slug
+                            tag = Tag.objects.create(name=tag_name)
+                        instance.tags.add(tag)
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Error creating/adding tag {tag_name}: {str(e)}")
+                        continue
+            
+            return instance
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error updating course: {str(e)}", exc_info=True)
+            raise
 
 
 class CourseEnrollmentSerializer(serializers.Serializer):

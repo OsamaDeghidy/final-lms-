@@ -17,13 +17,14 @@ from datetime import timedelta, datetime
 from django.core.paginator import Paginator
 import logging
 
-from .models import Course, Category, Tags, Enrollment
+from .models import Course, Category, Tag, Enrollment
 from users.models import Instructor, Profile, User
 from .serializers import (
     CategorySerializer, TagsSerializer, CourseBasicSerializer, 
     CourseDetailSerializer, CourseCreateSerializer, CourseUpdateSerializer,
     CourseEnrollmentSerializer, DashboardStatsSerializer, SearchSerializer
 )
+from content.serializers import ModuleBasicSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class CategoryViewSet(ReadOnlyModelViewSet):
 
 class TagsViewSet(ReadOnlyModelViewSet):
     """عرض الوسوم"""
-    queryset = Tags.objects.all()
+    queryset = Tag.objects.all()
     serializer_class = TagsSerializer
     permission_classes = [AllowAny]
 
@@ -48,113 +49,91 @@ class CourseViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['category', 'level', 'status']
-    search_fields = ['name', 'description', 'small_description']
-    ordering_fields = ['created_at', 'updated_at', 'name', 'price', 'rating']
-    ordering = ['-created_created_at']
+    search_fields = ['title', 'description', 'short_description']
+    ordering_fields = ['created_at', 'updated_at', 'title', 'price', 'average_rating']
+    ordering = ['-created_at']
     
-    # Explicitly define allowed HTTP methods
-    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']
-    
-    def initial(self, request, *args, **kwargs):
-        logger.info(f"[CourseViewSet] Initializing request: {request.method} {request.path}")
-        logger.info(f"[CourseViewSet] Request data: {request.data}")
-        logger.info(f"[CourseViewSet] Request user: {request.user}")
-        logger.info(f"[CourseViewSet] Request auth: {request.auth}")
-        logger.info(f"[CourseViewSet] View action: {self.action}")
-        logger.info(f"[CourseViewSet] Allowed methods: {self.http_method_names}")
-        logger.info(f"[CourseViewSet] Request headers: {dict(request.headers)}")
-        logger.info(f"[CourseViewSet] Request content type: {request.content_type}")
-        logger.info(f"[CourseViewSet] Request body: {request.body}")
-        logger.info(f"[CourseViewSet] Request META: {dict(request.META)}")
-        return super().initial(request, *args, **kwargs)
-        
-    def dispatch(self, request, *args, **kwargs):
-        logger.info(f"[CourseViewSet] Dispatch - Method: {request.method}, Path: {request.path}")
-        logger.info(f"[CourseViewSet] Request headers: {dict(request.headers)}")
-        logger.info(f"[CourseViewSet] Request body: {request.body}")
-        logger.info(f"[CourseViewSet] Request content type: {request.content_type}")
-        
-        # Log the actual method being used
-        logger.info(f"[CourseViewSet] Request method (actual): {request.method}")
-        logger.info(f"[CourseViewSet] Request META: {dict(request.META)}")
-        
-        # Check if this is a POST request with a different method in X-HTTP-Method-Override
-        method_override = request.META.get('HTTP_X_HTTP_METHOD_OVERRIDE', '').upper()
-        if method_override:
-            logger.info(f"[CourseViewSet] Method override detected: {method_override}")
-        
-        # Check if the method is in http_method_names
-        method = request.method.upper()
-        logger.info(f"[CourseViewSet] Checking if method {method} is in {self.http_method_names}")
-        
-        if method not in [m.upper() for m in self.http_method_names if hasattr(self, m)]:
-            logger.error(f"[CourseViewSet] Method {method} not allowed. Allowed methods: {self.http_method_names}")
-        
-        # Call the parent's dispatch
-        response = super().dispatch(request, *args, **kwargs)
-        
-        logger.info(f"[CourseViewSet] Response status: {response.status_code}")
-        logger.info(f"[CourseViewSet] Response headers: {dict(response.items())}")
-        if hasattr(response, 'data'):
-            logger.info(f"[CourseViewSet] Response data: {response.data}")
-        else:
-            logger.info("[CourseViewSet] No response data attribute")
-        return response
-
     def get_serializer_class(self):
-        if self.action == 'list':
-            return CourseBasicSerializer
-        elif self.action == 'retrieve':
-            return CourseDetailSerializer
-        elif self.action == 'create':
+        if self.action == 'create':
             return CourseCreateSerializer
         elif self.action in ['update', 'partial_update']:
             return CourseUpdateSerializer
-        return CourseDetailSerializer
-
+        elif self.action == 'retrieve':
+            return CourseDetailSerializer
+        else:
+            return CourseBasicSerializer
+    
+    def get_serializer_context(self):
+        """Add request to serializer context"""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
     def get_queryset(self):
+        """Get courses based on user permissions"""
         queryset = super().get_queryset()
         
-        # For non-authenticated users, only show published courses
-        if not self.request.user.is_authenticated:
-            return queryset.filter(status='published')
+        # If user is staff/admin, show all courses
+        if self.request.user.is_staff:
+            return queryset
         
-        # For regular users, show published courses + their own courses
-        user = self.request.user
-        try:
-            profile = user.profile
-            if profile.status == 'Admin' or user.is_staff:
-                # Admins see all courses
-                return queryset
-            elif profile.status == 'Teacher':
-                # Teachers see published courses + their own courses
-                teacher = profile.get_teacher_object()
-                if teacher:
-                    return queryset.filter(
-                        Q(status='published') | Q(instructors=teacher)
-                    )
-            else:
-                # Students see only published courses
-                return queryset.filter(status='published')
-        except Profile.DoesNotExist:
-            return queryset.filter(status='published')
+        # If user is instructor, show their courses
+        if hasattr(self.request.user, 'profile') and self.request.user.profile.status == 'Instructor':
+            try:
+                instructor = Instructor.objects.get(profile=self.request.user.profile)
+                return queryset.filter(instructors=instructor)
+            except Instructor.DoesNotExist:
+                return Course.objects.none()
+        
+        # For other users, show only published courses
+        return queryset.filter(status='published')
 
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve a course with better error handling"""
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in CourseViewSet.retrieve: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'حدث خطأ أثناء جلب بيانات الدورة',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     def create(self, request, *args, **kwargs):
         logger.info("CourseViewSet.create method called")
         logger.info(f"Request method: {request.method}")
         logger.info(f"Request data: {request.data}")
         logger.info(f"Request user: {request.user}")
-        logger.info(f"Request auth: {request.auth}")
-        logger.info(f"Request content type: {request.content_type}")
-        
-        # Log the allowed methods for this view
-        logger.info(f"Allowed methods: {self._allowed_methods()}")
         
         try:
-            return super().create(request, *args, **kwargs)
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"Course created successfully, response: {response}")
+            return response
         except Exception as e:
             logger.error(f"Error in CourseViewSet.create: {str(e)}", exc_info=True)
-            raise
+            
+            # Check if the course was actually created despite the error
+            try:
+                # Try to find the course that might have been created
+                if hasattr(request, 'data') and request.data.get('title'):
+                    course = Course.objects.filter(
+                        title=request.data.get('title'),
+                        subtitle=request.data.get('subtitle', '')
+                    ).first()
+                    
+                    if course:
+                        # Course was created successfully, return it
+                        serializer = self.get_serializer(course)
+                        logger.info(f"Course found after error, returning: {course.id}")
+                        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as find_error:
+                logger.error(f"Error finding course after creation error: {str(find_error)}")
+            
+            # Return a more detailed error response
+            return Response({
+                'error': 'Failed to create course',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def perform_create(self, serializer):
         """إنشاء دورة جديدة"""
@@ -182,35 +161,81 @@ class CourseViewSet(ModelViewSet):
                     logger.info(f"Instructor {instructor.id} added to course {course.id}")
                 except Instructor.DoesNotExist:
                     logger.error(f"Instructor profile not found for user {user.id}")
-                    raise serializers.ValidationError("Instructor profile not found")
+                    # Don't raise an error here, just log it
+                    logger.warning("Instructor profile not found, but course was created successfully")
             
+            # Ensure the course is saved and return it
+            course.save()
+            logger.info(f"Course {course.id} saved successfully")
             return course
             
         except Profile.DoesNotExist:
             logger.error(f"Profile not found for user {user.id}")
             raise permissions.PermissionDenied("User profile not found")
+        except Exception as e:
+            logger.error(f"Error in perform_create: {str(e)}", exc_info=True)
+            raise
+
+    def update(self, request, *args, **kwargs):
+        """Update a course with better error handling"""
+        try:
+            # First update the course
+            super().update(request, *args, **kwargs)
+            # Then return the updated course using CourseDetailSerializer
+            instance = self.get_object()
+            serializer = CourseDetailSerializer(instance, context={'request': request})
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error in CourseViewSet.update: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'حدث خطأ أثناء تحديث الدورة',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Partial update a course with better error handling"""
+        try:
+            # First update the course
+            super().partial_update(request, *args, **kwargs)
+            # Then return the updated course using CourseDetailSerializer
+            instance = self.get_object()
+            serializer = CourseDetailSerializer(instance, context={'request': request})
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error in CourseViewSet.partial_update: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'حدث خطأ أثناء تحديث الدورة',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def perform_update(self, serializer):
         """تحديث دورة"""
-        # Check permissions
-        course = self.get_object()
-        user = self.request.user
-        
         try:
-            profile = user.profile
-            if profile.status == 'Admin' or user.is_staff:
-                # Admin can update any course
-                pass
-            elif profile.status == 'Teacher':
-                teacher = profile.get_teacher_object()
-                if not teacher or course.teacher != teacher:
-                    raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل هذه الدورة")
-            else:
-                raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل الدورات")
-        except Profile.DoesNotExist:
-            raise permissions.PermissionDenied("لم يتم العثور على ملف تعريف المستخدم")
-        
-        serializer.save()
+            # Check permissions
+            course = self.get_object()
+            user = self.request.user
+            
+            try:
+                profile = user.profile
+                if profile.status == 'Admin' or user.is_staff:
+                    # Admin can update any course
+                    pass
+                elif profile.status == 'Instructor':
+                    try:
+                        instructor = Instructor.objects.get(profile=profile)
+                        if not course.instructors.filter(id=instructor.id).exists():
+                            raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل هذه الدورة")
+                    except Instructor.DoesNotExist:
+                        raise permissions.PermissionDenied("لم يتم العثور على ملف تعريف المدرب")
+                else:
+                    raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل الدورات")
+            except Profile.DoesNotExist:
+                raise permissions.PermissionDenied("لم يتم العثور على ملف تعريف المستخدم")
+            
+            serializer.save()
+        except Exception as e:
+            logger.error(f"Error in perform_update: {str(e)}", exc_info=True)
+            raise
 
     @action(detail=True, methods=['post'])
     def enroll(self, request, pk=None):
@@ -223,16 +248,13 @@ class CourseViewSet(ModelViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Check if already enrolled
-        if course.enroller_user.filter(id=request.user.id).exists():
+        if course.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists():
             return Response({
                 'error': 'أنت مسجل في هذه الدورة بالفعل'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             with transaction.atomic():
-                # Add user to course enrollments
-                course.enroller_user.add(request.user)
-                
                 # Create enrollment record
                 enrollment, created = Enrollment.objects.get_or_create(
                     course=course,
@@ -240,7 +262,8 @@ class CourseViewSet(ModelViewSet):
                     defaults={'status': 'active'}
                 )
                 
-                # User progress will be created in the content app
+                # Update course statistics
+                course.update_statistics()
                 
                 return Response({
                     'message': 'تم التسجيل في الدورة بنجاح',
@@ -258,23 +281,23 @@ class CourseViewSet(ModelViewSet):
         """إلغاء التسجيل من دورة"""
         course = self.get_object()
         
-        if not course.enroller_user.filter(id=request.user.id).exists():
+        if not course.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists():
             return Response({
                 'error': 'أنت غير مسجل في هذه الدورة'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             with transaction.atomic():
-                # Remove user from course enrollments
-                course.enroller_user.remove(request.user)
-                
                 # Update enrollment status
                 try:
                     enrollment = Enrollment.objects.get(course=course, student=request.user)
-                    enrollment.status = 'cancelled'
+                    enrollment.status = 'dropped'
                     enrollment.save()
                 except Enrollment.DoesNotExist:
                     pass
+                
+                # Update course statistics
+                course.update_statistics()
                 
                 return Response({
                     'message': 'تم إلغاء التسجيل من الدورة'
@@ -293,7 +316,7 @@ class CourseViewSet(ModelViewSet):
         
         # Check if user is enrolled or is the teacher/admin
         user = request.user
-        is_enrolled = course.enroller_user.filter(id=user.id).exists()
+        is_enrolled = course.enrollments.filter(student=user, status__in=['active', 'completed']).exists()
         is_instructor_or_admin = False
         
         try:
@@ -313,7 +336,7 @@ class CourseViewSet(ModelViewSet):
                 'error': 'يجب أن تكون مسجلاً في الدورة للوصول لهذا المحتوى'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        modules = course.module_set.all().order_by('number')
+        modules = course.modules.all().order_by('order')
         serializer = ModuleBasicSerializer(modules, many=True, context={'request': request})
         
         return Response({
@@ -321,11 +344,35 @@ class CourseViewSet(ModelViewSet):
         }, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
+    def related(self, request, pk=None):
+        """جلب الدورات ذات الصلة"""
+        course = self.get_object()
+        
+        # Get courses in the same category, excluding the current course
+        related_courses = Course.objects.filter(
+            category=course.category,
+            status='published'
+        ).exclude(id=course.id).select_related('category').prefetch_related('tags')[:6]
+        
+        # If not enough courses in same category, add some popular courses
+        if related_courses.count() < 6:
+            additional_courses = Course.objects.filter(
+                status='published'
+            ).exclude(id=course.id).exclude(id__in=related_courses.values_list('id', flat=True)).select_related('category').prefetch_related('tags')[:6 - related_courses.count()]
+            related_courses = list(related_courses) + list(additional_courses)
+        
+        serializer = CourseBasicSerializer(related_courses, many=True, context={'request': request})
+        return Response({
+            'results': serializer.data
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
     def my_courses(self, request):
         """دوراتي المسجل بها"""
         user = request.user
         enrolled_courses = Course.objects.filter(
-            enroller_user=user,
+            enrollments__student=user,
+            enrollments__status__in=['active', 'completed'],
             status='published'
         ).select_related('instructors', 'category').prefetch_related('tags')
         
@@ -506,3 +553,59 @@ def general_stats(request):
     }
     
     return Response(stats, status=status.HTTP_200_OK) 
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def public_courses(request):
+    """Get all published courses for public access"""
+    try:
+        courses = Course.objects.filter(
+            status='published',
+            is_active=True
+        ).select_related('category').prefetch_related(
+            'instructors', 
+            'instructors__profile', 
+            'tags'
+        ).order_by('-created_at')
+        
+        # Apply filters
+        category = request.GET.get('category')
+        level = request.GET.get('level')
+        search = request.GET.get('search')
+        
+        if category:
+            courses = courses.filter(category_id=category)
+        
+        if level:
+            courses = courses.filter(level=level)
+        
+        if search:
+            courses = courses.filter(
+                Q(title__icontains=search) |
+                Q(description__icontains=search) |
+                Q(short_description__icontains=search)
+            )
+        
+        # Pagination
+        page = request.GET.get('page', 1)
+        page_size = request.GET.get('page_size', 12)
+        
+        paginator = Paginator(courses, page_size)
+        courses_page = paginator.get_page(page)
+        
+        serializer = CourseBasicSerializer(courses_page, many=True, context={'request': request})
+        
+        return Response({
+            'count': paginator.count,
+            'next': courses_page.has_next(),
+            'previous': courses_page.has_previous(),
+            'results': serializer.data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in public_courses: {str(e)}", exc_info=True)
+        return Response({
+            'error': 'حدث خطأ أثناء جلب الدورات',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 

@@ -29,6 +29,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import HomeIcon from '@mui/icons-material/Home';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -701,6 +702,26 @@ const Header = () => {
             }}>
               {isAuthenticated ? (
                 <>
+                  {/* Cart Icon */}
+                  <IconButton
+                    size="large"
+                    aria-label="shopping cart"
+                    color="inherit"
+                    component={RouterLink}
+                    to="/cart"
+                    sx={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      marginLeft: 1,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      },
+                    }}
+                  >
+                    <Badge badgeContent={0} color="error">
+                      <ShoppingCartIcon />
+                    </Badge>
+                  </IconButton>
+                  
                   <IconButton
                     size="large"
                     aria-label="show notifications"
@@ -896,6 +917,29 @@ const Header = () => {
                 </Button>
               )
             ))}
+            
+            {/* Cart Button for Mobile */}
+            {isAuthenticated && (
+              <Button
+                component={RouterLink}
+                to="/cart"
+                fullWidth
+                startIcon={<ShoppingCartIcon />}
+                sx={{
+                  justifyContent: 'flex-start',
+                  color: location.pathname === '/cart' ? '#4ECDC4' : '#FFFFFF',
+                  mb: 1,
+                  borderRadius: '8px',
+                  padding: '10px 15px',
+                  '&:hover': {
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                  },
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                سلة التسوق
+              </Button>
+            )}
           </Box>
           
           <Box mt={3}>

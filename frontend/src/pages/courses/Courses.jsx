@@ -16,7 +16,9 @@ import {
   InputAdornment, 
   Skeleton,
   IconButton,
-  Divider
+  Divider,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { 
   Search, 
@@ -34,7 +36,8 @@ import {
   CheckCircle,
   ShoppingCart,
   AddShoppingCart,
-  Check
+  Check,
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import { styled, alpha, useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
@@ -42,6 +45,14 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
+import { courseAPI, cartAPI } from '../../services/courseService';
+
+// Helper: truncate text to a fixed number of characters and append ellipsis
+const truncateText = (text, maxChars = 30) => {
+  if (!text) return '';
+  const clean = String(text).trim();
+  return clean.length > maxChars ? `${clean.slice(0, maxChars)}…` : clean;
+};
 
 // Animation variants
 const cardVariants = {
@@ -431,193 +442,66 @@ const AnimatedBackgroundComponent = () => (
 const Courses = () => {
   const theme = useTheme();
   const [courses, setCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [tabValue, setTabValue] = useState('all');
   const [activeCategory, setActiveCategory] = useState('all');
   const [cartItems, setCartItems] = useState({});
-  // Animation will be handled by framer-motion's whileInView prop
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const categories = [
-    { id: 'all', name: 'الكل', icon: <Category /> },
-    { id: 'web', name: 'تطوير الويب', icon: <Category /> },
-    { id: 'mobile', name: 'تطبيقات الموبايل', icon: <Category /> },
-    { id: 'design', name: 'التصميم', icon: <Category /> },
-    { id: 'marketing', name: 'التسويق', icon: <Category /> },
-    { id: 'business', name: 'أعمال', icon: <Category /> },
-    { id: 'photography', name: 'التصوير', icon: <Category /> },
-  ];
-
-  const filters = {
-    category: activeCategory === 'all' ? '' : activeCategory,
-    level: tabValue === 'all' ? '' : tabValue,
-  };
-
-  // Simulate API call to fetch courses
+  // Fetch courses and categories from API
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
+        setError(null);
         
-        // Enhanced mock data with more variety
-        const mockCourses = [
-          {
-            id: 1,
-            title: 'مقدمة في تطوير تطبيقات الويب',
-            description: 'تعلم أساسيات تطوير تطبيقات الويب باستخدام أحدث التقنيات والأدوات.',
-            image: 'https://source.unsplash.com/random/800x450?web,development',
-            category: 'web',
-            level: 'beginner',
-            duration: '4 أسابيع',
-            students: 2541,
-            rating: 4.7,
-            instructor: 'أحمد محمد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-            price: 299,
-            discountPrice: 199,
-            isNew: true,
-            isPopular: true,
-            lessons: 42,
-            language: 'العربية',
-          },
-          {
-            id: 2,
-            title: 'البرمجة المتقدمة بلغة جافا سكريبت',
-            description: 'إتقان المفاهيم المتقدمة في جافا سكريبت وأنماط التصميم.',
-            image: 'https://source.unsplash.com/random/800x450?javascript,code',
-            category: 'web',
-            level: 'advanced',
-            duration: '6 أسابيع',
-            students: 1892,
-            rating: 4.8,
-            instructor: 'سارة أحمد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-            price: 399,
-            lessons: 58,
-            language: 'العربية',
-          },
-          {
-            id: 3,
-            title: 'أساسيات تصميم تجربة المستخدم UI/UX',
-            description: 'تعلم مبادئ تصميم تجربة المستخدم وواجهات المستخدم الجذابة.',
-            image: 'https://source.unsplash.com/random/800x450?design,ui,ux',
-            category: 'design',
-            level: 'beginner',
-            duration: '3 أسابيع',
-            students: 3567,
-            rating: 4.6,
-            instructor: 'محمد علي',
-            instructorAvatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-            price: 249,
-            discountPrice: 199,
-            isPopular: true,
-            lessons: 35,
-            language: 'العربية',
-          },
-          {
-            id: 4,
-            title: 'تطوير تطبيقات الهاتف باستخدام Flutter',
-            description: 'أنشئ تطبيقات الهاتف المتكاملة لنظامي iOS و Android باستخدام Flutter.',
-            image: 'https://source.unsplash.com/random/800x450?mobile,flutter',
-            category: 'mobile',
-            level: 'intermediate',
-            duration: '5 أسابيع',
-            students: 2983,
-            rating: 4.9,
-            instructor: 'نورا خالد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/women/65.jpg',
-            price: 349,
-            lessons: 47,
-            language: 'العربية',
-          },
-          {
-            id: 5,
-            title: 'تعلم التسويق الرقمي من الصفر',
-            description: 'أساسيات التسويق الرقمي وكيفية بناء استراتيجية تسويقية ناجحة.',
-            image: 'https://source.unsplash.com/random/800x450?marketing,digital',
-            category: 'marketing',
-            level: 'beginner',
-            duration: '4 أسابيع',
-            students: 4123,
-            rating: 4.5,
-            instructor: 'خالد عبدالله',
-            instructorAvatar: 'https://randomuser.me/api/portraits/men/45.jpg',
-            price: 279,
-            isNew: true,
-            lessons: 38,
-            language: 'العربية',
-          },
-          {
-            id: 6,
-            title: 'تحليل البيانات باستخدام Python',
-            description: 'تعلم تحليل البيانات وتصورها باستخدام مكتبات Python مثل Pandas و Matplotlib.',
-            image: 'https://source.unsplash.com/random/800x450?python,data',
-            category: 'business',
-            level: 'intermediate',
-            duration: '6 أسابيع',
-            students: 1876,
-            rating: 4.7,
-            instructor: 'ليلى سعيد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/women/33.jpg',
-            price: 329,
-            lessons: 52,
-            language: 'العربية',
-          },
-          {
-            id: 7,
-            title: 'التصوير الفوتوغرافي للمبتدئين',
-            description: 'أساسيات التصوير الفوتوغرافي وتقنيات الإضاءة والتركيب.',
-            image: 'https://source.unsplash.com/random/800x450?photography,camera',
-            category: 'photography',
-            level: 'beginner',
-            duration: '3 أسابيع',
-            students: 2987,
-            rating: 4.8,
-            instructor: 'عمر راشد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/men/28.jpg',
-            price: 229,
-            discountPrice: 179,
-            lessons: 31,
-            language: 'العربية',
-          },
-          {
-            id: 8,
-            title: 'تطوير تطبيقات الويب باستخدام React',
-            description: 'تعلم بناء تطبيقات ويب تفاعلية باستخدام مكتبة React.',
-            image: 'https://source.unsplash.com/random/800x450?react,web',
-            category: 'web',
-            level: 'intermediate',
-            duration: '5 أسابيع',
-            students: 3245,
-            rating: 4.9,
-            instructor: 'نورا محمد',
-            instructorAvatar: 'https://randomuser.me/api/portraits/women/42.jpg',
-            price: 379,
-            isPopular: true,
-            lessons: 49,
-            language: 'العربية',
-          },
-        ];
+        // Fetch courses and categories in parallel
+        const [coursesResponse, categoriesResponse] = await Promise.all([
+          courseAPI.getCourses({ status: 'published' }),
+          courseAPI.getCategories()
+        ]);
         
-        setCourses(mockCourses);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
+        setCourses(coursesResponse.results || coursesResponse);
+        setCategories(categoriesResponse.results || categoriesResponse);
+        
+        // Load cart items
+        try {
+          const cartResponse = await cartAPI.getCart();
+          const cartItemsMap = {};
+          if (cartResponse.items) {
+            cartResponse.items.forEach(item => {
+              cartItemsMap[item.course.id] = true;
+            });
+          }
+          setCartItems(cartItemsMap);
+        } catch (cartError) {
+          console.log('Cart not available:', cartError);
+        }
+        
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('حدث خطأ أثناء تحميل الدورات. يرجى المحاولة مرة أخرى.');
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchCourses();
+    fetchData();
   }, []);
 
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.short_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (course.instructors && course.instructors.some(instructor => 
+                           instructor.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                         ));
     
-    const matchesCategory = !filters.category || course.category === filters.category;
-    const matchesLevel = !filters.level || course.level === filters.level.toLowerCase();
+    const matchesCategory = activeCategory === 'all' || course.category?.id === parseInt(activeCategory);
+    const matchesLevel = tabValue === 'all' || course.level === tabValue;
     
     return matchesSearch && matchesCategory && matchesLevel;
   });
@@ -630,15 +514,42 @@ const Courses = () => {
     setActiveCategory(categoryId);
   };
 
-  const toggleCartItem = (courseId) => {
-    setCartItems(prev => ({
-      ...prev,
-      [courseId]: !prev[courseId]
-    }));
+  const toggleCartItem = async (courseId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      if (cartItems[courseId]) {
+        // Remove from cart - we need to find the cart item ID first
+        const cartResponse = await cartAPI.getCart();
+        const cartItem = cartResponse.items?.find(item => item.course.id === courseId);
+        if (cartItem) {
+          await cartAPI.removeFromCart(cartItem.id);
+        }
+        setCartItems(prev => {
+          const newState = { ...prev };
+          delete newState[courseId];
+          return newState;
+        });
+        setSnackbar({ open: true, message: 'تم إزالة الدورة من السلة', severity: 'info' });
+      } else {
+        // Add to cart
+        await cartAPI.addToCart(courseId);
+        setCartItems(prev => ({ ...prev, [courseId]: true }));
+        setSnackbar({ open: true, message: 'تم إضافة الدورة إلى السلة', severity: 'success' });
+      }
+    } catch (error) {
+      console.error('Error toggling cart item:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'حدث خطأ أثناء تحديث السلة', 
+        severity: 'error' 
+      });
+    }
   };
 
   const getLevelLabel = (level) => {
-    switch(level.toLowerCase()) {
+    switch(level?.toLowerCase()) {
       case 'beginner':
         return 'مبتدئ';
       case 'intermediate':
@@ -646,8 +557,26 @@ const Courses = () => {
       case 'advanced':
         return 'متقدم';
       default:
-        return level;
+        return level || 'غير محدد';
     }
+  };
+
+  const getInstructorName = (instructors) => {
+    if (!instructors || instructors.length === 0) return 'غير محدد';
+    return instructors[0].name || 'غير محدد';
+  };
+
+  const getInstructorAvatar = (instructors) => {
+    if (!instructors || instructors.length === 0) return null;
+    return instructors[0].profile_pic;
+  };
+
+  const getCourseImage = (course) => {
+    if (course.image) {
+      return course.image.startsWith('http') ? course.image : `http://127.0.0.1:8000${course.image}`;
+    }
+    // Fallback to a default image
+    return 'https://source.unsplash.com/random/800x450?course,education';
   };
 
   if (loading) {
@@ -681,6 +610,31 @@ const Courses = () => {
             </Grid>
           </Container>
         </Box>
+        <Footer />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box>
+        <Header />
+        <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
+          <ErrorIcon sx={{ fontSize: 60, color: 'error.main', mb: 2 }} />
+          <Typography variant="h5" color="error" gutterBottom>
+            حدث خطأ
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            {error}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => window.location.reload()}
+            sx={{ mt: 2 }}
+          >
+            إعادة المحاولة
+          </Button>
+        </Container>
         <Footer />
       </Box>
     );
@@ -826,7 +780,7 @@ const Courses = () => {
         <Box sx={{ mb: 6 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
             <Typography variant="h4" component="h2" fontWeight={700}>
-              {activeCategory === 'all' ? 'جميع الدورات' : `دورات ${categories.find(c => c.id === activeCategory)?.name}`}
+              {activeCategory === 'all' ? 'جميع الدورات' : `دورات ${categories.find(c => c.id === parseInt(activeCategory))?.name || ''}`}
               {searchTerm && `: نتائج البحث عن "${searchTerm}"`}
             </Typography>
             
@@ -889,13 +843,13 @@ const Courses = () => {
                     <StyledCard elevation={0} component={Link} to={`/courses/${course.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <CourseMedia>
                         <img 
-                          src={course.image} 
+                          src={getCourseImage(course)} 
                           alt={course.title} 
                           className="course-image"
                         />
-                        {course.isNew && (
+                        {course.is_featured && (
                           <Chip 
-                            label="جديد" 
+                            label="مميز" 
                             color="primary" 
                             size="small" 
                             className="course-badge"
@@ -906,9 +860,9 @@ const Courses = () => {
                             }}
                           />
                         )}
-                        {course.isPopular && (
+                        {course.is_certified && (
                           <Chip 
-                            label="الأكثر شعبية" 
+                            label="شهادة" 
                             color="secondary" 
                             size="small" 
                             className="course-badge"
@@ -916,17 +870,13 @@ const Courses = () => {
                               bgcolor: 'secondary.main',
                               color: 'white',
                               fontWeight: 600,
-                              top: course.isNew ? 50 : 16,
+                              top: course.is_featured ? 50 : 16,
                             }}
                           />
                         )}
                         <CartButton 
                           className="cart-button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleCartItem(course.id);
-                          }}
+                          onClick={(e) => toggleCartItem(course.id, e)}
                           added={cartItems[course.id]}
                         >
                           {cartItems[course.id] ? (
@@ -963,23 +913,21 @@ const Courses = () => {
                             color="text.secondary" 
                             sx={{ 
                               mb: 2,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
+                              display: 'block',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              minHeight: '2.8em',
-                              lineHeight: '1.4',
+                              whiteSpace: 'nowrap',
                             }}
+                            title={course.short_description || course.description}
                           >
-                            {course.description}
+                            {truncateText(course.short_description || course.description, 30)}
                           </Typography>
                         </Box>
                         
                         <InstructorInfo>
                           <Avatar 
-                            src={course.instructorAvatar} 
-                            alt={course.instructor}
+                            src={getInstructorAvatar(course.instructors)} 
+                            alt={getInstructorName(course.instructors)}
                             sx={{ width: 32, height: 32, ml: 1.5 }}
                           />
                           <Box sx={{ flexGrow: 1 }}>
@@ -987,18 +935,18 @@ const Courses = () => {
                               المدرب
                             </Typography>
                             <Typography variant="subtitle2" fontWeight={500}>
-                              {course.instructor}
+                              {getInstructorName(course.instructors)}
                             </Typography>
                           </Box>
                           <Box sx={{ textAlign: 'left' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                               <Star color="warning" fontSize="small" sx={{ ml: 0.5 }} />
                               <Typography variant="body2" fontWeight={600}>
-                                {course.rating.toFixed(1)}
+                                {course.average_rating?.toFixed(1) || '0.0'}
                               </Typography>
                             </Box>
                             <Typography variant="caption" color="text.secondary">
-                              ({course.students.toLocaleString()})
+                              ({course.total_enrollments?.toLocaleString() || 0})
                             </Typography>
                           </Box>
                         </InstructorInfo>
@@ -1010,30 +958,30 @@ const Courses = () => {
                             <Box>
                               <AccessTime fontSize="small" />
                               <Typography variant="caption" sx={{ mr: 0.5 }}>
-                                {course.duration}
+                                {course.duration || 'غير محدد'}
                               </Typography>
                             </Box>
                             <Box>
                               <People fontSize="small" />
                               <Typography variant="caption" sx={{ mr: 0.5 }}>
-                                {course.students.toLocaleString()}
+                                {course.total_enrollments?.toLocaleString() || 0}
                               </Typography>
                             </Box>
                           </CourseMeta>
                           
                           <Box sx={{ textAlign: 'left' }}>
-                            {course.discountPrice ? (
+                            {course.discount_price ? (
                               <>
                                 <Typography variant="body2" color="error" sx={{ textDecoration: 'line-through', opacity: 0.7, fontSize: '0.8rem' }}>
                                   {course.price} ر.س
                                 </Typography>
                                 <Typography variant="h6" color="primary" sx={{ lineHeight: 1, mt: -0.5 }}>
-                                  {course.discountPrice} ر.س
+                                  {course.discount_price} ر.س
                                 </Typography>
                               </>
                             ) : (
                               <Typography variant="h6" color="primary">
-                                {course.price} ر.س
+                                {course.is_free ? 'مجاني' : `${course.price} ر.س`}
                               </Typography>
                             )}
                           </Box>
@@ -1083,6 +1031,22 @@ const Courses = () => {
       </Container>
       
       <Footer />
+      
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

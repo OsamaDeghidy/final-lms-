@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Card, Button, TextField, FormControl,
   InputLabel, Select, MenuItem, Paper, Alert, Divider,
@@ -23,6 +23,9 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import './Assignments.css';
+import assignmentsAPI from '../../services/assignment.service';
+import api, { courseAPI } from '../../services/api.service';
+import contentAPI from '../../services/content.service';
 
 // Styled Components
 const QuestionCard = styled(Card)(({ theme }) => ({
@@ -42,7 +45,7 @@ const CreateAssignment = () => {
   const [assignmentData, setAssignmentData] = useState({
     title: '',
     description: '',
-    course: '',
+    course: '', // store course id
     module: '',
     due_date: '',
     duration: 60,
@@ -57,14 +60,53 @@ const CreateAssignment = () => {
     is_active: true
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  // Sample courses data
-  const courses = [
-    { id: 1, title: 'الرياضيات 101', modules: ['الجبر الخطي', 'التفاضل والتكامل', 'الهندسة التحليلية'] },
-    { id: 2, title: 'العلوم البيئية', modules: ['دورة الماء', 'التنوع البيولوجي', 'التغير المناخي'] },
-    { id: 3, title: 'اللغة العربية', modules: ['التعبير الكتابي', 'النحو والصرف', 'الأدب العربي'] },
-    { id: 4, title: 'مقدمة في البرمجة', modules: ['Python Basics', 'Data Structures', 'Algorithms'] }
-  ];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const data = await courseAPI.getCourses();
+        const arr = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : data?.courses || []);
+        const normalized = arr.map(c => ({ id: c.id, title: c.title }));
+        setCourses(normalized);
+      } catch (e) {
+        setCourses([]);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Load modules when course changes
+  useEffect(() => {
+    const fetchModules = async () => {
+      const courseId = assignmentData.course;
+      if (!courseId) {
+        setModules([]);
+        return;
+      }
+      setLoadingModules(true);
+      try {
+        const data = await contentAPI.getModules(courseId);
+        const items = Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data)
+          ? data
+          : data?.modules || [];
+        const normalized = items.map((m) => ({ id: m.id, title: m.name || m.title || `وحدة ${m.id}` }));
+        setModules(normalized);
+      } catch (e) {
+        setModules([]);
+      } finally {
+        setLoadingModules(false);
+      }
+    };
+    fetchModules();
+  }, [assignmentData.course]);
+
+  // removed mock courses; real courses are loaded via API into `courses` state
 
   const questionTypes = [
     { value: 'multiple_choice', label: 'اختيار من متعدد', icon: <RadioButtonCheckedIcon /> },
@@ -110,7 +152,7 @@ const CreateAssignment = () => {
 
   const handleAddQuestion = () => {
     const newQuestion = {
-      id: Date.now(),
+      id: `tmp-${Date.now()}`,
       text: '',
       question_type: 'essay',
       points: 10,
@@ -119,10 +161,7 @@ const CreateAssignment = () => {
       order: assignmentData.questions.length + 1,
       answers: []
     };
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: [...prev.questions, newQuestion]
-    }));
+    setAssignmentData(prev => ({ ...prev, questions: [...prev.questions, newQuestion] }));
   };
 
   const handleQuestionChange = (questionId, field, value) => {
@@ -192,13 +231,54 @@ const CreateAssignment = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Creating assignment:', assignmentData);
-      // Navigate to assignments list
+      // Map to API payload (supports file upload & extended fields)
+      const payload = {
+        title: assignmentData.title,
+        description: assignmentData.description,
+        course: assignmentData.course || null,
+        module: assignmentData.module || undefined,
+        due_date: assignmentData.due_date,
+        points: assignmentData.points,
+        allow_late_submissions: assignmentData.allow_late_submissions,
+        late_submission_penalty: assignmentData.late_submission_penalty,
+        has_questions: assignmentData.has_questions,
+        has_file_upload: assignmentData.has_file_upload,
+        assignment_file: assignmentData.assignment_file,
+        is_active: assignmentData.is_active,
+      };
+      const created = await assignmentsAPI.createAssignment(payload);
+      const assignmentId = created?.id;
+      // Persist questions and answers if any
+      if (assignmentId && assignmentData.has_questions && assignmentData.questions.length) {
+        for (const q of assignmentData.questions) {
+          const qRes = await assignmentsAPI.createQuestion({
+            assignment: assignmentId,
+            text: q.text,
+            question_type: q.question_type,
+            points: q.points,
+            explanation: q.explanation,
+            order: q.order,
+            is_required: q.is_required,
+          });
+          const questionId = qRes?.id;
+          if (questionId && q.answers?.length) {
+            for (const a of q.answers) {
+              await assignmentsAPI.createAnswer({
+                question: questionId,
+                text: a.text,
+                is_correct: !!a.is_correct,
+                explanation: a.explanation || '',
+                order: a.order || 0,
+              });
+            }
+          }
+        }
+      }
+      setSnackbar({ open: true, message: 'تم إنشاء الواجب بنجاح', severity: 'success' });
       navigate('/teacher/assignments');
     } catch (error) {
-      console.error('Error creating assignment:', error);
+      const msg = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر إنشاء الواجب. تحقق من الحقول.';
+      setSnackbar({ open: true, message: msg, severity: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -292,7 +372,7 @@ const CreateAssignment = () => {
                           label="المقرر"
                         >
                           {courses.map((course) => (
-                            <MenuItem key={course.id} value={course.title}>
+                                <MenuItem key={course.id} value={course.id}>
                               {course.title}
                             </MenuItem>
                           ))}
@@ -307,9 +387,10 @@ const CreateAssignment = () => {
                             onChange={(e) => handleAssignmentChange('module', e.target.value)}
                             label="الوحدة"
                           >
-                            {courses.find(c => c.title === assignmentData.course)?.modules.map((module) => (
-                              <MenuItem key={module} value={module}>
-                                {module}
+                            <MenuItem value="">—</MenuItem>
+                            {modules.map((mod) => (
+                              <MenuItem key={mod.id} value={mod.id} disabled={loadingModules}>
+                                {mod.title}
                               </MenuItem>
                             ))}
                           </Select>
@@ -633,8 +714,7 @@ const CreateAssignment = () => {
                   <Box sx={{ mt: 2 }}>
                     <Button
                       variant="contained"
-                      onClick={handleNext}
-                      disabled={index === steps.length - 1}
+                      onClick={() => (index === steps.length - 1 ? handleSubmit() : handleNext())}
                       sx={{ mr: 1 }}
                     >
                       {index === steps.length - 1 ? 'إنشاء الواجب' : 'التالي'}

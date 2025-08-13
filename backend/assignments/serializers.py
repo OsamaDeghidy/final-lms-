@@ -53,7 +53,11 @@ class AssignmentDetailSerializer(serializers.ModelSerializer):
 class AssignmentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Assignment
-        fields = ['title', 'description', 'course', 'due_date', 'points', 'allow_late_submissions']
+        fields = [
+            'title', 'description', 'course', 'module', 'due_date', 'points',
+            'allow_late_submissions', 'late_submission_penalty',
+            'has_questions', 'has_file_upload', 'assignment_file', 'is_active'
+        ]
 
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):

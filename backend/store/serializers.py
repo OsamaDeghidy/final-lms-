@@ -13,12 +13,10 @@ class CartItemSerializer(serializers.ModelSerializer):
         source='course',
         queryset=Course.objects.all()
     )
+    course = serializers.SerializerMethodField()
     course_title = serializers.CharField(source='course.title', read_only=True)
     course_image = serializers.ImageField(source='course.image', read_only=True)
-    course_instructor = serializers.CharField(
-        source='course.teacher.profile.name',
-        read_only=True
-    )
+    course_instructor = serializers.SerializerMethodField()
     course_price = serializers.DecimalField(
         source='course.price',
         max_digits=10,
@@ -31,25 +29,42 @@ class CartItemSerializer(serializers.ModelSerializer):
         decimal_places=2,
         read_only=True
     )
-    price = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
+    price = serializers.SerializerMethodField()
     
     class Meta:
         model = CartItem
         fields = [
-            'id', 'course_id', 'course_title', 'course_image', 'course_instructor',
-            'course_price', 'course_discount_price', 'price', 'created_at'
+            'id', 'course_id', 'course', 'course_title', 'course_image', 'course_instructor',
+            'course_price', 'course_discount_price', 'price', 'added_at'
         ]
-        read_only_fields = ['id', 'created_at', 'price']
+        read_only_fields = ['id', 'added_at', 'price']
+    
+    def get_price(self, obj):
+        """Get the effective price (discount price if available, otherwise regular price)"""
+        return obj.course.discount_price if obj.course.discount_price else obj.course.price
+    
+    def get_course(self, obj):
+        """Get the full course object"""
+        from courses.serializers import CourseBasicSerializer
+        return CourseBasicSerializer(obj.course, context=self.context).data
+    
+    def get_course_instructor(self, obj):
+        """Get the instructor name safely"""
+        try:
+            if hasattr(obj.course, 'instructors') and obj.course.instructors.exists():
+                return obj.course.instructors.first().name
+            elif hasattr(obj.course, 'teacher') and obj.course.teacher:
+                return obj.course.teacher.profile.name if hasattr(obj.course.teacher, 'profile') else obj.course.teacher.username
+            else:
+                return "Unknown Instructor"
+        except:
+            return "Unknown Instructor"
     
     def validate_course(self, course):
         # Check if the course is already in the user's cart
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
-            cart = request.user.cart
+            cart, created = Cart.objects.get_or_create(user=request.user)
             if self.instance:  # For updates
                 if cart.items.filter(course=course).exclude(id=self.instance.id).exists():
                     raise serializers.ValidationError("This course is already in your cart.")
@@ -59,26 +74,19 @@ class CartItemSerializer(serializers.ModelSerializer):
         
         # Check if the user is already enrolled in the course
         if request and hasattr(request, 'user') and request.user.is_authenticated:
-            if request.user.enrollments.filter(course=course).exists():
+            if course.enrollments.filter(student=request.user).exists():
                 raise serializers.ValidationError("You are already enrolled in this course.")
         
         return course
     
     def create(self, validated_data):
-        cart = self.context['request'].user.cart
+        cart, created = Cart.objects.get_or_create(user=self.context['request'].user)
         course = validated_data['course']
-        
-        # Set the price to the current course price (or discount price if available)
-        price = course.discount_price if course.discount_price else course.price
         
         cart_item = CartItem.objects.create(
             cart=cart,
-            course=course,
-            price=price
+            course=course
         )
-        
-        # Update cart total
-        cart.update_total()
         
         return cart_item
 
@@ -87,35 +95,42 @@ class CartSerializer(serializers.ModelSerializer):
     """Serializer for shopping cart"""
     items = CartItemSerializer(many=True, read_only=True)
     items_count = serializers.SerializerMethodField()
-    subtotal = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
-    tax = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
-    total = serializers.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        read_only=True
-    )
+    subtotal = serializers.SerializerMethodField()
+    tax = serializers.SerializerMethodField()
+    total = serializers.SerializerMethodField()
     
     class Meta:
         model = Cart
         fields = [
             'id', 'items', 'items_count', 'subtotal', 'tax', 'total',
-            'coupon', 'discount_amount', 'created_at', 'updated_at'
+            'coupon', 'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'user', 'subtotal', 'tax', 'total', 'discount_amount',
+            'id', 'user', 'subtotal', 'tax', 'total',
             'created_at', 'updated_at'
         ]
     
     def get_items_count(self, obj):
         return obj.items.count()
+    
+    def get_subtotal(self, obj):
+        """Calculate subtotal from cart items"""
+        total = Decimal('0.00')
+        for item in obj.items.all():
+            price = item.course.discount_price if item.course.discount_price else item.course.price
+            total += price * item.quantity
+        return total
+    
+    def get_tax(self, obj):
+        """Calculate tax (15%)"""
+        subtotal = self.get_subtotal(obj)
+        return subtotal * Decimal('0.15')
+    
+    def get_total(self, obj):
+        """Calculate total including tax"""
+        subtotal = self.get_subtotal(obj)
+        tax = self.get_tax(obj)
+        return subtotal + tax
 
 
 class WishlistCourseSerializer(serializers.ModelSerializer):
@@ -172,7 +187,7 @@ class WishlistAddCourseSerializer(serializers.Serializer):
                 raise serializers.ValidationError("This course is already in your wishlist.")
             
             # Check if already enrolled
-            if request.user.enrollments.filter(course=course).exists():
+            if course.enrollments.filter(student=request.user).exists():
                 raise serializers.ValidationError("You are already enrolled in this course.")
         
         return course

@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.conf import settings
 from django.utils.text import slugify
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -14,10 +15,10 @@ from urllib.parse import urlparse
 User = get_user_model()
 
 def validate_file_size(value):
-    """Validate that file size is not larger than 100MB"""
-    filesize = value.size
-    if filesize > 100 * 1024 * 1024:  # 100MB limit
-        raise ValidationError(_('The maximum file size that can be uploaded is 100MB'))
+    """Validate that file size is not larger than configured MAX_MODULE_FILE_MB"""
+    max_mb = getattr(settings, 'MAX_MODULE_FILE_MB', 100)
+    if value.size > max_mb * 1024 * 1024:
+        raise ValidationError(_(f'The maximum file size that can be uploaded is {max_mb}MB'))
 
 
 def module_video_upload_path(instance, filename):
@@ -142,8 +143,15 @@ class Module(models.Model):
             })
     
     def save(self, *args, **kwargs):
-        """Override save to ensure clean is called"""
-        self.full_clean()
+        """Override save to ensure clean is called.
+        Skips heavy file validators for existing files when not updating file fields.
+        """
+        skip_file_validation = kwargs.pop('skip_file_validation', False) or getattr(self, '_skip_file_validation', False)
+        if skip_file_validation:
+            # Only run model-level clean; avoid field validators (e.g., file size) for unchanged files
+            self.clean()
+        else:
+            self.full_clean()
         super().save(*args, **kwargs)
         
         # Update course's updated_at timestamp
@@ -294,13 +302,9 @@ class Lesson(models.Model):
     
     def clean(self):
         """Custom validation for the model"""
-        if self.lesson_type == self.LessonType.VIDEO and not self.video_url:
-            raise ValidationError({
-                'video_url': _('Video URL is required for video lessons')
-            })
-            
-        if self.status == 'published' and not self.published_at:
-            self.published_at = timezone.now()
+        # Allow video lessons without a direct video_url to support file-based resources
+        # Validation of having either a URL or a resource file can be handled at UI/workflow level
+        # Remove invalid reference to non-existent 'status' field
     
     def save(self, *args, **kwargs):
         """Override save to ensure clean is called and slug is generated"""

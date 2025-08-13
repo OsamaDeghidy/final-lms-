@@ -18,7 +18,9 @@ import {
   Grow,
   useTheme,
   useMediaQuery,
-  Tooltip
+  Tooltip,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { 
   School as SchoolIcon, 
@@ -29,10 +31,20 @@ import {
   TrendingUp as TrendingUpIcon,
   Star as StarIcon,
   Edit as EditIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  Delete as DeleteIcon,
+  LibraryBooks as LibraryBooksIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/system';
+import { courseAPI } from '../../services/api.service';
+
+// Helper: truncate text to a fixed number of characters and append ellipsis
+const truncateText = (text, maxChars = 30) => {
+  if (!text) return '';
+  const clean = String(text).trim();
+  return clean.length > maxChars ? `${clean.slice(0, maxChars)}…` : clean;
+};
 
 // Animation keyframes
 const pulse = keyframes`
@@ -98,69 +110,36 @@ const StyledCardMedia = styled(CardMedia)({
   }
 });
 
-// Mock data - replace with actual API call
-const mockCourses = [
-  {
-    id: 1,
-    title: 'تطوير تطبيقات الويب المتقدمة',
-    description: 'تعلم أحدث تقنيات تطوير تطبيقات الويب مع React و Node.js',
-    image: 'https://via.placeholder.com/300x200/3498db/ffffff?text=Web+Dev',
-    students: 45,
-    duration: '8 أسابيع',
-    category: 'برمجة',
-    progress: 75,
-    rating: 4.8,
-    lessons: 24,
-    lastUpdated: 'منذ يومين'
-  },
-  {
-    id: 2,
-    title: 'تعلم لغة JavaScript',
-    description: 'دورة شاملة لتعلم لغة JavaScript من الصفر إلى الاحتراف',
-    image: 'https://via.placeholder.com/300x200/f39c12/ffffff?text=JavaScript',
-    students: 32,
-    duration: '6 أسابيع',
-    category: 'برمجة',
-    progress: 90,
-    rating: 4.9,
-    lessons: 18,
-    lastUpdated: 'منذ أسبوع'
-  },
-  {
-    id: 3,
-    title: 'أساسيات قواعد البيانات',
-    description: 'تعلم أساسيات قواعد البيانات SQL و MySQL',
-    image: 'https://via.placeholder.com/300x200/e74c3c/ffffff?text=Database',
-    students: 28,
-    duration: '4 أسابيع',
-    category: 'قواعد بيانات',
-    progress: 60,
-    rating: 4.7,
-    lessons: 12,
-    lastUpdated: 'منذ 3 أيام'
-  }
-];
-
-
-
 const MyCourses = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Simulate API call
     const fetchCourses = async () => {
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/teacher/courses');
-        // const data = await response.json();
-        setCourses(mockCourses);
+        setLoading(true);
+        const coursesData = await courseAPI.getCourses();
+        console.log('Courses API response:', coursesData);
+        // Ensure coursesData is an array
+        const coursesArray = Array.isArray(coursesData) ? coursesData : 
+                           coursesData.results ? coursesData.results : 
+                           coursesData.data ? coursesData.data : [];
+        console.log('Processed courses array:', coursesArray);
+        setCourses(coursesArray);
       } catch (error) {
         console.error('Error fetching courses:', error);
+        setSnackbar({
+          open: true,
+          message: 'خطأ في تحميل الكورسات',
+          severity: 'error'
+        });
+        // Set empty array as fallback
+        setCourses([]);
       } finally {
         setLoading(false);
       }
@@ -175,21 +154,25 @@ const MyCourses = () => {
   };
   
   // Filter courses based on search query
-  const filteredCourses = courses.filter(course => 
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCourses = Array.isArray(courses) ? courses.filter(course => 
+    course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.category_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) : [];
 
+  // Handle course click - navigate to course detail page
   const handleCourseClick = (courseId) => {
-    navigate(`/teacher/courses/${courseId}`);
+    navigate(`/courses/${courseId}`);
   };
 
+  // Handle create course - navigate to create course page
   const handleCreateCourse = () => {
     navigate('/teacher/courses/new');
   };
 
-
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   // Header Component
   const Header = () => (
@@ -232,7 +215,7 @@ const MyCourses = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <TrendingUpIcon sx={{ color: '#27ae60', fontSize: 20 }} />
           <Typography variant="body2" color="text.secondary">
-            {courses.length} كورس نشط
+            {Array.isArray(courses) ? courses.length : 0} كورس نشط
           </Typography>
         </Box>
       </Box>
@@ -293,8 +276,6 @@ const MyCourses = () => {
     </Box>
   );
 
-
-
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -304,63 +285,61 @@ const MyCourses = () => {
   }
 
   // Course Card Component
-  const CourseCard = ({ course }) => (
-    <Card
-      sx={{
-        display: 'flex',
-        alignItems: 'stretch',
-        borderRadius: 5,
-        boxShadow: '0 8px 32px 0 rgba(124,77,255,0.10)',
-        mb: 3,
-        overflow: 'hidden',
-        background: 'rgba(255,255,255,0.95)',
-        transition: 'transform 0.25s, box-shadow 0.25s',
-        position: 'relative',
-        '&:hover': {
-          transform: 'translateY(-6px) scale(1.02)',
-          boxShadow: '0 16px 48px 0 rgba(124,77,255,0.18)',
-          border: '1.5px solid #7c4dff',
+  const CourseCard = ({ course }) => {
+    const handleDeleteCourse = async (e) => {
+      e.stopPropagation();
+      if (window.confirm('هل أنت متأكد من حذف هذا الكورس؟')) {
+        try {
+          // TODO: Implement actual delete API call
+          // await courseAPI.deleteCourse(course.id);
+          setSnackbar({
+            open: true,
+            message: 'تم حذف الكورس بنجاح',
+            severity: 'success'
+          });
+          // Remove course from local state
+          setCourses(prevCourses => prevCourses.filter(c => c.id !== course.id));
+        } catch (error) {
+          console.error('Error deleting course:', error);
+          setSnackbar({
+            open: true,
+            message: 'خطأ في حذف الكورس',
+            severity: 'error'
+          });
         }
-      }}
-    >
-      {/* أيقونات actions أعلى البطاقة */}
-      <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 2, display: 'flex', gap: 1 }}>
-        <Tooltip title="تعديل الكورس">
-          <IconButton
-            size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 8px rgba(124,77,255,0.10)', mr: 1 }}
-            onClick={e => {
-              e.stopPropagation();
-              window.location.href = `/teacher/courses/${course.id}/edit`;
-            }}
-          >
-            <EditIcon sx={{ color: '#7c4dff' }} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="تفاصيل الكورس">
-          <IconButton
-            size="small"
-            sx={{ bgcolor: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 8px rgba(124,77,255,0.10)' }}
-            onClick={e => {
-              e.stopPropagation();
-              window.location.href = `/teacher/courses/${course.id}`;
-            }}
-          >
-            <VisibilityIcon sx={{ color: '#43a047' }} />
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <Box sx={{ position: 'relative' }}>
-        <StyledCardMedia
-          component="img"
-          image={course.image}
-          alt={course.title}
-        />
-        
-        {/* Category Chip */}
-        <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 2 }}>
-                <Chip 
-                  label={course.category} 
+      }
+    };
+
+    return (
+      <Card
+        sx={{
+          display: 'flex',
+          alignItems: 'stretch',
+          borderRadius: 5,
+          boxShadow: '0 8px 32px 0 rgba(124,77,255,0.10)',
+          mb: 3,
+          overflow: 'hidden',
+          background: 'rgba(255,255,255,0.95)',
+          transition: 'transform 0.25s, box-shadow 0.25s',
+          position: 'relative',
+          '&:hover': {
+            transform: 'translateY(-6px) scale(1.02)',
+            boxShadow: '0 16px 48px 0 rgba(124,77,255,0.18)',
+            border: '1.5px solid #7c4dff',
+          }
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          <StyledCardMedia
+            component="img"
+            image={course.image || 'https://via.placeholder.com/300x200/3498db/ffffff?text=Course'}
+            alt={course.title}
+          />
+          
+          {/* Category Chip */}
+          <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 2 }}>
+                  <Chip 
+            label={course.category_name || 'غير محدد'} 
                   size="small" 
             sx={{ 
               fontWeight: 'bold',
@@ -369,92 +348,180 @@ const MyCourses = () => {
               fontSize: '0.7rem'
             }}
           />
+                  </Box>
                 </Box>
-              </Box>
-      
-      <CardContent sx={{ flexGrow: 1, p: 2 }}>
-        <Typography 
-          gutterBottom 
-          variant="h6" 
-          component="h2" 
-          sx={{
-            fontWeight: 'bold',
-            minHeight: '2.5em',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: '1.3em',
-            textAlign: 'right',
-            fontSize: '1rem',
-            mb: 1
-          }}
-        >
-                {course.title}
-              </Typography>
         
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
-          sx={{
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
+        <CardContent sx={{ flexGrow: 1, p: 2, display: 'flex', flexDirection: 'column' }}>
+          <Typography 
+            gutterBottom 
+            variant="h6" 
+            component="h2" 
+            sx={{
+              fontWeight: 'bold',
+              minHeight: '2.5em',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              lineHeight: '1.3em',
+              textAlign: 'right',
+              fontSize: '1rem',
+              mb: 1
+            }}
+          >
+                  {course.title}
+                </Typography>
+          
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            sx={{
+              display: 'block',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              mb: 2,
+              textAlign: 'right',
+              fontSize: '0.85rem'
+            }}
+            title={course.short_description || course.description}
+          >
+            {truncateText(course.short_description || course.description, 30)}
+          </Typography>
+          
+          {/* Course Stats */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
             mb: 2,
-            minHeight: '2.5em',
-            textAlign: 'right',
-            fontSize: '0.85rem'
-          }}
-        >
-                {course.description}
+            flexWrap: 'wrap',
+            gap: 1
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PeopleIcon color="action" fontSize="small" />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                {course.total_enrollments || 0} طالب
               </Typography>
-        
-        {/* Course Stats */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          mb: 2,
-          flexWrap: 'wrap',
-          gap: 1
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PeopleIcon color="action" fontSize="small" />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              {course.students} طالب
-            </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccessTimeIcon color="action" fontSize="small" />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                {course.level || 'غير محدد'}
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <StarIcon sx={{ color: '#f39c12', fontSize: '0.9rem' }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                {course.average_rating || 0}
+                    </Typography>
+            </Box>
           </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccessTimeIcon color="action" fontSize="small" />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              {course.duration}
-            </Typography>
-          </Box>
+          {/* Price */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" color="#3498db" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
+              {course.is_free ? 'مجاني' : `$${course.price}`}
+                    </Typography>
+                  </Box>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <StarIcon sx={{ color: '#f39c12', fontSize: '0.9rem' }} />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              {course.rating}
-                  </Typography>
+          {/* Status */}
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', mb: 2, display: 'block' }}>
+            الحالة: {course.status === 'published' ? 'منشور' : course.status === 'draft' ? 'مسودة' : course.status}
+          </Typography>
+
+          {/* أيقونات actions أسفل البطاقة */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            justifyContent: 'center',
+            mt: 'auto',
+            pt: 2,
+            borderTop: '1px solid #f0f0f0'
+          }}>
+            <Tooltip title="تعديل الكورس">
+              <IconButton
+                size="small"
+                sx={{ 
+                  bgcolor: 'rgba(124,77,255,0.1)', 
+                  boxShadow: '0 2px 8px rgba(124,77,255,0.15)',
+                  '&:hover': {
+                    bgcolor: 'rgba(124,77,255,0.2)',
+                    transform: 'scale(1.1)'
+                  }
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  // Navigate to edit course page
+                  navigate(`/teacher/courses/${course.id}/edit`);
+                }}
+              >
+                <EditIcon sx={{ color: '#7c4dff', fontSize: '1.1rem' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="تفاصيل الكورس">
+              <IconButton
+                size="small"
+                sx={{ 
+                  bgcolor: 'rgba(67,160,71,0.1)', 
+                  boxShadow: '0 2px 8px rgba(67,160,71,0.15)',
+                  '&:hover': {
+                    bgcolor: 'rgba(67,160,71,0.2)',
+                    transform: 'scale(1.1)'
+                  }
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  // Navigate to course detail page (public route)
+                  navigate(`/courses/${course.id}`);
+                }}
+              >
+                <VisibilityIcon sx={{ color: '#43a047', fontSize: '1.1rem' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="وحدات الكورس">
+              <IconButton
+                size="small"
+                sx={{ 
+                  bgcolor: 'rgba(231,76,60,0.1)', 
+                  boxShadow: '0 2px 8px rgba(231,76,60,0.15)',
+                  '&:hover': {
+                    bgcolor: 'rgba(231,76,60,0.2)',
+                    transform: 'scale(1.1)'
+                  }
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  // Navigate to course units list/details page
+                  navigate(`/teacher/courses/${course.id}/units`);
+                }}
+              >
+                <AddIcon sx={{ color: '#e74c3c', fontSize: '1.1rem' }} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="حذف الكورس">
+              <IconButton
+                size="small"
+                sx={{ 
+                  bgcolor: 'rgba(192,57,43,0.1)', 
+                  boxShadow: '0 2px 8px rgba(192,57,43,0.15)',
+                  '&:hover': {
+                    bgcolor: 'rgba(192,57,43,0.2)',
+                    transform: 'scale(1.1)'
+                  }
+                }}
+                onClick={handleDeleteCourse}
+              >
+                <DeleteIcon sx={{ color: '#c0392b', fontSize: '1.1rem' }} />
+              </IconButton>
+            </Tooltip>
           </Box>
-        </Box>
-        
-        {/* Lessons Count */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="caption" color="#3498db" fontWeight="bold" sx={{ fontSize: '0.75rem' }}>
-            {course.lessons} درس
-                  </Typography>
-                </Box>
-        
-        {/* Last Updated */}
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-          آخر تحديث: {course.lastUpdated}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Box sx={{ 
@@ -554,6 +621,17 @@ const MyCourses = () => {
           )}
         </Grid>
       </Container>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

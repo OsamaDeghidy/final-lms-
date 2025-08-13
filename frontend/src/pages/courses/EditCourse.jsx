@@ -18,7 +18,9 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  CircularProgress
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { 
   Save as SaveIcon, 
@@ -33,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
+import { courseAPI } from '../../services/api.service';
 
 // Reuse the same styled components from CreateCourse
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -142,6 +145,10 @@ const EditCourse = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [categories, setCategories] = useState([]);
   
   // Form state - initialize with empty values
   const [courseData, setCourseData] = useState({
@@ -168,42 +175,80 @@ const EditCourse = () => {
   
   const [newTag, setNewTag] = useState('');
   
-  // Fetch course data when component mounts
+  // Fetch course data and categories when component mounts
   useEffect(() => {
-    const fetchCourseData = async () => {
+    const fetchData = async () => {
       try {
-        // TODO: Replace with your actual API call
-        // const response = await fetch(`/api/courses/${id}`);
-        // const data = await response.json();
-        // setCourseData(data);
+        setIsLoading(true);
+        setError(null);
         
-        // Simulate API call with timeout
-        setTimeout(() => {
-          setCourseData(prev => ({
-            ...prev,
-            title: 'دورة تطوير الويب المتكاملة',
-            subtitle: 'تعلم تطوير الويب من الصفر إلى الاحتراف',
-            description: 'هذه دورة شاملة لتعلم تطوير الويب تشمل HTML, CSS, JavaScript وغيرها من التقنيات الحديثة',
-            level: 'beginner',
-            language: 'ar',
-            price: 199,
-            isFree: false,
-            tags: ['ويب', 'برمجة', 'تطوير'],
-            status: 'published',
-            promotionalVideo: 'https://www.youtube.com/watch?v=example'
-          }));
-          setIsLoading(false);
-        }, 500);
+        // Fetch categories
+        const categoriesResponse = await courseAPI.getCategories();
+        // Ensure categories is an array
+        const categoriesArray = Array.isArray(categoriesResponse) ? categoriesResponse : 
+                               categoriesResponse.results ? categoriesResponse.results : 
+                               categoriesResponse.data ? categoriesResponse.data : [];
+        setCategories(categoriesArray);
+        
+        // Fetch course data
+        if (id) {
+          const courseResponse = await courseAPI.getCourse(id);
+          const course = courseResponse;
+          
+          // Transform the API response to match our form structure
+          setCourseData({
+            id: course.id,
+            title: course.title || '',
+            subtitle: course.subtitle || '',
+            description: course.description || '',
+            shortDescription: course.short_description || '',
+            level: course.level || 'beginner',
+            language: course.language || 'ar',
+            category: course.category?.id || '',
+            tags: course.tags?.map(tag => tag.name) || [],
+            isFree: course.is_free || false,
+            price: course.price || 0,
+            discountPrice: course.discount_price || null,
+            status: course.status || 'draft',
+            isFeatured: course.is_featured || false,
+            isCertified: course.is_certified || false,
+            image: null, // We'll handle image separately
+            promotionalVideo: course.promotional_video || '',
+            syllabusPdf: null, // We'll handle files separately
+            materialsPdf: null,
+            // Store original image/file URLs for display
+            imageUrl: course.image,
+            syllabusPdfUrl: course.syllabus_pdf,
+            materialsPdfUrl: course.materials_pdf,
+          });
+        }
       } catch (error) {
-        console.error('Error fetching course data:', error);
+        console.error('Error fetching data:', error);
+        let errorMessage = 'حدث خطأ أثناء تحميل بيانات الدورة. يرجى المحاولة مرة أخرى.';
+        
+        if (error.response?.status === 404) {
+          errorMessage = 'الدورة غير موجودة أو تم حذفها.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'ليس لديك صلاحية للوصول إلى هذه الدورة.';
+        } else if (error.response?.status === 500) {
+          errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً.';
+        } else if (error.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
+      } finally {
         setIsLoading(false);
       }
     };
 
     if (id) {
-      fetchCourseData();
+      fetchData();
     } else {
       setIsLoading(false);
+      setError('معرف الدورة غير صحيح');
     }
   }, [id]);
   
@@ -255,20 +300,98 @@ const EditCourse = () => {
     
     if (activeStep === steps.length - 1) {
       try {
-        // In a real app, you would submit the form data to update the course
-        // const response = await fetch(`/api/courses/${id}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(courseData)
-        // });
+        setIsSubmitting(true);
+        setError(null);
         
-        // Show success message
-        alert('تم تحديث الدورة بنجاح!');
-        // Optionally navigate back to courses list or course details
-        // navigate('/teacher/my-courses');
+        // Validate required fields
+        if (!courseData.title.trim()) {
+          setError('عنوان الدورة مطلوب');
+          return;
+        }
+        
+        if (!courseData.description.trim()) {
+          setError('وصف الدورة مطلوب');
+          return;
+        }
+        
+        // Validate price if not free
+        if (!courseData.isFree && (!courseData.price || courseData.price <= 0)) {
+          setError('يجب إدخال سعر صحيح للدورة');
+          return;
+        }
+        
+        // Validate discount price
+        if (courseData.discountPrice && courseData.discountPrice >= courseData.price) {
+          setError('السعر المخفض يجب أن يكون أقل من السعر الأصلي');
+          return;
+        }
+        
+        // Prepare data for API
+        const apiData = {
+          title: courseData.title.trim(),
+          subtitle: courseData.subtitle.trim(),
+          description: courseData.description.trim(),
+          short_description: courseData.shortDescription.trim(),
+          level: courseData.level,
+          language: courseData.language,
+          category: courseData.category || null,
+          tags: courseData.tags,
+          is_free: courseData.isFree,
+          price: courseData.isFree ? 0 : courseData.price,
+          discount_price: courseData.isFree ? null : courseData.discountPrice,
+          status: courseData.status,
+          is_featured: courseData.isFeatured,
+          is_certified: courseData.isCertified,
+          promotional_video: courseData.promotionalVideo.trim(),
+        };
+        
+        // Add files if they exist
+        if (courseData.image instanceof File) {
+          apiData.image = courseData.image;
+        }
+        if (courseData.syllabusPdf instanceof File) {
+          apiData.syllabus_pdf = courseData.syllabusPdf;
+        }
+        if (courseData.materialsPdf instanceof File) {
+          apiData.materials_pdf = courseData.materialsPdf;
+        }
+        
+        // Update course
+        const updatedCourse = await courseAPI.updateCourse(id, apiData);
+        
+        console.log('Course updated successfully:', updatedCourse);
+        
+        // Set success message and navigate
+        setSuccess('تم تحديث الدورة بنجاح!');
+        console.log('Success message set');
+        
+        // Navigate back after a short delay
+        setTimeout(() => {
+          console.log('Navigating to /teacher/my-courses');
+          navigate('/teacher/my-courses');
+        }, 2000);
+        
       } catch (error) {
         console.error('Error updating course:', error);
-        alert('حدث خطأ أثناء تحديث الدورة. يرجى المحاولة مرة أخرى.');
+        let errorMessage = 'حدث خطأ أثناء تحديث الدورة. يرجى المحاولة مرة أخرى.';
+        
+        if (error.response?.status === 404) {
+          errorMessage = 'الدورة غير موجودة أو تم حذفها.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'ليس لديك صلاحية لتعديل هذه الدورة.';
+        } else if (error.response?.status === 400) {
+          errorMessage = error.response.data?.detail || 'بيانات غير صحيحة. يرجى التحقق من المعلومات المدخلة.';
+        } else if (error.response?.status === 500) {
+          errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً.';
+        } else if (error.response?.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        setError(errorMessage);
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
       handleNext();
@@ -295,6 +418,18 @@ const EditCourse = () => {
       }));
     }
   };
+
+  const handleCloseSnackbar = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Debug effect to log success state changes
+  useEffect(() => {
+    if (success) {
+      console.log('Success state updated:', success);
+    }
+  }, [success]);
   
   // Render step content (same as CreateCourse)
   const renderStepContent = (step) => {
@@ -377,6 +512,26 @@ const EditCourse = () => {
                   </Select>
                 </FormControl>
               </Box>
+              
+              <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+                <InputLabel>التصنيف</InputLabel>
+                <Select
+                  name="category"
+                  value={courseData.category}
+                  onChange={handleChange}
+                  label="التصنيف"
+                  sx={{ textAlign: 'right' }}
+                >
+                  <MenuItem value="">
+                    <em>اختر تصنيف</em>
+                  </MenuItem>
+                  {Array.isArray(categories) && categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>الكلمات المفتاحية</Typography>
@@ -465,6 +620,23 @@ const EditCourse = () => {
                         انقر لتغيير الصورة أو اسحب صورة جديدة
                       </Typography>
                     </Box>
+                  ) : courseData.imageUrl ? (
+                    <Box textAlign="center" width="100%">
+                      <img 
+                        src={courseData.imageUrl} 
+                        alt="Course preview" 
+                        style={{ 
+                          maxWidth: '100%', 
+                          maxHeight: '300px',
+                          borderRadius: '8px',
+                          marginBottom: '16px',
+                          border: '1px solid #e0e0e0'
+                        }} 
+                      />
+                      <Typography variant="body2" color="textSecondary">
+                        انقر لتغيير الصورة أو اسحب صورة جديدة
+                      </Typography>
+                    </Box>
                   ) : (
                     <Box textAlign="center" p={3}>
                       <ImageIcon color="action" fontSize="large" sx={{ fontSize: 48, mb: 1 }} />
@@ -511,7 +683,8 @@ const EditCourse = () => {
                       onClick={() => document.getElementById('syllabus-upload').click()}
                       sx={{ width: '100%', justifyContent: 'flex-start' }}
                     >
-                      {courseData.syllabusPdf ? courseData.syllabusPdf.name : 'رفع منهج الدورة (PDF)'}
+                      {courseData.syllabusPdf ? courseData.syllabusPdf.name : 
+                       courseData.syllabusPdfUrl ? 'منهج الدورة (تم رفعه مسبقاً)' : 'رفع منهج الدورة (PDF)'}
                     </Button>
                   </Box>
                   
@@ -530,7 +703,8 @@ const EditCourse = () => {
                       onClick={() => document.getElementById('materials-upload').click()}
                       sx={{ width: '100%', justifyContent: 'flex-start' }}
                     >
-                      {courseData.materialsPdf ? courseData.materialsPdf.name : 'رفع المواد التعليمية (PDF)'}
+                      {courseData.materialsPdf ? courseData.materialsPdf.name : 
+                       courseData.materialsPdfUrl ? 'المواد التعليمية (تم رفعها مسبقاً)' : 'رفع المواد التعليمية (PDF)'}
                     </Button>
                   </Box>
                 </Box>
@@ -697,6 +871,12 @@ const EditCourse = () => {
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
           <CircularProgress />
         </Box>
+      ) : error ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <Alert severity="error" sx={{ maxWidth: 600 }}>
+            {error}
+          </Alert>
+        </Box>
       ) : (
         <form onSubmit={handleSubmit}>
           <StyledPaper>
@@ -801,15 +981,39 @@ const EditCourse = () => {
                 variant="contained"
                 color="primary"
                 type="submit"
-                endIcon={<SaveIcon />}
+                endIcon={isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />}
+                disabled={isSubmitting}
                 sx={{ minWidth: '150px' }}
               >
-                {activeStep === steps.length - 1 ? 'حفظ التغييرات' : 'التالي'}
+                {activeStep === steps.length - 1 ? (isSubmitting ? 'جاري الحفظ...' : 'حفظ التغييرات') : 'التالي'}
               </Button>
             </Box>
           </StyledPaper>
         </form>
       )}
+      
+      {/* Error and Success Snackbars */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+      
+      <Snackbar
+        open={!!success}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: '100%' }}>
+          {success}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

@@ -1,13 +1,17 @@
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
 from courses.models import Course, Enrollment
 from users.models import Profile
-from content.models import Module, ModuleProgress, UserProgress
-from content.serializers import ModuleDetailSerializer, ModuleCreateSerializer, ProgressUpdateSerializer
+from content.models import Module, ModuleProgress, UserProgress, Lesson, LessonResource
+from content.serializers import (
+    ModuleDetailSerializer, ModuleCreateSerializer, ProgressUpdateSerializer,
+    LessonSerializer, LessonCreateUpdateSerializer, LessonResourceSerializer
+)
 
 
 class ModuleViewSet(ModelViewSet):
@@ -38,8 +42,8 @@ class ModuleViewSet(ModelViewSet):
         course = module.course
         user = request.user
         
-        # Check permissions
-        is_enrolled = course.enroller_user.filter(id=user.id).exists()
+        # Check permissions: enrolled student or instructor/admin
+        is_enrolled = course.enrollments.filter(student=user, status__in=['active', 'completed']).exists()
         is_instructor_or_admin = False
         
         try:
@@ -68,7 +72,7 @@ class ModuleViewSet(ModelViewSet):
         course = module.course
         
         # Check if user is enrolled
-        if not course.enroller_user.filter(id=request.user.id).exists():
+        if not course.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists():
             return Response({
                 'error': 'يجب أن تكون مسجلاً في الدورة'
             }, status=status.HTTP_403_FORBIDDEN)
@@ -104,7 +108,7 @@ class CourseProgressMixin:
         user = request.user
         
         # Check if user is enrolled or is the instructor/admin
-        is_enrolled = course.enroller_user.filter(id=user.id).exists()
+        is_enrolled = course.enrollments.filter(student=user, status__in=['active', 'completed']).exists()
         is_instructor_or_admin = False
         
         try:
@@ -126,7 +130,7 @@ class CourseProgressMixin:
         # Import here to avoid circular imports
         from .serializers import ModuleBasicSerializer
         
-        modules = course.modules.all().order_by('number')
+        modules = course.modules.all().order_by('order')
         serializer = ModuleBasicSerializer(modules, many=True, context={'request': request})
         
         return Response({
@@ -134,5 +138,48 @@ class CourseProgressMixin:
         }, status=status.HTTP_200_OK)
 
 
+class LessonViewSet(ModelViewSet):
+    """CRUD for lessons"""
+    queryset = Lesson.objects.select_related('module', 'module__course').all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return LessonDetailSerializer
+        if self.action == 'list':
+            return LessonSerializer
+        return LessonCreateUpdateSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        module_id = self.request.query_params.get('module')
+        course_id = self.request.query_params.get('course')
+        if module_id:
+            qs = qs.filter(module_id=module_id)
+        if course_id:
+            qs = qs.filter(module__course_id=course_id)
+        return qs.order_by('order', 'created_at')
+
+
+class LessonResourceViewSet(ModelViewSet):
+    """CRUD for lesson resources (files/links)"""
+    queryset = LessonResource.objects.select_related('lesson', 'lesson__module').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def get_serializer_class(self):
+        return LessonResourceSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        lesson_id = self.request.query_params.get('lesson')
+        module_id = self.request.query_params.get('module')
+        if lesson_id:
+            qs = qs.filter(lesson_id=lesson_id)
+        if module_id:
+            qs = qs.filter(lesson__module_id=module_id)
+        return qs.order_by('order', 'created_at')
+
+
 # Add this to the end of the file to make the mixin available for import
-__all__ = ['ModuleViewSet', 'CourseProgressMixin']
+__all__ = ['ModuleViewSet', 'CourseProgressMixin', 'LessonViewSet', 'LessonResourceViewSet']

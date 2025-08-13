@@ -7,6 +7,8 @@ from .views_search import ContentSearchView
 # Create a router for the ModuleViewSet
 router = DefaultRouter()
 router.register(r'modules', views.ModuleViewSet, basename='module')
+router.register(r'lessons', views.LessonViewSet, basename='lesson')
+router.register(r'resources', views.LessonResourceViewSet, basename='resource')
 
 # Progress tracking viewset
 progress_view = ProgressViewSet.as_view({

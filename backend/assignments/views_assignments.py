@@ -53,7 +53,7 @@ class AssignmentListView(AssignmentBaseView, generics.ListCreateAPIView):
         
         # For students, only show published assignments in enrolled courses
         return Assignment.objects.filter(
-            course__enrollments__user=user,
+            course__enrollments__student=user,
             status='published'
         ).select_related('course', 'module', 'created_by')
     
@@ -73,7 +73,7 @@ class AssignmentDetailView(AssignmentBaseView, generics.RetrieveUpdateDestroyAPI
                 Q(course__instructor=user) | Q(created_by=user)
             ).distinct()
         return Assignment.objects.filter(
-            course__enrollments__user=user,
+            course__enrollments__student=user,
             status='published'
         )
     

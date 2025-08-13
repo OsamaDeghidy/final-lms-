@@ -60,7 +60,7 @@ class AssignmentViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        if self.action in ['create', 'update', 'partial_update']:
             return AssignmentCreateSerializer
         elif self.action == 'retrieve':
             return AssignmentDetailWithQuestionsSerializer

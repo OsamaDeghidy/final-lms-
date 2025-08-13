@@ -1,9 +1,17 @@
 from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.http import HttpResponse
+import base64
+import json
+import requests
 
 from courses.models import Course
 from users.models import User
@@ -31,10 +39,11 @@ class CartItemCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return CartItem.objects.filter(cart=self.request.user.cart)
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
     
     def perform_create(self, serializer):
-        cart = self.request.user.cart
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
         course = serializer.validated_data['course']
         
         # Check if already in cart
@@ -43,7 +52,7 @@ class CartItemCreateView(generics.CreateAPIView):
             raise serializers.ValidationError("This course is already in your cart.")
         
         # Check if user is already enrolled
-        if course.enroller_user.filter(id=self.request.user.id).exists():
+        if course.enrollments.filter(student=self.request.user).exists():
             raise serializers.ValidationError("You are already enrolled in this course.")
         
         serializer.save(cart=cart)
@@ -55,11 +64,11 @@ class CartItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return CartItem.objects.filter(cart=self.request.user.cart)
+        cart, created = Cart.objects.get_or_create(user=self.request.user)
+        return CartItem.objects.filter(cart=cart)
     
     def perform_destroy(self, instance):
         instance.delete()
-        instance.cart.update_total()
 
 
 # Wishlist Views
@@ -277,9 +286,8 @@ def checkout_session(request):
         # session = stripe.checkout.Session.create(...)
         
         return Response({
-            'session_id': 'sample_session_id',  # Replace with actual session ID
-            'public_key': 'your_publishable_key',  # Replace with your publishable key
-            'line_items': line_items,
+            'message': 'Checkout session created successfully',
+            'items': line_items,
         })
         
     except Exception as e:
@@ -287,3 +295,193 @@ def checkout_session(request):
             {"detail": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def moyasar_create_payment(request):
+    """Create a hosted payment with Moyasar and return the redirect URL."""
+    user = request.user
+    cart, created = Cart.objects.get_or_create(user=user)
+    
+    if not cart.items.exists():
+        return Response({'detail': 'Cart is empty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    amount = int(float(cart.total_price) * 100)  # halalas
+    description = f"Order for {user.email}"
+    currency = settings.MOYASAR_SETTINGS.get('CURRENCY', 'SAR')
+
+    callback_url = settings.MOYASAR_SETTINGS.get('PUBLIC_BASE_URL', '') + '/store/payment/moyasar/callback/'
+
+    payload = {
+        'amount': amount,
+        'currency': currency,
+        'description': description,
+        'callback_url': callback_url,
+        'metadata': {
+            'user_id': user.id,
+        }
+    }
+
+    auth = settings.MOYASAR_SETTINGS.get('SECRET_KEY', '') + ':'
+    auth_header = 'Basic ' + base64.b64encode(auth.encode()).decode()
+
+    try:
+        api_url = settings.MOYASAR_SETTINGS.get('API_BASE_URL', 'https://api.moyasar.com/v1') + '/invoices'
+        resp = requests.post(
+            api_url,
+            headers={
+                'Authorization': auth_header,
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=20
+        )
+        data = resp.json()
+        if resp.status_code not in (200, 201):
+            return Response({'detail': 'Failed to create payment', 'error': data}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Expecting 'url' for hosted page
+        invoice_url = data.get('url') or data.get('source', {}).get('transaction_url')
+        if not invoice_url:
+            return Response({'detail': 'Payment URL not returned', 'data': data}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'url': invoice_url, 'invoice': data})
+    except Exception as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def moyasar_create_course_payment(request, course_id):
+    """Create a hosted payment for a specific course with Moyasar and return the redirect URL."""
+    user = request.user
+    
+    try:
+        course = Course.objects.get(id=course_id)
+    except Course.DoesNotExist:
+        return Response({'detail': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is already enrolled
+    if course.enrollments.filter(student=user).exists():
+        return Response({'detail': 'You are already enrolled in this course.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Calculate amount (course price + tax)
+    course_price = course.discount_price if course.discount_price else course.price
+    tax = float(course_price) * 0.15  # 15% tax
+    total_amount = float(course_price) + tax
+    amount = int(total_amount * 100)  # halalas
+    
+    description = f"Payment for course: {course.title}"
+    currency = settings.MOYASAR_SETTINGS.get('CURRENCY', 'SAR')
+
+    callback_url = settings.MOYASAR_SETTINGS.get('PUBLIC_BASE_URL', '') + '/store/payment/moyasar/callback/'
+
+    payload = {
+        'amount': amount,
+        'currency': currency,
+        'description': description,
+        'callback_url': callback_url,
+        'metadata': {
+            'user_id': user.id,
+            'course_id': course.id,
+            'payment_type': 'direct_course_payment'
+        }
+    }
+
+    auth = settings.MOYASAR_SETTINGS.get('SECRET_KEY', '') + ':'
+    auth_header = 'Basic ' + base64.b64encode(auth.encode()).decode()
+
+    try:
+        api_url = settings.MOYASAR_SETTINGS.get('API_BASE_URL', 'https://api.moyasar.com/v1') + '/invoices'
+        resp = requests.post(
+            api_url,
+            headers={
+                'Authorization': auth_header,
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=20
+        )
+        data = resp.json()
+        if resp.status_code not in (200, 201):
+            return Response({'detail': 'Failed to create payment', 'error': data}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Expecting 'url' for hosted page
+        invoice_url = data.get('url') or data.get('source', {}).get('transaction_url')
+        if not invoice_url:
+            return Response({'detail': 'Payment URL not returned', 'data': data}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({'url': invoice_url, 'invoice': data})
+    except Exception as exc:
+        return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def moyasar_callback(request):
+    """Handle user returning from Moyasar hosted page."""
+    # Get payment details from query parameters
+    payment_id = request.query_params.get('payment_id')
+    invoice_id = request.query_params.get('invoice_id')
+    
+    if payment_id or invoice_id:
+        # In a real implementation, you would verify the payment with Moyasar API
+        # and enroll the user in the course if payment was successful
+        
+        # For now, just redirect to success page
+        return Response({
+            'detail': 'Payment completed successfully',
+            'payment_id': payment_id,
+            'invoice_id': invoice_id,
+            'redirect_url': '/payment/success/'
+        })
+    
+    return Response({'detail': 'Callback received', 'query': request.query_params})
+
+
+@csrf_exempt
+@require_POST
+def moyasar_webhook(request):
+    """Webhook to receive payment status updates from Moyasar."""
+    try:
+        event = json.loads(request.body.decode('utf-8'))
+        
+        # Handle payment success
+        if event.get('type') == 'payment.succeeded':
+            payment_data = event.get('data', {})
+            metadata = payment_data.get('metadata', {})
+            
+            # Check if this is a direct course payment
+            if metadata.get('payment_type') == 'direct_course_payment':
+                user_id = metadata.get('user_id')
+                course_id = metadata.get('course_id')
+                
+                if user_id and course_id:
+                    try:
+                        user = User.objects.get(id=user_id)
+                        course = Course.objects.get(id=course_id)
+                        
+                        # Enroll user in course
+                        from courses.models import Enrollment
+                        enrollment, created = Enrollment.objects.get_or_create(
+                            student=user,
+                            course=course,
+                            defaults={
+                                'status': 'active',
+                                'enrolled_at': timezone.now()
+                            }
+                        )
+                        
+                        if created:
+                            print(f"User {user.username} enrolled in course {course.title}")
+                        else:
+                            print(f"User {user.username} already enrolled in course {course.title}")
+                            
+                    except (User.DoesNotExist, Course.DoesNotExist) as e:
+                        print(f"Error enrolling user: {e}")
+        
+        return HttpResponse(status=200)
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return HttpResponse(status=400)

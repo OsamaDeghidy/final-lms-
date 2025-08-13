@@ -96,6 +96,17 @@ INSTALLED_APPS = [
     'custom_permissions',
 ]
 
+# Moyasar settings (use environment variables in production)
+# MOYASAR_SETTINGS = {
+#     # Test keys by default; override with env vars in production
+#     'PUBLISHABLE_KEY': os.getenv('MOYASAR_PUBLISHABLE_KEY', 'pk_test_6Rn9APYpUxc1t7YZD2Mr9BuoUYGFtZNJKx5Yu8KM'),
+#     'SECRET_KEY': os.getenv('MOYASAR_SECRET_KEY', 'sk_test_jfeqPR4F9Xz2DLaq4p4etDkZLKWB81HHkT4HeB3Q'),
+#     'API_BASE_URL': os.getenv('MOYASAR_API_BASE_URL', 'https://api.moyasar.com/v1'),
+#     'CURRENCY': os.getenv('MOYASAR_CURRENCY', 'SAR'),
+#     # Public base URL for callbacks (set your domain in production)
+#     'PUBLIC_BASE_URL': os.getenv('PUBLIC_BASE_URL', 'http://127.0.0.1:8000'),
+# }
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -298,6 +309,15 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Upload limits (tunable)
+# Max module file size in MB (used by content.models.validate_file_size)
+MAX_MODULE_FILE_MB = 300
+
+# If you plan to upload big files via Django, consider increasing in-memory/body limits
+# 1GB example; tune as needed
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024
 
 # OAuth2 Settings
 OAUTH2_PROVIDER = {

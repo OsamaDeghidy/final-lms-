@@ -7,40 +7,15 @@ import {
   TextField,
   Button,
   Box,
-  Grid,
-  Divider,
-  Chip,
   IconButton,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   FormControlLabel,
   Checkbox,
-  FormHelperText,
   InputAdornment,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Alert,
+  Snackbar,
+  CircularProgress,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  ArrowBack as ArrowBackIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  CloudUpload as CloudUploadIcon,
-  Image as ImageIcon,
-  VideoLibrary as VideoLibraryIcon,
-  Article as ArticleIcon,
-  Code as CodeIcon,
-  Quiz as QuizIcon,
-  ExpandMore as ExpandMoreIcon,
-  Close as CloseIcon,
-  Check as CheckIcon,
-  AccessTime as AccessTimeIcon,
-} from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, CloudUpload as CloudUploadIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 import contentAPI from '../../../services/content.service';
@@ -114,68 +89,58 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const UploadArea = styled('div')(({ theme, isDragActive }) => ({
-  border: `2px dashed ${isDragActive ? theme.palette.primary.main : theme.palette.divider}`,
-  borderRadius: '8px',
-  padding: theme.spacing(3),
-  textAlign: 'center',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  backgroundColor: isDragActive ? 'rgba(25, 118, 210, 0.05)' : theme.palette.background.paper,
-  '&:hover': {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: 'rgba(25, 118, 210, 0.03)',
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2),
-  },
-}));
+// لا توجد إدارة للدروس هنا
 
-const LESSON_TYPES = [
-  { value: 'video', label: 'فيديو', icon: <VideoLibraryIcon /> },
-  { value: 'article', label: 'مقال', icon: <ArticleIcon /> },
-  { value: 'quiz', label: 'اختبار', icon: <QuizIcon /> },
-  { value: 'exercise', label: 'تمرين عملي', icon: <CodeIcon /> },
-];
-
-const CreateUnit = () => {
+const EditUnit = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { courseId } = useParams();
-  const [isDragging, setIsDragging] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [loadError, setLoadError] = useState(null);
-  const [submitError, setSubmitError] = useState(null);
+  const { courseId, unitId } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   // Form state
   const [unitData, setUnitData] = useState({
     title: '',
     description: '',
-    duration: '',
+    duration: '', // minutes
     isPreview: false,
     videoFile: null,
+    videoUrl: '',
     pdfFile: null,
-    order: 1,
-    lessons: [
-      {
-        id: Date.now(),
-        title: '',
-        type: 'video',
-        duration: '',
-        content: '',
-        isPreview: false,
-        resources: [],
-      },
-    ],
+    pdfUrl: '',
   });
 
-  // لا يوجد خطوات بعد الآن
+  useEffect(() => {
+    const fetchUnitData = async () => {
+      setLoading(true);
+      try {
+        const data = await contentAPI.getModuleById(unitId);
+        setUnitData(prev => ({
+          ...prev,
+          title: data?.name || '',
+          description: data?.description || '',
+          duration: typeof data?.video_duration === 'number' ? Math.round(data.video_duration / 60) : '',
+          isPreview: Boolean(data?.is_active) === false,
+          videoUrl: data?.video || '',
+          pdfUrl: data?.pdf || '',
+        }));
+      } catch (error) {
+        console.error('Error fetching unit data:', error);
+        setSnackbar({ open: true, message: 'حدث خطأ في تحميل بيانات الوحدة', severity: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (unitId) fetchUnitData();
+  }, [unitId]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setUnitData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -183,113 +148,47 @@ const CreateUnit = () => {
     setUnitData(prev => ({
       ...prev,
       [`${type}File`]: file || null,
+      ...(type === 'video' ? { videoUrl: file ? '' : prev.videoUrl } : {}),
+      ...(type === 'pdf' ? { pdfUrl: file ? '' : prev.pdfUrl } : {}),
     }));
-  };
-
-  // Preload next available order to avoid unique constraint (course, order)
-  useEffect(() => {
-    const preloadOrder = async () => {
-      try {
-        const data = await contentAPI.getModules(courseId);
-        const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : data?.modules || [];
-        const maxOrder = items.reduce((max, m) => (typeof m.order === 'number' && m.order > max ? m.order : max), 0);
-        setUnitData(prev => ({ ...prev, order: maxOrder + 1 }));
-      } catch (e) {
-        setLoadError('تعذر تحميل ترتيب الوحدة التالي');
-      }
-    };
-    if (courseId) preloadOrder();
-  }, [courseId]);
-
-  const handleLessonChange = (index, field, value) => {
-    const updatedLessons = [...unitData.lessons];
-    updatedLessons[index] = {
-      ...updatedLessons[index],
-      [field]: value
-    };
-    setUnitData(prev => ({
-      ...prev,
-      lessons: updatedLessons
-    }));
-  };
-
-  const addNewLesson = () => {
-    setUnitData(prev => ({
-      ...prev,
-      lessons: [
-        ...prev.lessons,
-        {
-          id: Date.now(),
-          title: '',
-          type: 'video',
-          duration: '',
-          content: '',
-          isPreview: false,
-          resources: [],
-        },
-      ],
-    }));
-  };
-
-  const removeLesson = (index) => {
-    if (unitData.lessons.length > 1) {
-      const updatedLessons = [...unitData.lessons];
-      updatedLessons.splice(index, 1);
-      setUnitData(prev => ({
-        ...prev,
-        lessons: updatedLessons
-      }));
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setSubmitting(true);
-      setSubmitError(null);
+      setSaving(true);
+      try {
       const payload = {
-        courseId: courseId,
         title: unitData.title,
         name: unitData.title,
         description: unitData.description,
-        durationMinutes: unitData.duration ? Number(unitData.duration) : 0,
-        isActive: true,
-        status: 'draft',
+        durationMinutes: unitData.duration ? Number(unitData.duration) : undefined,
+        status: unitData.isPreview ? 'draft' : undefined,
         videoFile: unitData.videoFile,
         pdfFile: unitData.pdfFile,
-        order: unitData.order,
       };
-      const created = await contentAPI.createModule(payload);
-      console.log('Module created:', created);
-      alert('تم حفظ الوحدة بنجاح!');
-      navigate(`/teacher/courses/${courseId}/units`);
-    } catch (error) {
-      console.error('Error creating module:', error);
-      let serverMsg = 'تعذر حفظ الوحدة. برجاء التحقق من الحقول.';
-      try {
-        if (typeof error?.response?.data === 'string') serverMsg = error.response.data;
-        else if (error?.response?.data?.detail) serverMsg = error.response.data.detail;
-        else if (error?.response?.data?.error) serverMsg = error.response.data.error;
-      } catch {}
-      setSubmitError(serverMsg);
-    } finally {
-      setSubmitting(false);
+      await contentAPI.updateModule(unitId, payload);
+      setSnackbar({ open: true, message: 'تم حفظ الوحدة بنجاح وتم تحديث البيانات!', severity: 'success' });
+        navigate(`/teacher/courses/${courseId}/units`);
+      } catch (error) {
+        console.error('Error saving unit:', error);
+      setSnackbar({ open: true, message: 'حدث خطأ في حفظ الوحدة', severity: 'error' });
+      } finally {
+        setSaving(false);
     }
   };
 
-  // Render a top-level error if exists
-
-  // لا يوجد رجوع بعد إزالة الsteps
-
-  // النموذج: قسم واحد بدون مراجعة نهائية
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {submitError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {submitError}
-        </Alert>
-      )}
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
         <IconButton 
           onClick={() => navigate(-1)} 
@@ -297,22 +196,20 @@ const CreateUnit = () => {
             mr: 2,
             backgroundColor: theme.palette.background.paper,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            '&:hover': {
-              backgroundColor: theme.palette.action.hover,
-            },
+            '&:hover': { backgroundColor: theme.palette.action.hover },
           }}
         >
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-          إضافة وحدة جديدة
+          تعديل الوحدة
         </Typography>
       </Box>
       
       <StyledPaper elevation={0}>
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
-            معلومات الوحدة الأساسية
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+            تعديل بيانات الوحدة
           </Typography>
 
           <StyledTextField
@@ -349,42 +246,65 @@ const CreateUnit = () => {
             InputProps={{ endAdornment: <InputAdornment position="end">دقيقة</InputAdornment> }}
           />
 
+          {/* VIDEO */}
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>الفيديو</Typography>
-            {!unitData.videoFile ? (
-              <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={submitting}>
-                رفع فيديو (MP4)
-                <input hidden type="file" accept="video/*" onChange={(e) => handleFileSelect('video', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
-              </Button>
-            ) : (
+            {unitData.videoFile ? (
               <Box>
                 <video src={URL.createObjectURL(unitData.videoFile)} controls style={{ width: '100%', maxHeight: 360, borderRadius: 8, border: `1px solid ${theme.palette.divider}` }} />
                 <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                  <Chip label={unitData.videoFile.name} size="small" />
                   <Button color="error" onClick={() => handleFileSelect('video', null)}>مسح الفيديو</Button>
                 </Box>
               </Box>
+            ) : unitData.videoUrl ? (
+              <Box>
+                <video src={unitData.videoUrl} controls style={{ width: '100%', maxHeight: 360, borderRadius: 8, border: `1px solid ${theme.palette.divider}` }} />
+                <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                  <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={saving}>
+                    استبدال الفيديو
+                    <input hidden type="file" accept="video/*" onChange={(e) => handleFileSelect('video', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
+                  </Button>
+                </Box>
+              </Box>
+            ) : (
+              <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={saving}>
+                رفع فيديو (MP4)
+                <input hidden type="file" accept="video/*" onChange={(e) => handleFileSelect('video', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
+              </Button>
             )}
           </Box>
           
+          {/* PDF */}
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>ملف PDF</Typography>
-            {!unitData.pdfFile ? (
-              <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />}>
-                رفع ملف PDF
-                <input hidden type="file" accept="application/pdf" onChange={(e) => handleFileSelect('pdf', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
-              </Button>
-            ) : (
+            {unitData.pdfFile ? (
               <Box>
                 <Box sx={{ position: 'relative', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, overflow: 'hidden' }}>
                   <iframe title="pdf-preview" src={URL.createObjectURL(unitData.pdfFile)} style={{ width: '100%', height: 480, border: 0 }} />
                 </Box>
                 <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
-                  <Chip label={unitData.pdfFile.name} size="small" />
                   <Button component="a" href={URL.createObjectURL(unitData.pdfFile)} target="_blank" rel="noopener noreferrer">فتح في تبويب</Button>
                   <Button color="error" onClick={() => handleFileSelect('pdf', null)}>مسح الملف</Button>
                 </Box>
+                </Box>
+            ) : unitData.pdfUrl ? (
+              <Box>
+                <Box sx={{ position: 'relative', border: `1px solid ${theme.palette.divider}`, borderRadius: 1, overflow: 'hidden' }}>
+                  <iframe title="pdf-preview" src={unitData.pdfUrl} style={{ width: '100%', height: 480, border: 0 }} />
               </Box>
+                <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
+                  <Button component="a" href={unitData.pdfUrl} target="_blank" rel="noopener noreferrer">فتح في تبويب</Button>
+                  <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />} disabled={saving}>
+                    استبدال الملف
+                    <input hidden type="file" accept="application/pdf" onChange={(e) => handleFileSelect('pdf', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
+                  </Button>
+          </Box>
+              </Box>
+            ) : (
+              <Button component="label" variant="outlined" startIcon={<CloudUploadIcon />}>
+                رفع ملف PDF
+                <input hidden type="file" accept="application/pdf" onChange={(e) => handleFileSelect('pdf', e.target.files && e.target.files.length ? e.target.files[0] : null)} />
+              </Button>
             )}
         </Box>
         
@@ -393,15 +313,26 @@ const CreateUnit = () => {
             label="متاحة كمعاينة"
           />
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
-            <StyledButton variant="contained" color="primary" type="submit" disabled={submitting}>
-              حفظ الوحدة
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <StyledButton variant="contained" type="submit" disabled={saving}>
+              {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
             </StyledButton>
           </Box>
         </Box>
       </StyledPaper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
 
-export default CreateUnit;
+export default EditUnit; 

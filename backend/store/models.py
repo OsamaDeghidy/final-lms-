@@ -104,6 +104,21 @@ class Cart(models.Model):
         return sum(item.total_price for item in self.items.all())
     
     @property
+    def subtotal(self):
+        """Calculate subtotal of all items in cart"""
+        return sum(item.total_price for item in self.items.all())
+    
+    @property
+    def tax(self):
+        """Calculate tax (15%) on subtotal"""
+        return self.subtotal * Decimal('0.15')
+    
+    @property
+    def total(self):
+        """Calculate total including tax"""
+        return self.subtotal + self.tax
+    
+    @property
     def total_items(self):
         """Get total number of items in cart"""
         return self.items.count()
@@ -157,7 +172,8 @@ class CartItem(models.Model):
     @property
     def total_price(self):
         """Calculate total price for this cart item"""
-        return self.course.price * self.quantity
+        price = self.course.discount_price if self.course.discount_price else self.course.price
+        return price * self.quantity
 
 
 class Wishlist(models.Model):

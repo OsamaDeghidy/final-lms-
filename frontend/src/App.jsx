@@ -48,6 +48,12 @@ import CourseDetail from './pages/courses/CourseDetail';
 import CreateCourse from './pages/courses/CreateCourse';
 import EditCourse from './pages/courses/EditCourse';
 import CreateUnit from './pages/courses/units/CreateUnit';
+import Units from './pages/courses/units/Units';
+import EditUnit from './pages/courses/units/EditUnit';
+import UnitDetail from './pages/courses/units/UnitDetail';
+import Lessons from './pages/courses/lessons/Lessons';
+import LessonDetail from './pages/courses/lessons/LessonDetail';
+import LessonForm from './pages/courses/lessons/LessonForm';
 
 // Quiz Components
 import Profile from './pages/profile/Profile';
@@ -91,6 +97,8 @@ import ArticleDetail from './pages/articles/ArticleDetail';
 import ArticlesList from './pages/teacher/articles/ArticlesList';
 import CreateArticle from './pages/teacher/articles/CreateArticle';
 import EditArticle from './pages/teacher/articles/EditArticle';
+import CartPage from './pages/cart/CartPage';
+import PaymentPage from './pages/payment/PaymentPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -277,6 +285,9 @@ const AppContent = () => {
                   <Route path="/courses/:id" element={<CourseDetail />} />
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/articles/:slug" element={<ArticleDetail />} />
+                  {/* Store Routes */}
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/payment/:courseId" element={<PaymentPage />} />
 
                   
                   {/* Protected Routes - Student */}
@@ -320,7 +331,14 @@ const AppContent = () => {
                           <Route path="my-courses" element={<TeacherMyCourses />} />
                           <Route path="courses/new" element={<CreateCourse />} />
                           <Route path="courses/:id/edit" element={<EditCourse />} />
+                          <Route path="courses/:courseId/units" element={<Units />} />
                           <Route path="courses/:courseId/units/new" element={<CreateUnit />} />
+                          <Route path="courses/:courseId/units/:unitId" element={<UnitDetail />} />
+                          <Route path="courses/:courseId/units/:unitId/edit" element={<EditUnit />} />
+                          <Route path="courses/:courseId/units/:unitId/lessons" element={<Lessons />} />
+                          <Route path="courses/:courseId/units/:unitId/lessons/create" element={<LessonForm />} />
+                          <Route path="courses/:courseId/units/:unitId/lessons/:lessonId/edit" element={<LessonForm isEdit />} />
+                          <Route path="courses/:courseId/units/:unitId/lessons/:lessonId" element={<LessonDetail />} />
                           <Route path="assignments" element={<TeacherAssignments />} />
                           <Route path="assignments/new" element={<CreateAssignment />} />
                           <Route path="assignments/:assignmentId/edit" element={<EditAssignment />} />

@@ -54,8 +54,8 @@ class ModuleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Module
         fields = [
-            'id', 'name', 'course', 'number', 'description', 'video', 
-            'video_duration', 'pdf', 'note', 'is_active', 'order'
+            'id', 'name', 'course', 'description', 'video',
+            'video_duration', 'pdf', 'note', 'status', 'is_active', 'order'
         ]
         read_only_fields = ['id']
 
@@ -87,15 +87,40 @@ class ModuleDetailSerializer(serializers.ModelSerializer):
     course_name = serializers.CharField(source='course.title', read_only=True)
     user_progress = serializers.SerializerMethodField()
     lessons = serializers.SerializerMethodField()
+    # Expose file fields so edit form can load/show existing uploads and allow updating
+    video = serializers.FileField(use_url=True, required=False, allow_null=True)
+    pdf = serializers.FileField(use_url=True, required=False, allow_null=True)
     
     class Meta:
         model = Module
         fields = [
-            'id', 'title', 'description', 'course', 'course_name', 'order',
-            'is_active', 'created_at', 'updated_at', 'user_progress', 'lessons',
-            'duration_minutes'
+            'id', 'name', 'description', 'course', 'course_name', 'order',
+            'status', 'is_active', 'created_at', 'updated_at', 'user_progress',
+            'lessons', 'video_duration', 'video', 'pdf'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def update(self, instance, validated_data):
+        """
+        Allow partial update without re-triggering file size validators when files are unchanged.
+        If 'video' or 'pdf' are absent in validated_data, they won't be revalidated.
+        """
+        updating_video = 'video' in validated_data
+        updating_pdf = 'pdf' in validated_data
+
+        # Apply basic field updates
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # If neither file is being updated, skip heavy validation
+        if not updating_video and not updating_pdf:
+            instance._skip_file_validation = True
+        try:
+            instance.save()
+        finally:
+            if hasattr(instance, '_skip_file_validation'):
+                delattr(instance, '_skip_file_validation')
+        return instance
     
     def get_user_progress(self, obj):
         request = self.context.get('request')
@@ -119,7 +144,6 @@ class ModuleDetailSerializer(serializers.ModelSerializer):
         return None
     
     def get_lessons(self, obj):
-        from .serializers import LessonSerializer
         lessons = obj.lessons.all().order_by('order')
         return LessonSerializer(lessons, many=True, context=self.context).data
 
@@ -135,6 +159,17 @@ class LessonBasicSerializer(serializers.ModelSerializer):
             'order', 'is_active', 'created_at', 'duration_minutes'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class LessonSerializer(serializers.ModelSerializer):
+    """Serializer used for embedding lessons inside ModuleDetailSerializer"""
+    class Meta:
+        model = Lesson
+        fields = [
+            'id', 'title', 'lesson_type', 'duration_minutes', 'order',
+            'content', 'is_free', 'video_url', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class LessonDetailSerializer(serializers.ModelSerializer):
@@ -172,6 +207,49 @@ class LessonDetailSerializer(serializers.ModelSerializer):
             except ModuleProgress.DoesNotExist:
                 pass
         return None
+
+
+class LessonCreateUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating lessons"""
+    class Meta:
+        model = Lesson
+        fields = [
+            'id', 'module', 'title', 'description', 'lesson_type', 'difficulty',
+            'duration_minutes', 'order', 'is_active', 'is_free', 'video_url', 'content'
+        ]
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        # Ensure slug uniqueness per module is handled by model constraint; we can add extra checks if needed
+        return attrs
+
+    def create(self, validated_data):
+        # Auto-assign order if not provided
+        if 'order' not in validated_data or validated_data.get('order') in [None, 0]:
+            module = validated_data['module']
+            max_order = module.lessons.aggregate(max_o=serializers.models.Max('order')).get('max_o') or 0
+            validated_data['order'] = max_order + 1
+        return super().create(validated_data)
+
+
+class LessonResourceSerializer(serializers.ModelSerializer):
+    """Serializer for lesson resources (file or URL)"""
+    class Meta:
+        model = LessonResource
+        fields = [
+            'id', 'lesson', 'title', 'description', 'resource_type', 'file', 'url',
+            'is_public', 'order', 'created_at', 'updated_at', 'metadata'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        file = attrs.get('file') or getattr(self.instance, 'file', None)
+        url = attrs.get('url') or getattr(self.instance, 'url', None)
+        if not file and not url:
+            raise serializers.ValidationError('Either a file or URL must be provided')
+        if file and url:
+            raise serializers.ValidationError('Cannot have both file and URL')
+        return attrs
 
 
 class UserProgressSerializer(serializers.ModelSerializer):

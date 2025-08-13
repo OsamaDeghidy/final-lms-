@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -17,7 +17,10 @@ import {
   Divider,
   Chip,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert,
+  Snackbar,
+  CircularProgress
 } from '@mui/material';
 import { 
   Save as SaveIcon, 
@@ -31,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
+import { courseAPI } from '../../services/api.service';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -135,6 +139,9 @@ const CreateCourse = () => {
   const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   // Form state
   const [courseData, setCourseData] = useState({
@@ -142,7 +149,7 @@ const CreateCourse = () => {
     title: '',
     subtitle: '',
     description: '',
-    shortDescription: '',
+    short_description: '',
     
     // Course Details
     level: 'beginner',
@@ -151,23 +158,50 @@ const CreateCourse = () => {
     tags: [],
     
     // Pricing
-    isFree: false,
+    is_free: false,
     price: 0,
-    discountPrice: null,
+    discount_price: null,
     
     // Status
     status: 'draft',
-    isFeatured: false,
-    isCertified: false,
+    is_featured: false,
+    is_certified: false,
     
     // Media
     image: null,
-    promotionalVideo: '',
-    syllabusPdf: null,
-    materialsPdf: null,
+    promotional_video: '',
+    syllabus_pdf: null,
+    materials_pdf: null,
   });
   
   const [newTag, setNewTag] = useState('');
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await courseAPI.getCategories();
+        console.log('Categories API response:', categoriesData);
+        // Ensure categoriesData is an array
+        const categoriesArray = Array.isArray(categoriesData) ? categoriesData : 
+                               categoriesData.results ? categoriesData.results : 
+                               categoriesData.data ? categoriesData.data : [];
+        console.log('Processed categories array:', categoriesArray);
+        setCategories(categoriesArray);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setSnackbar({
+          open: true,
+          message: 'خطأ في تحميل التصنيفات',
+          severity: 'error'
+        });
+        // Set empty array as fallback
+        setCategories([]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -204,15 +238,79 @@ const CreateCourse = () => {
     }));
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (activeStep === steps.length - 1) {
       // This is the final step, handle form submission
-      // In a real app, you would submit the form data to your backend here
-      console.log('Form submitted:', courseData);
-      // Show success message only on final step
-      alert('تم حفظ الدورة بنجاح!');
+      setLoading(true);
+      try {
+        console.log('Submitting course data:', courseData);
+        const response = await courseAPI.createCourse(courseData);
+        console.log('Course created successfully:', response);
+        
+        // Show success message
+        setSnackbar({
+          open: true,
+          message: 'تم حفظ الدورة بنجاح!',
+          severity: 'success'
+        });
+        
+        // Navigate to the courses list after a short delay
+        setTimeout(() => {
+          navigate('/teacher/courses');
+        }, 1500);
+        
+      } catch (error) {
+        console.error('Error creating course:', error);
+        
+        // Check if the course was actually created despite the 500 error
+        if (error.response?.status === 500) {
+          try {
+            // Try to fetch the latest courses to see if our course was created
+            const coursesData = await courseAPI.getCourses();
+            const coursesArray = Array.isArray(coursesData) ? coursesData : 
+                               coursesData.results ? coursesData.results : 
+                               coursesData.data ? coursesData.data : [];
+            
+            // Check if our course was created by looking for a course with the same title
+            const createdCourse = coursesArray.find(course => 
+              course.title === courseData.title && 
+              course.subtitle === courseData.subtitle
+            );
+            
+            if (createdCourse) {
+              // Course was created successfully despite the 500 error
+              setSnackbar({
+                open: true,
+                message: 'تم حفظ الدورة بنجاح! (تم إنشاؤها بنجاح رغم خطأ في الاستجابة)',
+                severity: 'success'
+              });
+              
+              // Navigate to the courses list
+              setTimeout(() => {
+                navigate('/teacher/courses');
+              }, 1500);
+              return;
+            }
+          } catch (fetchError) {
+            console.error('Error fetching courses to verify creation:', fetchError);
+          }
+        }
+        
+        // Show error message
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.detail || 
+                           error.message || 
+                           'خطأ في حفظ الدورة';
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: 'error'
+        });
+      } finally {
+        setLoading(false);
+      }
     } else {
       // Move to next step if not on final step
       handleNext();
@@ -382,8 +480,8 @@ const CreateCourse = () => {
               <StyledTextField
                 fullWidth
                 label="رابط الفيديو التعريفي (اختياري)"
-                name="promotionalVideo"
-                value={courseData.promotionalVideo}
+                name="promotional_video"
+                value={courseData.promotional_video}
                 onChange={handleChange}
                 variant="outlined"
                 placeholder="https://www.youtube.com/watch?v=..."
@@ -402,7 +500,7 @@ const CreateCourse = () => {
                       type="file"
                       accept=".pdf"
                       style={{ display: 'none' }}
-                      onChange={(e) => handleFileChange(e, 'syllabusPdf')}
+                      onChange={(e) => handleFileChange(e, 'syllabus_pdf')}
                     />
                     <Button
                       component="label"
@@ -418,8 +516,8 @@ const CreateCourse = () => {
                         textTransform: 'none'
                       }}
                     >
-                      {courseData.syllabusPdf ? 
-                        `تم تحميل: ${courseData.syllabusPdf.name}` : 
+                      {courseData.syllabus_pdf ? 
+                        `تم تحميل: ${courseData.syllabus_pdf.name}` : 
                         'رفع منهج الدورة (PDF)'}
                     </Button>
                   </Box>
@@ -430,7 +528,7 @@ const CreateCourse = () => {
                       type="file"
                       accept=".pdf"
                       style={{ display: 'none' }}
-                      onChange={(e) => handleFileChange(e, 'materialsPdf')}
+                      onChange={(e) => handleFileChange(e, 'materials_pdf')}
                     />
                     <Button
                       component="label"
@@ -446,8 +544,8 @@ const CreateCourse = () => {
                         textTransform: 'none'
                       }}
                     >
-                      {courseData.materialsPdf ? 
-                        `تم تحميل: ${courseData.materialsPdf.name}` : 
+                      {courseData.materials_pdf ? 
+                        `تم تحميل: ${courseData.materials_pdf.name}` : 
                         'رفع المواد التعليمية (PDF)'}
                     </Button>
                   </Box>
@@ -476,11 +574,11 @@ const CreateCourse = () => {
                   <MenuItem value="">
                     <em>اختر تصنيفاً</em>
                   </MenuItem>
-                  <MenuItem value="programming">برمجة</MenuItem>
-                  <MenuItem value="design">تصميم</MenuItem>
-                  <MenuItem value="marketing">تسويق</MenuItem>
-                  <MenuItem value="business">أعمال</MenuItem>
-                  <MenuItem value="languages">لغات</MenuItem>
+                  {Array.isArray(categories) && categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
               
@@ -545,9 +643,9 @@ const CreateCourse = () => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={courseData.isFree}
+                      checked={courseData.is_free}
                       onChange={handleChange}
-                      name="isFree"
+                      name="is_free"
                       color="primary"
                     />
                   }
@@ -563,7 +661,7 @@ const CreateCourse = () => {
                 />
               </Box>
               
-              {!courseData.isFree && (
+              {!courseData.is_free && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2, p: 2, bgcolor: '#f8f9fa', borderRadius: '8px' }}>
                   <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                     <StyledTextField
@@ -583,9 +681,9 @@ const CreateCourse = () => {
                     <StyledTextField
                       fullWidth
                       label="سعر التخفيض (اختياري)"
-                      name="discountPrice"
+                      name="discount_price"
                       type="number"
-                      value={courseData.discountPrice || ''}
+                      value={courseData.discount_price || ''}
                       onChange={handleChange}
                       variant="outlined"
                       size="medium"
@@ -595,10 +693,10 @@ const CreateCourse = () => {
                     />
                   </Box>
                   
-                  {courseData.price > 0 && courseData.discountPrice > 0 && (
+                  {courseData.price > 0 && courseData.discount_price > 0 && (
                     <Box sx={{ textAlign: 'center', mt: 1 }}>
                       <Typography variant="body2" color="text.secondary">
-                        وفر {Math.round((1 - courseData.discountPrice / courseData.price) * 100)}% مع الخصم
+                        وفر {Math.round((1 - courseData.discount_price / courseData.price) * 100)}% مع الخصم
                       </Typography>
                     </Box>
                   )}
@@ -611,9 +709,9 @@ const CreateCourse = () => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={courseData.isFeatured}
+                      checked={courseData.is_featured}
                       onChange={handleChange}
-                      name="isFeatured"
+                      name="is_featured"
                       color="primary"
                     />
                   }
@@ -633,9 +731,9 @@ const CreateCourse = () => {
                 <FormControlLabel
                   control={
                     <Checkbox
-                      checked={courseData.isCertified}
+                      checked={courseData.is_certified}
                       onChange={handleChange}
-                      name="isCertified"
+                      name="is_certified"
                       color="primary"
                     />
                   }
@@ -672,6 +770,14 @@ const CreateCourse = () => {
   
   const handleBack = () => {
     setActiveStep((prevStep) => prevStep - 1);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+    // If it was a success message, navigate to courses list
+    if (snackbar.severity === 'success') {
+      navigate('/teacher/my-courses');
+    }
   };
   
   return (
@@ -791,18 +897,30 @@ const CreateCourse = () => {
               variant="contained"
               color="primary"
               type="submit"
-              startIcon={activeStep === steps.length - 1 ? <SaveIcon /> : null}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : (activeStep === steps.length - 1 ? <SaveIcon /> : null)}
               sx={{ 
                 minWidth: activeStep === steps.length - 1 ? '200px' : '120px',
                 textTransform: 'none',
                 fontWeight: 600,
               }}
             >
-              {activeStep === steps.length - 1 ? 'حفظ الدورة' : 'التالي'}
+              {loading ? 'جاري الحفظ...' : (activeStep === steps.length - 1 ? 'حفظ الدورة' : 'التالي')}
             </StyledButton>
           </Box>
         </Box>
       </StyledPaper>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

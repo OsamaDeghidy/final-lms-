@@ -32,7 +32,7 @@ class CourseReviewListView(ReviewBaseView, generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Check if user is enrolled in the course
         course = serializer.validated_data['course']
-        if not course.enrollments.filter(user=self.request.user).exists():
+        if not course.enrollments.filter(student=self.request.user).exists():
             raise permissions.PermissionDenied(
                 "You must be enrolled in the course to leave a review."
             )
@@ -71,14 +71,14 @@ class InstructorReviewListView(ReviewBaseView, generics.ListCreateAPIView):
         instructor = serializer.validated_data['instructor']
         if not Course.objects.filter(
             instructor=instructor,
-            enrollments__user=self.request.user
+            enrollments__student=self.request.user
         ).exists():
             raise permissions.PermissionDenied(
                 "You must have taken a course with this instructor to leave a review."
             )
         # Check if user already reviewed the instructor
         if InstructorReview.objects.filter(user=self.request.user, instructor=instructor).exists():
-            raise permissions.PermissionDenired(
+            raise permissions.PermissionDenied(
                 "You have already reviewed this instructor."
             )
         serializer.save(user=self.request.user)

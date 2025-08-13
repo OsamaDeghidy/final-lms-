@@ -11,6 +11,9 @@ router.register(r'courses', views.CourseViewSet, basename='course')
 app_name = 'courses_api'
 
 urlpatterns = [
+    # Public courses (no authentication required)
+    path('public/', views.public_courses, name='public_courses'),
+    
     # Search and filtering
     path('search/', views.course_search, name='course_search'),
     path('featured/', views.featured_courses, name='featured_courses'),

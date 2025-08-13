@@ -54,6 +54,12 @@ urlpatterns = [
         path('create-payment-method/', 
              PaymentGatewayView.as_view(http_method_names=['post']), 
              name='create-payment-method'),
+
+        # Moyasar hosted payment flow
+        path('moyasar/create/', views.moyasar_create_payment, name='moyasar-create'),
+        path('moyasar/course/<int:course_id>/create/', views.moyasar_create_course_payment, name='moyasar-create-course'),
+        path('moyasar/callback/', views.moyasar_callback, name='moyasar-callback'),
+        path('moyasar/webhook/', views.moyasar_webhook, name='moyasar-webhook'),
         
         # Transactions
         path('transactions/summary/', 
