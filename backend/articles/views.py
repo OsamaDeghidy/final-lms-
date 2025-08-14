@@ -23,18 +23,24 @@ class BookCategoryViewSet(viewsets.ModelViewSet):
 
 
 class ArticleViewSet(viewsets.ModelViewSet):
-    queryset = Article.objects.filter(status='published')
+    queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['featured']
+    filterset_fields = ['featured', 'status']
     search_fields = ['title', 'content', 'summary']
     ordering_fields = ['created_at', 'updated_at', 'views_count']
     ordering = ['-created_at']
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        return queryset.select_related('author')
+        
+        # If user is authenticated and is a teacher/instructor, show all articles
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'instructor'):
+            return queryset.select_related('author', 'author__profile').prefetch_related('tags')
+        
+        # For other users, only show published articles
+        return queryset.filter(status='published').select_related('author', 'author__profile').prefetch_related('tags')
 
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
@@ -57,24 +63,27 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
     filterset_fields = ['article']
     ordering = ['-created_at']
 
+    def get_queryset(self):
+        return super().get_queryset().select_related('user', 'user__profile')
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
 class FeaturedArticlesView(generics.ListAPIView):
-    queryset = Article.objects.filter(status='published', featured=True)
+    queryset = Article.objects.filter(status='published', featured=True).select_related('author', 'author__profile')
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
 class RecentArticlesView(generics.ListAPIView):
-    queryset = Article.objects.filter(status='published').order_by('-created_at')[:10]
+    queryset = Article.objects.filter(status='published').select_related('author', 'author__profile').order_by('-created_at')[:10]
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
 class PopularArticlesView(generics.ListAPIView):
-    queryset = Article.objects.filter(status='published').order_by('-views_count')[:10]
+    queryset = Article.objects.filter(status='published').select_related('author', 'author__profile').order_by('-views_count')[:10]
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -94,5 +103,5 @@ class ArticleSearchView(generics.ListAPIView):
                 Q(content__icontains=query) | 
                 Q(summary__icontains=query),
                 status='published'
-            ).order_by('-created_at')
+            ).select_related('author', 'author__profile').order_by('-created_at')
         return Article.objects.none() 

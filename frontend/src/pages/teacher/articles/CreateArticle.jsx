@@ -25,6 +25,7 @@ import {
   Tooltip,
   Paper
 } from '@mui/material';
+import { articleAPI } from '../../../services/api.service';
 import {
   Save as SaveIcon,
   Publish as PublishIcon,
@@ -231,20 +232,55 @@ const CreateArticle = () => {
 
     setSaving(true);
     try {
-      // TODO: Implement actual API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare article data
+      const articleDataToSend = {
+        ...articleData,
+        status: status,
+        content: articleData.content || '',
+        summary: articleData.summary || '',
+        meta_description: articleData.meta_description || '',
+        meta_keywords: articleData.meta_keywords || '',
+        featured: articleData.featured || false,
+        allow_comments: articleData.allow_comments !== false,
+        tags: articleData.tags || []
+      };
+
+      // Remove imagePreview from data to send
+      delete articleDataToSend.imagePreview;
+
+      console.log('Sending article data:', articleDataToSend);
       
-      // Simulate success
-      console.log('Article saved:', { ...articleData, status });
+      // Call API to create article
+      const response = await articleAPI.createArticle(articleDataToSend);
+      
+      console.log('Article created successfully:', response);
       
       // Navigate back to articles list
       navigate('/teacher/articles');
     } catch (error) {
       console.error('Error saving article:', error);
-      setErrors(prev => ({
-        ...prev,
-        general: 'حدث خطأ أثناء حفظ المقالة'
-      }));
+      
+      // Handle specific error cases
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        const newErrors = {};
+        
+        // Map backend errors to form fields
+        Object.keys(errorData).forEach(key => {
+          if (Array.isArray(errorData[key])) {
+            newErrors[key] = errorData[key][0];
+          } else {
+            newErrors[key] = errorData[key];
+          }
+        });
+        
+        setErrors(newErrors);
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: 'حدث خطأ أثناء حفظ المقالة. يرجى المحاولة مرة أخرى.'
+        }));
+      }
     } finally {
       setSaving(false);
     }

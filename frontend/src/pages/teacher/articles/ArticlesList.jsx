@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  CardMedia,
   Grid,
   Chip,
   TextField,
@@ -15,9 +14,6 @@ import {
   useTheme,
   IconButton,
   Tooltip,
-  Avatar,
-  Menu,
-  MenuItem,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -31,6 +27,7 @@ import {
   Divider,
   LinearProgress
 } from '@mui/material';
+import { articleAPI } from '../../../services/api.service';
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
@@ -51,7 +48,8 @@ import {
   GridView as GridViewIcon,
   ViewList as ViewListIcon,
   Star as StarIcon,
-  Share as ShareIcon
+  Share as ShareIcon,
+  ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -82,7 +80,7 @@ const slideIn = keyframes`
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 50%, ${theme.palette.primary.dark} 100%)`,
+  background: `linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #1565c0 100%)`,
   color: 'white',
   padding: theme.spacing(4, 0, 3),
   textAlign: 'center',
@@ -105,7 +103,7 @@ const HeroSection = styled(Box)(({ theme }) => ({
     left: '50%',
     width: '200%',
     height: '200%',
-    background: `radial-gradient(circle, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 70%)`,
+    background: `radial-gradient(circle, ${alpha('#ffffff', 0.1)} 0%, transparent 70%)`,
     transform: 'translate(-50%, -50%)',
     animation: `${float} 6s ease-in-out infinite`,
   }
@@ -115,68 +113,68 @@ const ModernCard = styled(Card)(({ theme }) => ({
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  borderRadius: 16,
+  borderRadius: 12,
   overflow: 'hidden',
-  background: `linear-gradient(145deg, ${theme.palette.background.paper}, ${alpha(theme.palette.primary.main, 0.02)})`,
-  boxShadow: `0 4px 16px ${alpha(theme.palette.common.black, 0.08)}`,
-  border: `1px solid ${alpha(theme.palette.divider, 0.15)}`,
-  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  background: '#ffffff',
+  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+  border: 'none',
+  transition: 'all 0.3s ease',
   position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '3px',
-    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    opacity: 0,
-    transition: 'opacity 0.3s ease',
+  minHeight: '450px',
+  width: '100%',
+  '& .image-container': {
+    width: '100%',
+    height: '200px',
+    overflow: 'hidden',
+    position: 'relative'
+  },
+  '& .article-image': {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center',
+    transition: 'transform 0.4s ease',
+    borderRadius: '12px 12px 0 0'
   },
   '&:hover': {
-    transform: 'translateY(-8px) rotateX(2deg)',
-    boxShadow: `0 12px 32px ${alpha(theme.palette.common.black, 0.15)}`,
-    '&::before': {
-      opacity: 1,
-    },
+    transform: 'translateY(-4px)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
     '& .article-image': {
-      transform: 'scale(1.08)'
-    },
-    '& .action-buttons': {
-      opacity: 1,
-      transform: 'translateX(0)'
+      transform: 'scale(1.05)'
     }
   }
 }));
 
 const StatusChip = styled(Chip)(({ theme, status }) => ({
   fontWeight: 700,
-  borderRadius: '12px',
+  borderRadius: '20px',
   backdropFilter: 'blur(10px)',
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
   fontSize: '0.7rem',
   height: 24,
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
   ...(status === 'published' && {
-    backgroundColor: theme.palette.success.main,
-    color: theme.palette.success.contrastText,
+    backgroundColor: '#2e7d32',
+    color: 'white',
     '&:hover': {
-      backgroundColor: theme.palette.success.dark,
+      backgroundColor: '#1b5e20',
       transform: 'translateY(-1px)',
     }
   }),
   ...(status === 'draft' && {
-    backgroundColor: theme.palette.warning.main,
-    color: theme.palette.warning.contrastText,
+    backgroundColor: '#ed6c02',
+    color: 'white',
     '&:hover': {
-      backgroundColor: theme.palette.warning.dark,
+      backgroundColor: '#e65100',
       transform: 'translateY(-1px)',
     }
   }),
   ...(status === 'archived' && {
-    backgroundColor: theme.palette.grey[500],
-    color: theme.palette.grey[100],
+    backgroundColor: '#757575',
+    color: 'white',
     '&:hover': {
-      backgroundColor: theme.palette.grey[600],
+      backgroundColor: '#616161',
       transform: 'translateY(-1px)',
     }
   }),
@@ -188,29 +186,29 @@ const FilterChip = styled(Chip)(({ theme, active }) => ({
   transition: 'all 0.3s ease',
   height: 32,
   ...(active && {
-    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+    background: `linear-gradient(45deg, #1976d2, #42a5f5)`,
     color: 'white',
-    boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+    boxShadow: `0 4px 12px ${alpha('#1976d2', 0.3)}`,
     transform: 'translateY(-2px)',
   }),
   '&:hover': {
     transform: active ? 'translateY(-2px)' : 'translateY(-1px)',
     boxShadow: active 
-      ? `0 6px 16px ${alpha(theme.palette.primary.main, 0.4)}`
-      : `0 4px 12px ${alpha(theme.palette.grey[400], 0.3)}`,
+      ? `0 6px 16px ${alpha('#1976d2', 0.4)}`
+      : `0 4px 12px ${alpha('#1976d2', 0.2)}`,
   }
 }));
 
 const SearchBox = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
     borderRadius: 20,
-    backgroundColor: alpha(theme.palette.common.white, 0.95),
+    backgroundColor: alpha('#ffffff', 0.95),
     backdropFilter: 'blur(10px)',
     '&:hover fieldset': {
-      borderColor: theme.palette.primary.main,
+      borderColor: '#1976d2',
     },
     '&.Mui-focused fieldset': {
-      borderColor: theme.palette.primary.main,
+      borderColor: '#1976d2',
       borderWidth: 2,
     },
   },
@@ -219,8 +217,8 @@ const SearchBox = styled(TextField)(({ theme }) => ({
 const StatsCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2.5),
   borderRadius: 16,
-  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.secondary.main, 0.08)})`,
-  border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+  background: `linear-gradient(135deg, ${alpha('#1976d2', 0.08)}, ${alpha('#42a5f5', 0.08)})`,
+  border: `1px solid ${alpha('#1976d2', 0.15)}`,
   backdropFilter: 'blur(10px)',
   transition: 'all 0.3s ease',
   position: 'relative',
@@ -232,44 +230,47 @@ const StatsCard = styled(Paper)(({ theme }) => ({
     left: 0,
     right: 0,
     height: '2px',
-    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+    background: `linear-gradient(90deg, #1976d2, #42a5f5)`,
   },
   '&:hover': {
     transform: 'translateY(-4px)',
-    boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+    boxShadow: `0 8px 24px ${alpha('#1976d2', 0.2)}`,
   }
 }));
 
 const ActionButton = styled(IconButton)(({ theme, variant }) => ({
-  width: 28,
-  height: 28,
+  width: 32,
+  height: 32,
   borderRadius: '8px',
   transition: 'all 0.2s ease',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
   ...(variant === 'edit' && {
-    backgroundColor: theme.palette.primary.main,
-    color: theme.palette.primary.contrastText,
+    backgroundColor: '#1976d2',
+    color: 'white',
     '&:hover': {
-      backgroundColor: theme.palette.primary.dark,
+      backgroundColor: '#1565c0',
       transform: 'scale(1.1)',
+      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
     }
   }),
   ...(variant === 'delete' && {
-    backgroundColor: theme.palette.error.main,
-    color: theme.palette.error.contrastText,
+    backgroundColor: '#d32f2f',
+    color: 'white',
     '&:hover': {
-      backgroundColor: theme.palette.error.dark,
+      backgroundColor: '#c62828',
       transform: 'scale(1.1)',
+      boxShadow: '0 4px 12px rgba(211, 47, 47, 0.3)',
     }
   }),
 }));
 
 const HeaderContainer = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, ${theme.palette.background.default}, ${alpha(theme.palette.primary.main, 0.05)})`,
+  background: `linear-gradient(135deg, ${alpha('#ffffff', 0.95)}, ${alpha('#f8f9ff', 0.95)})`,
   borderRadius: 24,
   padding: theme.spacing(4),
   marginBottom: theme.spacing(4),
-  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.08)}`,
-  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+  boxShadow: `0 8px 32px ${alpha('#1976d2', 0.08)}`,
+  border: `1px solid ${alpha('#1976d2', 0.1)}`,
   position: 'relative',
   overflow: 'hidden',
   '&::before': {
@@ -279,7 +280,7 @@ const HeaderContainer = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     height: '4px',
-    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main}, ${theme.palette.primary.main})`,
+    background: `linear-gradient(90deg, #1976d2, #42a5f5, #1565c0)`,
     backgroundSize: '200% 100%',
     animation: `${shimmer} 3s ease-in-out infinite`,
   }
@@ -294,132 +295,80 @@ const ArticlesList = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('created_at');
   const [viewMode, setViewMode] = useState('grid');
-  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [error, setError] = useState(null);
 
-  // Mock data - replace with actual API call
+  // Fetch articles from API
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
+        console.log('Fetching articles...');
         
-        const mockArticles = [
-          {
-            id: 1,
-            title: 'دليل شامل لتطوير تطبيقات الويب الحديثة',
-            summary: 'تعرف على أحدث تقنيات تطوير الويب بما في ذلك React, Vue.js, و Angular. دليل عملي لبناء تطبيقات ويب متقدمة وسريعة.',
-            status: 'published',
-            views_count: 2150,
-            created_at: '2024-01-15T10:30:00Z',
-            updated_at: '2024-01-20T14:45:00Z',
-            published_at: '2024-01-16T09:00:00Z',
-            featured: true,
-            tags: ['React', 'Vue.js', 'Angular'],
-            image: 'https://via.placeholder.com/400x250/4A6CF7/ffffff?text=Web+Development',
-            reading_time: 12,
-            likes_count: 89,
-            comments_count: 23,
-            category: 'تطوير الويب'
-          },
-          {
-            id: 2,
-            title: 'الذكاء الاصطناعي في التعليم: مستقبل التعلم',
-            summary: 'استكشاف دور الذكاء الاصطناعي في تحويل التعليم. كيف يمكن للتقنيات الحديثة تحسين تجربة التعلم.',
-            status: 'draft',
-            views_count: 0,
-            created_at: '2024-01-18T16:20:00Z',
-            updated_at: '2024-01-19T11:15:00Z',
-            published_at: null,
-            featured: false,
-            tags: ['AI', 'التعليم', 'التعلم الآلي'],
-            image: 'https://via.placeholder.com/400x250/6C63FF/ffffff?text=AI+Education',
-            reading_time: 8,
-            likes_count: 0,
-            comments_count: 0,
-            category: 'الذكاء الاصطناعي'
-          },
-          {
-            id: 3,
-            title: 'أساسيات تصميم واجهات المستخدم UX/UI',
-            summary: 'دليل شامل لتصميم واجهات مستخدم جذابة وسهلة الاستخدام. تعرف على مبادئ التصميم وأفضل الممارسات.',
-            status: 'published',
-            views_count: 1567,
-            created_at: '2024-01-10T08:15:00Z',
-            updated_at: '2024-01-12T13:30:00Z',
-            published_at: '2024-01-11T10:00:00Z',
-            featured: false,
-            tags: ['UX', 'UI', 'تصميم'],
-            image: 'https://via.placeholder.com/400x250/00C853/ffffff?text=UX+UI+Design',
-            reading_time: 10,
-            likes_count: 45,
-            comments_count: 12,
-            category: 'تصميم'
-          },
-          {
-            id: 4,
-            title: 'تطوير تطبيقات الموبايل باستخدام Flutter',
-            summary: 'خطوة بخطوة لإنشاء تطبيقات موبايل متقدمة باستخدام Flutter. تعرف على أساسيات التطوير وأفضل الممارسات.',
-            status: 'archived',
-            views_count: 1423,
-            created_at: '2023-12-20T12:00:00Z',
-            updated_at: '2024-01-05T15:20:00Z',
-            published_at: '2023-12-22T09:00:00Z',
-            featured: false,
-            tags: ['Flutter', 'موبايل', 'تطوير'],
-            image: 'https://via.placeholder.com/400x250/FFAB00/ffffff?text=Flutter+Mobile',
-            reading_time: 15,
-            likes_count: 38,
-            comments_count: 8,
-            category: 'تطوير الموبايل'
-          },
-          {
-            id: 5,
-            title: 'أمن المعلومات: حماية البيانات في العصر الرقمي',
-            summary: 'تعرف على أساسيات أمن المعلومات وكيفية حماية البيانات والأنظمة من التهديدات الإلكترونية الحديثة.',
-            status: 'published',
-            views_count: 1345,
-            created_at: '2024-01-12T11:30:00Z',
-            updated_at: '2024-01-14T16:45:00Z',
-            published_at: '2024-01-13T09:00:00Z',
-            featured: false,
-            tags: ['أمن', 'حماية', 'بيانات'],
-            image: 'https://via.placeholder.com/400x250/FF3D00/ffffff?text=Cybersecurity',
-            reading_time: 14,
-            likes_count: 52,
-            comments_count: 18,
-            category: 'الأمن السيبراني'
-          },
-          {
-            id: 6,
-            title: 'تعلم Machine Learning من الصفر إلى الاحتراف',
-            summary: 'رحلة شاملة في عالم التعلم الآلي من المفاهيم الأساسية إلى التطبيقات العملية المتقدمة.',
-            status: 'draft',
-            views_count: 0,
-            created_at: '2024-01-10T08:20:00Z',
-            updated_at: '2024-01-15T12:30:00Z',
-            published_at: null,
-            featured: false,
-            tags: ['Machine Learning', 'AI', 'تعلم آلي'],
-            image: 'https://via.placeholder.com/400x250/9C27B0/ffffff?text=Machine+Learning',
-            reading_time: 20,
-            likes_count: 0,
-            comments_count: 0,
-            category: 'الذكاء الاصطناعي'
-          }
-        ];
+        const response = await articleAPI.getArticles({
+          page: currentPage,
+          page_size: pageSize,
+          search: searchQuery,
+          status: activeTab === 0 ? 'published' : activeTab === 1 ? 'draft' : 'archived',
+          ordering: sortBy === 'newest' ? '-created_at' : sortBy === 'oldest' ? 'created_at' : '-views_count'
+        });
         
-        setArticles(mockArticles);
+        console.log('Articles response:', response);
+        
+        // Handle different response formats
+        let articlesData = [];
+        let totalCount = 0;
+        
+        if (Array.isArray(response)) {
+          articlesData = response;
+          totalCount = response.length;
+        } else if (response.results) {
+          articlesData = response.results;
+          totalCount = response.count || response.results.length;
+        } else if (response.data) {
+          articlesData = response.data;
+          totalCount = response.total || response.data.length;
+        } else {
+          articlesData = [];
+          totalCount = 0;
+        }
+        
+        // Transform articles data to match our component structure
+        const transformedArticles = articlesData.map(article => ({
+          id: article.id,
+          title: article.title || '',
+          summary: article.summary || '',
+          status: article.status || 'draft',
+          views_count: article.views_count || 0,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          published_at: article.published_at,
+          featured: article.featured || false,
+          tags: article.tags ? article.tags.map(tag => tag.name || tag) : [],
+          image: article.image ? (article.image.startsWith('http') ? article.image : `http://localhost:8000${article.image}`) : null,
+          reading_time: article.reading_time || 5,
+          likes_count: article.likes_count || 0,
+          comments_count: article.comments_count || 0,
+          category: article.category || 'عام'
+        }));
+        
+        setArticles(transformedArticles);
+        setTotalCount(totalCount);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching articles:', error);
+        setError('حدث خطأ أثناء تحميل المقالات. يرجى المحاولة مرة أخرى.');
         setLoading(false);
       }
     };
 
     fetchArticles();
-  }, []);
+  }, [currentPage, pageSize, searchQuery, activeTab, sortBy]);
 
   const handleSearch = (event) => {
     setSearchQuery(event.target.value);
@@ -433,35 +382,33 @@ const ArticlesList = () => {
     setSortBy(sort);
   };
 
-  const handleMenuOpen = (event, article) => {
-    setAnchorEl(event.currentTarget);
+
+
+  const handleEdit = (article) => {
+    navigate(`/teacher/articles/${article.id}/edit`);
+  };
+
+  const handleDelete = (article) => {
     setSelectedArticle(article);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedArticle(null);
-  };
-
-  const handleEdit = () => {
-    if (selectedArticle) {
-      navigate(`/teacher/articles/${selectedArticle.id}/edit`);
-    }
-    handleMenuClose();
-  };
-
-  const handleDelete = () => {
     setDeleteDialogOpen(true);
-    handleMenuClose();
   };
 
   const confirmDelete = async () => {
     try {
+      console.log('Deleting article:', selectedArticle.id);
+      
+      // Call API to delete article
+      await articleAPI.deleteArticle(selectedArticle.id);
+      
+      // Remove article from local state
       setArticles(prev => prev.filter(article => article.id !== selectedArticle.id));
       setDeleteDialogOpen(false);
       setSelectedArticle(null);
+      
+      console.log('Article deleted successfully');
     } catch (error) {
       console.error('Error deleting article:', error);
+      setError('حدث خطأ أثناء حذف المقالة. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -514,20 +461,37 @@ const ArticlesList = () => {
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.02 }}
       layout
+      style={{ width: '100%' }}
     >
-      <ModernCard sx={{ height: '100%', cursor: 'pointer' }}>
+      <ModernCard sx={{ height: '100%', cursor: 'pointer', width: '100%' }}>
         <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-          <CardMedia
-            component="img"
-            height="140"
-            image={article.image}
-            alt={article.title}
-            className="article-image"
-            sx={{ 
-              objectFit: 'cover',
-              transition: 'transform 0.4s ease'
-            }}
-          />
+          <Box className="image-container" sx={{ 
+            position: 'relative', 
+            width: '100%', 
+            height: '200px',
+            overflow: 'hidden'
+          }}>
+            <img
+              src={article.image || 'https://via.placeholder.com/400x200/4A6CF7/ffffff?text=No+Image'}
+              alt={article.title}
+              className="article-image"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+                transition: 'transform 0.4s ease',
+                borderRadius: '12px 12px 0 0'
+              }}
+              onError={(e) => {
+                console.error('Image failed to load:', article.image);
+                e.target.src = 'https://via.placeholder.com/400x200/4A6CF7/ffffff?text=Image+Error';
+              }}
+              onLoad={() => {
+                console.log('Article image loaded successfully:', article.image);
+              }}
+            />
+          </Box>
           
           {/* Action Buttons */}
           <Box 
@@ -539,28 +503,26 @@ const ArticlesList = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: 0.5,
-              opacity: 0,
-              transform: 'translateX(20px)',
-              transition: 'all 0.3s ease',
+              opacity: 1,
               zIndex: 3
             }}
           >
             <Tooltip title="تعديل المقالة" placement="left">
               <ActionButton
                 variant="edit"
-                onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, article); }}
+                onClick={(e) => { e.stopPropagation(); handleEdit(article); }}
                 size="small"
               >
-                <EditIcon sx={{ fontSize: 12 }} />
+                <EditIcon sx={{ fontSize: 16 }} />
               </ActionButton>
             </Tooltip>
             <Tooltip title="حذف المقالة" placement="left">
               <ActionButton
                 variant="delete"
-                onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                onClick={(e) => { e.stopPropagation(); handleDelete(article); }}
                 size="small"
               >
-                <DeleteIcon sx={{ fontSize: 12 }} />
+                <DeleteIcon sx={{ fontSize: 16 }} />
               </ActionButton>
             </Tooltip>
           </Box>
@@ -615,120 +577,109 @@ const ArticlesList = () => {
         
         <CardContent className="card-content" sx={{ 
           flexGrow: 1, 
-          p: 2, 
+          p: 3, 
           display: 'flex',
           flexDirection: 'column',
-          gap: 1
+          gap: 2,
+          minHeight: '250px'
         }}>
-          {/* Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-              <Box
-                sx={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: alpha(theme.palette.primary.main, 0.15),
-                  color: theme.palette.primary.main,
-                }}
-              >
-                <ArticleIcon sx={{ fontSize: 10 }} />
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ 
-                fontWeight: 500,
-                fontSize: '0.6rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
-                {article.category}
-              </Typography>
-            </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ 
-              fontSize: '0.55rem',
-              opacity: 0.7
-            }}>
+          {/* Header with Status and Date */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <StatusChip
+              label={article.status === 'published' ? 'منشور' : 
+                     article.status === 'draft' ? 'مسودة' : 'مؤرشف'}
+              status={article.status}
+              size="small"
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
               {formatDate(article.updated_at)}
             </Typography>
           </Box>
           
           {/* Title */}
           <Typography variant="h6" component="h3" sx={{ 
-            fontWeight: 600, 
+            fontWeight: 700, 
             lineHeight: 1.3, 
             minHeight: '2.4em',
-            color: theme.palette.text.primary,
-            fontSize: '0.85rem',
-            mb: 1
+            maxHeight: '2.4em',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            color: '#333',
+            fontSize: '1.1rem',
+            mb: 2
           }}>
             {article.title}
           </Typography>
           
           {/* Summary */}
           <Typography variant="body2" color="text.secondary" sx={{ 
-            lineHeight: 1.4, 
-            minHeight: '2.8em',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
+            lineHeight: 1.5, 
+            minHeight: '3.6em',
+            maxHeight: '3.6em',
             overflow: 'hidden',
-            fontSize: '0.7rem',
-            mb: 1.5
+            textOverflow: 'ellipsis',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            fontSize: '0.85rem',
+            mb: 3,
+            color: '#666'
           }}>
             {article.summary}
           </Typography>
           
-          {/* Tags */}
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
-            {article.tags.slice(0, 2).map((tag) => (
-              <Chip
-                key={tag}
-                label={tag}
-                size="small"
-                variant="outlined"
-                sx={{ 
-                  fontSize: '0.5rem', 
-                  fontWeight: 500,
-                  borderRadius: '3px',
-                  height: 14,
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  }
-                }}
-              />
-            ))}
-          </Box>
-          
-          {/* Footer Stats */}
+          {/* Footer with Edit and Stats */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            mt: 'auto',
-            pt: 1,
-            borderTop: `1px solid ${alpha(theme.palette.divider, 0.08)}`
+            mt: 'auto'
           }}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              gap: 0.5,
+              color: '#333',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+              cursor: 'pointer'
+            }}>
+              تعديل
+              <Box sx={{ 
+                width: 24, 
+                height: 24, 
+                borderRadius: '50%', 
+                backgroundColor: '#1976d2',
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center' 
+              }}>
+                <ArrowForwardIcon sx={{ fontSize: 12, color: 'white' }} />
+              </Box>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
               <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                gap: 0.3
+                gap: 0.5
               }}>
-                <VisibilityIcon sx={{ fontSize: 10, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
-                  {article.views_count.toLocaleString()}
+                <ScheduleIcon sx={{ fontSize: 14, color: '#999' }} />
+                <Typography variant="caption" sx={{ fontWeight: 500, color: '#999', fontSize: '0.7rem' }}>
+                  {article.reading_time} د
                 </Typography>
               </Box>
               <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                gap: 0.3
+                gap: 0.5
               }}>
-                <ScheduleIcon sx={{ fontSize: 10, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.55rem' }}>
-                  {article.reading_time} د
+                <VisibilityIcon sx={{ fontSize: 14, color: '#999' }} />
+                <Typography variant="caption" sx={{ fontWeight: 500, color: '#999', fontSize: '0.7rem' }}>
+                  {article.views_count.toLocaleString()}
                 </Typography>
               </Box>
             </Box>
@@ -751,10 +702,11 @@ const ArticlesList = () => {
         <Container sx={{ py: 4 }}>
           <Grid container spacing={3}>
             {[1, 2, 3, 4, 5, 6].map((item) => (
-              <Grid item xs={12} sm={6} lg={4} key={item}>
-                <Skeleton variant="rectangular" height={240} sx={{ borderRadius: 3 }} />
-                <Skeleton variant="text" sx={{ mt: 1 }} />
-                <Skeleton variant="text" width="60%" />
+              <Grid item xs={12} md={6} key={item}>
+                <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 3, mb: 2 }} />
+                <Skeleton variant="text" height={24} sx={{ mb: 1 }} />
+                <Skeleton variant="text" height={20} width="60%" sx={{ mb: 1 }} />
+                <Skeleton variant="text" height={20} width="40%" />
               </Grid>
             ))}
           </Grid>
@@ -797,16 +749,16 @@ const ArticlesList = () => {
                 startIcon={<AddIcon />}
                 onClick={() => navigate('/teacher/articles/create')}
                 sx={{
-                  background: 'linear-gradient(45deg, #4A6CF7 30%, #6C63FF 90%)',
+                  background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
                   borderRadius: '16px',
                   px: 2.5,
                   py: 1,
                   fontWeight: 600,
                   fontSize: '0.9rem',
-                  boxShadow: '0 6px 24px rgba(74, 108, 247, 0.3)',
+                  boxShadow: '0 6px 24px rgba(25, 118, 210, 0.3)',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 32px rgba(74, 108, 247, 0.4)',
+                    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.4)',
                   },
                 }}
               >
@@ -1037,9 +989,9 @@ const ArticlesList = () => {
         {sortedArticles.length > 0 ? (
           <Box>
             <AnimatePresence>
-              <Grid container spacing={2}>
+              <Grid container spacing={3} sx={{ width: '100%' }}>
                 {sortedArticles.map((article) => (
-                  <Grid item xs={12} sm={6} lg={4} key={article.id}>
+                  <Grid item xs={12} md={6} key={article.id} sx={{ display: 'flex' }}>
                     {renderArticleCard(article)}
                   </Grid>
                 ))}
@@ -1069,21 +1021,7 @@ const ArticlesList = () => {
         )}
       </Container>
 
-      {/* Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={handleEdit}>
-          <EditIcon sx={{ mr: 1 }} />
-          تعديل
-        </MenuItem>
-        <MenuItem onClick={handleDelete}>
-          <DeleteIcon sx={{ mr: 1 }} />
-          حذف
-        </MenuItem>
-      </Menu>
+
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

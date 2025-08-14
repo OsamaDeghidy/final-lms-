@@ -23,6 +23,7 @@ import {
   Skeleton,
   Paper
 } from '@mui/material';
+import { articleAPI } from '../../../services/api.service';
 import {
   Save as SaveIcon,
   Publish as PublishIcon,
@@ -96,36 +97,34 @@ const EditArticle = () => {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
-        // TODO: Replace with actual API call
-        // const response = await fetch(`/api/articles/${id}`);
-        // const data = await response.json();
+        console.log('Fetching article with ID:', id);
+        const response = await articleAPI.getArticle(id);
+        console.log('Article data received:', response);
         
-        // Simulate API call with mock data
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const mockArticle = {
-          id: parseInt(id),
-          title: 'أساسيات تطوير الويب الحديث',
-          slug: 'web-development-basics',
-          content: 'هذا محتوى تجريبي للمقالة...',
-          summary: 'دليل شامل لتعلم أساسيات تطوير الويب باستخدام أحدث التقنيات والمنهجيات الحديثة.',
-          tags: ['ويب', 'تطوير', 'تقنيات'],
-          status: 'published',
-          featured: true,
-          allow_comments: true,
-          meta_description: 'دليل شامل لتعلم أساسيات تطوير الويب',
-          meta_keywords: 'ويب, تطوير, تقنيات, برمجة',
+        // Transform the response to match our form structure
+        const article = {
+          id: response.id,
+          title: response.title || '',
+          slug: response.slug || '',
+          content: response.content || '',
+          summary: response.summary || '',
+          tags: response.tags ? response.tags.map(tag => tag.name || tag) : [],
+          status: response.status || 'draft',
+          featured: response.featured || false,
+          allow_comments: response.allow_comments !== false,
+          meta_description: response.meta_description || '',
+          meta_keywords: response.meta_keywords || '',
           image: null,
-          imagePreview: 'https://via.placeholder.com/400x250/4A6CF7/ffffff?text=Web+Development'
+          imagePreview: response.image ? (response.image.startsWith('http') ? response.image : `http://localhost:8000${response.image}`) : null
         };
 
-        setArticleData(mockArticle);
+        setArticleData(article);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching article:', error);
         setErrors(prev => ({
           ...prev,
-          general: 'حدث خطأ أثناء تحميل المقالة'
+          general: 'حدث خطأ أثناء تحميل المقالة. يرجى المحاولة مرة أخرى.'
         }));
         setLoading(false);
       }
@@ -274,20 +273,55 @@ const EditArticle = () => {
 
     setSaving(true);
     try {
-      // TODO: Implement actual API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare article data
+      const articleDataToSend = {
+        ...articleData,
+        status: status,
+        content: articleData.content || '',
+        summary: articleData.summary || '',
+        meta_description: articleData.meta_description || '',
+        meta_keywords: articleData.meta_keywords || '',
+        featured: articleData.featured || false,
+        allow_comments: articleData.allow_comments !== false,
+        tags: articleData.tags || []
+      };
+
+      // Remove imagePreview from data to send
+      delete articleDataToSend.imagePreview;
+
+      console.log('Sending updated article data:', articleDataToSend);
       
-      // Simulate success
-      console.log('Article updated:', { ...articleData, status });
+      // Call API to update article
+      const response = await articleAPI.updateArticle(id, articleDataToSend);
+      
+      console.log('Article updated successfully:', response);
       
       // Navigate back to articles list
       navigate('/teacher/articles');
     } catch (error) {
       console.error('Error updating article:', error);
-      setErrors(prev => ({
-        ...prev,
-        general: 'حدث خطأ أثناء تحديث المقالة'
-      }));
+      
+      // Handle specific error cases
+      if (error.response?.data) {
+        const errorData = error.response.data;
+        const newErrors = {};
+        
+        // Map backend errors to form fields
+        Object.keys(errorData).forEach(key => {
+          if (Array.isArray(errorData[key])) {
+            newErrors[key] = errorData[key][0];
+          } else {
+            newErrors[key] = errorData[key];
+          }
+        });
+        
+        setErrors(newErrors);
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: 'حدث خطأ أثناء تحديث المقالة. يرجى المحاولة مرة أخرى.'
+        }));
+      }
     } finally {
       setSaving(false);
     }
@@ -491,13 +525,16 @@ const EditArticle = () => {
                   {articleData.imagePreview ? (
                     <Box sx={{ position: 'relative', mb: 2 }}>
                       <img
-                        src={articleData.imagePreview}
+                        src={articleData.imagePreview || 'https://via.placeholder.com/400x250/4A6CF7/ffffff?text=No+Image'}
                         alt="Preview"
                         style={{
                           width: '100%',
                           height: 200,
                           objectFit: 'cover',
                           borderRadius: theme.spacing(1)
+                        }}
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/400x250/4A6CF7/ffffff?text=Image+Error';
                         }}
                       />
                       <IconButton

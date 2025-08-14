@@ -269,4 +269,384 @@ export const paymentAPI = {
   },
 };
 
+// Articles API methods
+export const articleAPI = {
+  // Get all articles
+  getArticles: async (params = {}) => {
+    try {
+      const response = await api.get('/articles/articles/', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching articles:', error);
+      throw error;
+    }
+  },
+
+  // Get article by ID
+  getArticle: async (id) => {
+    try {
+      const response = await api.get(`/articles/articles/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching article:', error);
+      throw error;
+    }
+  },
+
+  // Get article by slug
+  getArticleBySlug: async (slug) => {
+    try {
+      const response = await api.get(`/articles/articles/?slug=${slug}`);
+      // API returns a list, so we need to get the first item
+      if (response.data && response.data.results && response.data.results.length > 0) {
+        return response.data.results[0];
+      } else if (Array.isArray(response.data) && response.data.length > 0) {
+        return response.data[0];
+      } else {
+        throw new Error('Article not found');
+      }
+    } catch (error) {
+      console.error('Error fetching article by slug:', error);
+      throw error;
+    }
+  },
+
+  // Create new article
+  createArticle: async (articleData) => {
+    const formData = new FormData();
+    
+    // Add basic fields
+    Object.keys(articleData).forEach(key => {
+      if (key === 'tags' && Array.isArray(articleData[key])) {
+        articleData[key].forEach(tag => formData.append('tags', tag));
+      } else if (key === 'image' && articleData[key] instanceof File) {
+        formData.append('image', articleData[key]);
+      } else if (articleData[key] !== null && articleData[key] !== undefined && articleData[key] !== '') {
+        formData.append(key, articleData[key]);
+      }
+    });
+
+    try {
+      const response = await api.post('/articles/articles/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error in createArticle API call:', error);
+      throw error;
+    }
+  },
+
+  // Update article
+  updateArticle: async (id, articleData) => {
+    const formData = new FormData();
+    
+    // Add basic fields
+    Object.keys(articleData).forEach(key => {
+      if (key === 'tags' && Array.isArray(articleData[key])) {
+        articleData[key].forEach(tag => formData.append('tags', tag));
+      } else if (key === 'image' && articleData[key] instanceof File) {
+        formData.append('image', articleData[key]);
+      } else if (articleData[key] !== null && articleData[key] !== undefined && articleData[key] !== '') {
+        formData.append(key, articleData[key]);
+      }
+    });
+
+    try {
+      const response = await api.patch(`/articles/articles/${id}/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error in updateArticle API call:', error);
+      throw error;
+    }
+  },
+
+  // Delete article
+  deleteArticle: async (id) => {
+    try {
+      const response = await api.delete(`/articles/articles/${id}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      throw error;
+    }
+  },
+
+  // Get featured articles
+  getFeaturedArticles: async () => {
+    try {
+      const response = await api.get('/articles/featured/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching featured articles:', error);
+      throw error;
+    }
+  },
+
+  // Get recent articles
+  getRecentArticles: async () => {
+    try {
+      const response = await api.get('/articles/recent/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recent articles:', error);
+      throw error;
+    }
+  },
+
+  // Get popular articles
+  getPopularArticles: async () => {
+    try {
+      const response = await api.get('/articles/popular/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching popular articles:', error);
+      throw error;
+    }
+  },
+
+  // Get related articles
+  getRelatedArticles: async (articleId, category = null, limit = 3) => {
+    try {
+      let url = `/articles/articles/?limit=${limit}`;
+      if (category) {
+        url += `&category=${category}`;
+      }
+      if (articleId) {
+        url += `&exclude=${articleId}`;
+      }
+      const response = await api.get(url);
+      return response.data.results || response.data || [];
+    } catch (error) {
+      console.error('Error fetching related articles:', error);
+      return [];
+    }
+  },
+
+  // Get article tags
+  getArticleTags: async () => {
+    try {
+      const response = await api.get('/articles/tags/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching article tags:', error);
+      return [];
+    }
+  },
+
+  // Get author profile (user data)
+  getAuthorProfile: async (authorId) => {
+    try {
+      console.log('Fetching author profile for ID:', authorId);
+      
+      // Try different endpoints to get user profile data
+      let response;
+      const endpoints = [
+        `/users/${authorId}/`,
+        `/users/${authorId}/profile/`,
+        `/profiles/${authorId}/`,
+        `/users/profiles/${authorId}/`,
+        `/instructors/${authorId}/`,
+        `/teachers/${authorId}/`
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          response = await api.get(endpoint);
+          console.log(`Success with endpoint: ${endpoint}`);
+          break;
+        } catch (error) {
+          console.log(`Failed with endpoint: ${endpoint}`, error.response?.status);
+          continue;
+        }
+      }
+      
+      if (!response) {
+        console.error('All endpoints failed for author profile');
+        return null;
+      }
+      
+      console.log('Author profile response:', response.data);
+      
+      // Transform the response to include profile data if it's nested
+      let profileData = response.data;
+      
+      // If the response has a profile field, use it
+      if (response.data.profile) {
+        profileData = {
+          ...response.data.profile,
+          user: response.data,
+          // Include user fields in the main object for easier access
+          user_id: response.data.id,
+          user_email: response.data.email,
+          user_first_name: response.data.first_name,
+          user_last_name: response.data.last_name,
+          user_username: response.data.username
+        };
+      }
+      
+      // If the response is directly a profile, add user info if available
+      if (response.data.user) {
+        profileData = {
+          ...response.data,
+          user_id: response.data.user.id,
+          user_email: response.data.user.email,
+          user_first_name: response.data.user.first_name,
+          user_last_name: response.data.user.last_name,
+          user_username: response.data.user.username
+        };
+      }
+      
+      return profileData;
+    } catch (error) {
+      console.error('Error fetching author profile:', error);
+      return null;
+    }
+  },
+
+  // Get teacher profile (alternative method)
+  getTeacherProfile: async (teacherId) => {
+    try {
+      console.log('Fetching teacher profile for ID:', teacherId);
+      const response = await api.get(`/teachers/${teacherId}/`);
+      console.log('Teacher profile response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching teacher profile:', error);
+      return null;
+    }
+  },
+
+  // Search articles
+  searchArticles: async (query) => {
+    try {
+      const response = await api.get('/articles/search/', { params: { q: query } });
+      return response.data;
+    } catch (error) {
+      console.error('Error searching articles:', error);
+      throw error;
+    }
+  },
+
+  // Get article categories
+  getArticleCategories: async () => {
+    try {
+      const response = await api.get('/articles/categories/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching article categories:', error);
+      return [];
+    }
+  },
+
+  // Get article comments
+  getArticleComments: async (articleId) => {
+    try {
+      const response = await api.get(`/articles/comments/?article=${articleId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching article comments:', error);
+      throw error;
+    }
+  },
+
+  // Create article comment
+  createArticleComment: async (articleId, commentData) => {
+    try {
+      const response = await api.post('/articles/comments/', {
+        article: articleId,
+        ...commentData
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating article comment:', error);
+      throw error;
+    }
+  },
+
+  // Like article
+  likeArticle: async (articleId) => {
+    try {
+      const response = await api.post(`/articles/articles/${articleId}/like/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error liking article:', error);
+      throw error;
+    }
+  },
+
+  // Unlike article
+  unlikeArticle: async (articleId) => {
+    try {
+      const response = await api.post(`/articles/articles/${articleId}/unlike/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unliking article:', error);
+      throw error;
+    }
+  },
+
+  // Bookmark article
+  bookmarkArticle: async (articleId, notes = null) => {
+    try {
+      const response = await api.post(`/articles/articles/${articleId}/bookmarks/`, { notes });
+      return response.data;
+    } catch (error) {
+      console.error('Error bookmarking article:', error);
+      throw error;
+    }
+  },
+
+  // Remove bookmark
+  removeBookmark: async (articleId) => {
+    try {
+      const response = await api.delete(`/articles/articles/${articleId}/bookmarks/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+      throw error;
+    }
+  },
+
+  // Rate article
+  rateArticle: async (articleId, rating, comment = null) => {
+    try {
+      const response = await api.post(`/articles/articles/${articleId}/ratings/`, { rating, comment });
+      return response.data;
+    } catch (error) {
+      console.error('Error rating article:', error);
+      throw error;
+    }
+  },
+
+  // Get user bookmarks
+  getUserBookmarks: async () => {
+    try {
+      const response = await api.get('/articles/my/bookmarks/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user bookmarks:', error);
+      throw error;
+    }
+  },
+
+  // Get user ratings
+  getUserRatings: async () => {
+    try {
+      const response = await api.get('/articles/my/ratings/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user ratings:', error);
+      throw error;
+    }
+  },
+};
+
 export default api;
