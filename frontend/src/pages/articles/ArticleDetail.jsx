@@ -47,6 +47,7 @@ import { styled } from '@mui/material/styles';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { articleAPI } from '../../services/api.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
@@ -64,6 +65,7 @@ const HeroSection = styled(Box)(({ theme }) => ({
     bottom: 0,
     background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
     opacity: 0.3,
+    animation: 'patternMove 20s linear infinite',
   },
   '&::after': {
     content: '""',
@@ -79,6 +81,48 @@ const HeroSection = styled(Box)(({ theme }) => ({
   '@keyframes float': {
     '0%, 100%': { transform: 'translate(-50%, -50%) translateY(0px)' },
     '50%': { transform: 'translate(-50%, -50%) translateY(-20px)' },
+  },
+  '@keyframes patternMove': {
+    '0%': { transform: 'translateX(0) translateY(0)' },
+    '25%': { transform: 'translateX(-10px) translateY(-10px)' },
+    '50%': { transform: 'translateX(-20px) translateY(0)' },
+    '75%': { transform: 'translateX(-10px) translateY(10px)' },
+    '100%': { transform: 'translateX(0) translateY(0)' },
+  },
+  '& .animated-bg': {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+    backgroundSize: '200% 200%',
+    animation: 'shimmer 3s ease-in-out infinite',
+    zIndex: 1,
+  },
+  '@keyframes shimmer': {
+    '0%': { backgroundPosition: '-200% -200%' },
+    '100%': { backgroundPosition: '200% 200%' },
+  },
+  '& .content': {
+    position: 'relative',
+    zIndex: 2,
+  },
+  '& .stats-item': {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 0.5,
+    padding: '8px 12px',
+    borderRadius: '20px',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+    }
   },
 }));
 
@@ -179,9 +223,23 @@ const CommentCard = styled(Paper)(({ theme }) => ({
   borderRadius: theme.spacing(2),
   border: `1px solid ${theme.palette.divider}`,
   transition: 'all 0.3s ease',
+  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 255, 0.95))',
+  backdropFilter: 'blur(10px)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '2px',
+    background: 'linear-gradient(90deg, #1976d2, #42a5f5)',
+  },
   '&:hover': {
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.15)',
+    transform: 'translateY(-4px)',
+    border: `1px solid rgba(25, 118, 210, 0.2)`,
   },
 }));
 
@@ -189,9 +247,27 @@ const CommentForm = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
   marginBottom: theme.spacing(3),
   borderRadius: theme.spacing(2),
-  background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
-  border: `1px solid ${theme.palette.divider}`,
-  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+  background: `linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 255, 0.95))`,
+  backdropFilter: 'blur(10px)',
+  border: `1px solid rgba(25, 118, 210, 0.1)`,
+  boxShadow: '0 4px 20px rgba(25, 118, 210, 0.08)',
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '3px',
+    background: 'linear-gradient(90deg, #1976d2, #42a5f5, #1565c0)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 3s ease-in-out infinite',
+  },
+  '@keyframes shimmer': {
+    '0%': { backgroundPosition: '-200% 0' },
+    '100%': { backgroundPosition: '200% 0' },
+  },
 }));
 
 const ArticleDetail = () => {
@@ -199,12 +275,16 @@ const ArticleDetail = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
   const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
+  const { isAuthenticated } = useAuth();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookmarked, setBookmarked] = useState(false);
   const [liked, setLiked] = useState(false);
   const [comment, setComment] = useState('');
   const [comments, setComments] = useState([]);
+  const [replyTo, setReplyTo] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [authorProfile, setAuthorProfile] = useState(null);
   const [articleTags, setArticleTags] = useState([]);
@@ -290,20 +370,83 @@ const ArticleDetail = () => {
         // Fetch additional data in parallel
         const fetchAdditionalData = async () => {
           try {
+            // Check user interaction state (like, bookmark) if user is authenticated
+            if (isAuthenticated) {
+              try {
+                const [likeResponse, bookmarkResponse] = await Promise.all([
+                  articleAPI.checkArticleLike(response.id),
+                  articleAPI.checkArticleBookmark(response.id)
+                ]);
+                
+                setLiked(likeResponse.liked || false);
+                setBookmarked(bookmarkResponse.bookmarked || false);
+                console.log('User interaction state:', { liked: likeResponse.liked, bookmarked: bookmarkResponse.bookmarked });
+              } catch (interactionError) {
+                console.error('Error fetching user interaction state:', interactionError);
+                // Set default values if there's an error
+                setLiked(false);
+                setBookmarked(false);
+              }
+            }
+
             // Fetch comments
-          const commentsResponse = await articleAPI.getArticleComments(response.id);
-          console.log('Comments API response:', commentsResponse);
-          
-          const transformedComments = Array.isArray(commentsResponse) ? commentsResponse.map(comment => ({
-            id: comment.id,
-            author: comment.author_name || 'مستخدم',
-            avatar: `https://via.placeholder.com/40x40/6C63FF/ffffff?text=${(comment.author_name || 'م').charAt(0)}`,
-            content: comment.content || '',
-            created_at: comment.created_at,
-            likes: comment.likes_count || 0
-          })) : [];
-          
-          setComments(transformedComments);
+            try {
+              const commentsResponse = await articleAPI.getArticleComments(response.id);
+              console.log('Comments API response:', commentsResponse);
+              
+              let transformedComments = [];
+              
+              if (Array.isArray(commentsResponse)) {
+                transformedComments = commentsResponse.map(comment => ({
+                  id: comment.id,
+                  author: comment.author_name || comment.user?.username || 'مستخدم',
+                  avatar: comment.user?.profile?.avatar || `https://via.placeholder.com/40x40/6C63FF/ffffff?text=${(comment.author_name || comment.user?.username || 'م').charAt(0)}`,
+                  content: comment.content || '',
+                  created_at: comment.created_at,
+                  likes: comment.likes_count || 0,
+                  replies: comment.replies || [],
+                  is_approved: comment.is_approved !== false
+                }));
+              } else if (commentsResponse && typeof commentsResponse === 'object') {
+                // Handle paginated response
+                if (commentsResponse.results) {
+                  transformedComments = commentsResponse.results.map(comment => ({
+                    id: comment.id,
+                    author: comment.author_name || comment.user?.username || 'مستخدم',
+                    avatar: comment.user?.profile?.avatar || `https://via.placeholder.com/40x40/6C63FF/ffffff?text=${(comment.author_name || comment.user?.username || 'م').charAt(0)}`,
+                    content: comment.content || '',
+                    created_at: comment.created_at,
+                    likes: comment.likes_count || 0,
+                    replies: comment.replies || [],
+                    is_approved: comment.is_approved !== false
+                  }));
+                }
+              }
+              
+              // Filter only approved comments
+              transformedComments = transformedComments.filter(comment => comment.is_approved !== false);
+              
+              // Add a test comment if no comments exist (for development)
+              if (transformedComments.length === 0 && process.env.NODE_ENV === 'development') {
+                transformedComments = [{
+                  id: 'test-1',
+                  author: 'مستخدم تجريبي',
+                  avatar: 'https://via.placeholder.com/40x40/4A6CF7/ffffff?text=م',
+                  content: 'هذا تعليق تجريبي لاختبار عرض التعليقات في الواجهة.',
+                  created_at: new Date().toISOString(),
+                  likes: 5,
+                  replies: [],
+                  is_approved: true
+                }];
+                console.log('Added test comment for development');
+              }
+              
+              setComments(transformedComments);
+              console.log('Final transformed comments:', transformedComments);
+            } catch (commentsError) {
+              console.error('Error fetching comments:', commentsError);
+              setComments([]);
+            }
 
             // Fetch related articles
             const relatedResponse = await articleAPI.getRelatedArticles(response.id, response.category || response.category_name, 3);
@@ -390,8 +533,16 @@ const ArticleDetail = () => {
     try {
       if (liked) {
         await articleAPI.unlikeArticle(article.id);
+        setArticle(prev => ({
+          ...prev,
+          likes_count: Math.max(0, prev.likes_count - 1)
+        }));
       } else {
         await articleAPI.likeArticle(article.id);
+        setArticle(prev => ({
+          ...prev,
+          likes_count: prev.likes_count + 1
+        }));
       }
       setLiked(!liked);
     } catch (error) {
@@ -415,8 +566,9 @@ const ArticleDetail = () => {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (comment.trim() && article) {
+    if (comment.trim() && article && !submittingComment) {
       try {
+        setSubmittingComment(true);
         const response = await articleAPI.createArticleComment(article.id, {
           content: comment
         });
@@ -430,15 +582,87 @@ const ArticleDetail = () => {
           avatar: `https://via.placeholder.com/40x40/4A6CF7/ffffff?text=${(response.author_name || 'م').charAt(0)}`,
           content: response.content,
           created_at: response.created_at,
-          likes: response.likes_count || 0
+          likes: response.likes_count || 0,
+          replies: []
         };
         
         setComments([newComment, ...comments]);
         setComment('');
+        
+        // Update comment count
+        setArticle(prev => ({
+          ...prev,
+          comments_count: prev.comments_count + 1
+        }));
       } catch (error) {
         console.error('Error creating comment:', error);
         alert('حدث خطأ في إرسال التعليق. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setSubmittingComment(false);
       }
+    }
+  };
+
+  const handleReplySubmit = async (commentId) => {
+    if (replyText.trim() && !submittingComment) {
+      try {
+        setSubmittingComment(true);
+        const response = await articleAPI.createArticleComment(article.id, {
+          content: replyText,
+          parent: commentId
+        });
+        
+        console.log('Reply created:', response);
+        
+        // Add the reply to the specific comment
+        const newReply = {
+          id: response.id,
+          author: response.author_name || 'المستخدم الحالي',
+          avatar: `https://via.placeholder.com/40x40/4A6CF7/ffffff?text=${(response.author_name || 'م').charAt(0)}`,
+          content: response.content,
+          created_at: response.created_at,
+          likes: response.likes_count || 0
+        };
+        
+        setComments(prevComments => 
+          prevComments.map(comment => 
+            comment.id === commentId 
+              ? { ...comment, replies: [...(comment.replies || []), newReply] }
+              : comment
+          )
+        );
+        
+        setReplyText('');
+        setReplyTo(null);
+        
+        // Update comment count
+        setArticle(prev => ({
+          ...prev,
+          comments_count: prev.comments_count + 1
+        }));
+      } catch (error) {
+        console.error('Error creating reply:', error);
+        alert('حدث خطأ في إرسال الرد. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setSubmittingComment(false);
+      }
+    }
+  };
+
+  const handleLikeComment = async (commentId) => {
+    try {
+      // This would need a backend endpoint for liking comments
+      console.log('Liking comment:', commentId);
+      // For now, just update the UI
+      setComments(prevComments => 
+        prevComments.map(comment => 
+          comment.id === commentId 
+            ? { ...comment, likes: comment.likes + 1, liked: true }
+            : comment
+        )
+      );
+    } catch (error) {
+      console.error('Error liking comment:', error);
     }
   };
 
@@ -456,9 +680,21 @@ const ArticleDetail = () => {
         <Header />
         <Box component="main" sx={{ flex: 1 }}>
           <HeroSection>
-            <Container>
+            <div className="animated-bg"></div>
+            <Container className="content">
               <Skeleton variant="text" width={600} height={60} sx={{ mb: 2 }} />
               <Skeleton variant="text" width={400} height={40} />
+              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                <Skeleton variant="circular" width={48} height={48} />
+                <Box>
+                  <Skeleton variant="text" width={120} height={20} />
+                  <Skeleton variant="text" width={80} height={16} />
+                </Box>
+                <Skeleton variant="text" width={100} height={20} />
+                <Skeleton variant="text" width={100} height={20} />
+                <Skeleton variant="text" width={100} height={20} />
+                <Skeleton variant="text" width={100} height={20} />
+              </Box>
             </Container>
           </HeroSection>
           
@@ -471,6 +707,7 @@ const ArticleDetail = () => {
                 <Skeleton variant="text" width="60%" />
               </Grid>
               <Grid item xs={12} lg={4}>
+                <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2, mb: 2 }} />
                 <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
               </Grid>
             </Grid>
@@ -506,7 +743,8 @@ const ArticleDetail = () => {
       
       <Box component="main" sx={{ flex: 1 }}>
         <HeroSection>
-          <Container>
+          <div className="animated-bg"></div>
+          <Container className="content">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -529,31 +767,66 @@ const ArticleDetail = () => {
               </Typography>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={article.author.avatar} sx={{ width: 48, height: 48 }}>
-                      {(article.author.name || 'م').charAt(0)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                        {article.author.name || 'مؤلف غير معروف'}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                        {formatDate(article.published_at)}
-                      </Typography>
-                    </Box>
+                <Box className="stats-item" sx={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                  padding: '12px 16px',
+                  borderRadius: '25px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                  }
+                }}>
+                  <Avatar src={article.author.avatar} sx={{ 
+                    width: 48, 
+                    height: 48,
+                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                  }}>
+                    {(article.author.name || 'م').charAt(0)}
+                  </Avatar>
+                  <Box sx={{ ml: 1 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                      {article.author.name || 'مؤلف غير معروف'}
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      opacity: 0.9, 
+                      fontWeight: 500,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      display: 'inline-block'
+                    }}>
+                      {formatDate(article.published_at)}
+                    </Typography>
                   </Box>
+                </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box className="stats-item">
                   <VisibilityIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {article.views_count.toLocaleString()} مشاهدة
                   </Typography>
                 </Box>
                 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box className="stats-item">
                   <ScheduleIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {article.reading_time} دقيقة قراءة
+                  </Typography>
+                </Box>
+
+                <Box className="stats-item">
+                  <FavoriteIcon sx={{ fontSize: 20 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {article.likes_count.toLocaleString()} إعجاب
+                  </Typography>
+                </Box>
+
+                <Box className="stats-item">
+                  <CommentIcon sx={{ fontSize: 20 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {article.comments_count.toLocaleString()} تعليق
                   </Typography>
                 </Box>
               </Box>
@@ -615,6 +888,22 @@ const ArticleDetail = () => {
                     </Button>
                     
                     <Box sx={{ flexGrow: 1 }} />
+                    
+                    {/* Stats Display */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <FavoriteIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          {article.likes_count.toLocaleString()}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <CommentIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          {article.comments_count.toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Box>
                     
                     <Tooltip title="إعجاب">
                       <IconButton
@@ -726,96 +1015,275 @@ const ArticleDetail = () => {
                     التعليقات ({comments.length})
                   </Typography>
                   
-                  <CommentForm>
-                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
-                      أضف تعليقك
-                    </Typography>
-                    <form onSubmit={handleCommentSubmit}>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={4}
-                        placeholder="اكتب تعليقك هنا..."
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        sx={{ 
-                          mb: 2,
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            '&:hover fieldset': {
-                              borderColor: 'primary.main',
-                            },
-                          },
-                        }}
-                      />
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          disabled={!comment.trim()}
-                          endIcon={<SendIcon />}
-                          sx={{ 
-                            borderRadius: 2,
-                            px: 3,
-                            py: 1,
-                            fontWeight: 600,
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
-                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                            },
-                            t: 'white',
-                          }}
-                        >
-                          إرسال التعليق
-                        </Button>
-                      </Box>
-                    </form>
-                  </CommentForm>
+                  {/* Debug Info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <Box sx={{ 
+                      mb: 2, 
+                      p: 2, 
+                      backgroundColor: 'rgba(255, 193, 7, 0.1)', 
+                      borderRadius: 2,
+                      border: '1px solid rgba(255, 193, 7, 0.3)'
+                    }}>
+                      <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 600 }}>
+                        معلومات التطوير: {comments.length} تعليق محمل
+                      </Typography>
+                    </Box>
+                  )}
                   
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {comments.map((comment) => (
-                      <CommentCard key={comment.id}>
-                        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                                                     <Avatar 
-                             src={comment.avatar} 
-                             sx={{ 
-                               width: 48, 
-                               height: 48,
-                               boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                             }}
-                           >
-                             {(comment.author || 'م').charAt(0)}
-                           </Avatar>
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                                {comment.author}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ 
-                                backgroundColor: 'grey.100', 
-                                px: 1, 
-                                py: 0.25, 
-                                borderRadius: 1,
-                                fontSize: '0.75rem'
-                              }}>
-                                {formatDate(comment.created_at)}
+                  {/* Comment Form */}
+                  {isAuthenticated ? (
+                    <CommentForm>
+                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
+                        أضف تعليقك
+                      </Typography>
+                      <form onSubmit={handleCommentSubmit}>
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={4}
+                          placeholder="اكتب تعليقك هنا..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          disabled={submittingComment}
+                          sx={{ 
+                            mb: 2,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              '&:hover fieldset': {
+                                borderColor: 'primary.main',
+                              },
+                            },
+                          }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={!comment.trim() || submittingComment}
+                            endIcon={submittingComment ? null : <SendIcon />}
+                            sx={{ 
+                              borderRadius: 2,
+                              px: 3,
+                              py: 1,
+                              fontWeight: 600,
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              },
+                              '&:disabled': {
+                                opacity: 0.7,
+                              }
+                            }}
+                          >
+                            {submittingComment ? 'جاري الإرسال...' : 'إرسال التعليق'}
+                          </Button>
+                        </Box>
+                      </form>
+                    </CommentForm>
+                  ) : (
+                    <Box sx={{ 
+                      p: 3, 
+                      backgroundColor: 'rgba(25, 118, 210, 0.05)', 
+                      borderRadius: 2,
+                      border: '1px solid rgba(25, 118, 210, 0.1)',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: 'primary.main' }}>
+                        تسجيل الدخول مطلوب
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        يجب عليك تسجيل الدخول لإضافة تعليق
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        onClick={() => navigate('/login')}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        تسجيل الدخول
+                      </Button>
+                    </Box>
+                  )}
+                  
+                  {/* Comments List */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {comments.length > 0 ? (
+                      comments.map((comment) => (
+                        <CommentCard key={comment.id}>
+                          {/* Main Comment */}
+                          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                            <Avatar 
+                              src={comment.avatar} 
+                              sx={{ 
+                                width: 48, 
+                                height: 48,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                              }}
+                            >
+                              {(comment.author || 'م').charAt(0)}
+                            </Avatar>
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                  {comment.author}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ 
+                                  backgroundColor: 'grey.100', 
+                                  px: 1, 
+                                  py: 0.25, 
+                                  borderRadius: 1,
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {formatDate(comment.created_at)}
+                                </Typography>
+                              </Box>
+                              <Typography variant="body1" sx={{ lineHeight: 1.6, color: 'text.secondary', mb: 2 }}>
+                                {comment.content}
                               </Typography>
                             </Box>
-                            <Typography variant="body1" sx={{ lineHeight: 1.6, color: 'text.secondary' }}>
-                              {comment.content}
-                            </Typography>
                           </Box>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <IconButton size="small" sx={{ color: 'text.secondary' }}>
-                            <FavoriteBorderIcon fontSize="small" />
-                          </IconButton>
-                          <Typography variant="caption" color="text.secondary">
-                            {comment.likes} إعجاب
-                          </Typography>
-                        </Box>
-                      </CommentCard>
-                    ))}
+                          
+                          {/* Comment Actions */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleLikeComment(comment.id)}
+                              sx={{ 
+                                color: comment.liked ? 'primary.main' : 'text.secondary',
+                                '&:hover': {
+                                  color: 'primary.main',
+                                  transform: 'scale(1.1)',
+                                }
+                              }}
+                            >
+                              {comment.liked ? <FavoriteIcon fontSize="small" /> : <FavoriteBorderIcon fontSize="small" />}
+                            </IconButton>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                              {comment.likes} إعجاب
+                            </Typography>
+                            
+                            <Button
+                              size="small"
+                              onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+                              sx={{ 
+                                color: 'primary.main',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                '&:hover': {
+                                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                }
+                              }}
+                            >
+                              {replyTo === comment.id ? 'إلغاء الرد' : 'رد'}
+                            </Button>
+                          </Box>
+                          
+                          {/* Reply Form */}
+                          {replyTo === comment.id && (
+                            <Box sx={{ 
+                              mt: 2, 
+                              p: 2, 
+                              backgroundColor: 'rgba(25, 118, 210, 0.05)', 
+                              borderRadius: 2,
+                              border: '1px solid rgba(25, 118, 210, 0.1)'
+                            }}>
+                              <Typography variant="body2" sx={{ mb: 1, fontWeight: 600, color: 'primary.main' }}>
+                                الرد على {comment.author}
+                              </Typography>
+                              <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                placeholder="اكتب ردك هنا..."
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                disabled={submittingComment}
+                                sx={{ mb: 2 }}
+                              />
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  onClick={() => handleReplySubmit(comment.id)}
+                                  disabled={!replyText.trim() || submittingComment}
+                                  sx={{ borderRadius: 1 }}
+                                >
+                                  {submittingComment ? 'جاري الإرسال...' : 'إرسال الرد'}
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => {
+                                    setReplyTo(null);
+                                    setReplyText('');
+                                  }}
+                                  sx={{ borderRadius: 1 }}
+                                >
+                                  إلغاء
+                                </Button>
+                              </Box>
+                            </Box>
+                          )}
+                          
+                          {/* Replies */}
+                          {comment.replies && comment.replies.length > 0 && (
+                            <Box sx={{ mt: 2, ml: 4 }}>
+                              <Typography variant="body2" sx={{ mb: 2, fontWeight: 600, color: 'text.secondary' }}>
+                                الردود ({comment.replies.length})
+                              </Typography>
+                              {comment.replies.map((reply) => (
+                                <Box key={reply.id} sx={{ 
+                                  display: 'flex', 
+                                  gap: 2, 
+                                  mb: 2, 
+                                  p: 2, 
+                                  backgroundColor: 'rgba(0,0,0,0.02)', 
+                                  borderRadius: 2,
+                                  border: '1px solid rgba(0,0,0,0.05)'
+                                }}>
+                                  <Avatar 
+                                    src={reply.avatar} 
+                                    sx={{ 
+                                      width: 32, 
+                                      height: 32,
+                                      fontSize: '0.8rem'
+                                    }}
+                                  >
+                                    {(reply.author || 'م').charAt(0)}
+                                  </Avatar>
+                                  <Box sx={{ flex: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                        {reply.author}
+                                      </Typography>
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatDate(reply.created_at)}
+                                      </Typography>
+                                    </Box>
+                                    <Typography variant="body2" sx={{ lineHeight: 1.5, color: 'text.secondary' }}>
+                                      {reply.content}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+                          )}
+                        </CommentCard>
+                      ))
+                    ) : (
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        color: 'text.secondary'
+                      }}>
+                        <CommentIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+                        <Typography variant="h6" sx={{ mb: 1 }}>
+                          لا توجد تعليقات بعد
+                        </Typography>
+                        <Typography variant="body2">
+                          كن أول من يعلق على هذه المقالة!
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               </motion.div>
@@ -1048,6 +1516,54 @@ const ArticleDetail = () => {
                 
 
                 
+                <StyledCard sx={{ mb: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, display: 'flex', alignItems: 'center', color: 'primary.main' }}>
+                      <TrendingUpIcon sx={{ mr: 1.5, fontSize: 28 }} />
+                      إحصائيات المقالة
+                    </Typography>
+                    
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
+                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(76, 175, 80, 0.1)', borderRadius: 2, border: '1px solid rgba(76, 175, 80, 0.2)' }}>
+                        <FavoriteIcon sx={{ fontSize: 24, color: 'success.main', mb: 1 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
+                          {article.likes_count.toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          إعجاب
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(25, 118, 210, 0.1)', borderRadius: 2, border: '1px solid rgba(25, 118, 210, 0.2)' }}>
+                        <CommentIcon sx={{ fontSize: 24, color: 'primary.main', mb: 1 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          {article.comments_count.toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          تعليق
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(255, 152, 0, 0.1)', borderRadius: 2, border: '1px solid rgba(255, 152, 0, 0.2)' }}>
+                        <VisibilityIcon sx={{ fontSize: 24, color: 'warning.main', mb: 1 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                          {article.views_count.toLocaleString()}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          مشاهدة
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'rgba(156, 39, 176, 0.1)', borderRadius: 2, border: '1px solid rgba(156, 39, 176, 0.2)' }}>
+                        <ScheduleIcon sx={{ fontSize: 24, color: 'secondary.main', mb: 1 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                          {article.reading_time}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          دقيقة
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </StyledCard>
+
                 <StyledCard>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="h6" sx={{ mb: 3, fontWeight: 700, display: 'flex', alignItems: 'center', color: 'primary.main' }}>

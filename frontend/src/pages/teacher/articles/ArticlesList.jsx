@@ -49,7 +49,8 @@ import {
   ViewList as ViewListIcon,
   Star as StarIcon,
   Share as ShareIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowForwardIcon,
+  OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -141,7 +142,14 @@ const ModernCard = styled(Card)(({ theme }) => ({
     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
     '& .article-image': {
       transform: 'scale(1.05)'
+    },
+    '& .action-buttons': {
+      opacity: 1,
     }
+  },
+  '& .action-buttons': {
+    opacity: 0.8,
+    transition: 'opacity 0.3s ease',
   }
 }));
 
@@ -244,6 +252,7 @@ const ActionButton = styled(IconButton)(({ theme, variant }) => ({
   borderRadius: '8px',
   transition: 'all 0.2s ease',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+  backdropFilter: 'blur(10px)',
   ...(variant === 'edit' && {
     backgroundColor: '#1976d2',
     color: 'white',
@@ -260,6 +269,15 @@ const ActionButton = styled(IconButton)(({ theme, variant }) => ({
       backgroundColor: '#c62828',
       transform: 'scale(1.1)',
       boxShadow: '0 4px 12px rgba(211, 47, 47, 0.3)',
+    }
+  }),
+  ...(variant === 'view' && {
+    backgroundColor: '#4caf50',
+    color: 'white',
+    '&:hover': {
+      backgroundColor: '#388e3c',
+      transform: 'scale(1.1)',
+      boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
     }
   }),
 }));
@@ -393,6 +411,11 @@ const ArticlesList = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleViewDetails = (article) => {
+    console.log('عرض تفاصيل المقالة:', article.title);
+    navigate(`/articles/${article.slug || article.id}`);
+  };
+
   const confirmDelete = async () => {
     try {
       console.log('Deleting article:', selectedArticle.id);
@@ -460,10 +483,14 @@ const ArticlesList = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
       layout
       style={{ width: '100%' }}
     >
-      <ModernCard sx={{ height: '100%', cursor: 'pointer', width: '100%' }}>
+      <ModernCard 
+        sx={{ height: '100%', cursor: 'pointer', width: '100%' }}
+        onClick={() => handleViewDetails(article)}
+      >
         <Box sx={{ position: 'relative', overflow: 'hidden' }}>
           <Box className="image-container" sx={{ 
             position: 'relative', 
@@ -507,6 +534,24 @@ const ArticlesList = () => {
               zIndex: 3
             }}
           >
+            <Tooltip title="عرض التفاصيل" placement="left">
+              <ActionButton
+                variant="view"
+                onClick={(e) => { e.stopPropagation(); handleViewDetails(article); }}
+                size="small"
+                sx={{
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#388e3c',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                  }
+                }}
+              >
+                <OpenInNewIcon sx={{ fontSize: 16 }} />
+              </ActionButton>
+            </Tooltip>
             <Tooltip title="تعديل المقالة" placement="left">
               <ActionButton
                 variant="edit"
@@ -583,17 +628,37 @@ const ArticlesList = () => {
           gap: 2,
           minHeight: '250px'
         }}>
-          {/* Header with Status and Date */}
+          {/* Header with Status, Date and Quick View */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <StatusChip
-              label={article.status === 'published' ? 'منشور' : 
-                     article.status === 'draft' ? 'مسودة' : 'مؤرشف'}
-              status={article.status}
-              size="small"
-            />
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-              {formatDate(article.updated_at)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <StatusChip
+                label={article.status === 'published' ? 'منشور' : 
+                       article.status === 'draft' ? 'مسودة' : 'مؤرشف'}
+                status={article.status}
+                size="small"
+              />
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                {formatDate(article.updated_at)}
+              </Typography>
+            </Box>
+            <Tooltip title="عرض التفاصيل">
+              <IconButton
+                size="small"
+                onClick={(e) => { e.stopPropagation(); handleViewDetails(article); }}
+                sx={{
+                  width: 28,
+                  height: 28,
+                  backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                  color: '#4caf50',
+                  '&:hover': {
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    transform: 'scale(1.1)',
+                  }
+                }}
+              >
+                <OpenInNewIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
           </Box>
           
           {/* Title */}
@@ -631,7 +696,7 @@ const ArticlesList = () => {
             {article.summary}
           </Typography>
           
-          {/* Footer with Edit and Stats */}
+          {/* Footer with Actions and Stats */}
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
@@ -640,28 +705,53 @@ const ArticlesList = () => {
           }}>
             <Box sx={{ 
               display: 'flex', 
-              alignItems: 'center',
-              gap: 0.5,
-              color: '#333',
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              cursor: 'pointer'
+              gap: 1,
+              alignItems: 'center'
             }}>
-              تعديل
-              <Box sx={{ 
-                width: 24, 
-                height: 24, 
-                borderRadius: '50%', 
-                backgroundColor: '#1976d2',
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}>
-                <ArrowForwardIcon sx={{ fontSize: 12, color: 'white' }} />
-              </Box>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<OpenInNewIcon />}
+                onClick={(e) => { e.stopPropagation(); handleViewDetails(article); }}
+                sx={{
+                  borderRadius: '12px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
+                  '&:hover': {
+                    backgroundColor: '#388e3c',
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)',
+                  }
+                }}
+              >
+                عرض التفاصيل
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={(e) => { e.stopPropagation(); handleEdit(article); }}
+                sx={{
+                  borderRadius: '12px',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  borderColor: '#1976d2',
+                  color: '#1976d2',
+                  '&:hover': {
+                    borderColor: '#1565c0',
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                    transform: 'translateY(-1px)',
+                  }
+                }}
+              >
+                تعديل
+              </Button>
             </Box>
             
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
               <Box sx={{ 
                 display: 'flex', 
                 alignItems: 'center',
@@ -680,6 +770,26 @@ const ArticlesList = () => {
                 <VisibilityIcon sx={{ fontSize: 14, color: '#999' }} />
                 <Typography variant="caption" sx={{ fontWeight: 500, color: '#999', fontSize: '0.7rem' }}>
                   {article.views_count.toLocaleString()}
+                </Typography>
+              </Box>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: 0.5
+              }}>
+                <FavoriteIcon sx={{ fontSize: 14, color: '#999' }} />
+                <Typography variant="caption" sx={{ fontWeight: 500, color: '#999', fontSize: '0.7rem' }}>
+                  {article.likes_count.toLocaleString()}
+                </Typography>
+              </Box>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: 0.5
+              }}>
+                <CommentIcon sx={{ fontSize: 14, color: '#999' }} />
+                <Typography variant="caption" sx={{ fontWeight: 500, color: '#999', fontSize: '0.7rem' }}>
+                  {article.comments_count.toLocaleString()}
                 </Typography>
               </Box>
             </Box>
@@ -1024,19 +1134,68 @@ const ArticlesList = () => {
 
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>تأكيد الحذف</DialogTitle>
-        <DialogContent>
-          <Typography>
-            هل أنت متأكد من حذف المقالة "{selectedArticle?.title}"؟ هذا الإجراء لا يمكن التراجع عنه.
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => setDeleteDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: 400
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          textAlign: 'center', 
+          fontWeight: 600,
+          color: '#d32f2f',
+          borderBottom: '1px solid #eee',
+          pb: 2
+        }}>
+          ⚠️ تأكيد حذف المقالة
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3 }}>
+          <Typography sx={{ textAlign: 'center', mb: 2 }}>
+            هل أنت متأكد من حذف المقالة:
+          </Typography>
+          <Typography sx={{ 
+            fontWeight: 600, 
+            textAlign: 'center', 
+            color: 'primary.main',
+            mb: 2,
+            p: 2,
+            backgroundColor: 'rgba(25, 118, 210, 0.08)',
+            borderRadius: 2
+          }}>
+            "{selectedArticle?.title}"
+          </Typography>
+          <Typography sx={{ 
+            textAlign: 'center', 
+            color: 'error.main',
+            fontSize: '0.9rem',
+            fontWeight: 500
+          }}>
+            ⚠️ هذا الإجراء لا يمكن التراجع عنه!
           </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
             إلغاء
           </Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            حذف
+          <Button 
+            onClick={confirmDelete} 
+            color="error" 
+            variant="contained"
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 600
+            }}
+          >
+            حذف المقالة
           </Button>
         </DialogActions>
       </Dialog>

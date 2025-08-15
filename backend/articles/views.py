@@ -58,7 +58,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 class ArticleCommentViewSet(viewsets.ModelViewSet):
     queryset = ArticleComment.objects.filter(is_approved=True)
     serializer_class = ArticleCommentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Allow reading without authentication
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['article']
     ordering = ['-created_at']
@@ -68,6 +68,17 @@ class ArticleCommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        """Override list to handle filtering better"""
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        # Add debug logging
+        print(f"Filtering comments for article: {request.query_params.get('article')}")
+        print(f"Found {queryset.count()} comments")
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class FeaturedArticlesView(generics.ListAPIView):

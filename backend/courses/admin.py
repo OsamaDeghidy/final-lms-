@@ -52,8 +52,8 @@ class PublishedFilter(SimpleListFilter):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'course_count', 'created_at')
-    list_filter = ('created_at',)
+    list_display = ('name', 'is_default', 'course_count', 'created_at')
+    list_filter = ('is_default', 'created_at')
     search_fields = ('name', 'description')
     readonly_fields = ('created_at', 'updated_at')
     
@@ -64,6 +64,19 @@ class CategoryAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">{} دورة</a>', url, count)
         return '0 دورة'
     course_count.short_description = 'عدد الدورات'
+    
+    def has_delete_permission(self, request, obj=None):
+        """Prevent deletion of default categories"""
+        if obj and obj.is_default:
+            return False
+        return super().has_delete_permission(request, obj)
+    
+    def get_actions(self, request):
+        """Remove delete action for default categories"""
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
 
 
 @admin.register(Tags)

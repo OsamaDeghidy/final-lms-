@@ -19,6 +19,7 @@ class Category(models.Model):
     description = models.TextField(blank=True, null=True, verbose_name=_('Description'))
     image = models.ImageField(upload_to='categories/', blank=True, null=True, verbose_name=_('Image'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
+    is_default = models.BooleanField(default=False, verbose_name=_('Is Default Category'), help_text=_('Default categories cannot be deleted'))
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created At'))
     updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Updated At'))
     order = models.PositiveIntegerField(default=0, verbose_name=_('Order'))
@@ -35,11 +36,61 @@ class Category(models.Model):
         if not self.slug and self.name:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """Prevent deletion of default categories"""
+        if self.is_default:
+            raise models.ProtectedError(
+                f"Cannot delete default category '{self.name}'. Default categories are protected.",
+                self
+            )
+        super().delete(*args, **kwargs)
 
     @property
     def active_courses_count(self):
         """Return count of active, published courses in this category"""
         return self.courses.filter(is_active=True, status='published').count()
+    
+    @classmethod
+    def create_default_categories(cls):
+        """Create default categories if they don't exist"""
+        default_categories = [
+            {
+                'name': 'الدورات',
+                'slug': 'courses',
+                'description': 'دورات تعليمية متنوعة في مختلف المجالات',
+                'order': 1,
+                'is_default': True
+            },
+            {
+                'name': 'التدريب الإلكتروني',
+                'slug': 'e-learning',
+                'description': 'برامج تدريبية إلكترونية تفاعلية',
+                'order': 2,
+                'is_default': True
+            },
+            {
+                'name': 'الدبلومات',
+                'slug': 'diplomas',
+                'description': 'برامج دبلومة متخصصة وشهادات مهنية',
+                'order': 3,
+                'is_default': True
+            }
+        ]
+        
+        for category_data in default_categories:
+            category, created = cls.objects.get_or_create(
+                slug=category_data['slug'],
+                defaults=category_data
+            )
+            if created:
+                print(f"Created default category: {category.name}")
+            else:
+                # Update existing category to ensure it's marked as default
+                if not category.is_default:
+                    category.is_default = True
+                    category.save(update_fields=['is_default'])
+                    print(f"Updated category to default: {category.name}")
 
 
 class Tag(models.Model):
@@ -488,3 +539,10 @@ def update_course_slug(sender, instance, created, **kwargs):
             counter += 1
         instance.slug = slug
         instance.save(update_fields=['slug'])
+
+@receiver(post_save, sender=Category)
+def ensure_default_categories(sender, instance, created, **kwargs):
+    """Ensure default categories exist after any category is saved"""
+    if created:
+        # Create default categories if they don't exist
+        Category.create_default_categories()

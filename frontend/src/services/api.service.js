@@ -549,21 +549,26 @@ export const articleAPI = {
   // Get article comments
   getArticleComments: async (articleId) => {
     try {
+      console.log('Fetching comments for article:', articleId);
       const response = await api.get(`/articles/comments/?article=${articleId}`);
+      console.log('Comments API response:', response);
       return response.data;
     } catch (error) {
       console.error('Error fetching article comments:', error);
-      throw error;
+      // Return empty array instead of throwing error
+      return [];
     }
   },
 
   // Create article comment
   createArticleComment: async (articleId, commentData) => {
     try {
+      console.log('Creating comment for article:', articleId, 'with data:', commentData);
       const response = await api.post('/articles/comments/', {
         article: articleId,
         ...commentData
       });
+      console.log('Comment created successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error creating article comment:', error);
@@ -574,7 +579,7 @@ export const articleAPI = {
   // Like article
   likeArticle: async (articleId) => {
     try {
-      const response = await api.post(`/articles/articles/${articleId}/like/`);
+      const response = await api.post(`/articles/articles/${articleId}/likes/`);
       return response.data;
     } catch (error) {
       console.error('Error liking article:', error);
@@ -585,7 +590,7 @@ export const articleAPI = {
   // Unlike article
   unlikeArticle: async (articleId) => {
     try {
-      const response = await api.post(`/articles/articles/${articleId}/unlike/`);
+      const response = await api.delete(`/articles/articles/${articleId}/likes/unlike/`);
       return response.data;
     } catch (error) {
       console.error('Error unliking article:', error);
@@ -607,7 +612,7 @@ export const articleAPI = {
   // Remove bookmark
   removeBookmark: async (articleId) => {
     try {
-      const response = await api.delete(`/articles/articles/${articleId}/bookmarks/`);
+      const response = await api.delete(`/articles/articles/${articleId}/bookmarks/remove_bookmark/`);
       return response.data;
     } catch (error) {
       console.error('Error removing bookmark:', error);
@@ -644,6 +649,39 @@ export const articleAPI = {
       return response.data;
     } catch (error) {
       console.error('Error fetching user ratings:', error);
+      throw error;
+    }
+  },
+
+  // Check if article is liked by current user
+  checkArticleLike: async (articleId) => {
+    try {
+      const response = await api.get(`/articles/articles/${articleId}/likes/check_like/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking article like:', error);
+      throw error;
+    }
+  },
+
+  // Check if article is bookmarked by current user
+  checkArticleBookmark: async (articleId) => {
+    try {
+      const response = await api.get(`/articles/articles/${articleId}/bookmarks/check_bookmark/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking article bookmark:', error);
+      throw error;
+    }
+  },
+
+  // Get article rating stats
+  getArticleRatingStats: async (articleId) => {
+    try {
+      const response = await api.get(`/articles/articles/${articleId}/ratings/stats/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching article rating stats:', error);
       throw error;
     }
   },
