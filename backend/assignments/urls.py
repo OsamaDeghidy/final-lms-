@@ -4,6 +4,10 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'quizzes', views.QuizViewSet, basename='quiz')
+router.register(r'quiz-questions', views.QuizQuestionViewSet, basename='quiz-question')
+router.register(r'quiz-answers', views.QuizAnswerViewSet, basename='quiz-answer')
+router.register(r'quiz-attempts', views.QuizAttemptViewSet, basename='quiz-attempt')
+router.register(r'quiz-user-answers', views.QuizUserAnswerViewSet, basename='quiz-user-answer')
 router.register(r'exams', views.ExamViewSet, basename='exam')
 router.register(r'assignments', views.AssignmentViewSet, basename='assignment')
 router.register(r'submissions', views.AssignmentSubmissionViewSet, basename='submission')

@@ -376,20 +376,37 @@ const CategoryChip = styled(Chip, {
   margin: theme.spacing(0.5),
   padding: theme.spacing(1, 2),
   borderRadius: '20px',
-  fontWeight: 500,
-  transition: 'all 0.3s ease',
-  border: '1px solid',
-  borderColor: selected ? theme.palette.primary.main : theme.palette.divider,
+  fontWeight: 600,
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  border: '2px solid',
+  borderColor: selected ? theme.palette.primary.main : 'transparent',
   backgroundColor: selected 
-    ? alpha(theme.palette.primary.main, 0.1) 
-    : theme.palette.background.paper,
+    ? theme.palette.primary.main
+    : alpha(theme.palette.background.paper, 0.8),
   color: selected 
-    ? theme.palette.primary.main 
+    ? '#fff'
     : theme.palette.text.primary,
+  boxShadow: selected 
+    ? '0 4px 20px rgba(0, 0, 0, 0.15)'
+    : '0 2px 8px rgba(0, 0, 0, 0.08)',
+  cursor: 'pointer',
   '&:hover': {
-    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-    color: theme.palette.primary.main,
+    backgroundColor: selected 
+      ? theme.palette.primary.dark
+      : alpha(theme.palette.primary.main, 0.1),
+    color: selected 
+      ? '#fff'
+      : theme.palette.primary.main,
     borderColor: theme.palette.primary.main,
+    transform: 'translateY(-2px)',
+    boxShadow: '0 6px 25px rgba(0, 0, 0, 0.15)',
+  },
+  '& .MuiChip-label': {
+    fontSize: '0.875rem',
+    padding: '4px 8px',
+  },
+  '& .MuiChip-icon': {
+    fontSize: '1rem',
   },
 }));
 
@@ -493,14 +510,20 @@ const Courses = () => {
   }, []);
 
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.short_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    // Search filter
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || 
+                         course.title?.toLowerCase().includes(searchLower) ||
+                         course.description?.toLowerCase().includes(searchLower) ||
+                         course.short_description?.toLowerCase().includes(searchLower) ||
                          (course.instructors && course.instructors.some(instructor => 
-                           instructor.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                           instructor.name?.toLowerCase().includes(searchLower)
                          ));
     
+    // Category filter
     const matchesCategory = activeCategory === 'all' || course.category?.id === parseInt(activeCategory);
+    
+    // Level filter
     const matchesLevel = tabValue === 'all' || course.level === tabValue;
     
     return matchesSearch && matchesCategory && matchesLevel;
@@ -778,11 +801,119 @@ const Courses = () => {
       {/* Main Content */}
       <Container maxWidth="xl" sx={{ flex: 1, py: 6, position: 'relative', zIndex: 1 }}>
         <Box sx={{ mb: 6 }}>
+          {/* Categories Filter Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Box sx={{ mb: 4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" component="h3" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Category sx={{ color: 'primary.main' }} />
+                  التصنيفات
+                </Typography>
+                {(activeCategory !== 'all' || searchTerm || tabValue !== 'all') && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setActiveCategory('all');
+                      setTabValue('all');
+                    }}
+                    startIcon={<FilterList />}
+                    sx={{ 
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    مسح الفلاتر
+                  </Button>
+                )}
+              </Box>
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 1.5,
+                maxHeight: { xs: '140px', sm: 'auto' },
+                overflowY: { xs: 'auto', sm: 'visible' },
+                pb: { xs: 1, sm: 0 },
+                '&::-webkit-scrollbar': {
+                  width: '6px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'rgba(0,0,0,0.1)',
+                  borderRadius: '3px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'rgba(0,0,0,0.3)',
+                  borderRadius: '3px',
+                  '&:hover': {
+                    background: 'rgba(0,0,0,0.5)',
+                  },
+                },
+              }}>
+                <CategoryChip
+                  label="جميع التصنيفات"
+                  selected={activeCategory === 'all'}
+                  onClick={() => handleCategoryChange('all')}
+                  icon={<Category fontSize="small" />}
+                  sx={{
+                    backgroundColor: activeCategory === 'all' ? 'primary.main' : 'background.paper',
+                    color: activeCategory === 'all' ? 'white' : 'text.primary',
+                    '&:hover': {
+                      backgroundColor: activeCategory === 'all' ? 'primary.dark' : 'primary.light',
+                      color: 'white',
+                    },
+                  }}
+                />
+                {categories.map((category) => (
+                  <CategoryChip
+                    key={category.id}
+                    label={category.name}
+                    selected={activeCategory === category.id.toString()}
+                    onClick={() => handleCategoryChange(category.id.toString())}
+                    sx={{
+                      backgroundColor: activeCategory === category.id.toString() ? 'primary.main' : 'background.paper',
+                      color: activeCategory === category.id.toString() ? 'white' : 'text.primary',
+                      '&:hover': {
+                        backgroundColor: activeCategory === category.id.toString() ? 'primary.dark' : 'primary.light',
+                        color: 'white',
+                      },
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          </motion.div>
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
-            <Typography variant="h4" component="h2" fontWeight={700}>
-              {activeCategory === 'all' ? 'جميع الدورات' : `دورات ${categories.find(c => c.id === parseInt(activeCategory))?.name || ''}`}
-              {searchTerm && `: نتائج البحث عن "${searchTerm}"`}
-            </Typography>
+            <Box>
+              <Typography variant="h4" component="h2" fontWeight={700}>
+                {activeCategory === 'all' ? 'جميع الدورات' : `دورات ${categories.find(c => c.id === parseInt(activeCategory))?.name || ''}`}
+                {searchTerm && `: نتائج البحث عن "${searchTerm}"`}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <span style={{ fontWeight: 600, color: 'primary.main' }}>{filteredCourses.length}</span>
+                دورة متاحة
+                {(activeCategory !== 'all' || searchTerm || tabValue !== 'all') && (
+                  <Chip 
+                    label="مفلترة" 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    sx={{ 
+                      height: '20px', 
+                      fontSize: '0.7rem',
+                      ml: 1
+                    }} 
+                  />
+                )}
+              </Typography>
+            </Box>
             
             <Tabs
               value={tabValue}

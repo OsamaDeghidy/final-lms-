@@ -3,21 +3,131 @@ from .models import *
 
 
 class QuizBasicSerializer(serializers.ModelSerializer):
+    course = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
+    
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'quiz_type', 'is_active', 'created_at']
+        fields = ['id', 'title', 'description', 'quiz_type', 'is_active', 'created_at', 'course', 'module']
+    
+    def get_course(self, obj):
+        if obj.course:
+            return {
+                'id': obj.course.id,
+                'title': obj.course.title
+            }
+        return None
+    
+    def get_module(self, obj):
+        if obj.module:
+            return {
+                'id': obj.module.id,
+                'name': obj.module.name
+            }
+        return None
 
 
 class QuizDetailSerializer(serializers.ModelSerializer):
+    questions = serializers.SerializerMethodField()
+    course = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
+    
     class Meta:
         model = Quiz
         fields = '__all__'
+    
+    def get_questions(self, obj):
+        return QuizQuestionSerializer(obj.questions.all(), many=True).data
+    
+    def get_course(self, obj):
+        if obj.course:
+            return {
+                'id': obj.course.id,
+                'title': obj.course.title
+            }
+        return None
+    
+    def get_module(self, obj):
+        if obj.module:
+            return {
+                'id': obj.module.id,
+                'name': obj.module.name
+            }
+        return None
 
 
 class QuizCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
-        fields = ['title', 'description', 'course', 'quiz_type', 'time_limit', 'pass_mark']
+        fields = ['id', 'title', 'description', 'course', 'module', 'quiz_type', 'time_limit', 'pass_mark', 'is_active']
+
+
+class QuizUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quiz
+        fields = ['id', 'title', 'description', 'course', 'module', 'quiz_type', 'time_limit', 'pass_mark', 'is_active']
+
+
+class QuizAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
+
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    answers = QuizAnswerSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Question
+        fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order', 'answers']
+
+
+class QuizQuestionCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = ['id', 'quiz', 'text', 'question_type', 'points', 'explanation', 'image', 'order']
+
+
+class QuizQuestionUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = ['text', 'question_type', 'points', 'explanation', 'image', 'order']
+
+
+class QuizAnswerCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = ['id', 'question', 'text', 'is_correct', 'explanation', 'order']
+
+
+class QuizAnswerUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = ['text', 'is_correct', 'explanation', 'order']
+
+
+class QuizAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizAttempt
+        fields = ['id', 'user', 'quiz', 'start_time', 'end_time', 'score', 'passed', 'attempt_number']
+
+
+class QuizAttemptCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizAttempt
+        fields = ['quiz']
+
+
+class QuizUserAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizUserAnswer
+        fields = ['id', 'attempt', 'question', 'selected_answer', 'text_answer', 'is_correct', 'points_earned']
+
+
+class QuizUserAnswerCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizUserAnswer
+        fields = ['question', 'selected_answer', 'text_answer']
 
 
 class ExamBasicSerializer(serializers.ModelSerializer):

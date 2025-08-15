@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db import models
+from django.db.models import Q
 
 from .models import (
     Quiz, Question, Answer, QuizAttempt, QuizUserAnswer,
@@ -18,17 +19,167 @@ class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['course', 'quiz_type', 'is_active']
-    search_fields = ['title', 'description']
+    filterset_fields = ['course', 'module', 'quiz_type', 'is_active']
+    search_fields = ['title', 'description', 'course__title', 'module__name']
     ordering_fields = ['created_at', 'title']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        if self.action in ['create']:
             return QuizCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return QuizUpdateSerializer
         elif self.action == 'retrieve':
             return QuizDetailSerializer
         return QuizBasicSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        print(f"DEBUG: User {user.username} requesting quizzes")
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            print(f"DEBUG: User profile status: {profile.status}")
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                print(f"DEBUG: User is instructor/admin, showing all quizzes")
+                # For instructors/admins, show all quizzes (temporarily)
+                return Quiz.objects.all().select_related('course', 'module')
+        except Exception as e:
+            print(f"DEBUG: Error getting profile: {e}")
+            pass
+        
+        # For students or if profile doesn't exist
+        print(f"DEBUG: User is student, showing enrolled quizzes")
+        return Quiz.objects.filter(
+            course__enrollments__student=user,
+            is_active=True
+        ).select_related('course', 'module')
+
+
+class QuizQuestionViewSet(viewsets.ModelViewSet):
+    """ViewSet for Quiz Question management"""
+    queryset = Question.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['quiz', 'question_type']
+    search_fields = ['text', 'explanation']
+    ordering_fields = ['order', 'points']
+    ordering = ['order']
+
+    def get_serializer_class(self):
+        if self.action in ['create']:
+            return QuizQuestionCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return QuizQuestionUpdateSerializer
+        elif self.action == 'retrieve':
+            return QuizQuestionSerializer
+        return QuizQuestionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return Question.objects.filter(
+                    quiz__course__instructors__profile=profile
+                ).select_related('quiz')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
+        return Question.objects.filter(
+            quiz__course__enrollments__student=user,
+            quiz__is_active=True
+        ).select_related('quiz')
+
+
+class QuizAnswerViewSet(viewsets.ModelViewSet):
+    """ViewSet for Quiz Answer management"""
+    queryset = Answer.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['question', 'is_correct']
+    search_fields = ['text', 'explanation']
+    ordering_fields = ['order']
+    ordering = ['order']
+
+    def get_serializer_class(self):
+        if self.action in ['create']:
+            return QuizAnswerCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return QuizAnswerUpdateSerializer
+        return QuizAnswerSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return Answer.objects.filter(
+                    question__quiz__course__instructors__profile=profile
+                ).select_related('question')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
+        return Answer.objects.filter(
+            question__quiz__course__enrollments__student=user,
+            question__quiz__is_active=True
+        ).select_related('question')
+
+
+class QuizAttemptViewSet(viewsets.ModelViewSet):
+    """ViewSet for Quiz Attempt management"""
+    queryset = QuizAttempt.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['quiz', 'user', 'passed']
+    ordering_fields = ['start_time', 'end_time', 'score']
+    ordering = ['-start_time']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizAttemptCreateSerializer
+        return QuizAttemptSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'instructor':
+            return QuizAttempt.objects.filter(
+                quiz__course__instructor=user
+            ).select_related('quiz', 'user')
+        return QuizAttempt.objects.filter(
+            user=user
+        ).select_related('quiz')
+
+
+class QuizUserAnswerViewSet(viewsets.ModelViewSet):
+    """ViewSet for Quiz User Answer management"""
+    queryset = QuizUserAnswer.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['attempt', 'question', 'is_correct']
+    ordering_fields = ['points_earned']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizUserAnswerCreateSerializer
+        return QuizUserAnswerSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'instructor':
+            return QuizUserAnswer.objects.filter(
+                attempt__quiz__course__instructor=user
+            ).select_related('attempt', 'question', 'selected_answer')
+        return QuizUserAnswer.objects.filter(
+            attempt__user=user
+        ).select_related('attempt', 'question', 'selected_answer')
 
 
 class ExamViewSet(viewsets.ModelViewSet):

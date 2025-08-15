@@ -98,6 +98,19 @@ class ModuleViewSet(ModelViewSet):
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'], url_path='courses/(?P<course_id>[^/.]+)')
+    def course_modules(self, request, course_id=None):
+        """الحصول على وحدات كورس معين"""
+        try:
+            course = Course.objects.get(id=course_id)
+            modules = Module.objects.filter(course=course).order_by('order')
+            serializer = self.get_serializer(modules, many=True)
+            return Response(serializer.data)
+        except Course.DoesNotExist:
+            return Response({
+                'error': 'الكورس غير موجود'
+            }, status=status.HTTP_404_NOT_FOUND)
+
 
 # Progress-related functionality from CourseViewSet
 class CourseProgressMixin:
