@@ -1,10 +1,11 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import (
     Quiz, Question, Answer, QuizAttempt, QuizUserAnswer,
@@ -145,17 +146,53 @@ class QuizAttemptViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return QuizAttemptCreateSerializer
+        elif self.action == 'retrieve':
+            return QuizAttemptDetailSerializer
         return QuizAttemptSerializer
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'instructor':
-            return QuizAttempt.objects.filter(
-                quiz__course__instructor=user
-            ).select_related('quiz', 'user')
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return QuizAttempt.objects.filter(
+                    quiz__course__instructors__profile=profile
+                ).select_related('quiz', 'user')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
         return QuizAttempt.objects.filter(
             user=user
         ).select_related('quiz')
+
+    def perform_create(self, serializer):
+        """Set the user to the current user when creating an attempt"""
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['patch'])
+    def finish(self, request, pk=None):
+        """Finish a quiz attempt"""
+        attempt = self.get_object()
+        
+        # Check if attempt belongs to current user
+        if attempt.user != request.user:
+            return Response(
+                {'error': 'You can only finish your own attempts'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Set end time
+        attempt.end_time = timezone.now()
+        attempt.save()
+        
+        # Calculate score
+        attempt.calculate_score()
+        
+        serializer = self.get_serializer(attempt)
+        return Response(serializer.data)
 
 
 class QuizUserAnswerViewSet(viewsets.ModelViewSet):
@@ -169,17 +206,44 @@ class QuizUserAnswerViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return QuizUserAnswerCreateSerializer
+        elif self.action == 'retrieve':
+            return QuizUserAnswerDetailSerializer
         return QuizUserAnswerSerializer
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'instructor':
-            return QuizUserAnswer.objects.filter(
-                attempt__quiz__course__instructor=user
-            ).select_related('attempt', 'question', 'selected_answer')
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return QuizUserAnswer.objects.filter(
+                    attempt__quiz__course__instructors__profile=profile
+                ).select_related('attempt', 'question', 'selected_answer')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
         return QuizUserAnswer.objects.filter(
             attempt__user=user
         ).select_related('attempt', 'question', 'selected_answer')
+
+    @action(detail=False, methods=['post'])
+    def submit_answers(self, request):
+        """Submit multiple answers for a quiz attempt"""
+        serializer = QuizAnswersSubmitSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                created_answers = serializer.save()
+                return Response({
+                    'message': f'Successfully submitted {len(created_answers)} answers',
+                    'answers_count': len(created_answers)
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    'error': str(e)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExamViewSet(viewsets.ModelViewSet):
@@ -193,11 +257,157 @@ class ExamViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        if self.action in ['create', 'update', 'partial_update']:
             return ExamCreateSerializer
         elif self.action == 'retrieve':
             return ExamDetailSerializer
         return ExamBasicSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return Exam.objects.all().select_related('course', 'module')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
+        return Exam.objects.filter(
+            course__enrollments__student=user,
+            is_active=True
+        ).select_related('course', 'module')
+
+
+class ExamQuestionViewSet(viewsets.ModelViewSet):
+    """ViewSet for Exam Question management"""
+    queryset = ExamQuestion.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['exam', 'question_type']
+    search_fields = ['text', 'explanation']
+    ordering_fields = ['order', 'points']
+    ordering = ['order']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ExamQuestionCreateSerializer
+        elif self.action == 'retrieve':
+            return ExamQuestionDetailSerializer
+        return ExamQuestionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return ExamQuestion.objects.filter(
+                    exam__course__instructors__profile=profile
+                ).select_related('exam')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
+        return ExamQuestion.objects.filter(
+            exam__course__enrollments__student=user,
+            exam__is_active=True
+        ).select_related('exam')
+
+
+class ExamAnswerViewSet(viewsets.ModelViewSet):
+    """ViewSet for Exam Answer management"""
+    queryset = ExamAnswer.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['question', 'is_correct']
+    search_fields = ['text', 'explanation']
+    ordering_fields = ['order']
+    ordering = ['order']
+
+    def get_serializer_class(self):
+        return ExamAnswerSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Check if user is instructor or admin through profile
+        try:
+            profile = user.profile
+            if profile.status in ['Instructor', 'Admin'] or user.is_staff:
+                return ExamAnswer.objects.filter(
+                    question__exam__course__instructors__profile=profile
+                ).select_related('question')
+        except:
+            pass
+        
+        # For students or if profile doesn't exist
+        return ExamAnswer.objects.filter(
+            question__exam__course__enrollments__student=user,
+            question__exam__is_active=True
+        ).select_related('question')
+
+
+# Additional API endpoints for exams
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def exam_questions(request, exam_id):
+    """Get all questions for a specific exam"""
+    try:
+        exam = Exam.objects.get(id=exam_id)
+        questions = exam.questions.all().prefetch_related('answers')
+        serializer = ExamQuestionWithAnswersSerializer(questions, many=True)
+        return Response(serializer.data)
+    except Exam.DoesNotExist:
+        return Response({'error': 'Exam not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def add_exam_question(request, exam_id):
+    """Add a new question to an exam"""
+    try:
+        exam = Exam.objects.get(id=exam_id)
+        question_data = request.data.copy()
+        question_data['exam'] = exam_id
+        
+        serializer = ExamQuestionCreateSerializer(data=question_data)
+        if serializer.is_valid():
+            question = serializer.save()
+            return Response(ExamQuestionSerializer(question).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exam.DoesNotExist:
+        return Response({'error': 'Exam not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def exam_statistics(request, exam_id):
+    """Get statistics for a specific exam"""
+    try:
+        exam = Exam.objects.get(id=exam_id)
+        attempts = exam.attempts.all()
+        
+        total_attempts = attempts.count()
+        passed_attempts = attempts.filter(passed=True).count()
+        avg_score = attempts.aggregate(avg_score=models.Avg('score'))['avg_score'] or 0
+        
+        statistics = {
+            'total_attempts': total_attempts,
+            'passed_attempts': passed_attempts,
+            'failed_attempts': total_attempts - passed_attempts,
+            'pass_rate': (passed_attempts / total_attempts * 100) if total_attempts > 0 else 0,
+            'average_score': round(avg_score, 2),
+            'total_questions': exam.questions.count(),
+            'total_points': exam.total_points
+        }
+        
+        return Response(statistics)
+    except Exam.DoesNotExist:
+        return Response({'error': 'Exam not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class AssignmentViewSet(viewsets.ModelViewSet):

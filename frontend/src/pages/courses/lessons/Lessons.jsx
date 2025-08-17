@@ -111,8 +111,6 @@ const Lessons = () => {
     switch ((type || '').toLowerCase()) {
       case 'video':
         return <VideoIcon fontSize="small" />;
-      case 'quiz':
-        return <QuizIcon fontSize="small" />;
       default:
         return <ArticleIcon fontSize="small" />;
     }

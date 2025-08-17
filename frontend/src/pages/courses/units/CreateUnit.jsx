@@ -134,8 +134,6 @@ const UploadArea = styled('div')(({ theme, isDragActive }) => ({
 const LESSON_TYPES = [
   { value: 'video', label: 'فيديو', icon: <VideoLibraryIcon /> },
   { value: 'article', label: 'مقال', icon: <ArticleIcon /> },
-  { value: 'quiz', label: 'اختبار', icon: <QuizIcon /> },
-  { value: 'exercise', label: 'تمرين عملي', icon: <CodeIcon /> },
 ];
 
 const CreateUnit = () => {

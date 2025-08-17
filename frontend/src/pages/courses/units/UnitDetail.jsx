@@ -78,8 +78,6 @@ const StyledCard = styled(Card)(({ theme }) => ({
 const LESSON_TYPES = [
   { value: 'video', label: 'فيديو', icon: <VideoIcon />, color: 'primary' },
   { value: 'article', label: 'مقال', icon: <ArticleIcon />, color: 'secondary' },
-  { value: 'quiz', label: 'اختبار', icon: <QuizIcon />, color: 'warning' },
-  { value: 'exercise', label: 'تمرين عملي', icon: <CodeIcon />, color: 'success' },
 ];
 
 const UnitDetail = () => {

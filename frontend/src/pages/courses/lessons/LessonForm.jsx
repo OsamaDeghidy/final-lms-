@@ -35,9 +35,6 @@ const Wrapper = styled(Paper)(({ theme }) => ({
 const LESSON_TYPES = [
   { value: 'video', label: 'فيديو' },
   { value: 'article', label: 'مقال' },
-  { value: 'quiz', label: 'اختبار' },
-  { value: 'assignment', label: 'واجب' },
-  { value: 'discussion', label: 'نقاش' },
 ];
 
 const LessonForm = ({ isEdit = false }) => {

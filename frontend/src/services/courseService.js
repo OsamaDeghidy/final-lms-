@@ -14,6 +14,12 @@ export const courseAPI = {
     return response.data;
   },
 
+  // Get a specific course by ID (alias for getCourseById)
+  getCourse: async (courseId) => {
+    const response = await api.get(`/courses/courses/${courseId}/`);
+    return response.data;
+  },
+
   // Search courses
   searchCourses: async (query, params = {}) => {
     const response = await api.get('/courses/search/', { 

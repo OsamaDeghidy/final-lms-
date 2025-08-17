@@ -180,9 +180,6 @@ class Lesson(models.Model):
     class LessonType(models.TextChoices):
         VIDEO = 'video', _('Video')
         ARTICLE = 'article', _('Article')
-        QUIZ = 'quiz', _('Quiz')
-        ASSIGNMENT = 'assignment', _('Assignment')
-        DISCUSSION = 'discussion', _('Discussion')
         
     class DifficultyLevel(models.TextChoices):
         BEGINNER = 'beginner', _('Beginner')

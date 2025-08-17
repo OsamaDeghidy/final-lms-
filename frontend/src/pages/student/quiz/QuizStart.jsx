@@ -1,67 +1,117 @@
-import React, { useState } from 'react';
-import { Box, Typography, Paper, Button, RadioGroup, FormControlLabel, Radio, TextField, Stack, Chip, LinearProgress } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Paper, Button, RadioGroup, FormControlLabel, Radio, TextField, Stack, Chip, LinearProgress, CircularProgress, Alert } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-
-const mockQuiz = {
-  id: 1,
-  title: 'كويز الوحدة الأولى',
-  type: 'module',
-  questions: [
-    {
-      text: 'ما هو HTML؟',
-      type: 'multiple_choice',
-      points: 2,
-      answers: [
-        { text: 'لغة ترميز', is_correct: true },
-        { text: 'لغة برمجة', is_correct: false },
-      ],
-    },
-    {
-      text: 'هل CSS لغة برمجة؟',
-      type: 'true_false',
-      points: 1,
-      answers: [
-        { text: 'نعم', is_correct: false },
-        { text: 'لا', is_correct: true },
-      ],
-    },
-    {
-      text: 'اكتب مثالًا على وسم HTML.',
-      type: 'short_answer',
-      points: 2,
-      answers: [],
-    },
-  ],
-  time_limit: 20,
-};
+import { quizAPI } from '../../../services/quiz.service';
 
 const QuizStart = ({ onFinish }) => {
   const navigate = useNavigate();
   const { quizId } = useParams();
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
-  const quiz = mockQuiz; // In real app, fetch by quizId
-  const total = quiz.questions.length;
+  const [quiz, setQuiz] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attemptId, setAttemptId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadQuiz();
+  }, [quizId]);
+
+  const loadQuiz = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get quiz details
+      const quizData = await quizAPI.getQuiz(quizId);
+      setQuiz(quizData);
+      
+      // Get quiz questions with answers
+      const questionsData = await quizAPI.getQuizQuestions(quizId);
+      setQuestions(questionsData.results || questionsData);
+      
+      // Start quiz attempt
+      const attemptData = await quizAPI.startQuizAttempt(quizId);
+      setAttemptId(attemptData.id);
+      
+    } catch (err) {
+      console.error('Error loading quiz:', err);
+      setError('حدث خطأ في تحميل الكويز. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (val) => {
     setAnswers({ ...answers, [current]: val });
   };
 
   const handleNext = () => {
-    if (current < total - 1) setCurrent(current + 1);
+    if (current < questions.length - 1) setCurrent(current + 1);
   };
+
   const handlePrev = () => {
     if (current > 0) setCurrent(current - 1);
   };
-  const handleSubmit = () => {
-    if (onFinish) {
-      onFinish();
-    } else {
-      navigate(`/student/quiz/${quiz.id}/result`);
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      // Submit all answers
+      const answersToSubmit = questions.map((question, index) => ({
+        question: question.id,
+        selected_answer: answers[index]?.selected_answer || null,
+        text_answer: answers[index]?.text_answer || null
+      }));
+
+      await quizAPI.submitQuizAnswers(attemptId, answersToSubmit);
+      
+      // Finish the attempt
+      await quizAPI.finishQuizAttempt(attemptId);
+      
+      if (onFinish) {
+        onFinish();
+      } else {
+        navigate(`/student/quiz/${quizId}/result/${attemptId}`);
+      }
+    } catch (err) {
+      console.error('Error submitting quiz:', err);
+      setError('حدث خطأ في إرسال الإجابات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const q = quiz.questions[current];
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, md: 3 } }}>
+        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+        <Button variant="contained" onClick={loadQuiz}>إعادة المحاولة</Button>
+      </Box>
+    );
+  }
+
+  if (!quiz || !questions.length) {
+    return (
+      <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, md: 3 } }}>
+        <Alert severity="info">لا توجد أسئلة متاحة لهذا الكويز.</Alert>
+      </Box>
+    );
+  }
+
+  const q = questions[current];
+  const total = questions.length;
 
   return (
     <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, md: 3 } }}>
@@ -69,42 +119,81 @@ const QuizStart = ({ onFinish }) => {
         <Typography variant="h5" fontWeight={700} mb={2}>{quiz.title}</Typography>
         <Stack direction="row" spacing={2} mb={2} alignItems="center">
           <Chip label={`سؤال ${current + 1} من ${total}`} color="primary" />
-          <Chip label={`الزمن: ${quiz.time_limit} دقيقة`} color="secondary" />
+          {quiz.time_limit && (
+            <Chip label={`الزمن: ${quiz.time_limit} دقيقة`} color="secondary" />
+          )}
           <Chip label={`الدرجة: ${q.points}`} color="info" />
         </Stack>
         <LinearProgress variant="determinate" value={((current + 1) / total) * 100} sx={{ mb: 3, height: 8, borderRadius: 2 }} />
+        
         <Typography variant="h6" mb={2}>{q.text}</Typography>
-        {q.type === 'multiple_choice' && (
-          <RadioGroup value={answers[current] || ''} onChange={e => handleChange(e.target.value)}>
-            {q.answers.map((a, idx) => (
-              <FormControlLabel key={idx} value={a.text} control={<Radio />} label={a.text} />
+        
+        {q.question_type === 'multiple_choice' && (
+          <RadioGroup 
+            value={answers[current]?.selected_answer || ''} 
+            onChange={e => handleChange({ ...answers[current], selected_answer: e.target.value })}
+          >
+            {q.answers?.map((a, idx) => (
+              <FormControlLabel 
+                key={idx} 
+                value={a.id} 
+                control={<Radio />} 
+                label={a.text} 
+              />
             ))}
           </RadioGroup>
         )}
-        {q.type === 'true_false' && (
-          <RadioGroup value={answers[current] || ''} onChange={e => handleChange(e.target.value)}>
-            {q.answers.map((a, idx) => (
-              <FormControlLabel key={idx} value={a.text} control={<Radio />} label={a.text} />
+        
+        {q.question_type === 'true_false' && (
+          <RadioGroup 
+            value={answers[current]?.selected_answer || ''} 
+            onChange={e => handleChange({ ...answers[current], selected_answer: e.target.value })}
+          >
+            {q.answers?.map((a, idx) => (
+              <FormControlLabel 
+                key={idx} 
+                value={a.id} 
+                control={<Radio />} 
+                label={a.text} 
+              />
             ))}
           </RadioGroup>
         )}
-        {q.type === 'short_answer' && (
+        
+        {q.question_type === 'short_answer' && (
           <TextField
             label="إجابتك"
-            value={answers[current] || ''}
-            onChange={e => handleChange(e.target.value)}
+            value={answers[current]?.text_answer || ''}
+            onChange={e => handleChange({ ...answers[current], text_answer: e.target.value })}
             fullWidth
             multiline
             rows={3}
             sx={{ mt: 2 }}
           />
         )}
+        
         <Stack direction="row" spacing={2} mt={4} justifyContent="space-between">
-          <Button variant="outlined" onClick={handlePrev} disabled={current === 0}>السابق</Button>
+          <Button 
+            variant="outlined" 
+            onClick={handlePrev} 
+            disabled={current === 0}
+          >
+            السابق
+          </Button>
+          
           {current < total - 1 ? (
-            <Button variant="contained" onClick={handleNext}>التالي</Button>
+            <Button variant="contained" onClick={handleNext}>
+              التالي
+            </Button>
           ) : (
-            <Button variant="contained" color="success" onClick={handleSubmit}>إنهاء الكويز</Button>
+            <Button 
+              variant="contained" 
+              color="success" 
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? 'جاري الإرسال...' : 'إنهاء الكويز'}
+            </Button>
           )}
         </Stack>
       </Paper>
