@@ -275,11 +275,34 @@ class ExamBasicSerializer(serializers.ModelSerializer):
 
 
 class ExamDetailSerializer(serializers.ModelSerializer):
+    course = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
     questions = serializers.SerializerMethodField()
     
     class Meta:
         model = Exam
-        fields = '__all__'
+        fields = [
+            'id', 'title', 'description', 'course', 'module', 'time_limit', 'pass_mark', 
+            'total_points', 'is_final', 'is_active', 'allow_multiple_attempts', 
+            'max_attempts', 'show_answers_after', 'randomize_questions', 
+            'start_date', 'end_date', 'created_at', 'updated_at', 'questions'
+        ]
+    
+    def get_course(self, obj):
+        if obj.course:
+            return {
+                'id': obj.course.id,
+                'title': obj.course.title
+            }
+        return None
+    
+    def get_module(self, obj):
+        if obj.module:
+            return {
+                'id': obj.module.id,
+                'name': obj.module.name
+            }
+        return None
     
     def get_questions(self, obj):
         """Get questions with their answers"""
@@ -425,4 +448,4 @@ class AssignmentSubmissionWithResponsesSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = AssignmentSubmission
-        fields = '__all__' 
+        fields = '__all__'

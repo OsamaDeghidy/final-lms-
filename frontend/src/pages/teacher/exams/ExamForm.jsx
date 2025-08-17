@@ -160,8 +160,8 @@ const ExamForm = ({ isEdit = false }) => {
         max_attempts: exam.max_attempts?.toString() || '1',
         show_answers_after: exam.show_answers_after || false,
         randomize_questions: exam.randomize_questions || false,
-        start_date: exam.start_date ? exam.start_date.split('T')[0] : '',
-        end_date: exam.end_date ? exam.end_date.split('T')[0] : ''
+        start_date: formatDateTimeForInput(exam.start_date),
+        end_date: formatDateTimeForInput(exam.end_date)
       });
       
       console.log('Set form data:', { courseId, moduleId }); // Debug log
@@ -186,12 +186,43 @@ const ExamForm = ({ isEdit = false }) => {
     }));
   };
 
+  const formatDateTimeForAPI = (dateTimeString) => {
+    if (!dateTimeString) return null;
+    // Convert local datetime to ISO string for API
+    const date = new Date(dateTimeString);
+    return date.toISOString();
+  };
+
+  const formatDateTimeForInput = (isoString) => {
+    if (!isoString) return '';
+    // Convert ISO string to local datetime for input field
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
       setSaving(true);
       setError(null);
+
+      // Validate dates
+      if (formData.start_date && formData.end_date) {
+        const startDate = new Date(formData.start_date);
+        const endDate = new Date(formData.end_date);
+        
+        if (startDate >= endDate) {
+          setError('تاريخ البداية يجب أن يكون قبل تاريخ الانتهاء');
+          setSaving(false);
+          return;
+        }
+      }
 
       const examData = {
         ...formData,
@@ -200,7 +231,9 @@ const ExamForm = ({ isEdit = false }) => {
         time_limit: formData.time_limit ? parseInt(formData.time_limit) : null,
         pass_mark: parseFloat(formData.pass_mark),
         total_points: parseInt(formData.total_points),
-        max_attempts: parseInt(formData.max_attempts)
+        max_attempts: parseInt(formData.max_attempts),
+        start_date: formatDateTimeForAPI(formData.start_date),
+        end_date: formatDateTimeForAPI(formData.end_date)
       };
 
       if (isEdit) {
@@ -243,28 +276,28 @@ const ExamForm = ({ isEdit = false }) => {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
-              <TextField
-                label="عنوان الامتحان"
+              <TextField 
+                label="عنوان الامتحان" 
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                fullWidth
-                required
-                variant="outlined"
+                fullWidth 
+                required 
+                variant="outlined" 
                 sx={{ minWidth: 400 }}
               />
             </Grid>
 
             <Grid item xs={12} md={8}>
-              <TextField
-                select
-                label="الدورة"
+              <TextField 
+                select 
+                label="الدورة" 
                 name="course"
                 value={formData.course || ''}
                 onChange={handleInputChange}
-                fullWidth
-                required
-                variant="outlined"
+                fullWidth 
+                required 
+                variant="outlined" 
                 sx={{ minWidth: 300 }}
                 helperText={formData.course ? `محدد: ${Array.isArray(courses) && courses.find(c => c.id.toString() === formData.course)?.title || 'غير معروف'}` : ''}
               >
@@ -277,14 +310,14 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12} md={4}>
-              <TextField
-                select
-                label="الوحدة (اختياري)"
+              <TextField 
+                select 
+                label="الوحدة (اختياري)" 
                 name="module"
                 value={formData.module || ''}
                 onChange={handleInputChange}
-                fullWidth
-                variant="outlined"
+                fullWidth 
+                variant="outlined" 
                 sx={{ minWidth: 250 }}
                 helperText={
                   formData.module 
@@ -312,8 +345,8 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12}>
-              <TextField
-                label="وصف الامتحان"
+              <TextField 
+                label="وصف الامتحان" 
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
@@ -326,10 +359,10 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="الوقت بالدقائق"
+              <TextField 
+                label="الوقت بالدقائق" 
                 name="time_limit"
-                type="number"
+                type="number" 
                 value={formData.time_limit}
                 onChange={handleInputChange}
                 fullWidth
@@ -340,10 +373,10 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="درجة النجاح (%)"
+              <TextField 
+                label="درجة النجاح (%)" 
                 name="pass_mark"
-                type="number"
+                type="number" 
                 value={formData.pass_mark}
                 onChange={handleInputChange}
                 fullWidth
@@ -354,10 +387,10 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
+              <TextField 
                 label="إجمالي النقاط"
                 name="total_points"
-                type="number"
+                type="number" 
                 value={formData.total_points}
                 onChange={handleInputChange}
                 fullWidth
@@ -368,10 +401,10 @@ const ExamForm = ({ isEdit = false }) => {
             </Grid>
 
             <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                label="الحد الأقصى للمحاولات"
+              <TextField 
+                label="الحد الأقصى للمحاولات" 
                 name="max_attempts"
-                type="number"
+                type="number" 
                 value={formData.max_attempts}
                 onChange={handleInputChange}
                 fullWidth
@@ -383,89 +416,91 @@ const ExamForm = ({ isEdit = false }) => {
 
             <Grid item xs={12} sm={6}>
               <TextField
-                label="تاريخ البداية"
+                label="تاريخ ووقت البداية"
                 name="start_date"
-                type="date"
+                type="datetime-local"
                 value={formData.start_date}
                 onChange={handleInputChange}
                 fullWidth
                 variant="outlined"
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 250 }}
+                helperText="اختر التاريخ والوقت لبداية الامتحان"
               />
             </Grid>
 
             <Grid item xs={12} sm={6}>
               <TextField
-                label="تاريخ الانتهاء"
+                label="تاريخ ووقت الانتهاء"
                 name="end_date"
-                type="date"
+                type="datetime-local"
                 value={formData.end_date}
                 onChange={handleInputChange}
                 fullWidth
                 variant="outlined"
                 InputLabelProps={{ shrink: true }}
                 sx={{ minWidth: 250 }}
+                helperText="اختر التاريخ والوقت لانتهاء الامتحان"
               />
             </Grid>
 
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, p: 2, border: '1px solid #e0e0e0', borderRadius: 2, backgroundColor: '#fafafa' }}>
-                <FormControlLabel
-                  control={
-                    <Switch
+              <FormControlLabel 
+                control={
+                  <Switch 
                       name="is_final"
-                      checked={formData.is_final}
+                    checked={formData.is_final}
                       onChange={handleInputChange}
-                    />
-                  }
-                  label="امتحان نهائي"
+                  />
+                } 
+                label="امتحان نهائي" 
                   sx={{ minWidth: 150 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
+              />
+              <FormControlLabel 
+                control={
+                  <Switch 
                       name="is_active"
-                      checked={formData.is_active}
+                    checked={formData.is_active}
                       onChange={handleInputChange}
-                    />
-                  }
-                  label="تفعيل الامتحان"
+                  />
+                } 
+                label="تفعيل الامتحان" 
                   sx={{ minWidth: 150 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
+              />
+              <FormControlLabel 
+                control={
+                  <Switch 
                       name="allow_multiple_attempts"
-                      checked={formData.allow_multiple_attempts}
+                    checked={formData.allow_multiple_attempts}
                       onChange={handleInputChange}
-                    />
-                  }
-                  label="السماح بمحاولات متعددة"
+                  />
+                } 
+                label="السماح بمحاولات متعددة" 
                   sx={{ minWidth: 180 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
+              />
+              <FormControlLabel 
+                control={
+                  <Switch 
                       name="show_answers_after"
-                      checked={formData.show_answers_after}
+                    checked={formData.show_answers_after}
                       onChange={handleInputChange}
-                    />
-                  }
-                  label="إظهار الإجابات بعد الانتهاء"
+                  />
+                } 
+                label="إظهار الإجابات بعد الانتهاء" 
                   sx={{ minWidth: 200 }}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
+              />
+              <FormControlLabel 
+                control={
+                  <Switch 
                       name="randomize_questions"
-                      checked={formData.randomize_questions}
+                    checked={formData.randomize_questions}
                       onChange={handleInputChange}
-                    />
-                  }
-                  label="ترتيب الأسئلة عشوائياً"
+                  />
+                } 
+                label="ترتيب الأسئلة عشوائياً" 
                   sx={{ minWidth: 180 }}
-                />
+              />
               </Box>
             </Grid>
           </Grid>
@@ -478,10 +513,10 @@ const ExamForm = ({ isEdit = false }) => {
             >
               إلغاء
             </Button>
-            <Button
+            <Button 
               type="submit"
-              variant="contained"
-              startIcon={saving ? <CircularProgress size={20} /> : <Save />}
+              variant="contained" 
+              startIcon={saving ? <CircularProgress size={20} /> : <Save />} 
               sx={{ borderRadius: 2, fontWeight: 'bold', px: 4 }}
               disabled={saving}
             >
