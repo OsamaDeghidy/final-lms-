@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from .models import Meeting, Participant, Notification, MeetingChat
-from courses.models import Course
+from .models import Meeting, Participant, Notification, MeetingChat, MeetingInvitation
+
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -14,6 +14,9 @@ class MeetingBasicSerializer(serializers.ModelSerializer):
     participants_count = serializers.SerializerMethodField()
     user_is_registered = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
+    updated_at = serializers.SerializerMethodField()
     
     class Meta:
         model = Meeting
@@ -21,8 +24,27 @@ class MeetingBasicSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'meeting_type', 'start_time',
             'duration', 'zoom_link', 'max_participants', 'status',
             'creator_name', 'creator_image', 'participants_count', 'user_is_registered',
-            'enable_screen_share', 'enable_chat', 'enable_recording', 'created_at'
+            'enable_screen_share', 'enable_chat', 'enable_recording', 'created_at', 'updated_at', 'is_active'
         ]
+    
+    def get_start_time(self, obj):
+        """Format start_time as ISO string"""
+        if obj.start_time:
+            # Format as YYYY-MM-DDTHH:MM:SS
+            return obj.start_time.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
+    
+    def get_created_at(self, obj):
+        """Format created_at as ISO string"""
+        if obj.created_at:
+            return obj.created_at.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
+    
+    def get_updated_at(self, obj):
+        """Format updated_at as ISO string"""
+        if obj.updated_at:
+            return obj.updated_at.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
     
     def get_creator_image(self, obj):
         if obj.creator.profile.image_profile:
@@ -42,7 +64,7 @@ class MeetingBasicSerializer(serializers.ModelSerializer):
         now = timezone.now()
         if obj.start_time > now:
             return 'upcoming'
-        elif obj.start_time <= now and obj.start_time + timezone.timedelta(minutes=obj.duration) >= now:
+        elif obj.start_time <= now and obj.start_time + obj.duration >= now:
             return 'ongoing'
         else:
             return 'completed'
@@ -57,6 +79,9 @@ class MeetingDetailSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
+    updated_at = serializers.SerializerMethodField()
     
     class Meta:
         model = Meeting
@@ -65,8 +90,27 @@ class MeetingDetailSerializer(serializers.ModelSerializer):
             'duration', 'zoom_link', 'materials_url', 'max_participants',
             'enable_screen_share', 'enable_chat', 'enable_recording',
             'creator', 'participants', 'user_is_registered', 'status',
-            'can_edit', 'can_delete', 'created_at', 'updated_at'
+            'can_edit', 'can_delete', 'created_at', 'updated_at', 'is_active'
         ]
+    
+    def get_start_time(self, obj):
+        """Format start_time as ISO string"""
+        if obj.start_time:
+            # Format as YYYY-MM-DDTHH:MM:SS
+            return obj.start_time.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
+    
+    def get_created_at(self, obj):
+        """Format created_at as ISO string"""
+        if obj.created_at:
+            return obj.created_at.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
+    
+    def get_updated_at(self, obj):
+        """Format updated_at as ISO string"""
+        if obj.updated_at:
+            return obj.updated_at.strftime('%Y-%m-%dT%H:%M:%S')
+        return None
     
     def get_creator(self, obj):
         return {
@@ -84,7 +128,7 @@ class MeetingDetailSerializer(serializers.ModelSerializer):
             'name': p.user.profile.name,
             'email': p.user.email,
             'image': p.user.profile.image_profile.url if p.user.profile.image_profile else None,
-            'joined_at': p.joined_at,
+            'joined_at': p.joined_at.strftime('%Y-%m-%dT%H:%M:%S') if p.joined_at else None,
             'attendance_status': p.attendance_status
         } for p in participants]
     
@@ -103,7 +147,7 @@ class MeetingDetailSerializer(serializers.ModelSerializer):
         now = timezone.now()
         if obj.start_time > now:
             return 'upcoming'
-        elif obj.start_time <= now and obj.start_time + timezone.timedelta(minutes=obj.duration) >= now:
+        elif obj.start_time <= now and obj.start_time + obj.duration >= now:
             return 'ongoing'
         else:
             return 'completed'
@@ -289,12 +333,12 @@ class MeetingInvitationSerializer(serializers.ModelSerializer):
     meeting_title = serializers.CharField(source='meeting.title', read_only=True)
     
     class Meta:
-        model = Notification
+        model = MeetingInvitation
         fields = [
             'id', 'meeting', 'meeting_title', 'user', 'user_name', 'user_email',
-            'sent_at', 'is_sent', 'responded_at', 'response'
+            'message', 'response', 'responded_at', 'created_at'
         ]
-        read_only_fields = ['id', 'sent_at', 'is_sent', 'responded_at']
+        read_only_fields = ['id', 'responded_at', 'created_at']
 
 
 class MeetingRecordingSerializer(serializers.ModelSerializer):
@@ -345,13 +389,14 @@ class QuickMeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = [
-            'title', 'course', 'duration', 'meeting_platform', 'max_participants'
+            'title', 'description', 'meeting_type', 'duration', 'max_participants'
         ]
     
     def create(self, validated_data):
-        # Set scheduled time to now + 5 minutes
-        validated_data['scheduled_time'] = timezone.now() + timedelta(minutes=5)
+        # Set start time to now + 5 minutes
+        validated_data['start_time'] = timezone.now() + timedelta(minutes=5)
         validated_data['is_active'] = True
+        validated_data['creator'] = self.context['request'].user
         
         return super().create(validated_data)
 

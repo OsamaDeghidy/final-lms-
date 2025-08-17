@@ -1,30 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Card, CardContent, Button, Chip, Avatar, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl,
-  InputLabel, Select, MenuItem, Badge, Tabs, Tab, Divider, List, ListItem,
-  ListItemText, ListItemAvatar, Paper, Alert, LinearProgress
+  InputLabel, Select, MenuItem, Tabs, Tab, Paper, Alert, LinearProgress, 
+  Snackbar, CircularProgress, List, ListItem, ListItemAvatar, ListItemText,
+  Divider, Badge, Tooltip, Switch, FormControlLabel
 } from '@mui/material';
 import {
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-} from '@mui/lab';
-import {
   VideoCall as VideoCallIcon, Group as GroupIcon, Schedule as ScheduleIcon,
-  PlayArrow as PlayArrowIcon, Chat as ChatIcon, Notifications as NotificationsIcon,
-  Link as LinkIcon, FileCopy as FileCopyIcon, CalendarToday as CalendarTodayIcon,
-  AccessTime as AccessTimeIcon, People as PeopleIcon, CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon, Download as DownloadIcon, Visibility as VisibilityIcon,
-  TrendingUp as TrendingUpIcon, School as SchoolIcon, Assignment as AssignmentIcon,
-  Book as BookIcon, VideoLibrary as VideoLibraryIcon
+  PlayArrow as PlayArrowIcon, Stop as StopIcon, Chat as ChatIcon,
+  Notifications as NotificationsIcon, Link as LinkIcon, FileCopy as FileCopyIcon,
+  CalendarToday as CalendarTodayIcon, AccessTime as AccessTimeIcon,
+  People as PeopleIcon, CheckCircle as CheckCircleIcon, Cancel as CancelIcon,
+  Refresh as RefreshIcon, Add as AddIcon, Remove as RemoveIcon,
+  PersonAdd as PersonAddIcon, PersonRemove as PersonRemoveIcon,
+  School as SchoolIcon, Person as PersonIcon, Edit as EditIcon,
+  Download as DownloadIcon, Upload as UploadIcon, History as HistoryIcon,
+  TrendingUp as TrendingUpIcon, Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import '../../meetings/MeetingsCommon.css';
 import MeetingDetailsDialog from '../../meetings/MeetingDetailsDialog';
+import { meetingAPI } from '../../../services/meeting.service';
 
 // Styled Components
 const StyledCard = styled(Card)(({ theme, status }) => ({
@@ -62,121 +59,302 @@ const StatusChip = styled(Chip)(({ status }) => ({
   }),
 }));
 
-const AttendanceCard = styled(Card)(({ theme }) => ({
-  borderRadius: 16,
-  background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-  border: '1px solid #e9ecef',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 6px 25px rgba(0,0,0,0.1)',
-  },
-}));
-
 const StudentMeetings = () => {
   const [tabValue, setTabValue] = useState(0);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [meetings, setMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [registrationStatuses, setRegistrationStatuses] = useState({});
+  const [attendanceStatuses, setAttendanceStatuses] = useState({});
 
-  // Sample data
-  const meetings = [
-    {
-      id: 1,
-      title: "محاضرة الرياضيات - الفصل الأول",
-      description: "شرح مفصل للمفاهيم الأساسية في الجبر والهندسة",
-      meetingType: "LIVE",
-      startTime: "2024-01-15T10:00:00",
-      duration: 90,
-      participants: 25,
-      maxParticipants: 50,
-      status: "upcoming",
-      zoomLink: "https://zoom.us/j/123456789",
-      materials: "math_lecture_1.pdf",
-      recordingUrl: "https://example.com/recording1.mp4",
-      isActive: true,
-      teacher: "د. أحمد محمد",
-      course: "الرياضيات 101",
-      attendanceStatus: "registered", // registered, attending, absent, completed
-      attendanceTime: null,
-      exitTime: null,
-      attendanceDuration: null,
-    },
-    {
-      id: 2,
-      title: "مناقشة المشاريع النهائية",
-      description: "عرض ومناقشة المشاريع المطلوبة من الطلاب",
-      meetingType: "ZOOM",
-      startTime: "2024-01-14T14:00:00",
-      duration: 120,
-      participants: 18,
-      maxParticipants: 30,
-      status: "ongoing",
-      zoomLink: "https://zoom.us/j/987654321",
-      materials: "final_projects_guide.pdf",
-      recordingUrl: null,
-      isActive: true,
-      teacher: "د. فاطمة علي",
-      course: "تطوير البرمجيات",
-      attendanceStatus: "attending",
-      attendanceTime: "2024-01-14T14:05:00",
-      exitTime: null,
-      attendanceDuration: null,
-    },
-    {
-      id: 3,
-      title: "مراجعة الامتحان النصفي",
-      description: "مراجعة شاملة لأسئلة الامتحان النصفي وإجاباتها",
-      meetingType: "NORMAL",
-      startTime: "2024-01-13T09:00:00",
-      duration: 60,
-      participants: 30,
-      maxParticipants: 40,
-      status: "completed",
-      zoomLink: null,
-      materials: "midterm_review.pdf",
-      recordingUrl: "https://example.com/recording3.mp4",
-      isActive: false,
-      teacher: "د. محمد أحمد",
-      course: "الفيزياء 201",
-      attendanceStatus: "completed",
-      attendanceTime: "2024-01-13T09:02:00",
-      exitTime: "2024-01-13T10:00:00",
-      attendanceDuration: 58,
-    },
-    {
-      id: 4,
-      title: "محاضرة الكيمياء العضوية",
-      description: "مقدمة في الكيمياء العضوية والمركبات الكربونية",
-      meetingType: "LIVE",
-      startTime: "2024-01-12T11:00:00",
-      duration: 75,
-      participants: 22,
-      maxParticipants: 35,
-      status: "completed",
-      zoomLink: "https://zoom.us/j/555666777",
-      materials: "organic_chemistry_notes.pdf",
-      recordingUrl: "https://example.com/recording4.mp4",
-      isActive: false,
-      teacher: "د. سارة محمد",
-      course: "الكيمياء العضوية",
-      attendanceStatus: "absent",
-      attendanceTime: null,
-      exitTime: null,
-      attendanceDuration: null,
-    },
-  ];
+  // Load meetings on component mount and auto-refresh for ongoing meetings
+  useEffect(() => {
+    fetchMeetings();
+    
+    // Auto-refresh every 30 seconds for ongoing meetings
+    const interval = setInterval(() => {
+      const hasOngoingMeetings = meetings.some(meeting => getMeetingStatus(meeting) === 'ongoing');
+      if (hasOngoingMeetings) {
+        console.log('Auto-refreshing meetings due to ongoing meetings...');
+        fetchMeetings();
+      }
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [tabValue]);
 
-  const attendanceStats = {
-    totalMeetings: meetings.length,
-    attended: meetings.filter(m => m.attendanceStatus === 'completed' || m.attendanceStatus === 'attending').length,
-    absent: meetings.filter(m => m.attendanceStatus === 'absent').length,
-    attendanceRate: Math.round((meetings.filter(m => m.attendanceStatus === 'completed' || m.attendanceStatus === 'attending').length / meetings.length) * 100),
+  const fetchMeetings = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching meetings for tab:', tabValue);
+      
+      let response;
+      switch (tabValue) {
+        case 0: // Available meetings
+          response = await meetingAPI.getAvailableMeetings();
+          break;
+        case 1: // Registered meetings
+          response = await meetingAPI.getAttendingMeetings();
+          break;
+        case 2: // Joinable meetings (ongoing)
+          response = await meetingAPI.getJoinableMeetings();
+          break;
+        case 3: // Meeting history
+          response = await meetingAPI.getMeetingHistory();
+          break;
+        default:
+          response = await meetingAPI.getAvailableMeetings();
+      }
+      
+      console.log('API Response:', response);
+      
+      // Handle different response formats
+      let meetingsData = [];
+      if (response?.meetings) {
+        meetingsData = response.meetings;
+      } else if (response?.results) {
+        meetingsData = response.results;
+      } else if (Array.isArray(response)) {
+        meetingsData = response;
+      } else {
+        meetingsData = [];
+      }
+      
+      console.log('Processed meetings data:', meetingsData);
+      setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
+      
+      // Fetch registration and attendance statuses for each meeting
+      await fetchStatuses(meetingsData);
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching meetings:', err);
+      setError('حدث خطأ في تحميل الاجتماعات');
+      setMeetings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatuses = async (meetingsData) => {
+    const newRegistrationStatuses = {};
+    const newAttendanceStatuses = {};
+    
+    for (const meeting of meetingsData) {
+      try {
+        // Check registration status
+        const regResponse = await meetingAPI.checkRegistrationStatus(meeting.id);
+        newRegistrationStatuses[meeting.id] = regResponse.is_registered || false;
+        
+        // Check attendance status
+        const attResponse = await meetingAPI.getMyAttendanceStatus(meeting.id);
+        newAttendanceStatuses[meeting.id] = attResponse.attendance_status || 'not_registered';
+      } catch (error) {
+        console.error(`Error fetching status for meeting ${meeting.id}:`, error);
+        newRegistrationStatuses[meeting.id] = false;
+        newAttendanceStatuses[meeting.id] = 'not_registered';
+      }
+    }
+    
+    setRegistrationStatuses(newRegistrationStatuses);
+    setAttendanceStatuses(newAttendanceStatuses);
+  };
+
+  const handleRegisterForMeeting = async (meetingId) => {
+    try {
+      setLoading(true);
+      await meetingAPI.registerForMeeting(meetingId);
+      setSnackbar({
+        open: true,
+        message: 'تم التسجيل في الاجتماع بنجاح',
+        severity: 'success'
+      });
+      
+      // Update registration status
+      setRegistrationStatuses(prev => ({
+        ...prev,
+        [meetingId]: true
+      }));
+      
+      // Refresh meetings
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error registering for meeting:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في التسجيل للاجتماع',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnregisterFromMeeting = async (meetingId) => {
+    try {
+      setLoading(true);
+      await meetingAPI.unregisterFromMeeting(meetingId);
+      setSnackbar({
+        open: true,
+        message: 'تم إلغاء التسجيل من الاجتماع بنجاح',
+        severity: 'success'
+      });
+      
+      // Update registration status
+      setRegistrationStatuses(prev => ({
+        ...prev,
+        [meetingId]: false
+      }));
+      
+      // Refresh meetings
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error unregistering from meeting:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في إلغاء التسجيل',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinMeeting = async (meeting) => {
+    try {
+      setLoading(true);
+      await meetingAPI.joinMeeting(meeting.id);
+      setSnackbar({
+        open: true,
+        message: 'تم الانضمام للاجتماع بنجاح',
+        severity: 'success'
+      });
+      
+      // Open live meeting page in new window/tab
+      window.open(`/student/meetings/live/${meeting.id}`, '_blank');
+      
+      // Alternative: Open zoom link if available
+      // if (meeting.zoom_link) {
+      //   window.open(meeting.zoom_link, '_blank');
+      // }
+      
+      // Refresh meetings
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error joining meeting:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في الانضمام للاجتماع',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAttendance = async (meetingId) => {
+    try {
+      setLoading(true);
+      await meetingAPI.markAttendance(meetingId);
+      setSnackbar({
+        open: true,
+        message: 'تم تسجيل الحضور بنجاح',
+        severity: 'success'
+      });
+      
+      // Update attendance status
+      setAttendanceStatuses(prev => ({
+        ...prev,
+        [meetingId]: 'present'
+      }));
+      
+      // Refresh meetings
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error marking attendance:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في تسجيل الحضور',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptInvitation = async (invitationId) => {
+    try {
+      setLoading(true);
+      await meetingAPI.acceptInvitation(invitationId);
+      setSnackbar({
+        open: true,
+        message: 'تم قبول الدعوة بنجاح',
+        severity: 'success'
+      });
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error accepting invitation:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في قبول الدعوة',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineInvitation = async (invitationId) => {
+    try {
+      setLoading(true);
+      await meetingAPI.declineInvitation(invitationId);
+      setSnackbar({
+        open: true,
+        message: 'تم رفض الدعوة بنجاح',
+        severity: 'success'
+      });
+      fetchMeetings();
+    } catch (err) {
+      console.error('Error declining invitation:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'حدث خطأ في رفض الدعوة',
+        severity: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleMeetingDetails = (meeting) => {
+    setSelectedMeeting(meeting);
+    setOpenDetailsDialog(true);
   };
 
   const getMeetingStatus = (meeting) => {
     const now = new Date();
-    const startTime = new Date(meeting.startTime);
-    const endTime = new Date(startTime.getTime() + meeting.duration * 60000);
+    const startTime = new Date(meeting.start_time);
+    
+    // Handle duration - it could be a string like "01:30:00" or a number in minutes
+    let durationMinutes = 60; // default
+    if (typeof meeting.duration === 'string') {
+      // Parse duration string like "01:30:00"
+      const parts = meeting.duration.split(':');
+      if (parts.length === 3) {
+        durationMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      }
+    } else if (typeof meeting.duration === 'number') {
+      durationMinutes = meeting.duration;
+    }
+    
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
     
     if (meeting.status === 'cancelled') return 'cancelled';
     if (now >= startTime && now <= endTime) return 'ongoing';
@@ -205,531 +383,428 @@ const StudentMeetings = () => {
 
   const getAttendanceStatusText = (status) => {
     switch (status) {
-      case 'registered': return 'مسجل';
-      case 'attending': return 'حاضر';
-      case 'completed': return 'حضر';
+      case 'present': return 'حاضر';
       case 'absent': return 'غائب';
+      case 'late': return 'متأخر';
+      case 'registered': return 'مسجل';
+      case 'not_registered': return 'غير مسجل';
       default: return 'غير محدد';
     }
   };
 
   const getAttendanceStatusColor = (status) => {
     switch (status) {
-      case 'registered': return 'default';
-      case 'attending': return 'success';
-      case 'completed': return 'success';
+      case 'present': return 'success';
       case 'absent': return 'error';
+      case 'late': return 'warning';
+      case 'registered': return 'primary';
+      case 'not_registered': return 'default';
       default: return 'default';
     }
   };
 
-  const handleMeetingDetails = (meeting) => {
-    setSelectedMeeting(meeting);
-    setOpenDetailsDialog(true);
-  };
-
-  const handleJoinMeeting = (meeting) => {
-    if (meeting.zoomLink) {
-      window.open(meeting.zoomLink, '_blank');
+  // Date formatting functions
+  const formatDate = (dateString) => {
+    if (!dateString) return 'غير محدد';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'تاريخ غير صحيح';
+      
+      return date.toLocaleDateString('ar-EG', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        calendar: 'gregory'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'تاريخ غير صحيح';
     }
   };
 
-  const handleDownloadMaterial = (material) => {
-    // Logic to download material
-    console.log('Downloading material:', material);
-  };
-
-  const handleWatchRecording = (recordingUrl) => {
-    if (recordingUrl) {
-      window.open(recordingUrl, '_blank');
+  const formatTime = (dateString) => {
+    if (!dateString) return 'غير محدد';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'وقت غير صحيح';
+      
+      return date.toLocaleTimeString('ar-EG', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'وقت غير صحيح';
     }
   };
 
-  const filteredMeetings = meetings.filter(meeting => {
-    if (tabValue === 0) return true; // All meetings
-    if (tabValue === 1) return getMeetingStatus(meeting) === 'upcoming';
-    if (tabValue === 2) return getMeetingStatus(meeting) === 'ongoing';
-    if (tabValue === 3) return getMeetingStatus(meeting) === 'completed';
+  // Filter meetings based on tab
+  const filteredMeetings = Array.isArray(meetings) ? meetings.filter(meeting => {
+    if (tabValue === 0) return true; // Available meetings
+    if (tabValue === 1) return registrationStatuses[meeting.id]; // Registered meetings
+    if (tabValue === 2) return getMeetingStatus(meeting) === 'ongoing'; // Joinable meetings
+    if (tabValue === 3) return getMeetingStatus(meeting) === 'completed'; // History
     return true;
-  });
+  }) : [];
 
   return (
     <Box className="meetings-container">
-      {/* Compact Header */}
+      {/* Header */}
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <Box sx={{ 
-          position: 'absolute', 
-          top: -20, 
-          right: -20, 
-          width: 100, 
-          height: 100, 
-          borderRadius: '50%', 
-          background: 'rgba(255,255,255,0.1)',
-          zIndex: 1
-        }} />
-        <Box sx={{ 
-          position: 'absolute', 
-          bottom: -30, 
-          left: -30, 
-          width: 80, 
-          height: 80, 
-          borderRadius: '50%', 
-          background: 'rgba(255,255,255,0.08)',
-          zIndex: 1
-        }} />
-        
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <VideoCallIcon sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
-              الاجتماعات والمحاضرات
+              اجتماعاتي والمحاضرات
             </Typography>
+            <IconButton 
+              onClick={fetchMeetings}
+              disabled={loading}
+              sx={{ 
+                color: 'white', 
+                ml: 'auto',
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+              }}
+            >
+              <RefreshIcon />
+            </IconButton>
           </Box>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
-            متابعة الحضور والغياب والوصول للمواد التعليمية
+          
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+            عرض والانضمام للاجتماعات والمحاضرات المتاحة
           </Typography>
         </Box>
-      </Box>
-
-      {/* Compact Statistics Row */}
-      <Box sx={{ 
-        display: 'flex', 
-        gap: 2, 
-        mb: 4, 
-        flexWrap: 'wrap',
-        justifyContent: 'center'
-      }}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2, 
-          p: 2, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          border: '1px solid #e0e0e0',
-          minWidth: 140,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <VideoCallIcon sx={{ color: '#1976d2', fontSize: 24 }} />
-          <Box>
-            <Typography variant="h5" fontWeight={700} color="primary">
-              {attendanceStats.totalMeetings}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              إجمالي الاجتماعات
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2, 
-          p: 2, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          border: '1px solid #e0e0e0',
-          minWidth: 140,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <CheckCircleIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
-          <Box>
-            <Typography variant="h5" fontWeight={700} color="success.main">
-              {attendanceStats.attended}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              حضرت
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2, 
-          p: 2, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          border: '1px solid #e0e0e0',
-          minWidth: 140,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <CancelIcon sx={{ color: '#d32f2f', fontSize: 24 }} />
-          <Box>
-            <Typography variant="h5" fontWeight={700} color="error.main">
-              {attendanceStats.absent}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              غبت
-            </Typography>
-          </Box>
-        </Box>
-
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2, 
-          p: 2, 
-          bgcolor: 'background.paper', 
-          borderRadius: 2, 
-          border: '1px solid #e0e0e0',
-          minWidth: 140,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <TrendingUpIcon sx={{ color: '#7b1fa2', fontSize: 24 }} />
-          <Box>
-            <Typography variant="h5" fontWeight={700} color="secondary.main">
-              {attendanceStats.attendanceRate}%
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              معدل الحضور
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* Compact Progress Section */}
-      <Box sx={{ 
-        p: 3, 
-        bgcolor: 'background.paper', 
-        borderRadius: 3, 
-        border: '1px solid #e0e0e0',
-        mb: 4,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h6" fontWeight={600} color="primary">
-            معدل الحضور العام
-          </Typography>
-          <Typography variant="h5" fontWeight={700} color="primary">
-            {attendanceStats.attendanceRate}%
-          </Typography>
-        </Box>
-        <LinearProgress
-          variant="determinate"
-          value={attendanceStats.attendanceRate}
-          sx={{
-            height: 12,
-            borderRadius: 6,
-            backgroundColor: '#e0e0e0',
-            mb: 2,
-            '& .MuiLinearProgress-bar': {
-              borderRadius: 6,
-              background: 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)'
-            }
-          }}
-        />
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-          حضرت {attendanceStats.attended} من أصل {attendanceStats.totalMeetings} اجتماع
-        </Typography>
       </Box>
 
       {/* Tabs */}
-      <Paper className="meetings-tabs">
-        <Tabs
-          value={tabValue}
+      <Box sx={{ mb: 3 }}>
+        <Tabs 
+          value={tabValue} 
           onChange={(e, newValue) => setTabValue(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '1rem',
+            },
+            '& .Mui-selected': {
+              color: '#4caf50',
+            },
+            '& .MuiTabs-indicator': {
+              backgroundColor: '#4caf50',
+            },
+          }}
         >
-          <Tab label="جميع الاجتماعات" />
-          <Tab label="قادمة" />
-          <Tab label="جارية" />
-          <Tab label="منتهية" />
+          <Tab label={`الاجتماعات المتاحة (${meetings.filter(m => !registrationStatuses[m.id]).length})`} />
+          <Tab label={`اجتماعاتي المسجلة (${meetings.filter(m => registrationStatuses[m.id]).length})`} />
+          <Tab label={`اجتماعات قابلة للانضمام (${meetings.filter(m => getMeetingStatus(m) === 'ongoing').length})`} />
+          <Tab label={`سجل الاجتماعات (${meetings.filter(m => getMeetingStatus(m) === 'completed').length})`} />
         </Tabs>
-      </Paper>
+      </Box>
 
-             {/* Meetings Grid */}
-       <Grid container spacing={3} sx={{ maxWidth: '100%', mx: 'auto' }}>
-         {filteredMeetings.map((meeting) => {
-           const status = getMeetingStatus(meeting);
-           return (
-             <Grid item xs={12} md={6} lg={4} key={meeting.id}>
-               <Card 
-                 className={`meeting-card ${status === 'ongoing' ? 'ongoing' : ''}`}
-                 sx={{
-                   height: '100%',
-                   display: 'flex',
-                   flexDirection: 'column',
-                   minHeight: 450,
-                   maxHeight: 550,
-                   borderRadius: 3,
-                   boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                   transition: 'all 0.3s ease',
-                   border: status === 'ongoing' ? '2px solid #4caf50' : '1px solid #e0e0e0',
-                   background: status === 'ongoing' ? 'linear-gradient(135deg, #f8fff8 0%, #ffffff 100%)' : '#ffffff',
-                   '&:hover': {
-                     transform: 'translateY(-4px)',
-                     boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                   },
-                 }}
-               >
-                 {/* Card Header */}
-                 <Box sx={{ 
-                   p: 2.5, 
-                   borderBottom: '1px solid #f0f0f0',
-                   background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-                   borderRadius: '12px 12px 0 0'
-                 }}>
-                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                     <Box sx={{ flex: 1, minHeight: 60 }}>
-                       <Typography 
-                         variant="h6" 
-                         sx={{ 
-                           fontWeight: 600, 
-                           color: '#2c3e50',
-                           lineHeight: 1.3,
-                           mb: 1,
-                           display: '-webkit-box',
-                           WebkitLineClamp: 2,
-                           WebkitBoxOrient: 'vertical',
-                           overflow: 'hidden',
-                           textOverflow: 'ellipsis'
-                         }}
-                       >
-                         {meeting.title}
-                       </Typography>
-                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                         <StatusChip
-                           label={getStatusText(status)}
-                           status={status}
-                           size="small"
-                         />
-                         <Chip
-                           label={getAttendanceStatusText(meeting.attendanceStatus)}
-                           color={getAttendanceStatusColor(meeting.attendanceStatus)}
-                           size="small"
-                           variant="outlined"
-                         />
-                       </Box>
-                     </Box>
-                     <IconButton
-                       size="small"
-                       onClick={() => handleMeetingDetails(meeting)}
-                       sx={{ 
-                         color: '#667eea',
-                         '&:hover': { backgroundColor: 'rgba(102, 126, 234, 0.1)' }
-                       }}
-                     >
-                       <VisibilityIcon />
-                     </IconButton>
-                   </Box>
-                 </Box>
-                 
-                 {/* Card Content */}
-                 <Box sx={{ 
-                   p: 2.5, 
-                   flex: 1, 
-                   display: 'flex', 
-                   flexDirection: 'column',
-                   gap: 1.5
-                 }}>
-                   {/* Course and Teacher */}
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                     <SchoolIcon sx={{ color: '#1976d2', fontSize: 20 }} />
-                     <Typography variant="body2" fontWeight={500} sx={{ color: '#2c3e50' }}>
-                       {meeting.course}
-                     </Typography>
-                   </Box>
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                     <GroupIcon sx={{ color: '#666', fontSize: 20 }} />
-                     <Typography variant="body2" color="text.secondary">
-                       {meeting.teacher}
-                     </Typography>
-                   </Box>
+      {/* Loading State */}
+      {loading && (!Array.isArray(meetings) || meetings.length === 0) && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <CircularProgress size={60} />
+          <Typography sx={{ ml: 2 }}>جاري تحميل الاجتماعات...</Typography>
+        </Box>
+      )}
 
-                   {/* Description */}
-                   <Typography 
-                     variant="body2" 
-                     sx={{ 
-                       color: '#666',
-                       lineHeight: 1.5,
-                       mb: 1,
-                       display: '-webkit-box',
-                       WebkitLineClamp: 3,
-                       WebkitBoxOrient: 'vertical',
-                       overflow: 'hidden',
-                       textOverflow: 'ellipsis',
-                       minHeight: 60
-                     }}
-                   >
-                     {meeting.description}
-                   </Typography>
+      {/* Error State */}
+      {error && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 8 }}>
+          <Alert severity="error" sx={{ maxWidth: 600 }}>
+            {error}
+            <Button 
+              onClick={fetchMeetings} 
+              sx={{ ml: 2 }}
+              variant="outlined"
+              size="small"
+            >
+              إعادة المحاولة
+            </Button>
+          </Alert>
+        </Box>
+      )}
 
-                   {/* Meeting Info */}
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                     <CalendarTodayIcon sx={{ color: '#666', fontSize: 18 }} />
-                     <Typography variant="body2" sx={{ color: '#666' }}>
-                       {new Date(meeting.startTime).toLocaleDateString('ar-SA')}
-                     </Typography>
-                   </Box>
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                     <AccessTimeIcon sx={{ color: '#666', fontSize: 18 }} />
-                     <Typography variant="body2" sx={{ color: '#666' }}>
-                       {new Date(meeting.startTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })} - {meeting.duration} دقيقة
-                     </Typography>
-                   </Box>
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                     <VideoCallIcon sx={{ color: '#666', fontSize: 18 }} />
-                     <Typography variant="body2" sx={{ color: '#666' }}>
-                       {getMeetingTypeText(meeting.meetingType)}
-                     </Typography>
-                   </Box>
+      {/* Empty State */}
+      {!loading && (!Array.isArray(meetings) || meetings.length === 0) && !error && (
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          py: 8,
+          textAlign: 'center'
+        }}>
+          <VideoCallIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+          <Typography variant="h5" color="text.secondary" gutterBottom>
+            لا توجد اجتماعات متاحة
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+            لا توجد اجتماعات متاحة للانضمام في الوقت الحالي
+          </Typography>
+        </Box>
+      )}
 
-                   {/* Attendance Info for completed meetings */}
-                   {meeting.attendanceStatus === 'completed' && meeting.attendanceDuration && (
-                     <Box sx={{ 
-                       mt: 1, 
-                       p: 2, 
-                       bgcolor: '#f8f9fa', 
-                       borderRadius: 2,
-                       border: '1px solid #e9ecef'
-                     }}>
-                       <Typography variant="body2" fontWeight={500} gutterBottom sx={{ color: '#2c3e50' }}>
-                         معلومات الحضور:
-                       </Typography>
-                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                         وقت الانضمام: {new Date(meeting.attendanceTime).toLocaleTimeString('ar-SA')}
-                       </Typography>
-                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                         مدة الحضور: {meeting.attendanceDuration} دقيقة
-                       </Typography>
-                     </Box>
-                   )}
+      {/* Meetings Grid */}
+      <Grid container spacing={3}>
+        {filteredMeetings.map((meeting) => {
+          const status = getMeetingStatus(meeting);
+          const isRegistered = registrationStatuses[meeting.id] || false;
+          const attendanceStatus = attendanceStatuses[meeting.id] || 'not_registered';
+          
+          return (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={meeting.id}>
+              <StyledCard status={status}>
+                <CardContent sx={{ p: 3 }}>
+                  {/* Header */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ 
+                      color: 'primary.main',
+                      lineHeight: 1.3,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {meeting.title}
+                    </Typography>
+                    <StatusChip 
+                      label={getStatusText(status)} 
+                      status={status}
+                      size="small"
+                    />
+                  </Box>
 
-                   {/* Actions - Fixed at bottom with better spacing */}
-                   <Box sx={{ 
-                     mt: 'auto', 
-                     pt: 3,
-                     pb: 1,
-                     display: 'flex',
-                     flexDirection: 'column',
-                     gap: 1.5,
-                     borderTop: '1px solid #f0f0f0'
-                   }}>
-                     {status === 'upcoming' && meeting.zoomLink && (
-                       <Button
-                         variant="contained"
-                         size="medium"
-                         startIcon={<LinkIcon />}
-                         onClick={() => handleJoinMeeting(meeting)}
-                         sx={{
-                           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                           color: 'white',
-                           fontWeight: 600,
-                           py: 1,
-                           '&:hover': {
-                             background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                           }
-                         }}
-                       >
-                         انضم للاجتماع
-                       </Button>
-                     )}
-                     {status === 'ongoing' && meeting.zoomLink && (
-                       <Button
-                         variant="contained"
-                         size="medium"
-                         startIcon={<PlayArrowIcon />}
-                         onClick={() => handleJoinMeeting(meeting)}
-                         sx={{
-                           background: 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)',
-                           color: 'white',
-                           fontWeight: 600,
-                           py: 1,
-                           '&:hover': {
-                             background: 'linear-gradient(135deg, #43a047 0%, #5cb85c 100%)',
-                           }
-                         }}
-                       >
-                         انضم الآن
-                       </Button>
-                     )}
-                     
-                     {/* Secondary Actions Row */}
-                     <Box sx={{ 
-                       display: 'flex', 
-                       gap: 1, 
-                       flexWrap: 'wrap',
-                       justifyContent: 'center'
-                     }}>
-                       {meeting.materials && (
-                         <Button
-                           variant="outlined"
-                           size="small"
-                           startIcon={<DownloadIcon />}
-                           onClick={() => handleDownloadMaterial(meeting.materials)}
-                           sx={{
-                             borderColor: '#667eea',
-                             color: '#667eea',
-                             fontWeight: 600,
-                             flex: 1,
-                             minWidth: '120px',
-                             '&:hover': {
-                               borderColor: '#5a6fd8',
-                               backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                             }
-                           }}
-                         >
-                           تحميل المواد
-                         </Button>
-                       )}
-                       {meeting.recordingUrl && (
-                         <Button
-                           variant="outlined"
-                           size="small"
-                           startIcon={<VideoLibraryIcon />}
-                           onClick={() => handleWatchRecording(meeting.recordingUrl)}
-                           sx={{
-                             borderColor: '#7b1fa2',
-                             color: '#7b1fa2',
-                             fontWeight: 600,
-                             flex: 1,
-                             minWidth: '120px',
-                             '&:hover': {
-                               borderColor: '#6a1b9a',
-                               backgroundColor: 'rgba(123, 31, 162, 0.1)',
-                             }
-                           }}
-                         >
-                           مشاهدة التسجيل
-                         </Button>
-                       )}
-                     </Box>
-                   </Box>
-                 </Box>
-               </Card>
-             </Grid>
-           );
-         })}
-       </Grid>
+                  {/* Description */}
+                  <Typography variant="body2" color="text.secondary" sx={{ 
+                    mb: 3,
+                    lineHeight: 1.5,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {meeting.description}
+                  </Typography>
 
-      {/* Enhanced Meeting Details Dialog */}
+                  {/* Meeting Info */}
+                  <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {formatDate(meeting.start_time)}
+                      </Typography>
+                    </Box>
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        {formatTime(meeting.start_time)} - {meeting.duration} دقيقة
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        المشاركين: {meeting.participants_count || 0} / {meeting.max_participants}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <VideoCallIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        نوع الاجتماع: {getMeetingTypeText(meeting.meeting_type)}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <PersonIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                      <Typography variant="body2" color="text.secondary">
+                        المعلم: {meeting.creator_name || 'غير محدد'}
+                      </Typography>
+                    </Box>
+
+                    {meeting.zoom_link && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <LinkIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                        <Typography variant="body2" color="primary" sx={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                          رابط زووم متاح
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* Status and Actions */}
+                  <Box sx={{ mt: 'auto' }}>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+                      <StatusChip label={getStatusText(status)} status={status} />
+                      <Chip 
+                        label={getAttendanceStatusText(attendanceStatus)}
+                        color={getAttendanceStatusColor(attendanceStatus)}
+                        size="small"
+                        sx={{ fontSize: '0.7rem' }}
+                      />
+                      {isRegistered && (
+                        <Chip 
+                          label="مسجل"
+                          color="success"
+                          size="small"
+                          sx={{ fontSize: '0.7rem' }}
+                        />
+                      )}
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleMeetingDetails(meeting)}
+                        sx={{ 
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          minWidth: 'fit-content'
+                        }}
+                      >
+                        التفاصيل
+                      </Button>
+
+                      {!isRegistered && status === 'upcoming' && (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="primary"
+                          onClick={() => handleRegisterForMeeting(meeting.id)}
+                          startIcon={<PersonAddIcon />}
+                          sx={{ 
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            minWidth: 'fit-content'
+                          }}
+                        >
+                          انضم للاجتماع
+                        </Button>
+                      )}
+
+                      {isRegistered && status === 'upcoming' && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          onClick={() => handleUnregisterFromMeeting(meeting.id)}
+                          startIcon={<PersonRemoveIcon />}
+                          sx={{ 
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            minWidth: 'fit-content'
+                          }}
+                        >
+                          إلغاء التسجيل
+                        </Button>
+                      )}
+
+                      {isRegistered && status === 'ongoing' && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            onClick={() => handleJoinMeeting(meeting)}
+                            startIcon={<PlayArrowIcon />}
+                            sx={{ 
+                              borderRadius: 2,
+                              textTransform: 'none',
+                              fontWeight: 600,
+                              fontSize: '0.75rem',
+                              minWidth: 'fit-content'
+                            }}
+                          >
+                            انضم الآن
+                          </Button>
+                          
+                          {attendanceStatus !== 'present' && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="primary"
+                              onClick={() => handleMarkAttendance(meeting.id)}
+                              startIcon={<CheckCircleIcon />}
+                              sx={{ 
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                minWidth: 'fit-content'
+                              }}
+                            >
+                              سجل الحضور
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  </Box>
+                </CardContent>
+              </StyledCard>
+            </Grid>
+          );
+        })}
+      </Grid>
+
+      {/* Meeting Details Dialog */}
       <MeetingDetailsDialog
         open={openDetailsDialog}
         onClose={() => setOpenDetailsDialog(false)}
         meeting={selectedMeeting}
         userRole="student"
         onJoinMeeting={(meeting) => {
-          if (meeting.zoomLink) {
-            window.open(meeting.zoomLink, '_blank');
+          if (meeting.zoom_link) {
+            window.open(meeting.zoom_link, '_blank');
           }
         }}
-        onDownloadMaterial={(material) => {
-          console.log('Downloading material:', material);
-        }}
-        onWatchRecording={(recordingUrl) => {
-          if (recordingUrl) {
-            window.open(recordingUrl, '_blank');
-          }
+        onRefresh={() => {
+          fetchMeetings();
         }}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={closeSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Loading indicator */}
+      {loading && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999 }}>
+          <LinearProgress />
+        </Box>
+      )}
     </Box>
   );
 };

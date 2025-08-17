@@ -8,7 +8,7 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from django.core.paginator import Paginator
 
-from .models import Meeting, Participant, Notification, MeetingChat
+from .models import Meeting, Participant, Notification, MeetingChat, MeetingInvitation
 from courses.models import Course, Enrollment
 from users.models import Instructor, Profile
 from .serializers import (
@@ -25,14 +25,16 @@ class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['course', 'meeting_type', 'status']
+    filterset_fields = ['meeting_type', 'creator']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'start_time']
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update']:
+        if self.action == 'create':
             return MeetingCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return MeetingUpdateSerializer
         elif self.action == 'retrieve':
             return MeetingDetailSerializer
         return MeetingBasicSerializer
@@ -41,20 +43,24 @@ class MeetingViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         user = self.request.user
         
-        # Filter by user role
+        # For retrieve action, allow access to all meetings
+        if self.action == 'retrieve':
+            return queryset
+        
+        # Filter by user role for list actions
         if user.profile.status == 'Student':
             # Students see meetings they're registered for
-            return queryset.filter(participants__user=user).distinct()
+            queryset = queryset.filter(participants__user=user).distinct()
         
         elif user.profile.status == 'Instructor':
             # Instructors see meetings they created or are registered for
-            return queryset.filter(
+            queryset = queryset.filter(
                 Q(creator=user) | Q(participants__user=user)
             ).distinct()
         
         else:
             # Admins see all meetings
-            return queryset
+            queryset = queryset
         
         # Filter by status
         status_filter = self.request.query_params.get('status')
@@ -63,46 +69,51 @@ class MeetingViewSet(viewsets.ModelViewSet):
         if status_filter == 'live':
             # Currently happening meetings
             queryset = queryset.filter(
-                scheduled_time__lte=now,
-                scheduled_time__gt=now - timedelta(hours=1),  # Assume max 1 hour duration
+                start_time__lte=now,
+                start_time__gt=now - timedelta(hours=1),  # Assume max 1 hour duration
                 is_active=True
             )
         elif status_filter == 'upcoming':
             queryset = queryset.filter(
-                scheduled_time__gt=now,
+                start_time__gt=now,
                 is_active=True
             )
         elif status_filter == 'completed':
             queryset = queryset.filter(
-                scheduled_time__lt=now - timedelta(hours=1)
+                start_time__lt=now - timedelta(hours=1)
             )
         
-        return queryset.order_by('-scheduled_time')
+        return queryset.order_by('-start_time')
     
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
         user = request.user
         
-        # For students, check course enrollment
-        if not (user.is_superuser or 
-                (hasattr(user, 'profile') and user.profile.is_instructor_or_admin())):
-            if not obj.course.enroller_user.filter(id=user.id).exists():
-                raise permissions.PermissionDenied("يجب التسجيل في الدورة للوصول للاجتماع")
+        # For retrieve action, allow access to all meetings
+        if self.action == 'retrieve':
+            return
         
-        # For creation/modification, check instructor permissions
+        # For students, check if they are participants (only for non-retrieve actions)
+        if not (user.is_superuser or 
+                (hasattr(user, 'profile') and user.profile.is_teacher_or_admin())):
+            if not obj.participants.filter(user=user).exists():
+                raise permissions.PermissionDenied("يجب التسجيل في الاجتماع للوصول إليه")
+        
+        # For creation/modification, check creator permissions
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             if not (user.is_superuser or 
                     (hasattr(user, 'profile') and user.profile.is_admin()) or
-                    obj.course.instructor.profile.user == user):
+                    obj.creator == user):
                 raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل هذا الاجتماع")
     
     def perform_create(self, serializer):
-        # Check if user is instructor
-        try:
-            instructor = Instructor.objects.get(profile__user=self.request.user)
-            serializer.save(instructor=instructor)
-        except Instructor.DoesNotExist:
-            raise permissions.PermissionDenied("يجب أن تكون معلماً لإنشاء اجتماع")
+        # Check if user is instructor or admin
+        user = self.request.user
+        if not (user.is_superuser or 
+                (hasattr(user, 'profile') and user.profile.is_teacher_or_admin())):
+            raise permissions.PermissionDenied("يجب أن تكون معلماً أو أدمن لإنشاء اجتماع")
+        
+        serializer.save(creator=self.request.user)
     
     def perform_update(self, serializer):
         """Update meeting with permission check"""
@@ -110,7 +121,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
         user = self.request.user
         
         # Check permissions
-        if not (meeting.instructor == user or user.profile.is_admin()):
+        if not (meeting.creator == user or 
+                user.is_superuser or 
+                (hasattr(user, 'profile') and user.profile.is_admin())):
             raise permissions.PermissionDenied("ليس لديك صلاحية لتعديل هذا الاجتماع")
         
         serializer.save()
@@ -120,7 +133,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
         user = self.request.user
         
         # Check permissions
-        if not (instance.instructor == user or user.profile.is_admin()):
+        if not (instance.creator == user or 
+                user.is_superuser or 
+                (hasattr(user, 'profile') and user.profile.is_admin())):
             raise permissions.PermissionDenied("ليس لديك صلاحية لحذف هذا الاجتماع")
         
         instance.delete()
@@ -136,9 +151,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
         # Check if meeting is available to join
         now = timezone.now()
         buffer_time = timedelta(minutes=15)  # Allow joining 15 minutes early
-        end_time = meeting.scheduled_time + timedelta(minutes=meeting.duration)
+        end_time = meeting.start_time + timedelta(minutes=meeting.duration)
         
-        if not ((meeting.scheduled_time - buffer_time) <= now <= end_time):
+        if not ((meeting.start_time - buffer_time) <= now <= end_time):
             return Response({
                 'error': 'الاجتماع غير متاح للانضمام في الوقت الحالي'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -148,15 +163,15 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 'error': 'الاجتماع غير نشط'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if user is enrolled in course
-        if not meeting.course.enroller_user.filter(id=user.id).exists():
+        # Check if user is a participant
+        if not meeting.participants.filter(user=user).exists():
             return Response({
-                'error': 'يجب التسجيل في الدورة للانضمام للاجتماع'
+                'error': 'يجب التسجيل في الاجتماع للانضمام إليه'
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Check if meeting is full
-        current_attendees = meeting.attendances.filter(
-            left_at__isnull=True
+        current_attendees = meeting.participants.filter(
+            attendance_status='attending'
         ).count()
         
         if current_attendees >= meeting.max_participants:
@@ -164,27 +179,26 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 'error': 'الاجتماع ممتلئ'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Create or update attendance record
-        attendance, created = MeetingAttendance.objects.get_or_create(
+        # Create or update participant record
+        participant, created = Participant.objects.get_or_create(
             meeting=meeting,
             user=user,
             defaults={
                 'joined_at': timezone.now(),
-                'is_attended': True
+                'attendance_status': 'attending'
             }
         )
         
-        if not created and attendance.left_at:
+        if not created:
             # User is rejoining
-            attendance.joined_at = timezone.now()
-            attendance.left_at = None
-            attendance.is_attended = True
-            attendance.save()
+            participant.joined_at = timezone.now()
+            participant.attendance_status = 'attending'
+            participant.save()
         
         return Response({
             'message': 'تم الانضمام للاجتماع بنجاح',
-            'meeting_url': meeting.meeting_url,
-            'attendance_id': attendance.id
+            'meeting_url': meeting.zoom_link,
+            'participant_id': participant.id
         })
     
     @action(detail=True, methods=['post'])
@@ -196,46 +210,246 @@ class MeetingViewSet(viewsets.ModelViewSet):
         user = request.user
         
         try:
-            attendance = MeetingAttendance.objects.get(
+            participant = Participant.objects.get(
                 meeting=meeting,
                 user=user,
-                left_at__isnull=True
+                attendance_status='attending'
             )
             
-            attendance.left_at = timezone.now()
+            participant.left_at = timezone.now()
+            participant.attendance_status = 'registered'
             # Calculate attendance duration
-            if attendance.joined_at:
-                duration = attendance.left_at - attendance.joined_at
-                attendance.attendance_duration = int(duration.total_seconds())
-            attendance.save()
+            if participant.joined_at:
+                duration = participant.left_at - participant.joined_at
+                participant.attendance_duration = duration
+            participant.save()
             
             return Response({
                 'message': 'تم مغادرة الاجتماع',
-                'attendance_duration': attendance.attendance_duration
+                'attendance_duration': str(participant.attendance_duration) if participant.attendance_duration else None
             })
         
-        except MeetingAttendance.DoesNotExist:
+        except Participant.DoesNotExist:
             return Response({
                 'error': 'لم تنضم للاجتماع بعد'
             }, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True, methods=['get'])
-    def attendances(self, request, pk=None):
+    def participants(self, request, pk=None):
         """
-        قائمة الحضور للاجتماع (للمعلمين)
+        قائمة المشاركين في الاجتماع
         """
         meeting = self.get_object()
         user = request.user
         
-        # Check permissions
+        # Check permissions for detailed participant info
         if not (user.is_superuser or 
                 (hasattr(user, 'profile') and user.profile.is_admin()) or
-                meeting.course.instructor.profile.user == user):
-            raise permissions.PermissionDenied("ليس لديك صلاحية لعرض قائمة الحضور")
+                meeting.creator == user):
+            # For students, only show basic participant info
+            participants = meeting.participants.select_related('user__profile').all()
+            serializer = MeetingParticipantSerializer(participants, many=True)
+        else:
+            # For teachers/admins, show detailed participant info
+            participants = meeting.participants.select_related('user__profile').all()
+            serializer = ParticipantSerializer(participants, many=True)
         
-        attendances = meeting.attendances.select_related('user__profile').all()
-        serializer = MeetingAttendanceSerializer(attendances, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def start_live(self, request, pk=None):
+        """
+        بدء الاجتماع المباشر
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        # Check if user is the creator of the meeting
+        if meeting.creator != user:
+            return Response({
+                'error': 'فقط منشئ الاجتماع يمكنه بدء الاجتماع المباشر'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if meeting is active
+        if not meeting.is_active:
+            return Response({
+                'error': 'الاجتماع غير نشط'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if meeting is in the right time window
+        now = timezone.now()
+        buffer_time = timedelta(minutes=15)  # Allow starting 15 minutes early
+        
+        if not ((meeting.start_time - buffer_time) <= now <= meeting.start_time + meeting.duration):
+            return Response({
+                'error': 'الاجتماع غير متاح للبدء في الوقت الحالي'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update meeting status to live
+        meeting.is_live_started = True
+        meeting.live_started_at = timezone.now()
+        meeting.save()
+        
+        return Response({
+            'message': 'تم بدء الاجتماع المباشر بنجاح',
+            'meeting_id': meeting.id,
+            'live_started_at': meeting.live_started_at
+        })
+    
+    @action(detail=True, methods=['post'])
+    def end_live(self, request, pk=None):
+        """
+        إنهاء الاجتماع المباشر
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        # Check if user is the creator of the meeting
+        if meeting.creator != user:
+            return Response({
+                'error': 'فقط منشئ الاجتماع يمكنه إنهاء الاجتماع المباشر'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if meeting is live
+        if not meeting.is_live_started:
+            return Response({
+                'error': 'الاجتماع غير مباشر'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update meeting status
+        meeting.is_live_started = False
+        meeting.live_ended_at = timezone.now()
+        meeting.save()
+        
+        return Response({
+            'message': 'تم إنهاء الاجتماع المباشر بنجاح',
+            'meeting_id': meeting.id,
+            'live_ended_at': meeting.live_ended_at
+        })
+    
+    @action(detail=True, methods=['post'])
+    def mark_attendance(self, request, pk=None):
+        """
+        تسجيل الحضور للاجتماع
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        # Check if user is a participant
+        try:
+            participant = Participant.objects.get(meeting=meeting, user=user)
+        except Participant.DoesNotExist:
+            return Response({
+                'error': 'يجب التسجيل في الاجتماع أولاً'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Mark attendance
+        participant.attendance_status = 'present'
+        participant.attendance_time = timezone.now()
+        participant.save()
+        
+        return Response({
+            'message': 'تم تسجيل الحضور بنجاح',
+            'attendance_status': 'present'
+        })
+    
+    @action(detail=True, methods=['post'])
+    def register(self, request, pk=None):
+        """
+        التسجيل في الاجتماع (للطلاب)
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        # Check if meeting is active
+        if not meeting.is_active:
+            return Response({
+                'error': 'الاجتماع غير نشط'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if meeting is full
+        current_participants = meeting.participants.count()
+        if current_participants >= meeting.max_participants:
+            return Response({
+                'error': 'الاجتماع ممتلئ'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user is already registered
+        if meeting.participants.filter(user=user).exists():
+            return Response({
+                'error': 'أنت مسجل بالفعل في هذا الاجتماع'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create participant record
+        participant = Participant.objects.create(
+            meeting=meeting,
+            user=user,
+            attendance_status='registered'
+        )
+        
+        return Response({
+            'message': 'تم التسجيل في الاجتماع بنجاح',
+            'participant_id': participant.id
+        })
+    
+    @action(detail=True, methods=['post'])
+    def unregister(self, request, pk=None):
+        """
+        إلغاء التسجيل من الاجتماع (للطلاب)
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        try:
+            participant = Participant.objects.get(meeting=meeting, user=user)
+            participant.delete()
+            
+            return Response({
+                'message': 'تم إلغاء التسجيل من الاجتماع بنجاح'
+            })
+        except Participant.DoesNotExist:
+            return Response({
+                'error': 'أنت غير مسجل في هذا الاجتماع'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def check_registration(self, request, pk=None):
+        """
+        التحقق من حالة التسجيل في الاجتماع
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        is_registered = meeting.participants.filter(user=user).exists()
+        
+        return Response({
+            'is_registered': is_registered,
+            'meeting_id': meeting.id
+        })
+    
+    @action(detail=True, methods=['get'])
+    def my_attendance(self, request, pk=None):
+        """
+        الحصول على حالة الحضور للمستخدم
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        try:
+            participant = Participant.objects.get(meeting=meeting, user=user)
+            return Response({
+                'attendance_status': participant.attendance_status,
+                'joined_at': participant.joined_at,
+                'left_at': participant.left_at,
+                'attendance_duration': str(participant.attendance_duration) if participant.attendance_duration else None
+            })
+        except Participant.DoesNotExist:
+            return Response({
+                'attendance_status': 'not_registered',
+                'joined_at': None,
+                'left_at': None,
+                'attendance_duration': None
+            })
     
     @action(detail=True, methods=['post'])
     def send_invitations(self, request, pk=None):
@@ -285,211 +499,508 @@ class MeetingViewSet(viewsets.ModelViewSet):
         serializer = MeetingRecordingSerializer(recordings, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
-    def register(self, request, pk=None):
-        """Register user for a meeting"""
-        meeting = self.get_object()
-        user = request.user
-        
-        # Check if meeting is in the future
-        if meeting.scheduled_time < timezone.now():
-            return Response({
-                'error': 'لا يمكن التسجيل في اجتماع انتهى'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check if user is already registered
-        if meeting.participants.filter(user=user).exists():
-            return Response({
-                'error': 'أنت مسجل بالفعل في هذا الاجتماع'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Check max participants limit
-        if meeting.max_participants and meeting.participants.count() >= meeting.max_participants:
-            return Response({
-                'error': 'تم الوصول للحد الأقصى من المشاركين'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Register user
-        MeetingParticipant.objects.create(
-            meeting=meeting,
-            user=user,
-            joined_at=timezone.now()
+
+class ParticipantViewSet(viewsets.ModelViewSet):
+    """ViewSet for Participant management"""
+    queryset = Participant.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['meeting', 'attendance_status']
+
+    def get_serializer_class(self):
+        return ParticipantSerializer
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_meetings(request):
+    """Get current user's meetings"""
+    user = request.user
+    
+    # Get meetings user created (for teachers/instructors)
+    created_meetings = Meeting.objects.filter(creator=user)
+    
+    # Get meetings user is registered for (for students)
+    registered_meetings = Meeting.objects.filter(participants__user=user)
+    
+    # Combine and remove duplicates
+    all_meetings = (created_meetings | registered_meetings).distinct().order_by('-start_time')
+    
+    serializer = MeetingBasicSerializer(all_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': all_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def available_meetings(request):
+    """Get available meetings for students to register"""
+    user = request.user
+    
+    # Only students can see available meetings
+    if not user.profile.status == 'Student':
+        return Response({
+            'error': 'هذا الإجراء متاح للطلاب فقط'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    now = timezone.now()
+    
+    # Get meetings that are:
+    # 1. Active
+    # 2. Not started yet
+    # 3. User is not already registered for
+    # 4. Have available spots
+    available_meetings = Meeting.objects.filter(
+        is_active=True,
+        start_time__gt=now
+    ).exclude(
+        participants__user=user
+    ).annotate(
+        registered_count=Count('participants')
+    ).filter(
+        registered_count__lt=F('max_participants')
+    ).order_by('start_time')
+    
+    serializer = MeetingBasicSerializer(available_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': available_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def joinable_meetings(request):
+    """Get meetings that user can join (registered and ongoing)"""
+    user = request.user
+    
+    now = timezone.now()
+    
+    # Get meetings user is registered for and can join
+    # Include meetings that are currently ongoing or starting within the next 30 minutes
+    joinable_meetings = Meeting.objects.filter(
+        participants__user=user,
+        is_active=True
+    ).filter(
+        # Currently ongoing meetings
+        Q(start_time__lte=now) &
+        Q(start_time__gte=now - timedelta(hours=2))  # Started within last 2 hours
+    ).order_by('start_time')
+    
+    serializer = MeetingBasicSerializer(joinable_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': joinable_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def teaching_meetings(request):
+    """Get meetings that the teacher is teaching"""
+    user = request.user
+    
+    # Only teachers can see teaching meetings
+    if not user.profile.status == 'Instructor':
+        return Response({
+            'error': 'هذا الإجراء متاح للمعلمين فقط'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get meetings created by the teacher
+    teaching_meetings = Meeting.objects.filter(
+        creator=user
+    ).order_by('-start_time')
+    
+    serializer = MeetingBasicSerializer(teaching_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': teaching_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def attending_meetings(request):
+    """Get meetings that the user is attending"""
+    user = request.user
+    
+    # Get meetings user is registered for
+    attending_meetings = Meeting.objects.filter(
+        participants__user=user
+    ).order_by('-start_time')
+    
+    serializer = MeetingBasicSerializer(attending_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': attending_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_history(request):
+    """Get user's meeting history"""
+    user = request.user
+    
+    now = timezone.now()
+    
+    # Get completed meetings (started more than 1 hour ago)
+    history_meetings = Meeting.objects.filter(
+        participants__user=user,
+        start_time__lt=now - timedelta(hours=1)
+    ).order_by('-start_time')
+    
+    serializer = MeetingBasicSerializer(history_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': history_meetings.count()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_invitations(request):
+    """Get user's meeting invitations"""
+    user = request.user
+    
+    # Get pending invitations
+    invitations = MeetingInvitation.objects.filter(
+        user=user,
+        response='pending'
+    ).select_related('meeting', 'meeting__creator').order_by('-created_at')
+    
+    serializer = MeetingInvitationSerializer(invitations, many=True, context={'request': request})
+    return Response({
+        'invitations': serializer.data,
+        'total': invitations.count()
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def accept_invitation(request, invitation_id):
+    """Accept a meeting invitation"""
+    try:
+        invitation = MeetingInvitation.objects.get(
+            id=invitation_id,
+            user=request.user,
+            response='pending'
         )
-        
+    except MeetingInvitation.DoesNotExist:
         return Response({
-            'message': 'تم التسجيل في الاجتماع بنجاح'
-        }, status=status.HTTP_201_CREATED)
+            'error': 'الدعوة غير موجودة أو تم الرد عليها مسبقاً'
+        }, status=status.HTTP_404_NOT_FOUND)
     
-    @action(detail=True, methods=['post'])
-    def unregister(self, request, pk=None):
-        """Unregister user from a meeting"""
-        meeting = self.get_object()
-        user = request.user
-        
-        try:
-            participant = meeting.participants.get(user=user)
-            participant.delete()
-            
-            return Response({
-                'message': 'تم إلغاء التسجيل من الاجتماع بنجاح'
-            }, status=status.HTTP_200_OK)
-        except MeetingParticipant.DoesNotExist:
-            return Response({
-                'error': 'أنت غير مسجل في هذا الاجتماع'
-            }, status=status.HTTP_400_BAD_REQUEST)
+    # Create participant record
+    Participant.objects.get_or_create(
+        meeting=invitation.meeting,
+        user=request.user,
+        defaults={'attendance_status': 'registered'}
+    )
     
-    @action(detail=True, methods=['get'])
-    def participants(self, request, pk=None):
-        """Get meeting participants"""
-        meeting = self.get_object()
-        
-        # Check if user can view participants
-        user = request.user
-        if not (meeting.instructor == user or 
-                meeting.participants.filter(user=user).exists() or
-                user.profile.is_admin()):
-            return Response({
-                'error': 'ليس لديك صلاحية لعرض المشاركين'
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        participants = meeting.participants.select_related('user__profile')
-        serializer = MeetingParticipantSerializer(participants, many=True)
-        
-        return Response({
-            'participants': serializer.data,
-            'total_count': participants.count()
-        })
+    # Update invitation
+    invitation.response = 'accepted'
+    invitation.responded_at = timezone.now()
+    invitation.save()
     
-    @action(detail=False, methods=['get'])
-    def my_meetings(self, request):
-        """Get user's meetings (created or registered)"""
-        user = request.user
-        
-        # Get meetings user created
-        created_meetings = Meeting.objects.filter(instructor=user)
-        
-        # Get meetings user is registered for
-        registered_meetings = Meeting.objects.filter(participants__user=user)
-        
-        # Combine and remove duplicates
-        all_meetings = (created_meetings | registered_meetings).distinct().order_by('-scheduled_time')
-        
-        # Paginate
-        page = request.GET.get('page', 1)
-        paginator = Paginator(all_meetings, 10)
-        meetings_page = paginator.get_page(page)
-        
-        serializer = MeetingBasicSerializer(meetings_page, many=True, context={'request': request})
-        
-        return Response({
-            'meetings': serializer.data,
-            'page': int(page),
-            'pages': paginator.num_pages,
-            'total': paginator.count
-        })
-    
-    @action(detail=False, methods=['get'])
-    def upcoming(self, request):
-        """Get upcoming meetings"""
-        now = timezone.now()
-        meetings = self.get_queryset().filter(scheduled_time__gt=now)[:10]
-        
-        serializer = MeetingBasicSerializer(meetings, many=True, context={'request': request})
-        return Response({'meetings': serializer.data})
-    
-    @action(detail=False, methods=['get'])
-    def live(self, request):
-        """Get live meetings"""
-        now = timezone.now()
-        live_meetings = Meeting.objects.filter(
-            scheduled_time__lte=now,
-            scheduled_time__gte=now - timedelta(hours=1),  # Assume max 1 hour duration
-            is_active=True
-        ).select_related('instructor__profile')
-        
-        page = request.GET.get('page', 1)
-        paginator = Paginator(live_meetings, 20)
-        meetings_page = paginator.get_page(page)
-        
-        serializer = MeetingBasicSerializer(
-            meetings_page, many=True, context={'request': request}
+    return Response({
+        'message': 'تم قبول الدعوة بنجاح',
+        'meeting_id': invitation.meeting.id
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def decline_invitation(request, invitation_id):
+    """Decline a meeting invitation"""
+    try:
+        invitation = MeetingInvitation.objects.get(
+            id=invitation_id,
+            user=request.user,
+            response='pending'
         )
-        
+    except MeetingInvitation.DoesNotExist:
         return Response({
-            'meetings': serializer.data,
-            'page': int(page),
-            'pages': paginator.num_pages,
-            'total': paginator.count
+            'error': 'الدعوة غير موجودة أو تم الرد عليها مسبقاً'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Update invitation
+    invitation.response = 'declined'
+    invitation.responded_at = timezone.now()
+    invitation.save()
+    
+    return Response({
+        'message': 'تم رفض الدعوة'
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_status(request, meeting_id):
+    """Get real-time meeting status"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    now = timezone.now()
+    
+    # Check if user can access this meeting
+    if not (request.user == meeting.creator or 
+            meeting.participants.filter(user=request.user).exists()):
+        return Response({
+            'error': 'ليس لديك صلاحية للوصول لهذا الاجتماع'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Determine meeting status
+    if meeting.start_time > now:
+        status = 'upcoming'
+    elif meeting.start_time <= now <= meeting.start_time + timedelta(minutes=meeting.duration):
+        status = 'live'
+    else:
+        status = 'completed'
+    
+    # Get participant count
+    participant_count = meeting.participants.count()
+    
+    return Response({
+        'meeting_id': meeting.id,
+        'status': status,
+        'participant_count': participant_count,
+        'max_participants': meeting.max_participants,
+        'start_time': meeting.start_time,
+        'duration': meeting.duration,
+        'is_active': meeting.is_active
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_analytics(request, meeting_id):
+    """Get meeting analytics"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is the creator
+    if request.user != meeting.creator:
+        return Response({
+            'error': 'ليس لديك صلاحية لعرض إحصائيات هذا الاجتماع'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get attendance statistics
+    participants = meeting.participants.all()
+    total_participants = participants.count()
+    
+    attendance_stats = {
+        'total': total_participants,
+        'present': participants.filter(attendance_status='present').count(),
+        'absent': participants.filter(attendance_status='absent').count(),
+        'late': participants.filter(attendance_status='late').count(),
+        'not_marked': participants.filter(attendance_status='registered').count(),
+    }
+    
+    if total_participants > 0:
+        attendance_stats['attendance_rate'] = round(
+            (attendance_stats['present'] + attendance_stats['late']) / total_participants * 100, 2
+        )
+    else:
+        attendance_stats['attendance_rate'] = 0
+    
+    return Response({
+        'meeting_id': meeting.id,
+        'attendance_stats': attendance_stats,
+        'meeting_info': {
+            'title': meeting.title,
+            'start_time': meeting.start_time,
+            'duration': meeting.duration,
+            'meeting_type': meeting.meeting_type
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_attendance_report(request, meeting_id):
+    """Get detailed attendance report for a meeting"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is the creator
+    if request.user != meeting.creator:
+        return Response({
+            'error': 'ليس لديك صلاحية لعرض تقرير الحضور لهذا الاجتماع'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get all participants with their details
+    participants = meeting.participants.select_related('user__profile').all()
+    
+    participant_data = []
+    for participant in participants:
+        participant_data.append({
+            'id': participant.id,
+            'user_id': participant.user.id,
+            'name': f"{participant.user.first_name} {participant.user.last_name}",
+            'email': participant.user.email,
+            'attendance_status': participant.attendance_status,
+            'joined_at': participant.joined_at,
+            'left_at': participant.left_at
         })
+    
+    # Calculate statistics
+    total = len(participant_data)
+    present = len([p for p in participant_data if p['attendance_status'] == 'present'])
+    absent = len([p for p in participant_data if p['attendance_status'] == 'absent'])
+    late = len([p for p in participant_data if p['attendance_status'] == 'late'])
+    not_marked = len([p for p in participant_data if p['attendance_status'] == 'registered'])
+    
+    attendance_rate = round((present + late) / total * 100, 2) if total > 0 else 0
+    
+    return Response({
+        'meeting_id': meeting.id,
+        'meeting_title': meeting.title,
+        'meeting_date': meeting.start_time,
+        'statistics': {
+            'total': total,
+            'present': present,
+            'absent': absent,
+            'late': late,
+            'not_marked': not_marked,
+            'attendance_rate': attendance_rate
+        },
+        'participants': participant_data
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def export_meeting_data(request, meeting_id):
+    """Export meeting data (placeholder for PDF generation)"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is the creator
+    if request.user != meeting.creator:
+        return Response({
+            'error': 'ليس لديك صلاحية لتصدير بيانات هذا الاجتماع'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # This would typically generate a PDF file
+    # For now, return a success message
+    return Response({
+        'message': 'تم تصدير بيانات الاجتماع بنجاح',
+        'meeting_id': meeting.id,
+        'export_url': f'/api/meetings/{meeting_id}/export-pdf/'  # Placeholder
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def upcoming_meetings(request):
+    """Get upcoming meetings"""
+    user = request.user
+    now = timezone.now()
+    
+    # Get upcoming meetings (not started yet)
+    upcoming_meetings = Meeting.objects.filter(
+        start_time__gt=now,
+        is_active=True
+    ).order_by('start_time')
+    
+    serializer = MeetingBasicSerializer(upcoming_meetings, many=True, context={'request': request})
+    return Response({
+        'meetings': serializer.data,
+        'total': upcoming_meetings.count()
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def respond_to_invitation(request, invitation_id):
+    """Respond to a meeting invitation"""
+    try:
+        invitation = MeetingInvitation.objects.get(
+            id=invitation_id,
+            user=request.user,
+            response='pending'
+        )
+    except MeetingInvitation.DoesNotExist:
+        return Response({
+            'error': 'الدعوة غير موجودة أو تم الرد عليها مسبقاً'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    response = request.data.get('response')
+    if response not in ['accepted', 'declined']:
+        return Response({
+            'error': 'استجابة غير صحيحة'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if response == 'accepted':
+        # Create participant record
+        Participant.objects.get_or_create(
+            meeting=invitation.meeting,
+            user=request.user,
+            defaults={'attendance_status': 'registered'}
+        )
+    
+    # Update invitation
+    invitation.response = response
+    invitation.responded_at = timezone.now()
+    invitation.save()
+    
+    return Response({
+        'message': f'تم {response} الدعوة بنجاح',
+        'meeting_id': invitation.meeting.id
+    })
 
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def search_meetings(request):
-    """Search meetings with filters"""
-    filter_serializer = MeetingFilterSerializer(data=request.GET)
-    if not filter_serializer.is_valid():
-        return Response(filter_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    """Search meetings"""
+    query = request.query_params.get('q', '')
+    if not query:
+        return Response({
+            'error': 'يرجى إدخال كلمة بحث'
+        }, status=status.HTTP_400_BAD_REQUEST)
     
-    filters = filter_serializer.validated_data
-    queryset = Meeting.objects.select_related('instructor__profile').prefetch_related('participants')
-    
-    # Apply user-based filtering
     user = request.user
-    if user.profile.status == 'student':
-        queryset = queryset.filter(
-            Q(participants__user=user) | 
-            Q(max_participants__isnull=True) |
-            Q(participants__count__lt=F('max_participants'))
-        ).distinct()
-    elif user.profile.status == 'instructor':
-        queryset = queryset.filter(
-            Q(instructor=user) |
-            Q(max_participants__isnull=True) |
-            Q(participants__count__lt=F('max_participants'))
-        ).distinct()
+    now = timezone.now()
     
-    # Apply search filters
-    if filters.get('meeting_type'):
-        queryset = queryset.filter(meeting_type=filters['meeting_type'])
+    # Search in meetings user has access to
+    meetings = Meeting.objects.filter(
+        Q(title__icontains=query) | Q(description__icontains=query),
+        is_active=True
+    )
     
-    if filters.get('start_date'):
-        queryset = queryset.filter(scheduled_time__date__gte=filters['start_date'])
-    
-    if filters.get('end_date'):
-        queryset = queryset.filter(scheduled_time__date__lte=filters['end_date'])
-    
-    if filters.get('is_past') is not None:
-        now = timezone.now()
-        if filters['is_past']:
-            queryset = queryset.filter(scheduled_time__lt=now)
-        else:
-            queryset = queryset.filter(scheduled_time__gte=now)
-    
-    if filters.get('search'):
-        search_term = filters['search']
-        queryset = queryset.filter(
-            Q(title__icontains=search_term) |
-            Q(description__icontains=search_term) |
-            Q(instructor__profile__name__icontains=search_term)
+    # Filter by user role
+    if user.profile.status == 'Student':
+        meetings = meetings.filter(participants__user=user)
+    elif user.profile.status == 'Instructor':
+        meetings = meetings.filter(
+            Q(creator=user) | Q(participants__user=user)
         )
     
-    # Order by scheduled time
-    queryset = queryset.order_by('-scheduled_time')
-    
-    # Paginate
-    page = request.GET.get('page', 1)
-    paginator = Paginator(queryset, 20)
-    meetings_page = paginator.get_page(page)
-    
-    serializer = MeetingBasicSerializer(meetings_page, many=True, context={'request': request})
-    
+    serializer = MeetingBasicSerializer(meetings, many=True, context={'request': request})
     return Response({
         'meetings': serializer.data,
-        'page': int(page),
-        'pages': paginator.num_pages,
-        'total': paginator.count,
-        'filters_applied': filters
+        'total': meetings.count(),
+        'query': query
     })
 
 
@@ -502,12 +1013,12 @@ def dashboard_stats(request):
     
     if user.profile.status == 'instructor':
         # Instructor statistics
-        total_meetings = Meeting.objects.filter(instructor=user).count()
-        upcoming_meetings = Meeting.objects.filter(instructor=user, scheduled_time__gt=now).count()
-        completed_meetings = Meeting.objects.filter(instructor=user, scheduled_time__lt=now).count()
+        total_meetings = Meeting.objects.filter(creator=user).count()
+        upcoming_meetings = Meeting.objects.filter(creator=user, start_time__gt=now).count()
+        completed_meetings = Meeting.objects.filter(creator=user, start_time__lt=now).count()
         
         # Get participants count for instructor's meetings
-        total_participants = MeetingParticipant.objects.filter(meeting__instructor=user).count()
+        total_participants = Participant.objects.filter(meeting__creator=user).count()
         
         return Response({
             'total_meetings': total_meetings,
@@ -519,9 +1030,9 @@ def dashboard_stats(request):
     elif user.profile.status in ['admin', 'manager']:
         # Admin statistics
         total_meetings = Meeting.objects.count()
-        upcoming_meetings = Meeting.objects.filter(scheduled_time__gt=now).count()
-        completed_meetings = Meeting.objects.filter(scheduled_time__lt=now).count()
-        total_participants = MeetingParticipant.objects.count()
+        upcoming_meetings = Meeting.objects.filter(start_time__gt=now).count()
+        completed_meetings = Meeting.objects.filter(start_time__lt=now).count()
+        total_participants = Participant.objects.count()
         
         # Meeting types distribution
         meeting_types = Meeting.objects.values('meeting_type').annotate(
@@ -541,11 +1052,11 @@ def dashboard_stats(request):
         registered_meetings = Meeting.objects.filter(participants__user=user).count()
         upcoming_meetings = Meeting.objects.filter(
             participants__user=user, 
-            scheduled_time__gt=now
+            start_time__gt=now
         ).count()
         completed_meetings = Meeting.objects.filter(
             participants__user=user,
-            scheduled_time__lt=now
+            start_time__lt=now
         ).count()
         
         return Response({
@@ -563,11 +1074,11 @@ def general_stats(request):
     
     total_meetings = Meeting.objects.count()
     live_meetings = Meeting.objects.filter(
-        scheduled_time__lte=now,
-        scheduled_time__gte=now - timezone.timedelta(hours=8)
+        start_time__lte=now,
+        start_time__gte=now - timezone.timedelta(hours=8)
     ).count()
-    upcoming_meetings = Meeting.objects.filter(scheduled_time__gt=now).count()
-    total_participants = MeetingParticipant.objects.count()
+    upcoming_meetings = Meeting.objects.filter(start_time__gt=now).count()
+    total_participants = Participant.objects.count()
     
     # Meeting types distribution
     meeting_types = Meeting.objects.values('meeting_type').annotate(
@@ -575,7 +1086,7 @@ def general_stats(request):
     ).order_by('-count')
     
     # Recent meetings
-    recent_meetings = Meeting.objects.select_related('instructor__profile').order_by('-created_at')[:5]
+    recent_meetings = Meeting.objects.select_related('creator__profile').order_by('-created_at')[:5]
     recent_serializer = MeetingBasicSerializer(recent_meetings, many=True, context={'request': request})
     
     return Response({
@@ -600,103 +1111,18 @@ def create_quick_meeting(request):
         # Check if user is instructor
         try:
             instructor = Instructor.objects.get(profile__user=request.user)
-            meeting = serializer.save(instructor=instructor)
+            meeting = serializer.save(creator=request.user)
             
-            # Send invitations automatically
-            enrolled_students = meeting.course.enroller_user.all()
-            for student in enrolled_students:
-                MeetingInvitation.objects.create(
-                    meeting=meeting,
-                    user=student,
-                    sent_at=timezone.now(),
-                    is_sent=True
-                )
+            # Note: Quick meetings don't have course association
+            # You can add course logic here if needed
+            pass
             
             response_data = MeetingDetailSerializer(meeting, context={'request': request}).data
             return Response(response_data, status=status.HTTP_201_CREATED)
         
-        except Teacher.DoesNotExist:
+        except Instructor.DoesNotExist:
             return Response({
                 'error': 'يجب أن تكون معلماً لإنشاء اجتماع'
             }, status=status.HTTP_403_FORBIDDEN)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def upcoming_meetings(request):
-    """
-    الاجتماعات القادمة (عامة)
-    """
-    now = timezone.now()
-    next_24_hours = now + timedelta(hours=24)
-    
-    meetings = Meeting.objects.filter(
-        scheduled_time__gt=now,
-        scheduled_time__lte=next_24_hours,
-        is_active=True
-    ).select_related('course', 'teacher__profile')[:10]
-    
-    serializer = MeetingListSerializer(meetings, many=True, context={'request': request})
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def respond_to_invitation(request, invitation_id):
-    """
-    الرد على دعوة اجتماع
-    """
-    try:
-        invitation = MeetingInvitation.objects.get(
-            id=invitation_id,
-            user=request.user
-        )
-    except MeetingInvitation.DoesNotExist:
-        return Response({
-            'error': 'الدعوة غير موجودة'
-        }, status=status.HTTP_404_NOT_FOUND)
-    
-    response = request.data.get('response')
-    
-    if response not in ['accepted', 'declined']:
-        return Response({
-            'error': 'الرد يجب أن يكون accepted أو declined'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    invitation.response = response
-    invitation.responded_at = timezone.now()
-    invitation.save()
-    
-    return Response({
-        'message': 'تم حفظ ردك على الدعوة',
-        'response': response
-    })
-
-
-class ParticipantViewSet(viewsets.ModelViewSet):
-    """ViewSet for Participant management"""
-    queryset = Participant.objects.all()
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['meeting', 'attendance_status']
-
-    def get_serializer_class(self):
-        return ParticipantSerializer
-
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def my_meetings(request):
-    """Get current user's meetings"""
-    user = request.user
-    meetings = Meeting.objects.filter(
-        participants__user=user
-    ).distinct()[:10]
-    
-    serializer = MeetingBasicSerializer(meetings, many=True, context={'request': request})
-    return Response({
-        'meetings': serializer.data,
-        'total': meetings.count()
-    }) 

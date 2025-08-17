@@ -15,6 +15,7 @@ import {
   School as SchoolIcon, Timer as TimerIcon, Notifications as NotificationsIcon,
   FileCopy as FileCopyIcon, Book as BookIcon, Download as DownloadIcon
 } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 // Styled Components
@@ -53,7 +54,12 @@ const ChatMessage = styled(Box)(({ theme, isOwn }) => ({
   },
 }));
 
+import { useParams, useNavigate } from 'react-router-dom';
+import { meetingAPI } from '../../../services/meeting.service';
+
 const StudentLiveMeeting = () => {
+  const { meetingId } = useParams();
+  const navigate = useNavigate();
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
@@ -63,18 +69,30 @@ const StudentLiveMeeting = () => {
   const [chatMessage, setChatMessage] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [isHandRaised, setIsHandRaised] = useState(false);
+  const [meetingInfo, setMeetingInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample data
-  const meetingInfo = {
-    title: "محاضرة الرياضيات - الفصل الأول",
-    course: "الرياضيات 101",
-    teacher: "د. أحمد محمد",
-    startTime: new Date(),
-    duration: 90,
-    participants: 25,
-    maxParticipants: 50,
-    meetingId: "MTG-123456",
-  };
+  // Fetch meeting details
+  useEffect(() => {
+    const fetchMeetingDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await meetingAPI.getMeetingDetails(meetingId);
+        setMeetingInfo(response);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching meeting details:', err);
+        setError('حدث خطأ في تحميل تفاصيل الاجتماع');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (meetingId) {
+      fetchMeetingDetails();
+    }
+  }, [meetingId]);
 
   const participants = [
     { id: 1, name: "أحمد محمد", email: "ahmed@example.com", status: "online", isHost: true, isMuted: false, isVideoOn: true, joinTime: "10:00" },
@@ -136,6 +154,64 @@ const StudentLiveMeeting = () => {
   const toggleMute = () => setIsMuted(!isMuted);
   const toggleHandRaise = () => setIsHandRaised(!isHandRaised);
 
+  const handleLeaveMeeting = async () => {
+    try {
+      await meetingAPI.leaveMeeting(meetingId);
+      // Close the window or navigate back
+      window.close();
+      // Alternative: navigate back
+      // navigate('/student/meetings');
+    } catch (err) {
+      console.error('Error leaving meeting:', err);
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <Box sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        bgcolor: '#1a1a1a',
+        color: 'white'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress size={60} sx={{ color: '#673ab7', mb: 2 }} />
+          <Typography variant="h6">جاري تحميل الاجتماع...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error || !meetingInfo) {
+    return (
+      <Box sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        bgcolor: '#1a1a1a',
+        color: 'white'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            {error || 'حدث خطأ في تحميل الاجتماع'}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/student/meetings')}
+            sx={{ bgcolor: '#673ab7' }}
+          >
+            العودة لصفحة الاجتماعات
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#1a1a1a' }}>
       {/* Header */}
@@ -185,7 +261,7 @@ const StudentLiveMeeting = () => {
             >
               <Box sx={{ textAlign: 'center', color: '#fff' }}>
                 <VideocamIcon sx={{ fontSize: 80, mb: 2, opacity: 0.5 }} />
-                <Typography variant="h6">{meetingInfo.teacher}</Typography>
+                <Typography variant="h6">{meetingInfo.creator_name || 'المعلم'}</Typography>
                 <Typography variant="body2" sx={{ opacity: 0.7 }}>
                   {isVideoOn ? 'فيديو نشط' : 'الفيديو معطل'}
                 </Typography>
@@ -194,7 +270,7 @@ const StudentLiveMeeting = () => {
             <ControlsOverlay className="controls-overlay">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="#fff">
-                  {meetingInfo.participants} مشارك
+                  {meetingInfo.participants_count || 0} مشارك
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <IconButton
@@ -468,14 +544,15 @@ const StudentLiveMeeting = () => {
 
           <Divider orientation="vertical" flexItem sx={{ bgcolor: '#555' }} />
 
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<CloseIcon />}
-            sx={{ borderRadius: 2 }}
-          >
-            مغادرة الاجتماع
-          </Button>
+                     <Button
+             variant="contained"
+             color="error"
+             startIcon={<CloseIcon />}
+             onClick={handleLeaveMeeting}
+             sx={{ borderRadius: 2 }}
+           >
+             مغادرة الاجتماع
+           </Button>
         </Box>
       </Box>
 
@@ -499,18 +576,18 @@ const StudentLiveMeeting = () => {
                 معلومات الاجتماع
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Typography variant="body2">
-                  <strong>المادة:</strong> {meetingInfo.course}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>المعلم:</strong> {meetingInfo.teacher}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>المدة:</strong> {formatTime(elapsedTime)}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>المشاركون:</strong> {meetingInfo.participants}/{meetingInfo.maxParticipants}
-                </Typography>
+                                 <Typography variant="body2">
+                   <strong>العنوان:</strong> {meetingInfo.title}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>المعلم:</strong> {meetingInfo.creator_name || 'غير محدد'}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>المدة:</strong> {formatTime(elapsedTime)}
+                 </Typography>
+                 <Typography variant="body2">
+                   <strong>المشاركون:</strong> {meetingInfo.participants_count || 0}/{meetingInfo.max_participants || 20}
+                 </Typography>
               </Box>
             </Grid>
             
@@ -519,20 +596,20 @@ const StudentLiveMeeting = () => {
                 مشاركة الرابط
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <TextField
-                  fullWidth
-                  value={`https://meeting.example.com/${meetingInfo.meetingId}`}
-                  variant="outlined"
-                  size="small"
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                />
-                <IconButton
-                  size="small"
-                  onClick={() => navigator.clipboard.writeText(`https://meeting.example.com/${meetingInfo.meetingId}`)}
-                  sx={{ color: '#673ab7' }}
-                >
-                  <FileCopyIcon />
-                </IconButton>
+                                 <TextField
+                   fullWidth
+                   value={`${window.location.origin}/student/meetings/live/${meetingInfo.id}`}
+                   variant="outlined"
+                   size="small"
+                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                 />
+                 <IconButton
+                   size="small"
+                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}/student/meetings/live/${meetingInfo.id}`)}
+                   sx={{ color: '#673ab7' }}
+                 >
+                   <FileCopyIcon />
+                 </IconButton>
               </Box>
             </Grid>
 

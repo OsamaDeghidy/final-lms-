@@ -171,9 +171,25 @@ class Meeting(models.Model):
 
 
 class Participant(models.Model):
+    ATTENDANCE_STATUS_CHOICES = [
+        ('registered', 'مسجل'),
+        ('present', 'حاضر'),
+        ('absent', 'غائب'),
+        ('late', 'متأخر'),
+        ('not_marked', 'غير محدد'),
+    ]
+    
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='participants', verbose_name="الاجتماع")
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="المستخدم")
     is_attending = models.BooleanField(default=False, verbose_name="حاضر")
+    attendance_status = models.CharField(
+        max_length=20, 
+        choices=ATTENDANCE_STATUS_CHOICES, 
+        default='registered', 
+        verbose_name="حالة الحضور"
+    )
+    joined_at = models.DateTimeField(null=True, blank=True, verbose_name="وقت الانضمام")
+    left_at = models.DateTimeField(null=True, blank=True, verbose_name="وقت المغادرة")
     attendance_time = models.DateTimeField(null=True, blank=True, verbose_name="وقت الحضور")
     exit_time = models.DateTimeField(null=True, blank=True, verbose_name="وقت المغادرة")
     attendance_duration = models.DurationField(null=True, blank=True, verbose_name="مدة الحضور")
@@ -202,14 +218,20 @@ class Participant(models.Model):
             self.save(update_fields=['exit_time', 'attendance_duration'])
 
     @property
-    def attendance_status(self):
-        """حالة الحضور"""
-        if not self.is_attending:
-            return "غير حاضر"
-        elif self.is_attending and not self.exit_time:
-            return "حاضر حالياً"
+    def attendance_status_display(self):
+        """حالة الحضور للعرض"""
+        if self.attendance_status == 'registered':
+            return "مسجل"
+        elif self.attendance_status == 'present':
+            return "حاضر"
+        elif self.attendance_status == 'absent':
+            return "غائب"
+        elif self.attendance_status == 'late':
+            return "متأخر"
+        elif self.attendance_status == 'not_marked':
+            return "غير محدد"
         else:
-            return "غادر"
+            return "غير محدد"
 
 
 class Notification(models.Model):
@@ -297,3 +319,50 @@ class MeetingChat(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.message[:50]}..."
+
+
+class MeetingInvitation(models.Model):
+    """Meeting invitations for users"""
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='invitations', verbose_name="الاجتماع")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="المستخدم")
+    message = models.TextField(blank=True, verbose_name="رسالة الدعوة")
+    response = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'في الانتظار'),
+            ('accepted', 'مقبول'),
+            ('declined', 'مرفوض'),
+        ],
+        default='pending',
+        verbose_name="الرد"
+    )
+    responded_at = models.DateTimeField(null=True, blank=True, verbose_name="وقت الرد")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاريخ الإنشاء")
+
+    class Meta:
+        unique_together = ('meeting', 'user')
+        verbose_name = "دعوة اجتماع"
+        verbose_name_plural = "دعوات الاجتماعات"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"دعوة {self.user.username} لاجتماع {self.meeting.title}"
+
+    def accept(self):
+        """Accept the invitation"""
+        self.response = 'accepted'
+        self.responded_at = timezone.now()
+        self.save()
+        
+        # Create participant record
+        Participant.objects.get_or_create(
+            meeting=self.meeting,
+            user=self.user,
+            defaults={'attendance_status': 'registered'}
+        )
+
+    def decline(self):
+        """Decline the invitation"""
+        self.response = 'declined'
+        self.responded_at = timezone.now()
+        self.save()

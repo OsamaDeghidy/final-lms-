@@ -16,6 +16,7 @@ import {
   CheckCircle as CheckCircleIcon, Cancel as CancelIcon, Timer as TimerIcon,
   Notifications as NotificationsIcon, FileCopy as FileCopyIcon
 } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 // Styled Components
@@ -54,7 +55,12 @@ const ChatMessage = styled(Box)(({ theme, isOwn }) => ({
   },
 }));
 
+import { useParams, useNavigate } from 'react-router-dom';
+import { meetingAPI } from '../../../services/meeting.service';
+
 const LiveMeeting = () => {
+  const { meetingId } = useParams();
+  const navigate = useNavigate();
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -66,17 +72,30 @@ const LiveMeeting = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [tabValue, setTabValue] = useState(0);
+  const [meetingInfo, setMeetingInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample data
-  const meetingInfo = {
-    title: "محاضرة الرياضيات - الفصل الأول",
-    course: "الرياضيات 101",
-    startTime: new Date(),
-    duration: 90,
-    participants: 25,
-    maxParticipants: 50,
-    meetingId: "MTG-123456",
-  };
+  // Fetch meeting details
+  useEffect(() => {
+    const fetchMeetingDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await meetingAPI.getMeetingDetails(meetingId);
+        setMeetingInfo(response);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching meeting details:', err);
+        setError('حدث خطأ في تحميل تفاصيل الاجتماع');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (meetingId) {
+      fetchMeetingDetails();
+    }
+  }, [meetingId]);
 
   const participants = [
     { id: 1, name: "علي أحمد", email: "ali@example.com", status: "online", isHost: false, isMuted: false, isVideoOn: true, joinTime: "10:05" },
@@ -133,6 +152,64 @@ const LiveMeeting = () => {
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
   const toggleMute = () => setIsMuted(!isMuted);
 
+  const handleEndMeeting = async () => {
+    try {
+      await meetingAPI.endLiveMeeting(meetingId);
+      // Close the window or navigate back
+      window.close();
+      // Alternative: navigate back
+      // navigate('/teacher/meetings');
+    } catch (err) {
+      console.error('Error ending meeting:', err);
+    }
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <Box sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        bgcolor: '#1a1a1a',
+        color: 'white'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <CircularProgress size={60} sx={{ color: '#673ab7', mb: 2 }} />
+          <Typography variant="h6">جاري تحميل الاجتماع...</Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error || !meetingInfo) {
+    return (
+      <Box sx={{ 
+        height: '100vh', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        bgcolor: '#1a1a1a',
+        color: 'white'
+      }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6" color="error" sx={{ mb: 2 }}>
+            {error || 'حدث خطأ في تحميل الاجتماع'}
+          </Typography>
+          <Button 
+            variant="contained" 
+            onClick={() => navigate('/teacher/meetings')}
+            sx={{ bgcolor: '#673ab7' }}
+          >
+            العودة لصفحة الاجتماعات
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#1a1a1a' }}>
       {/* Header */}
@@ -156,9 +233,20 @@ const LiveMeeting = () => {
             <IconButton color="inherit" onClick={() => setSettingsOpen(true)}>
               <SettingsIcon />
             </IconButton>
-            <IconButton color="inherit">
-              <MoreVertIcon />
-            </IconButton>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<StopIcon />}
+              onClick={handleEndMeeting}
+              sx={{ 
+                bgcolor: '#d32f2f',
+                '&:hover': { bgcolor: '#b71c1c' },
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              إنهاء الاجتماع
+            </Button>
           </Box>
         </Toolbar>
       </AppBar>
