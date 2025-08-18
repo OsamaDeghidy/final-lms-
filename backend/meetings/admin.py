@@ -81,7 +81,7 @@ class MeetingAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description', 'creator__username', 'creator__first_name', 'creator__last_name')
     inlines = [ParticipantInline, NotificationInline]
     readonly_fields = (
-        'created_at', 'updated_at', 'participants_count', 'attendance_rate_display',
+        'created_at', 'updated_at',
         'live_started_at', 'live_ended_at', 'meeting_room_id', 'end_time_display'
     )
     
@@ -150,16 +150,25 @@ class MeetingAdmin(admin.ModelAdmin):
     participants_count.short_description = 'المشاركين'
     
     def attendance_rate_display(self, obj):
-        rate = obj.attendance_rate
-        if rate == 0:
+        try:
+            rate = obj.attendance_rate
+            # Ensure rate is a numeric value
+            if hasattr(rate, '__float__'):
+                rate = float(rate)
+            else:
+                rate = 0.0
+                
+            if rate == 0:
+                return '0%'
+            elif rate >= 80:
+                color = '#28a745'
+            elif rate >= 60:
+                color = '#ffc107'
+            else:
+                color = '#dc3545'
+            return format_html('<span style="color: {}; font-weight: bold;">{:.1f}%</span>', color, rate)
+        except (ValueError, TypeError, AttributeError):
             return '0%'
-        elif rate >= 80:
-            color = '#28a745'
-        elif rate >= 60:
-            color = '#ffc107'
-        else:
-            color = '#dc3545'
-        return format_html('<span style="color: {}; font-weight: bold;">{:.1f}%</span>', color, rate)
     attendance_rate_display.short_description = 'معدل الحضور'
     
     def get_queryset(self, request):
@@ -215,7 +224,7 @@ class ParticipantAdmin(admin.ModelAdmin):
     search_fields = (
         'meeting__title', 'user__username', 'user__first_name', 'user__last_name'
     )
-    readonly_fields = ('attendance_duration', 'attendance_percentage')
+    readonly_fields = ('attendance_duration',)
     
     fieldsets = (
         ('معلومات المشاركة', {

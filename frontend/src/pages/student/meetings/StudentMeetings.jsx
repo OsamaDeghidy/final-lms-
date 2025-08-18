@@ -84,7 +84,7 @@ const StudentMeetings = () => {
     }, 30000); // 30 seconds
     
     return () => clearInterval(interval);
-  }, [tabValue]);
+  }, [tabValue]); // Remove meetings from dependency array to prevent infinite loop
 
   const fetchMeetings = async () => {
     try {
@@ -100,7 +100,21 @@ const StudentMeetings = () => {
           response = await meetingAPI.getAttendingMeetings();
           break;
         case 2: // Joinable meetings (ongoing)
-          response = await meetingAPI.getJoinableMeetings();
+          try {
+            response = await meetingAPI.getJoinableMeetings();
+          } catch (error) {
+            console.log('Could not fetch joinable meetings, trying available meetings instead:', error);
+            // Fallback to available meetings and filter for ongoing ones
+            const availableResponse = await meetingAPI.getAvailableMeetings();
+            if (availableResponse?.meetings) {
+              const ongoingMeetings = availableResponse.meetings.filter(meeting => 
+                getMeetingStatus(meeting) === 'ongoing'
+              );
+              response = { meetings: ongoingMeetings };
+            } else {
+              response = { meetings: [] };
+            }
+          }
           break;
         case 3: // Meeting history
           response = await meetingAPI.getMeetingHistory();
@@ -126,6 +140,16 @@ const StudentMeetings = () => {
       console.log('Processed meetings data:', meetingsData);
       setMeetings(Array.isArray(meetingsData) ? meetingsData : []);
       
+      // Debug: Log meeting statuses (only in development)
+      if (process.env.NODE_ENV === 'development' && Array.isArray(meetingsData)) {
+        meetingsData.forEach(meeting => {
+          if (meeting && meeting.id) {
+            const status = getMeetingStatus(meeting);
+            console.log(`Meeting ${meeting.id}: "${meeting.title}" - Status: ${status}, Start: ${meeting.start_time}, Duration: ${meeting.duration}`);
+          }
+        });
+      }
+      
       // Fetch registration and attendance statuses for each meeting
       await fetchStatuses(meetingsData);
       
@@ -144,17 +168,37 @@ const StudentMeetings = () => {
     const newAttendanceStatuses = {};
     
     for (const meeting of meetingsData) {
+      if (!meeting || !meeting.id) continue;
+      
       try {
-        // Check registration status
-        const regResponse = await meetingAPI.checkRegistrationStatus(meeting.id);
-        newRegistrationStatuses[meeting.id] = regResponse.is_registered || false;
+        // Use user_is_registered from meeting data if available
+        newRegistrationStatuses[meeting.id] = meeting.user_is_registered || false;
+        newAttendanceStatuses[meeting.id] = 'not_registered';
         
-        // Check attendance status
-        const attResponse = await meetingAPI.getMyAttendanceStatus(meeting.id);
-        newAttendanceStatuses[meeting.id] = attResponse.attendance_status || 'not_registered';
+        // Only try to fetch additional status info if we don't have it from the meeting data
+        if (meeting.user_is_registered === undefined) {
+          try {
+            const regResponse = await meetingAPI.checkRegistrationStatus(meeting.id);
+            newRegistrationStatuses[meeting.id] = regResponse.is_registered || false;
+          } catch (error) {
+            console.log(`Could not fetch registration status for meeting ${meeting.id}:`, error);
+            newRegistrationStatuses[meeting.id] = false;
+          }
+        }
+        
+        // Only try to fetch attendance status if user is registered
+        if (newRegistrationStatuses[meeting.id]) {
+          try {
+            const attResponse = await meetingAPI.getMyAttendanceStatus(meeting.id);
+            newAttendanceStatuses[meeting.id] = attResponse.attendance_status || 'not_registered';
+          } catch (error) {
+            console.log(`Could not fetch attendance status for meeting ${meeting.id}:`, error);
+            newAttendanceStatuses[meeting.id] = 'not_registered';
+          }
+        }
       } catch (error) {
-        console.error(`Error fetching status for meeting ${meeting.id}:`, error);
-        newRegistrationStatuses[meeting.id] = false;
+        console.error(`Error processing meeting ${meeting.id}:`, error);
+        newRegistrationStatuses[meeting.id] = meeting.user_is_registered || false;
         newAttendanceStatuses[meeting.id] = 'not_registered';
       }
     }
@@ -226,20 +270,38 @@ const StudentMeetings = () => {
   const handleJoinMeeting = async (meeting) => {
     try {
       setLoading(true);
-      await meetingAPI.joinMeeting(meeting.id);
-      setSnackbar({
-        open: true,
-        message: 'تم الانضمام للاجتماع بنجاح',
-        severity: 'success'
-      });
       
-      // Open live meeting page in new window/tab
-      window.open(`/student/meetings/live/${meeting.id}`, '_blank');
+      // Try to join the meeting via API
+      try {
+        await meetingAPI.joinMeeting(meeting.id);
+        setSnackbar({
+          open: true,
+          message: 'تم الانضمام للاجتماع بنجاح',
+          severity: 'success'
+        });
+      } catch (apiError) {
+        console.log('API join failed, proceeding with direct join:', apiError);
+        // Continue with direct join even if API fails
+      }
       
-      // Alternative: Open zoom link if available
-      // if (meeting.zoom_link) {
-      //   window.open(meeting.zoom_link, '_blank');
-      // }
+      // Open zoom link if available, otherwise open live meeting page
+      if (meeting.zoom_link) {
+        window.open(meeting.zoom_link, '_blank');
+      } else if (meeting.meeting_type === 'LIVE') {
+        window.open(`/student/meetings/live/${meeting.id}`, '_blank');
+      } else {
+        // For other meeting types, try to open the meeting directly
+        setSnackbar({
+          open: true,
+          message: 'جاري فتح الاجتماع...',
+          severity: 'info'
+        });
+        
+        // Try to open meeting details or redirect
+        setTimeout(() => {
+          window.open(`/student/meetings/details/${meeting.id}`, '_blank');
+        }, 1000);
+      }
       
       // Refresh meetings
       fetchMeetings();
@@ -247,7 +309,7 @@ const StudentMeetings = () => {
       console.error('Error joining meeting:', err);
       setSnackbar({
         open: true,
-        message: err.response?.data?.message || 'حدث خطأ في الانضمام للاجتماع',
+        message: 'حدث خطأ في الانضمام للاجتماع',
         severity: 'error'
       });
     } finally {
@@ -339,6 +401,13 @@ const StudentMeetings = () => {
   };
 
   const getMeetingStatus = (meeting) => {
+    // Use status from API if available, otherwise calculate locally
+    if (meeting.status && ['upcoming', 'ongoing', 'completed', 'cancelled'].includes(meeting.status)) {
+      return meeting.status;
+    }
+    
+    if (!meeting.start_time) return 'upcoming';
+    
     const now = new Date();
     const startTime = new Date(meeting.start_time);
     
@@ -349,9 +418,16 @@ const StudentMeetings = () => {
       const parts = meeting.duration.split(':');
       if (parts.length === 3) {
         durationMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+      } else if (parts.length === 2) {
+        // Handle format like "30:00" (minutes:seconds)
+        durationMinutes = parseInt(parts[0]);
       }
     } else if (typeof meeting.duration === 'number') {
       durationMinutes = meeting.duration;
+    } else if (meeting.duration && typeof meeting.duration === 'object') {
+      // Handle DurationField object
+      durationMinutes = meeting.duration.total_seconds ? 
+        Math.floor(meeting.duration.total_seconds / 60) : 60;
     }
     
     const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
@@ -440,12 +516,45 @@ const StudentMeetings = () => {
     }
   };
 
+  const formatDuration = (duration) => {
+    if (!duration) return 'غير محدد';
+    
+    if (typeof duration === 'string') {
+      // Parse duration string like "01:30:00"
+      const parts = duration.split(':');
+      if (parts.length === 3) {
+        const hours = parseInt(parts[0]);
+        const minutes = parseInt(parts[1]);
+        if (hours > 0) {
+          return `${hours} ساعة ${minutes} دقيقة`;
+        } else {
+          return `${minutes} دقيقة`;
+        }
+      }
+      return duration;
+    } else if (typeof duration === 'number') {
+      const hours = Math.floor(duration / 60);
+      const minutes = duration % 60;
+      if (hours > 0) {
+        return `${hours} ساعة ${minutes} دقيقة`;
+      } else {
+        return `${minutes} دقيقة`;
+      }
+    }
+    
+    return 'غير محدد';
+  };
+
   // Filter meetings based on tab
   const filteredMeetings = Array.isArray(meetings) ? meetings.filter(meeting => {
+    if (!meeting || !meeting.id) return false;
+    
+    const status = getMeetingStatus(meeting);
+    
     if (tabValue === 0) return true; // Available meetings
-    if (tabValue === 1) return registrationStatuses[meeting.id]; // Registered meetings
-    if (tabValue === 2) return getMeetingStatus(meeting) === 'ongoing'; // Joinable meetings
-    if (tabValue === 3) return getMeetingStatus(meeting) === 'completed'; // History
+    if (tabValue === 1) return registrationStatuses[meeting.id] || false; // Registered meetings
+    if (tabValue === 2) return status === 'ongoing'; // Joinable meetings
+    if (tabValue === 3) return status === 'completed'; // History
     return true;
   }) : [];
 
@@ -479,10 +588,7 @@ const StudentMeetings = () => {
               <RefreshIcon />
             </IconButton>
           </Box>
-          
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-            عرض والانضمام للاجتماعات والمحاضرات المتاحة
-          </Typography>
+        
         </Box>
       </Box>
 
@@ -505,11 +611,12 @@ const StudentMeetings = () => {
             },
           }}
         >
-          <Tab label={`الاجتماعات المتاحة (${meetings.filter(m => !registrationStatuses[m.id]).length})`} />
-          <Tab label={`اجتماعاتي المسجلة (${meetings.filter(m => registrationStatuses[m.id]).length})`} />
-          <Tab label={`اجتماعات قابلة للانضمام (${meetings.filter(m => getMeetingStatus(m) === 'ongoing').length})`} />
-          <Tab label={`سجل الاجتماعات (${meetings.filter(m => getMeetingStatus(m) === 'completed').length})`} />
+          <Tab label={`الاجتماعات المتاحة (${meetings.filter(m => m && m.id && !registrationStatuses[m.id]).length || 0})`} />
+          <Tab label={`اجتماعاتي المسجلة (${meetings.filter(m => m && m.id && registrationStatuses[m.id]).length || 0})`} />
+          <Tab label={`اجتماعات قابلة للانضمام (${meetings.filter(m => m && m.id && getMeetingStatus(m) === 'ongoing').length || 0})`} />
+          <Tab label={`سجل الاجتماعات (${meetings.filter(m => m && m.id && getMeetingStatus(m) === 'completed').length || 0})`} />
         </Tabs>
+        
       </Box>
 
       {/* Loading State */}
@@ -560,6 +667,8 @@ const StudentMeetings = () => {
       {/* Meetings Grid */}
       <Grid container spacing={3}>
         {filteredMeetings.map((meeting) => {
+          if (!meeting || !meeting.id) return null;
+          
           const status = getMeetingStatus(meeting);
           const isRegistered = registrationStatuses[meeting.id] || false;
           const attendanceStatus = attendanceStatuses[meeting.id] || 'not_registered';
@@ -579,7 +688,7 @@ const StudentMeetings = () => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {meeting.title}
+                      {meeting.title || 'اجتماع بدون عنوان'}
                     </Typography>
                     <StatusChip 
                       label={getStatusText(status)} 
@@ -598,7 +707,7 @@ const StudentMeetings = () => {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis'
                   }}>
-                    {meeting.description}
+                    {meeting.description || 'لا يوجد وصف للاجتماع'}
                   </Typography>
 
                   {/* Meeting Info */}
@@ -606,42 +715,47 @@ const StudentMeetings = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <CalendarTodayIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        {formatDate(meeting.start_time)}
+                        {meeting.start_time ? formatDate(meeting.start_time) : 'غير محدد'}
                       </Typography>
                     </Box>
                     
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        {formatTime(meeting.start_time)} - {meeting.duration} دقيقة
+                        {meeting.start_time ? formatTime(meeting.start_time) : 'غير محدد'} - {formatDuration(meeting.duration)}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        المشاركين: {meeting.participants_count || 0} / {meeting.max_participants}
+                        المشاركين: {meeting.participants_count || 0} / {meeting.max_participants || 50}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <VideoCallIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        نوع الاجتماع: {getMeetingTypeText(meeting.meeting_type)}
+                        نوع الاجتماع: {getMeetingTypeText(meeting.meeting_type || 'NORMAL')}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <PersonIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
                       <Typography variant="body2" color="text.secondary">
-                        المعلم: {meeting.creator_name || 'غير محدد'}
+                        المعلم: {meeting.creator_name || meeting.creator?.name || 'غير محدد'}
                       </Typography>
                     </Box>
 
                     {meeting.zoom_link && (
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <LinkIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
-                        <Typography variant="body2" color="primary" sx={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                        <Typography 
+                          variant="body2" 
+                          color="primary" 
+                          sx={{ textDecoration: 'underline', cursor: 'pointer' }}
+                          onClick={() => window.open(meeting.zoom_link, '_blank')}
+                        >
                           رابط زووم متاح
                         </Typography>
                       </Box>
@@ -651,14 +765,18 @@ const StudentMeetings = () => {
                   {/* Status and Actions */}
                   <Box sx={{ mt: 'auto' }}>
                     <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                      <StatusChip label={getStatusText(status)} status={status} />
+                      <StatusChip 
+                      label={getStatusText(status)} 
+                      status={status}
+                      size="small"
+                    />
                       <Chip 
                         label={getAttendanceStatusText(attendanceStatus)}
                         color={getAttendanceStatusColor(attendanceStatus)}
                         size="small"
                         sx={{ fontSize: '0.7rem' }}
                       />
-                      {isRegistered && (
+                      {isRegistered && meeting.id && (
                         <Chip 
                           label="مسجل"
                           color="success"
@@ -674,6 +792,7 @@ const StudentMeetings = () => {
                         size="small"
                         variant="outlined"
                         onClick={() => handleMeetingDetails(meeting)}
+                        disabled={!meeting || !meeting.id}
                         sx={{ 
                           borderRadius: 2,
                           textTransform: 'none',
@@ -685,7 +804,7 @@ const StudentMeetings = () => {
                         التفاصيل
                       </Button>
 
-                      {!isRegistered && status === 'upcoming' && (
+                      {!isRegistered && status === 'upcoming' && meeting.id && (
                         <Button
                           size="small"
                           variant="contained"
@@ -704,7 +823,7 @@ const StudentMeetings = () => {
                         </Button>
                       )}
 
-                      {isRegistered && status === 'upcoming' && (
+                      {isRegistered && status === 'upcoming' && meeting.id && (
                         <Button
                           size="small"
                           variant="outlined"
@@ -723,13 +842,16 @@ const StudentMeetings = () => {
                         </Button>
                       )}
 
-                      {isRegistered && status === 'ongoing' && (
+                      {isRegistered && status === 'ongoing' && meeting.id && (
                         <>
                           <Button
                             size="small"
                             variant="contained"
                             color="success"
-                            onClick={() => handleJoinMeeting(meeting)}
+                            onClick={() => {
+                              // Navigate directly to live meeting page
+                              window.open(`/student/meetings/live/${meeting.id}`, '_blank');
+                            }}
                             startIcon={<PlayArrowIcon />}
                             sx={{ 
                               borderRadius: 2,
@@ -742,7 +864,7 @@ const StudentMeetings = () => {
                             انضم الآن
                           </Button>
                           
-                          {attendanceStatus !== 'present' && (
+                          {attendanceStatus !== 'present' && meeting.id && (
                             <Button
                               size="small"
                               variant="contained"
@@ -761,6 +883,29 @@ const StudentMeetings = () => {
                             </Button>
                           )}
                         </>
+                      )}
+                      
+                      {/* Show join button for ongoing meetings even if not registered */}
+                      {!isRegistered && status === 'ongoing' && meeting.id && (
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="success"
+                          onClick={() => {
+                            // Navigate directly to live meeting page
+                            window.open(`/student/meetings/live/${meeting.id}`, '_blank');
+                          }}
+                          startIcon={<PlayArrowIcon />}
+                          sx={{ 
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.75rem',
+                            minWidth: 'fit-content'
+                          }}
+                        >
+                          انضم الآن
+                        </Button>
                       )}
                     </Box>
                   </Box>

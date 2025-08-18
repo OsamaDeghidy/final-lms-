@@ -75,13 +75,32 @@ const LiveMeeting = () => {
   const [meetingInfo, setMeetingInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [participants, setParticipants] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [isLiveStarted, setIsLiveStarted] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Get current user from localStorage
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUser(user);
+      } catch (err) {
+        console.error('Error parsing user from localStorage:', err);
+      }
+    }
+  }, []);
 
   // Fetch meeting details
   useEffect(() => {
     const fetchMeetingDetails = async () => {
       try {
         setLoading(true);
+        console.log('Fetching meeting details for ID:', meetingId);
         const response = await meetingAPI.getMeetingDetails(meetingId);
+        console.log('Meeting details response:', response);
         setMeetingInfo(response);
         setError(null);
       } catch (err) {
@@ -96,22 +115,6 @@ const LiveMeeting = () => {
       fetchMeetingDetails();
     }
   }, [meetingId]);
-
-  const participants = [
-    { id: 1, name: "علي أحمد", email: "ali@example.com", status: "online", isHost: false, isMuted: false, isVideoOn: true, joinTime: "10:05" },
-    { id: 2, name: "فاطمة محمد", email: "fatima@example.com", status: "online", isHost: false, isMuted: true, isVideoOn: false, joinTime: "10:02" },
-    { id: 3, name: "محمد علي", email: "mohamed@example.com", status: "online", isHost: false, isMuted: false, isVideoOn: true, joinTime: "10:08" },
-    { id: 4, name: "سارة أحمد", email: "sara@example.com", status: "online", isHost: false, isMuted: false, isVideoOn: true, joinTime: "10:10" },
-    { id: 5, name: "أحمد محمد", email: "ahmed@example.com", status: "online", isHost: true, isMuted: false, isVideoOn: true, joinTime: "10:00" },
-  ];
-
-  const chatMessages = [
-    { id: 1, user: "علي أحمد", message: "مرحباً بالجميع", time: "10:05", isOwn: false },
-    { id: 2, user: "أحمد محمد", message: "أهلاً وسهلاً، نبدأ المحاضرة", time: "10:06", isOwn: true },
-    { id: 3, user: "فاطمة محمد", message: "هل يمكن رفع الشريحة الأولى؟", time: "10:07", isOwn: false },
-    { id: 4, user: "أحمد محمد", message: "بالطبع، سأقوم برفعها الآن", time: "10:08", isOwn: true },
-    { id: 5, user: "محمد علي", message: "شكراً لك", time: "10:09", isOwn: false },
-  ];
 
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -130,11 +133,20 @@ const LiveMeeting = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (chatMessage.trim()) {
-      // Logic to send message
-      console.log('Sending message:', chatMessage);
-      setChatMessage('');
+      try {
+        console.log('Sending message:', chatMessage);
+        const newMessage = await meetingAPI.sendChatMessage(meetingId, chatMessage);
+        console.log('Message sent successfully:', newMessage);
+        setChatMessage('');
+        // Refresh chat messages
+        fetchChatMessages();
+      } catch (error) {
+        console.error('Error sending message:', error);
+        // Show error to user
+        alert('حدث خطأ في إرسال الرسالة');
+      }
     }
   };
 
@@ -152,15 +164,103 @@ const LiveMeeting = () => {
   const toggleFullscreen = () => setIsFullscreen(!isFullscreen);
   const toggleMute = () => setIsMuted(!isMuted);
 
+  // Start live meeting
+  const handleStartLive = async () => {
+    try {
+      console.log('Starting live meeting:', meetingId);
+      await meetingAPI.startLiveMeeting(meetingId);
+      console.log('Successfully started live meeting');
+      setIsLiveStarted(true);
+    } catch (err) {
+      console.error('Error starting live meeting:', err);
+      alert('حدث خطأ في بدء الاجتماع المباشر');
+    }
+  };
+
+  // Fetch participants from API
+  const fetchParticipants = async () => {
+    try {
+      console.log('Fetching participants for meeting:', meetingId);
+      const response = await meetingAPI.getMeetingParticipants(meetingId);
+      console.log('Participants response:', response);
+      if (response && Array.isArray(response)) {
+        setParticipants(response);
+        console.log('Set participants from API:', response.length);
+      } else {
+        console.log('No participants found or invalid response');
+        setParticipants([]);
+      }
+    } catch (err) {
+      console.error('Error fetching participants:', err);
+      setParticipants([]);
+    }
+  };
+
+  // Fetch chat messages from API
+  const fetchChatMessages = async () => {
+    try {
+      console.log('Fetching chat messages for meeting:', meetingId);
+      const response = await meetingAPI.getChatMessages(meetingId);
+      console.log('Chat messages response:', response);
+      if (response && Array.isArray(response)) {
+        setChatMessages(response);
+        console.log('Set chat messages from API:', response.length);
+      } else {
+        console.log('No chat messages found or invalid response');
+        setChatMessages([]);
+      }
+    } catch (err) {
+      console.error('Error fetching chat messages:', err);
+      setChatMessages([]);
+    }
+  };
+
+  // Fetch participants when meeting info is loaded
+  useEffect(() => {
+    if (meetingInfo) {
+      console.log('Meeting info loaded, starting data fetch...');
+      
+      // Initial fetch
+      fetchParticipants();
+      fetchChatMessages();
+      
+      // Set up interval to refresh participants and chat
+      const participantsInterval = setInterval(() => {
+        console.log('Refreshing participants...');
+        fetchParticipants();
+      }, 10000); // Refresh every 10 seconds
+      
+      const chatInterval = setInterval(() => {
+        console.log('Refreshing chat...');
+        fetchChatMessages();
+      }, 5000); // Refresh chat every 5 seconds
+      
+      return () => {
+        console.log('Cleaning up intervals...');
+        clearInterval(participantsInterval);
+        clearInterval(chatInterval);
+      };
+    }
+  }, [meetingInfo]);
+
+  // Start live meeting when component mounts
+  useEffect(() => {
+    if (meetingInfo && !isLiveStarted) {
+      handleStartLive();
+    }
+  }, [meetingInfo]);
+
   const handleEndMeeting = async () => {
     try {
+      console.log('Ending live meeting:', meetingId);
       await meetingAPI.endLiveMeeting(meetingId);
-      // Close the window or navigate back
-      window.close();
-      // Alternative: navigate back
-      // navigate('/teacher/meetings');
+      console.log('Successfully ended meeting');
     } catch (err) {
       console.error('Error ending meeting:', err);
+      alert('حدث خطأ في إنهاء الاجتماع');
+    } finally {
+      // Always navigate back regardless of API success/failure
+      navigate('/teacher/meetings');
     }
   };
 
@@ -184,7 +284,7 @@ const LiveMeeting = () => {
   }
 
   // Error state
-  if (error || !meetingInfo) {
+  if (error && !meetingInfo) {
     return (
       <Box sx={{ 
         height: '100vh', 
@@ -196,7 +296,7 @@ const LiveMeeting = () => {
       }}>
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="h6" color="error" sx={{ mb: 2 }}>
-            {error || 'حدث خطأ في تحميل الاجتماع'}
+            {error}
           </Typography>
           <Button 
             variant="contained" 
@@ -217,7 +317,7 @@ const LiveMeeting = () => {
         <Toolbar sx={{ justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="h6" fontWeight={600}>
-              {meetingInfo.title}
+              {meetingInfo?.title || 'اجتماع'}
             </Typography>
             <Chip
               label="مباشر"
@@ -279,7 +379,7 @@ const LiveMeeting = () => {
             <ControlsOverlay className="controls-overlay">
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="body2" color="#fff">
-                  {meetingInfo.participants} مشارك
+                  {participants.length} مشارك
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <IconButton
@@ -311,7 +411,7 @@ const LiveMeeting = () => {
                     }}
                   >
                     <Avatar sx={{ width: 40, height: 40 }}>
-                      {participant.name.charAt(0)}
+                      {participant.user_name ? participant.user_name.charAt(0) : '?'}
                     </Avatar>
                     <Box
                       sx={{
@@ -322,11 +422,8 @@ const LiveMeeting = () => {
                         gap: 0.5,
                       }}
                     >
-                      {participant.isMuted && (
+                      {participant.attendance_status === 'absent' && (
                         <MicOffIcon sx={{ fontSize: 16, color: '#fff', bgcolor: 'rgba(0,0,0,0.5)', borderRadius: 1 }} />
-                      )}
-                      {!participant.isVideoOn && (
-                        <VideocamOffIcon sx={{ fontSize: 16, color: '#fff', bgcolor: 'rgba(0,0,0,0.5)', borderRadius: 1 }} />
                       )}
                     </Box>
                     <Typography
@@ -339,7 +436,7 @@ const LiveMeeting = () => {
                         fontSize: '0.7rem',
                       }}
                     >
-                      {participant.name}
+                      {participant.user_name || 'مستخدم'}
                     </Typography>
                   </Box>
                 </VideoContainer>
@@ -388,24 +485,36 @@ const LiveMeeting = () => {
               </Box>
               
               <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-                {chatMessages.map((msg) => (
-                  <ChatMessage key={msg.id} isOwn={msg.isOwn}>
-                    <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem' }}>
-                      {msg.user.charAt(0)}
-                    </Avatar>
-                    <Box className="message-content">
-                      <Typography variant="body2" fontWeight={600}>
-                        {msg.user}
-                      </Typography>
-                      <Typography variant="body2">
-                        {msg.message}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                        {msg.time}
-                      </Typography>
-                    </Box>
-                  </ChatMessage>
-                ))}
+                {chatMessages.length > 0 ? (
+                  chatMessages.map((msg) => (
+                    <ChatMessage key={msg.id} isOwn={msg.user === currentUser?.id}>
+                      <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem' }}>
+                        {msg.user_name ? msg.user_name.charAt(0) : '?'}
+                      </Avatar>
+                      <Box className="message-content">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {msg.user_name || 'مستخدم'}
+                          </Typography>
+                          {msg.is_teacher && (
+                            <Chip label="المعلم" size="small" color="primary" sx={{ height: 16, fontSize: '0.6rem' }} />
+                          )}
+                        </Box>
+                        <Typography variant="body2">
+                          {msg.message}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                          {msg.created_at_formatted || 'الآن'}
+                        </Typography>
+                      </Box>
+                    </ChatMessage>
+                  ))
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                    <Typography variant="body2">لا توجد رسائل بعد</Typography>
+                    <Typography variant="caption">ابدأ المحادثة الآن</Typography>
+                  </Box>
+                )}
               </Box>
 
               <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
@@ -451,47 +560,53 @@ const LiveMeeting = () => {
                   المشاركون
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {participants.length} من {meetingInfo.maxParticipants}
+                  {participants.length} من {meetingInfo?.max_participants || 20}
                 </Typography>
               </Box>
               
               <List sx={{ flex: 1, overflowY: 'auto' }}>
-                {participants.map((participant) => (
-                  <ListItem key={participant.id} sx={{ py: 1 }}>
-                    <ListItemAvatar>
-                      <Avatar sx={{ width: 40, height: 40 }}>
-                        {participant.name.charAt(0)}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" fontWeight={600}>
-                            {participant.name}
-                          </Typography>
-                          {participant.isHost && (
-                            <Chip label="المضيف" size="small" color="primary" />
-                          )}
-                        </Box>
-                      }
-                      secondary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary">
-                            انضم في {participant.joinTime}
-                          </Typography>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            {participant.isMuted && (
-                              <MicOffIcon sx={{ fontSize: 16, color: '#666' }} />
+                {participants.length > 0 ? (
+                  participants.map((participant) => (
+                    <ListItem key={participant.id} sx={{ py: 1 }}>
+                      <ListItemAvatar>
+                        <Avatar sx={{ width: 40, height: 40 }}>
+                          {participant.user_name ? participant.user_name.charAt(0) : '?'}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {participant.user_name || 'مستخدم'}
+                            </Typography>
+                            {participant.is_teacher && (
+                              <Chip label="المعلم" size="small" color="primary" />
                             )}
-                            {!participant.isVideoOn && (
-                              <VideocamOffIcon sx={{ fontSize: 16, color: '#666' }} />
+                            {participant.attendance_status === 'attending' && (
+                              <Chip label="حاضر" size="small" color="success" />
                             )}
                           </Box>
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                ))}
+                        }
+                        secondary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              انضم في {participant.join_time_formatted || 'الآن'}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              {participant.attendance_status === 'absent' && (
+                                <MicOffIcon sx={{ fontSize: 16, color: '#666' }} />
+                              )}
+                            </Box>
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                  ))
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                    <Typography variant="body2">لا يوجد مشاركون بعد</Typography>
+                  </Box>
+                )}
               </List>
             </Box>
           )}
@@ -572,6 +687,7 @@ const LiveMeeting = () => {
             variant="contained"
             color="error"
             startIcon={<CloseIcon />}
+            onClick={handleEndMeeting}
             sx={{ borderRadius: 2 }}
           >
             إنهاء الاجتماع
@@ -600,13 +716,13 @@ const LiveMeeting = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Typography variant="body2">
-                  <strong>معرف الاجتماع:</strong> {meetingInfo.meetingId}
+                  <strong>معرف الاجتماع:</strong> {meetingInfo?.id}
                 </Typography>
                 <Typography variant="body2">
                   <strong>المدة:</strong> {formatTime(elapsedTime)}
                 </Typography>
                 <Typography variant="body2">
-                  <strong>المشاركون:</strong> {meetingInfo.participants}/{meetingInfo.maxParticipants}
+                  <strong>المشاركون:</strong> {participants.length}/{meetingInfo?.max_participants || 20}
                 </Typography>
               </Box>
             </Grid>
@@ -618,14 +734,14 @@ const LiveMeeting = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TextField
                   fullWidth
-                  value={`https://meeting.example.com/${meetingInfo.meetingId}`}
+                  value={`${window.location.origin}/student/meetings/live/${meetingInfo?.id}`}
                   variant="outlined"
                   size="small"
                   sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                 />
                 <IconButton
                   size="small"
-                  onClick={() => navigator.clipboard.writeText(`https://meeting.example.com/${meetingInfo.meetingId}`)}
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/student/meetings/live/${meetingInfo?.id}`)}
                   sx={{ color: '#673ab7' }}
                 >
                   <FileCopyIcon />

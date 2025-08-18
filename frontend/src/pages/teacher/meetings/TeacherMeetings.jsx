@@ -577,10 +577,6 @@ const TeacherMeetings = () => {
               <AddIcon sx={{ fontSize: 28 }} />
             </IconButton>
           </Box>
-          
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)' }}>
-            إدارة جميع الاجتماعات والمحاضرات الخاصة بك
-          </Typography>
         </Box>
       </Box>
 

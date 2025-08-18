@@ -16,7 +16,7 @@ from .serializers import (
     MeetingAttendanceSerializer, MeetingInvitationSerializer,
     MeetingStatsSerializer, QuickMeetingSerializer, MeetingBasicSerializer,
     MeetingUpdateSerializer, MeetingParticipantSerializer, MeetingRegistrationSerializer,
-    MeetingFilterSerializer, ParticipantSerializer
+    MeetingFilterSerializer, ParticipantSerializer, MeetingChatSerializer
 )
 
 
@@ -242,19 +242,75 @@ class MeetingViewSet(viewsets.ModelViewSet):
         meeting = self.get_object()
         user = request.user
         
-        # Check permissions for detailed participant info
-        if not (user.is_superuser or 
-                (hasattr(user, 'profile') and user.profile.is_admin()) or
-                meeting.creator == user):
-            # For students, only show basic participant info
-            participants = meeting.participants.select_related('user__profile').all()
-            serializer = MeetingParticipantSerializer(participants, many=True)
-        else:
-            # For teachers/admins, show detailed participant info
-            participants = meeting.participants.select_related('user__profile').all()
-            serializer = ParticipantSerializer(participants, many=True)
+        print(f"Participants request for meeting {meeting.id} by user {user.username}")
         
-        return Response(serializer.data)
+        # Get all participants
+        participants = meeting.participants.select_related('user__profile').all()
+        print(f"Found {participants.count()} participants")
+        
+        # Check permissions for detailed participant info
+        if (user.is_superuser or 
+            (hasattr(user, 'profile') and user.profile.status == 'Instructor') or
+            meeting.creator == user):
+            # For teachers/admins, show detailed participant info
+            serializer = ParticipantSerializer(participants, many=True)
+            print("Using detailed participant serializer")
+        else:
+            # For students, only show basic participant info
+            serializer = MeetingParticipantSerializer(participants, many=True)
+            print("Using basic participant serializer")
+        
+        data = serializer.data
+        print(f"Returning {len(data)} participants")
+        return Response(data)
+
+    @action(detail=True, methods=['get', 'post'])
+    def chat(self, request, pk=None):
+        """
+        الدردشة في الاجتماع
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        if request.method == 'GET':
+            # Get chat messages
+            print(f"Chat GET request for meeting {meeting.id} by user {user.username}")
+            messages = MeetingChat.objects.filter(meeting=meeting).select_related('user__profile').order_by('timestamp')
+            print(f"Found {messages.count()} chat messages")
+            serializer = MeetingChatSerializer(messages, many=True)
+            data = serializer.data
+            print(f"Returning {len(data)} chat messages")
+            return Response(data)
+        
+        elif request.method == 'POST':
+            # Send a message
+            print(f"Chat POST request for meeting {meeting.id} by user {user.username}")
+            message_text = request.data.get('message', '').strip()
+            print(f"Message text: {message_text}")
+            if not message_text:
+                return Response({
+                    'error': 'الرسالة لا يمكن أن تكون فارغة'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user is a participant or creator
+            if not (meeting.participants.filter(user=user).exists() or meeting.creator == user):
+                return Response({
+                    'error': 'يجب أن تكون مشاركاً في الاجتماع لإرسال رسالة'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Create chat message
+            print(f"Creating chat message for meeting {meeting.id}")
+            chat_message = MeetingChat.objects.create(
+                meeting=meeting,
+                user=user,
+                message=message_text
+            )
+            print(f"Chat message created with ID {chat_message.id}")
+            
+            serializer = MeetingChatSerializer(chat_message)
+            data = serializer.data
+            print(f"Returning chat message data: {data}")
+            return Response(data, status=status.HTTP_201_CREATED)
     
     @action(detail=True, methods=['post'])
     def start_live(self, request, pk=None):
@@ -549,12 +605,12 @@ def available_meetings(request):
     
     # Get meetings that are:
     # 1. Active
-    # 2. Not started yet
+    # 2. Not started yet or currently ongoing
     # 3. User is not already registered for
     # 4. Have available spots
     available_meetings = Meeting.objects.filter(
         is_active=True,
-        start_time__gt=now
+        start_time__gte=now - timedelta(hours=1)  # Include meetings that started within the last hour
     ).exclude(
         participants__user=user
     ).annotate(
@@ -573,15 +629,14 @@ def available_meetings(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def joinable_meetings(request):
-    """Get meetings that user can join (registered and ongoing)"""
+    """Get meetings that user can join (ongoing meetings)"""
     user = request.user
     
     now = timezone.now()
     
-    # Get meetings user is registered for and can join
-    # Include meetings that are currently ongoing or starting within the next 30 minutes
+    # Get all active meetings that are currently ongoing
+    # Include meetings that started within the last 2 hours and are still within their duration
     joinable_meetings = Meeting.objects.filter(
-        participants__user=user,
         is_active=True
     ).filter(
         # Currently ongoing meetings
@@ -628,7 +683,8 @@ def attending_meetings(request):
     
     # Get meetings user is registered for
     attending_meetings = Meeting.objects.filter(
-        participants__user=user
+        participants__user=user,
+        is_active=True
     ).order_by('-start_time')
     
     serializer = MeetingBasicSerializer(attending_meetings, many=True, context={'request': request})
@@ -649,7 +705,8 @@ def meeting_history(request):
     # Get completed meetings (started more than 1 hour ago)
     history_meetings = Meeting.objects.filter(
         participants__user=user,
-        start_time__lt=now - timedelta(hours=1)
+        start_time__lt=now - timedelta(hours=1),
+        is_active=True
     ).order_by('-start_time')
     
     serializer = MeetingBasicSerializer(history_meetings, many=True, context={'request': request})

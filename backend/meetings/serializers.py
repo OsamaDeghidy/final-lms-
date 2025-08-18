@@ -118,7 +118,7 @@ class MeetingDetailSerializer(serializers.ModelSerializer):
             'name': obj.creator.profile.name,
             'email': obj.creator.email,
             'image': obj.creator.profile.image_profile.url if obj.creator.profile.image_profile else None,
-            'is_teacher': obj.creator.profile.status == 'Teacher'
+            'is_teacher': obj.creator.profile.status == 'Instructor'
         }
     
     def get_participants(self, obj):
@@ -419,4 +419,60 @@ class ParticipantSerializer(serializers.ModelSerializer):
     def get_user_image(self, obj):
         if obj.user.profile.image_profile:
             return obj.user.profile.image_profile.url
+        return None
+
+
+class MeetingChatSerializer(serializers.ModelSerializer):
+    """Serializer for meeting chat messages"""
+    user_name = serializers.CharField(source='user.profile.name', read_only=True)
+    user_image = serializers.SerializerMethodField()
+    is_teacher = serializers.SerializerMethodField()
+    created_at_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MeetingChat
+        fields = [
+            'id', 'meeting', 'user', 'user_name', 'user_image', 'message',
+            'is_teacher', 'timestamp', 'created_at_formatted'
+        ]
+    
+    def get_user_image(self, obj):
+        if obj.user.profile.image_profile:
+            return obj.user.profile.image_profile.url
+        return None
+    
+    def get_is_teacher(self, obj):
+        return obj.user.profile.status == 'Instructor'
+    
+    def get_created_at_formatted(self, obj):
+        if obj.timestamp:
+            return obj.timestamp.strftime('%H:%M')
+        return None
+
+
+class MeetingParticipantSerializer(serializers.ModelSerializer):
+    """Serializer for meeting participants (basic info)"""
+    user_name = serializers.CharField(source='user.profile.name', read_only=True)
+    user_image = serializers.SerializerMethodField()
+    is_teacher = serializers.SerializerMethodField()
+    join_time_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Participant
+        fields = [
+            'id', 'user', 'user_name', 'user_image', 'is_teacher',
+            'attendance_status', 'joined_at', 'join_time_formatted'
+        ]
+    
+    def get_user_image(self, obj):
+        if obj.user.profile.image_profile:
+            return obj.user.profile.image_profile.url
+        return None
+    
+    def get_is_teacher(self, obj):
+        return obj.user.profile.status == 'Instructor'
+    
+    def get_join_time_formatted(self, obj):
+        if obj.joined_at:
+            return obj.joined_at.strftime('%H:%M')
         return None

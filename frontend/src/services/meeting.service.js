@@ -27,7 +27,7 @@ export const meetingAPI = {
   // Get detailed meeting information
   getMeetingDetails: async (id) => {
     try {
-      const response = await api.get(`/meetings/${id}/`);
+      const response = await api.get(`/meetings/meetings/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching meeting details:', error);
@@ -38,7 +38,7 @@ export const meetingAPI = {
   // Create new meeting
   createMeeting: async (meetingData) => {
     try {
-      const response = await api.post('/meetings/', meetingData);
+      const response = await api.post('/meetings/meetings/', meetingData);
       return response.data;
     } catch (error) {
       console.error('Error creating meeting:', error);
@@ -49,7 +49,7 @@ export const meetingAPI = {
   // Update meeting
   updateMeeting: async (id, meetingData) => {
     try {
-      const response = await api.put(`/meetings/${id}/`, meetingData);
+      const response = await api.put(`/meetings/meetings/${id}/`, meetingData);
       return response.data;
     } catch (error) {
       console.error('Error updating meeting:', error);
@@ -60,7 +60,7 @@ export const meetingAPI = {
   // Delete meeting
   deleteMeeting: async (id) => {
     try {
-      const response = await api.delete(`/meetings/${id}/`);
+      const response = await api.delete(`/meetings/meetings/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting meeting:', error);
@@ -126,7 +126,7 @@ export const meetingAPI = {
   // Start live meeting
   startLiveMeeting: async (meetingId) => {
     try {
-      const response = await api.post(`/meetings/${meetingId}/start_live/`);
+      const response = await api.post(`/meetings/meetings/${meetingId}/start_live/`);
       return response.data;
     } catch (error) {
       console.error('Error starting live meeting:', error);
@@ -137,7 +137,7 @@ export const meetingAPI = {
   // End live meeting
   endLiveMeeting: async (meetingId) => {
     try {
-      const response = await api.post(`/meetings/${meetingId}/end_live/`);
+      const response = await api.post(`/meetings/meetings/${meetingId}/end_live/`);
       return response.data;
     } catch (error) {
       console.error('Error ending live meeting:', error);
@@ -148,7 +148,7 @@ export const meetingAPI = {
   // Join meeting
   joinMeeting: async (meetingId) => {
     try {
-      const response = await api.post(`/meetings/${meetingId}/join/`);
+      const response = await api.post(`/meetings/meetings/${meetingId}/join/`);
       return response.data;
     } catch (error) {
       console.error('Error joining meeting:', error);
@@ -159,7 +159,7 @@ export const meetingAPI = {
   // Leave meeting
   leaveMeeting: async (meetingId) => {
     try {
-      const response = await api.post(`/meetings/${meetingId}/leave/`);
+      const response = await api.post(`/meetings/meetings/${meetingId}/leave/`);
       return response.data;
     } catch (error) {
       console.error('Error leaving meeting:', error);
@@ -170,7 +170,7 @@ export const meetingAPI = {
   // Mark attendance
   markAttendance: async (meetingId) => {
     try {
-      const response = await api.post(`/meetings/${meetingId}/mark_attendance/`);
+      const response = await api.post(`/meetings/meetings/${meetingId}/mark_attendance/`);
       return response.data;
     } catch (error) {
       console.error('Error marking attendance:', error);
@@ -178,13 +178,71 @@ export const meetingAPI = {
     }
   },
 
+  // Register for meeting
+  registerForMeeting: async (meetingId) => {
+    try {
+      const response = await api.post(`/meetings/meetings/${meetingId}/register/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error registering for meeting:', error);
+      throw error;
+    }
+  },
+
   // Get meeting participants
   getMeetingParticipants: async (meetingId) => {
     try {
-      const response = await api.get(`/meetings/${meetingId}/participants/`);
+      const response = await api.get(`/meetings/meetings/${meetingId}/participants/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching meeting participants:', error);
+      // Return empty array if API fails
+      return [];
+    }
+  },
+
+  // Start live meeting (for teachers)
+  startLiveMeeting: async (meetingId) => {
+    try {
+      const response = await api.post(`/meetings/meetings/${meetingId}/start_live/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error starting live meeting:', error);
+      throw error;
+    }
+  },
+
+  // End live meeting (for teachers)
+  endLiveMeeting: async (meetingId) => {
+    try {
+      const response = await api.post(`/meetings/meetings/${meetingId}/end_live/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error ending live meeting:', error);
+      throw error;
+    }
+  },
+
+  // Get chat messages
+  getChatMessages: async (meetingId) => {
+    try {
+      const response = await api.get(`/meetings/meetings/${meetingId}/chat/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching chat messages:', error);
+      return [];
+    }
+  },
+
+  // Send chat message
+  sendChatMessage: async (meetingId, message) => {
+    try {
+      const response = await api.post(`/meetings/meetings/${meetingId}/chat/`, {
+        message: message
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error sending chat message:', error);
       throw error;
     }
   },
@@ -211,24 +269,13 @@ export const meetingAPI = {
     }
   },
 
-  // Get meeting chat
+  // Get meeting chat (alias for getChatMessages)
   getMeetingChat: async (meetingId) => {
     try {
-      const response = await api.get(`/meetings/${meetingId}/chat/`);
+      const response = await api.get(`/meetings/meetings/${meetingId}/chat/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching meeting chat:', error);
-      throw error;
-    }
-  },
-
-  // Send message to meeting chat
-  sendChatMessage: async (meetingId, message) => {
-    try {
-      const response = await api.post(`/meetings/${meetingId}/chat/`, { message });
-      return response.data;
-    } catch (error) {
-      console.error('Error sending chat message:', error);
       throw error;
     }
   },
@@ -371,22 +418,32 @@ export const meetingAPI = {
   // Get my attendance status for a meeting
   getMyAttendanceStatus: async (meetingId) => {
     try {
-      const response = await api.get(`/meetings/${meetingId}/my_attendance/`);
+      const response = await api.get(`/meetings/meetings/${meetingId}/my_attendance/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching my attendance status:', error);
-      throw error;
+      // Return default status if API fails
+      return {
+        attendance_status: 'not_registered',
+        joined_at: null,
+        left_at: null,
+        attendance_duration: null
+      };
     }
   },
 
   // Check if I'm registered for a meeting
   checkRegistrationStatus: async (meetingId) => {
     try {
-      const response = await api.get(`/meetings/${meetingId}/check_registration/`);
+      const response = await api.get(`/meetings/meetings/${meetingId}/check_registration/`);
       return response.data;
     } catch (error) {
       console.error('Error checking registration status:', error);
-      throw error;
+      // Return default status if API fails
+      return {
+        is_registered: false,
+        meeting_id: meetingId
+      };
     }
   },
 

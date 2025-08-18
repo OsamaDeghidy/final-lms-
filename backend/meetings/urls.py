@@ -4,11 +4,11 @@ from . import views
 
 # Create router for viewsets
 router = DefaultRouter()
-router.register(r'list', views.MeetingViewSet, basename='meeting')
+router.register(r'meetings', views.MeetingViewSet, basename='meeting')
 router.register(r'participants', views.ParticipantViewSet, basename='participant')
 
 urlpatterns = [
-    # Function-based views (must come before router)
+    # Function-based views
     path('available-meetings/', views.available_meetings, name='available-meetings'),
     path('joinable-meetings/', views.joinable_meetings, name='joinable-meetings'),
     path('teaching-meetings/', views.teaching_meetings, name='teaching-meetings'),
@@ -39,6 +39,6 @@ urlpatterns = [
     path('<int:meeting_id>/attendance-report/', views.meeting_attendance_report, name='meeting-attendance-report'),
     path('<int:meeting_id>/export/', views.export_meeting_data, name='export-meeting-data'),
     
-    # Router URLs (must come last)
+    # Router URLs
     path('', include(router.urls)),
 ] 
