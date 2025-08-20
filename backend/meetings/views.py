@@ -171,7 +171,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         
         # Check if meeting is full
         current_attendees = meeting.participants.filter(
-            attendance_status='attending'
+            is_attending=True
         ).count()
         
         if current_attendees >= meeting.max_participants:
@@ -179,21 +179,20 @@ class MeetingViewSet(viewsets.ModelViewSet):
                 'error': 'الاجتماع ممتلئ'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Create or update participant record
+        # Get or create participant record
         participant, created = Participant.objects.get_or_create(
             meeting=meeting,
             user=user,
             defaults={
-                'joined_at': timezone.now(),
-                'attendance_status': 'attending'
+                'attendance_status': 'registered'
             }
         )
         
-        if not created:
-            # User is rejoining
-            participant.joined_at = timezone.now()
-            participant.attendance_status = 'attending'
-            participant.save()
+        # Mark attendance and update join time
+        participant.is_attending = True
+        participant.attendance_time = timezone.now()
+        participant.attendance_status = 'present'
+        participant.save()
         
         return Response({
             'message': 'تم الانضمام للاجتماع بنجاح',
@@ -213,14 +212,14 @@ class MeetingViewSet(viewsets.ModelViewSet):
             participant = Participant.objects.get(
                 meeting=meeting,
                 user=user,
-                attendance_status='attending'
+                is_attending=True
             )
             
-            participant.left_at = timezone.now()
-            participant.attendance_status = 'registered'
+            participant.exit_time = timezone.now()
+            participant.is_attending = False
             # Calculate attendance duration
-            if participant.joined_at:
-                duration = participant.left_at - participant.joined_at
+            if participant.attendance_time:
+                duration = participant.exit_time - participant.attendance_time
                 participant.attendance_duration = duration
             participant.save()
             
@@ -400,8 +399,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_403_FORBIDDEN)
         
         # Mark attendance
-        participant.attendance_status = 'present'
+        participant.is_attending = True
         participant.attendance_time = timezone.now()
+        participant.attendance_status = 'present'
         participant.save()
         
         return Response({
@@ -440,7 +440,8 @@ class MeetingViewSet(viewsets.ModelViewSet):
         participant = Participant.objects.create(
             meeting=meeting,
             user=user,
-            attendance_status='registered'
+            attendance_status='registered',
+            is_attending=False
         )
         
         return Response({
@@ -754,7 +755,10 @@ def accept_invitation(request, invitation_id):
     Participant.objects.get_or_create(
         meeting=invitation.meeting,
         user=request.user,
-        defaults={'attendance_status': 'registered'}
+        defaults={
+            'attendance_status': 'registered',
+            'is_attending': False
+        }
     )
     
     # Update invitation
@@ -1012,7 +1016,10 @@ def respond_to_invitation(request, invitation_id):
         Participant.objects.get_or_create(
             meeting=invitation.meeting,
             user=request.user,
-            defaults={'attendance_status': 'registered'}
+            defaults={
+                'attendance_status': 'registered',
+                'is_attending': False
+            }
         )
     
     # Update invitation

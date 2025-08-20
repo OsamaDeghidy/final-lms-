@@ -90,7 +90,11 @@ class Meeting(models.Model):
         """إضافة مشارك جديد"""
         participant, created = Participant.objects.get_or_create(
             meeting=self,
-            user=user
+            user=user,
+            defaults={
+                'attendance_status': 'registered',
+                'is_attending': False
+            }
         )
         return participant
 
@@ -207,15 +211,17 @@ class Participant(models.Model):
         if not self.is_attending:
             self.is_attending = True
             self.attendance_time = timezone.now()
-            self.save(update_fields=['is_attending', 'attendance_time'])
+            self.attendance_status = 'present'
+            self.save(update_fields=['is_attending', 'attendance_time', 'attendance_status'])
 
     def mark_exit(self):
         """تسجيل المغادرة"""
         if self.is_attending and not self.exit_time:
             self.exit_time = timezone.now()
+            self.is_attending = False
             if self.attendance_time:
                 self.attendance_duration = self.exit_time - self.attendance_time
-            self.save(update_fields=['exit_time', 'attendance_duration'])
+            self.save(update_fields=['exit_time', 'is_attending', 'attendance_duration'])
 
     @property
     def attendance_status_display(self):
@@ -358,7 +364,10 @@ class MeetingInvitation(models.Model):
         Participant.objects.get_or_create(
             meeting=self.meeting,
             user=self.user,
-            defaults={'attendance_status': 'registered'}
+            defaults={
+                'attendance_status': 'registered',
+                'is_attending': False
+            }
         )
 
     def decline(self):

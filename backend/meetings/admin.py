@@ -107,7 +107,7 @@ class MeetingAdmin(admin.ModelAdmin):
             'fields': ('is_active',)
         }),
         ('الإحصائيات', {
-            'fields': ('participants_count', 'attendance_rate_display'),
+            'fields': (),
             'classes': ('collapse',)
         }),
         ('التواريخ', {
@@ -154,19 +154,20 @@ class MeetingAdmin(admin.ModelAdmin):
             rate = obj.attendance_rate
             # Ensure rate is a numeric value
             if hasattr(rate, '__float__'):
-                rate = float(rate)
+                rate_value = float(rate)
             else:
-                rate = 0.0
+                rate_value = 0.0
                 
-            if rate == 0:
+            if rate_value == 0:
                 return '0%'
-            elif rate >= 80:
+            elif rate_value >= 80:
                 color = '#28a745'
-            elif rate >= 60:
+            elif rate_value >= 60:
                 color = '#ffc107'
             else:
                 color = '#dc3545'
-            return format_html('<span style="color: {}; font-weight: bold;">{:.1f}%</span>', color, rate)
+            formatted_rate = f"{rate_value:.1f}%"
+            return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, formatted_rate)
         except (ValueError, TypeError, AttributeError):
             return '0%'
     attendance_rate_display.short_description = 'معدل الحضور'
@@ -231,7 +232,7 @@ class ParticipantAdmin(admin.ModelAdmin):
             'fields': ('meeting', 'user', 'is_attending')
         }),
         ('تفاصيل الحضور', {
-            'fields': ('attendance_time', 'exit_time', 'attendance_duration', 'attendance_percentage')
+            'fields': ('attendance_time', 'exit_time', 'attendance_duration')
         }),
     )
     
@@ -264,13 +265,15 @@ class ParticipantAdmin(admin.ModelAdmin):
     def attendance_percentage(self, obj):
         if obj.attendance_duration and obj.meeting.duration:
             percentage = (obj.attendance_duration.total_seconds() / obj.meeting.duration.total_seconds()) * 100
-            if percentage >= 80:
+            percentage_value = float(percentage)
+            if percentage_value >= 80:
                 color = '#28a745'
-            elif percentage >= 60:
+            elif percentage_value >= 60:
                 color = '#ffc107'
             else:
                 color = '#dc3545'
-            return format_html('<span style="color: {}; font-weight: bold;">{:.1f}%</span>', color, percentage)
+            formatted_percentage = f"{percentage_value:.1f}%"
+            return format_html('<span style="color: {}; font-weight: bold;">{}</span>', color, formatted_percentage)
         return '0%'
     attendance_percentage.short_description = 'نسبة الحضور'
     
