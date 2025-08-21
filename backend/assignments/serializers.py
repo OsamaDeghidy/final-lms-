@@ -557,3 +557,60 @@ class AssignmentSubmissionWithResponsesSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = '__all__'
+
+
+class UserExamAttemptSerializer(serializers.ModelSerializer):
+    """Serializer for UserExamAttempt model"""
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+    exam_title = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserExamAttempt
+        fields = [
+            'id', 'user', 'exam', 'attempt_number', 'start_time', 'end_time',
+            'score', 'passed', 'user_name', 'user_email', 'exam_title'
+        ]
+    
+    def get_user_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
+    
+    def get_user_email(self, obj):
+        return obj.user.email
+    
+    def get_exam_title(self, obj):
+        return obj.exam.title
+
+
+class UserExamAnswerSerializer(serializers.ModelSerializer):
+    """Serializer for UserExamAnswer model"""
+    class Meta:
+        model = UserExamAnswer
+        fields = [
+            'id', 'attempt', 'question', 'selected_answer', 'text_answer',
+            'is_correct', 'points_earned'
+        ]
+
+
+class UserExamAttemptDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for UserExamAttempt with answers"""
+    answers = serializers.SerializerMethodField()
+    user_name = serializers.SerializerMethodField()
+    exam_title = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserExamAttempt
+        fields = [
+            'id', 'user', 'exam', 'attempt_number', 'start_time', 'end_time',
+            'score', 'passed', 'answers', 'user_name', 'exam_title'
+        ]
+    
+    def get_answers(self, obj):
+        answers = obj.answers.all().select_related('question', 'selected_answer')
+        return UserExamAnswerSerializer(answers, many=True).data
+    
+    def get_user_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
+    
+    def get_exam_title(self, obj):
+        return obj.exam.title

@@ -1,6 +1,7 @@
 import { Box, Paper, Typography, Grid, useTheme, useMediaQuery, alpha, keyframes, Avatar, Chip } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { styled } from '@mui/material/styles';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Animation keyframes
 const float = keyframes`
@@ -51,6 +52,86 @@ const DashboardCard = styled(Paper)(({ theme }) => ({
     zIndex: 0
   }
 }));
+
+// User Profile Card Component
+const UserProfileCard = () => {
+  const theme = useTheme();
+  const { user, getUserRole } = useAuth();
+
+  // Get user data with fallbacks
+  const getUserData = () => {
+    if (user) {
+      return {
+        name: user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : user.username || 'مستخدم',
+        email: user.email || '',
+        avatar: user.profile_picture || '/profile.svg',
+        role: getUserRole() === 'instructor' ? 'مدرس' : 'طالب',
+        description: user.bio || (getUserRole() === 'instructor' ? 'مدرس في المنصة' : 'طالب في المنصة'),
+        joinDate: user.date_joined ? new Date(user.date_joined).toLocaleDateString('ar-EG') : 'غير محدد'
+      };
+    }
+    return {
+      name: 'مستخدم',
+      email: '',
+      avatar: '/profile.svg',
+      role: 'طالب',
+      description: 'طالب في المنصة',
+      joinDate: 'غير محدد'
+    };
+  };
+
+  const userData = getUserData();
+
+  return (
+    <DashboardCard sx={{ 
+      background: theme.palette.mode === 'dark'
+        ? `linear-gradient(145deg, ${alpha(theme.palette.primary.dark, 0.1)}, ${alpha(theme.palette.primary.main, 0.05)})`
+        : `linear-gradient(145deg, ${alpha(theme.palette.primary.light, 0.1)}, ${alpha(theme.palette.primary.main, 0.05)})`,
+      '&::before': {
+        background: `radial-gradient(circle, ${theme.palette.primary.main} 0%, transparent 70%)`,
+      }
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Avatar 
+          src={userData.avatar}
+          alt={userData.name}
+          sx={{ 
+            width: 80, 
+            height: 80,
+            border: `3px solid ${theme.palette.primary.main}`,
+            boxShadow: `0 4px 20px 0 ${alpha(theme.palette.primary.main, 0.3)}`,
+            animation: `${pulse} 2s infinite`
+          }}
+        />
+        <Box sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
+            {userData.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {userData.description}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Chip 
+              label={userData.role}
+              size="small"
+              color="primary"
+              variant="outlined"
+              sx={{ fontWeight: 600 }}
+            />
+            <Chip 
+              label={`انضم في ${userData.joinDate}`}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
+          </Box>
+        </Box>
+      </Box>
+    </DashboardCard>
+  );
+};
 
 const StatCard = ({ title, value, icon, color = 'primary', trend, trendValue, trendLabel }) => {
   const theme = useTheme();
@@ -437,5 +518,6 @@ export {
   ProgressCard, 
   ActivityItem,
   AnnouncementCard,
+  UserProfileCard,
   pulse 
 };

@@ -528,8 +528,7 @@ class UserProgress(models.Model):
                 'overall_progress', 
                 'status', 
                 'completed_at', 
-                'started_at',
-                'updated_at'
+                'started_at'
             ])
         
         return self.overall_progress
@@ -543,7 +542,7 @@ class UserProgress(models.Model):
         """
         if minutes > 0:
             self.time_spent_minutes += minutes
-            self.save(update_fields=['time_spent_minutes', 'updated_at'])
+            self.save(update_fields=['time_spent_minutes'])
     
     @classmethod
     def get_or_create_progress(cls, user, course):
@@ -782,8 +781,7 @@ class ModuleProgress(models.Model):
             self.save(update_fields=[
                 'is_completed',
                 'completed_at',
-                'status',
-                'updated_at'
+                'status'
             ])
         
         return self.is_completed
@@ -801,8 +799,7 @@ class ModuleProgress(models.Model):
             self.save(update_fields=[
                 'video_watched',
                 'video_progress',
-                'video_last_position',
-                'updated_at'
+                'video_last_position'
             ])
         
         return self.update_completion_status(commit=commit)
@@ -835,8 +832,7 @@ class ModuleProgress(models.Model):
         if commit:
             self.save(update_fields=[
                 'quiz_completed',
-                'quiz_score',
-                'updated_at'
+                'quiz_score'
             ])
             
         return self.update_completion_status(commit=commit)

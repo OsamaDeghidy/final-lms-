@@ -13,7 +13,14 @@ import {
   Alert,
   Grid,
   IconButton,
-  Tooltip
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination
 } from '@mui/material';
 import { 
   PlayArrow, 
@@ -30,6 +37,8 @@ const QuizList = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     loadQuizzes();
@@ -85,6 +94,15 @@ const QuizList = () => {
     navigate(`/student/quiz/${quizId}/history`);
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -115,92 +133,159 @@ const QuizList = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
-          {quizzes.map((quiz) => (
-            <Grid item xs={12} sm={6} md={4} key={quiz.id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                    <Tooltip title={getQuizTypeLabel(quiz.quiz_type)}>
-                      <IconButton size="small" color="primary">
-                        {getQuizTypeIcon(quiz.quiz_type)}
-                      </IconButton>
-                    </Tooltip>
-                    <Typography variant="h6" fontWeight={600}>
-                      {quiz.title}
-                    </Typography>
-                  </Stack>
-
-                  {quiz.description && (
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                      {quiz.description}
-                    </Typography>
-                  )}
-
-                  <Stack direction="row" spacing={1} mb={2} flexWrap="wrap">
-                    {quiz.course && (
+        <Paper className="assignments-table" sx={{ width: '100%', overflow: 'hidden', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                    عنوان الكويز
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                    الكورس والوحدة
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                    النوع
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                    الزمن
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                    نسبة النجاح
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0', textAlign: 'center' }}>
+                    الإجراءات
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {quizzes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((quiz) => (
+                  <TableRow 
+                    key={quiz.id}
+                    sx={{ 
+                      '&:hover': { backgroundColor: '#f8f9fa' },
+                      transition: 'background-color 0.2s ease'
+                    }}
+                  >
+                    <TableCell>
+                      <Box className="table-cell-content">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Tooltip title={getQuizTypeLabel(quiz.quiz_type)}>
+                            <IconButton size="small" color="primary">
+                              {getQuizTypeIcon(quiz.quiz_type)}
+                            </IconButton>
+                          </Tooltip>
+                          <Typography className="table-cell-title" variant="subtitle1" fontWeight={600} color="#2c3e50">
+                            {quiz.title}
+                          </Typography>
+                        </Box>
+                        {quiz.description && (
+                          <Typography className="table-cell-description" variant="body2" color="text.secondary" sx={{ 
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            maxWidth: 250
+                          }}>
+                            {quiz.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {quiz.course && (
+                        <Box className="table-cell-meta">
+                          <Typography variant="body2" fontWeight={500} color="#2c3e50">
+                            {quiz.course.title}
+                          </Typography>
+                        </Box>
+                      )}
+                      {quiz.module && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          {quiz.module.name}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Chip 
-                        label={quiz.course.title} 
-                        size="small" 
-                        color="primary" 
-                        variant="outlined"
-                      />
-                    )}
-                    {quiz.module && (
-                      <Chip 
-                        label={quiz.module.name} 
+                        label={getQuizTypeLabel(quiz.quiz_type)} 
                         size="small" 
                         color="secondary" 
-                        variant="outlined"
+                        sx={{ fontWeight: 600 }}
                       />
-                    )}
-                    {quiz.time_limit && (
+                    </TableCell>
+                    <TableCell>
+                      {quiz.time_limit ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Timer sx={{ color: '#1976d2', fontSize: 18 }} />
+                          <Typography variant="body2" fontWeight={500} color="#2c3e50">
+                            {quiz.time_limit} دقيقة
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          غير محدد
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Chip 
-                        label={`${quiz.time_limit} دقيقة`} 
+                        label={`${quiz.pass_mark}%`} 
                         size="small" 
-                        color="info" 
-                        variant="outlined"
-                        icon={<Timer />}
+                        color={quiz.pass_mark >= 60 ? 'success' : 'warning'}
+                        sx={{ fontWeight: 600 }}
                       />
-                    )}
-                  </Stack>
-
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      نسبة النجاح:
-                    </Typography>
-                    <Chip 
-                      label={`${quiz.pass_mark}%`} 
-                      size="small" 
-                      color={quiz.pass_mark >= 60 ? 'success' : 'warning'}
-                    />
-                  </Stack>
-                </CardContent>
-
-                <CardActions sx={{ p: 2, pt: 0 }}>
-                  <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
-                    <Button
-                      variant="contained"
-                      startIcon={<PlayArrow />}
-                      onClick={() => handleStartQuiz(quiz.id)}
-                      sx={{ flex: 1 }}
-                    >
-                      بدء الكويز
-                    </Button>
-                    <Tooltip title="عرض المحاولات السابقة">
-                      <IconButton
-                        color="primary"
-                        onClick={() => handleViewHistory(quiz.id)}
-                      >
-                        <History />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    </TableCell>
+                    <TableCell>
+                      <Box className="table-cell-actions">
+                        <Tooltip title="بدء الكويز">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStartQuiz(quiz.id)}
+                            sx={{ 
+                              color: '#2e7d32',
+                              '&:hover': { backgroundColor: 'rgba(46, 125, 50, 0.1)' }
+                            }}
+                          >
+                            <PlayArrow />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="عرض المحاولات السابقة">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewHistory(quiz.id)}
+                            sx={{ 
+                              color: '#1976d2',
+                              '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }
+                            }}
+                          >
+                            <History />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={quizzes.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="صفوف في الصفحة:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+            sx={{
+              backgroundColor: '#f8f9fa',
+              borderTop: '1px solid #e0e0e0'
+            }}
+          />
+        </Paper>
       )}
     </Box>
   );

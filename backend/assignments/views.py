@@ -20,8 +20,15 @@ from .models import (
     Assignment, AssignmentQuestion, AssignmentAnswer, AssignmentSubmission, AssignmentQuestionResponse
 )
 from .serializers import (
-    QuizBasicSerializer, QuizDetailSerializer, QuizQuestionSerializer, QuizAnswerSerializer, QuizAttemptSerializer,
-    ExamBasicSerializer, ExamDetailSerializer, ExamQuestionSerializer, ExamAnswerSerializer,
+    QuizBasicSerializer, QuizDetailSerializer, QuizCreateSerializer, QuizUpdateSerializer,
+    QuizQuestionSerializer, QuizQuestionCreateSerializer, QuizQuestionUpdateSerializer,
+    QuizAnswerSerializer, QuizAnswerCreateSerializer, QuizAnswerUpdateSerializer,
+    QuizAttemptSerializer, QuizAttemptCreateSerializer, QuizAttemptDetailSerializer,
+    QuizUserAnswerSerializer, QuizUserAnswerCreateSerializer, QuizUserAnswerDetailSerializer,
+    QuizQuestionWithAnswersSerializer, QuizAnswersSubmitSerializer,
+    ExamBasicSerializer, ExamDetailSerializer, ExamCreateSerializer, ExamQuestionSerializer, ExamAnswerSerializer,
+    ExamQuestionWithAnswersSerializer, ExamQuestionDetailSerializer, ExamQuestionCreateSerializer,
+    ExamAnswerCreateSerializer, UserExamAttemptSerializer, UserExamAnswerSerializer, UserExamAttemptDetailSerializer,
     AssignmentBasicSerializer, AssignmentDetailSerializer, AssignmentCreateSerializer, 
     AssignmentQuestionSerializer, AssignmentSubmissionSerializer, AssignmentAnswerSerializer,
     AssignmentQuestionWithAnswersSerializer, AssignmentSubmissionGradeSerializer, 
@@ -878,6 +885,1118 @@ class AssignmentAnswerViewSet(ModelViewSet):
 
     def perform_update(self, serializer):
         serializer.save()
+
+
+class ExamViewSet(ModelViewSet):
+    """ViewSet for Exam model"""
+    queryset = Exam.objects.select_related('course', 'module').prefetch_related('questions').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['course', 'module', 'is_final', 'is_active']
+    ordering_fields = ['created_at', 'title', 'start_date']
+    ordering = ['-created_at']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ExamCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return ExamDetailSerializer
+        return ExamBasicSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by course if provided
+        course_id = self.request.query_params.get('course')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        
+        # Filter by module if provided
+        module_id = self.request.query_params.get('module')
+        if module_id:
+            queryset = queryset.filter(module_id=module_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see exams from their courses
+                queryset = queryset.filter(course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see exams from enrolled courses
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Check if user has permission to create exams for this course
+        user = self.request.user
+        course = serializer.validated_data.get('course')
+        
+        if course:
+            try:
+                profile = user.profile
+                if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                    # Check if user is instructor for this course
+                    if not course.instructors.filter(profile=profile).exists():
+                        raise PermissionDenied("You can only create exams for your own courses")
+                else:
+                    raise PermissionDenied("Only instructors can create exams")
+            except AttributeError:
+                # If user has no profile, check if they have instructor attribute
+                if hasattr(user, 'instructor'):
+                    if not course.instructors.filter(id=user.instructor.id).exists():
+                        raise PermissionDenied("You can only create exams for your own courses")
+                else:
+                    raise PermissionDenied("Only instructors can create exams")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this exam
+        user = self.request.user
+        exam = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this exam's course
+                if not exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update exams for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can update exams")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update exams for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can update exams")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this exam
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this exam's course
+                if not instance.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete exams for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can delete exams")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete exams for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can delete exams")
+        
+        instance.delete()
+
+    @action(detail=True, methods=['get'])
+    def questions(self, request, pk=None):
+        """Get questions for a specific exam"""
+        exam = self.get_object()
+        questions = exam.questions.all().prefetch_related('answers')
+        serializer = ExamQuestionWithAnswersSerializer(questions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def attempts(self, request, pk=None):
+        """Get attempts for a specific exam"""
+        exam = self.get_object()
+        attempts = UserExamAttempt.objects.filter(exam=exam).select_related('user')
+        
+        # Filter by user role
+        user = request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own attempts
+                attempts = attempts.filter(user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see attempts from their course students
+                if not exam.course.instructors.filter(profile=profile).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
+            # Fallback to old method
+            if hasattr(user, 'student'):
+                attempts = attempts.filter(user=user)
+            elif hasattr(user, 'instructor'):
+                if not exam.course.instructors.filter(id=user.instructor.id).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = UserExamAttemptSerializer(attempts, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def statistics(self, request, pk=None):
+        """Get statistics for a specific exam"""
+        exam = self.get_object()
+        
+        # Check if user has permission to view statistics
+        user = request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                return Response({'error': 'Students cannot view exam statistics'}, status=status.HTTP_403_FORBIDDEN)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                if not exam.course.instructors.filter(profile=profile).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
+            if hasattr(user, 'student'):
+                return Response({'error': 'Students cannot view exam statistics'}, status=status.HTTP_403_FORBIDDEN)
+            elif hasattr(user, 'instructor'):
+                if not exam.course.instructors.filter(id=user.instructor.id).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Calculate statistics
+        attempts = UserExamAttempt.objects.filter(exam=exam)
+        total_attempts = attempts.count()
+        passed_attempts = attempts.filter(passed=True).count()
+        avg_score = attempts.aggregate(avg_score=Avg('score'))['avg_score'] or 0
+        
+        statistics = {
+            'total_attempts': total_attempts,
+            'passed_attempts': passed_attempts,
+            'failed_attempts': total_attempts - passed_attempts,
+            'pass_rate': (passed_attempts / total_attempts * 100) if total_attempts > 0 else 0,
+            'average_score': round(avg_score, 2),
+            'total_questions': exam.questions.count(),
+            'total_points': exam.total_points
+        }
+        
+        return Response(statistics)
+
+
+class ExamQuestionViewSet(ModelViewSet):
+    """ViewSet for ExamQuestion model"""
+    queryset = ExamQuestion.objects.select_related('exam').prefetch_related('answers').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['exam', 'question_type']
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ExamQuestionCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return ExamQuestionDetailSerializer
+        return ExamQuestionSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by exam if provided
+        exam_id = self.request.query_params.get('exam')
+        if exam_id:
+            queryset = queryset.filter(exam_id=exam_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see questions from their course exams
+                queryset = queryset.filter(exam__course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see questions from enrolled course exams
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(exam__course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(exam__course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(exam__course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Auto-assign order if not provided
+        if 'order' not in serializer.validated_data or serializer.validated_data.get('order') in [None, 0]:
+            exam = serializer.validated_data['exam']
+            max_order = exam.questions.aggregate(max_o=Max('order')).get('max_o') or 0
+            serializer.validated_data['order'] = max_order + 1
+        
+        # Check if user has permission to create questions for this exam
+        user = self.request.user
+        exam = serializer.validated_data['exam']
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this exam's course
+                if not exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only create questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can create exam questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only create questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can create exam questions")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this question
+        user = self.request.user
+        question = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's exam course
+                if not question.exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can update exam questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not question.exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can update exam questions")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this question
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's exam course
+                if not instance.exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can delete exam questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete questions for your own course exams")
+            else:
+                raise PermissionDenied("Only instructors can delete exam questions")
+        
+        instance.delete()
+
+
+class ExamAnswerViewSet(ModelViewSet):
+    """ViewSet for ExamAnswer model"""
+    queryset = ExamAnswer.objects.select_related('question').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['question', 'is_correct']
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ExamAnswerCreateSerializer
+        return ExamAnswerSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by question if provided
+        question_id = self.request.query_params.get('question')
+        if question_id:
+            queryset = queryset.filter(question_id=question_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see answers from their course exam questions
+                queryset = queryset.filter(question__exam__course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see answers from enrolled course exam questions
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(question__exam__course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(question__exam__course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(question__exam__course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Auto-assign order if not provided
+        if 'order' not in serializer.validated_data or serializer.validated_data.get('order') in [None, 0]:
+            question = serializer.validated_data['question']
+            max_order = question.answers.aggregate(max_o=Max('order')).get('max_o') or 0
+            serializer.validated_data['order'] = max_order + 1
+        
+        # Check if user has permission to create answers for this question
+        user = self.request.user
+        question = serializer.validated_data['question']
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's exam course
+                if not question.exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only create answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can create exam answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not question.exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only create answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can create exam answers")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this answer
+        user = self.request.user
+        answer = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this answer's question exam course
+                if not answer.question.exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can update exam answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not answer.question.exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can update exam answers")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this answer
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this answer's question exam course
+                if not instance.question.exam.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can delete exam answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.question.exam.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete answers for your own course exam questions")
+            else:
+                raise PermissionDenied("Only instructors can delete exam answers")
+        
+        instance.delete()
+
+
+class QuizViewSet(ModelViewSet):
+    """ViewSet for Quiz model"""
+    queryset = Quiz.objects.select_related('course', 'module').prefetch_related('questions').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['course', 'module', 'is_active']
+    ordering_fields = ['created_at', 'title', 'start_date']
+    ordering = ['-created_at']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return QuizDetailSerializer
+        return QuizBasicSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by course if provided
+        course_id = self.request.query_params.get('course')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        
+        # Filter by module if provided
+        module_id = self.request.query_params.get('module')
+        if module_id:
+            queryset = queryset.filter(module_id=module_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see quizzes from their courses
+                queryset = queryset.filter(course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see quizzes from enrolled courses
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Check if user has permission to create quizzes for this course
+        user = self.request.user
+        course = serializer.validated_data.get('course')
+        
+        if course:
+            try:
+                profile = user.profile
+                if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                    # Check if user is instructor for this course
+                    if not course.instructors.filter(profile=profile).exists():
+                        raise PermissionDenied("You can only create quizzes for your own courses")
+                else:
+                    raise PermissionDenied("Only instructors can create quizzes")
+            except AttributeError:
+                # If user has no profile, check if they have instructor attribute
+                if hasattr(user, 'instructor'):
+                    if not course.instructors.filter(id=user.instructor.id).exists():
+                        raise PermissionDenied("You can only create quizzes for your own courses")
+                else:
+                    raise PermissionDenied("Only instructors can create quizzes")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this quiz
+        user = self.request.user
+        quiz = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this quiz's course
+                if not quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update quizzes for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can update quizzes")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update quizzes for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can update quizzes")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this quiz
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this quiz's course
+                if not instance.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete quizzes for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can delete quizzes")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete quizzes for your own courses")
+            else:
+                raise PermissionDenied("Only instructors can delete quizzes")
+        
+        instance.delete()
+
+    @action(detail=True, methods=['get'])
+    def questions(self, request, pk=None):
+        """Get questions for a specific quiz"""
+        quiz = self.get_object()
+        questions = quiz.questions.all().prefetch_related('answers')
+        serializer = QuizQuestionWithAnswersSerializer(questions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def attempts(self, request, pk=None):
+        """Get attempts for a specific quiz"""
+        quiz = self.get_object()
+        attempts = QuizAttempt.objects.filter(quiz=quiz).select_related('user')
+        
+        # Filter by user role
+        user = request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own attempts
+                attempts = attempts.filter(user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see attempts from their course students
+                if not quiz.course.instructors.filter(profile=profile).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
+            # Fallback to old method
+            if hasattr(user, 'student'):
+                attempts = attempts.filter(user=user)
+            elif hasattr(user, 'instructor'):
+                if not quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = QuizAttemptSerializer(attempts, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def statistics(self, request, pk=None):
+        """Get statistics for a specific quiz"""
+        quiz = self.get_object()
+        
+        # Check if user has permission to view statistics
+        user = request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                return Response({'error': 'Students cannot view quiz statistics'}, status=status.HTTP_403_FORBIDDEN)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                if not quiz.course.instructors.filter(profile=profile).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        except AttributeError:
+            if hasattr(user, 'student'):
+                return Response({'error': 'Students cannot view quiz statistics'}, status=status.HTTP_403_FORBIDDEN)
+            elif hasattr(user, 'instructor'):
+                if not quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Calculate statistics
+        attempts = QuizAttempt.objects.filter(quiz=quiz)
+        total_attempts = attempts.count()
+        passed_attempts = attempts.filter(passed=True).count()
+        avg_score = attempts.aggregate(avg_score=Avg('score'))['avg_score'] or 0
+        
+        statistics = {
+            'total_attempts': total_attempts,
+            'passed_attempts': passed_attempts,
+            'failed_attempts': total_attempts - passed_attempts,
+            'pass_rate': (passed_attempts / total_attempts * 100) if total_attempts > 0 else 0,
+            'average_score': round(avg_score, 2),
+            'total_questions': quiz.get_total_questions(),
+            'total_points': quiz.get_total_points()
+        }
+        
+        return Response(statistics)
+
+
+class QuizQuestionViewSet(ModelViewSet):
+    """ViewSet for Question model (Quiz questions)"""
+    queryset = Question.objects.select_related('quiz').prefetch_related('answers').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['quiz', 'question_type']
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizQuestionCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return QuizQuestionSerializer
+        return QuizQuestionUpdateSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by quiz if provided
+        quiz_id = self.request.query_params.get('quiz')
+        if quiz_id:
+            queryset = queryset.filter(quiz_id=quiz_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see questions from their course quizzes
+                queryset = queryset.filter(quiz__course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see questions from enrolled course quizzes
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(quiz__course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(quiz__course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(quiz__course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Auto-assign order if not provided
+        if 'order' not in serializer.validated_data or serializer.validated_data.get('order') in [None, 0]:
+            quiz = serializer.validated_data['quiz']
+            max_order = quiz.questions.aggregate(max_o=Max('order')).get('max_o') or 0
+            serializer.validated_data['order'] = max_order + 1
+        
+        # Check if user has permission to create questions for this quiz
+        user = self.request.user
+        quiz = serializer.validated_data['quiz']
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this quiz's course
+                if not quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only create questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can create quiz questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only create questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can create quiz questions")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this question
+        user = self.request.user
+        question = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's quiz course
+                if not question.quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can update quiz questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not question.quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can update quiz questions")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this question
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's quiz course
+                if not instance.quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can delete quiz questions")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete questions for your own course quizzes")
+            else:
+                raise PermissionDenied("Only instructors can delete quiz questions")
+        
+        instance.delete()
+
+
+class QuizAnswerViewSet(ModelViewSet):
+    """ViewSet for Answer model (Quiz answers)"""
+    queryset = Answer.objects.select_related('question').all()
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['question', 'is_correct']
+    ordering_fields = ['order', 'created_at']
+    ordering = ['order']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizAnswerCreateSerializer
+        return QuizAnswerUpdateSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by question if provided
+        question_id = self.request.query_params.get('question')
+        if question_id:
+            queryset = queryset.filter(question_id=question_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Teachers can see answers from their course quiz questions
+                queryset = queryset.filter(question__quiz__course__instructors__profile=profile)
+            elif profile.status == 'Student':
+                # Students can see answers from enrolled course quiz questions
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(question__quiz__course_id__in=enrolled_courses)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'instructor'):
+                queryset = queryset.filter(question__quiz__course__instructors=user.instructor)
+            elif hasattr(user, 'student'):
+                from courses.models import Enrollment
+                enrolled_courses = Enrollment.objects.filter(
+                    student=user, 
+                    status__in=['active', 'completed']
+                ).values_list('course_id', flat=True)
+                queryset = queryset.filter(question__quiz__course_id__in=enrolled_courses)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Auto-assign order if not provided
+        if 'order' not in serializer.validated_data or serializer.validated_data.get('order') in [None, 0]:
+            question = serializer.validated_data['question']
+            max_order = question.answers.aggregate(max_o=Max('order')).get('max_o') or 0
+            serializer.validated_data['order'] = max_order + 1
+        
+        # Check if user has permission to create answers for this question
+        user = self.request.user
+        question = serializer.validated_data['question']
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this question's quiz course
+                if not question.quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only create answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can create quiz answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not question.quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only create answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can create quiz answers")
+        
+        serializer.save()
+
+    def perform_update(self, serializer):
+        # Check if user has permission to update this answer
+        user = self.request.user
+        answer = self.get_object()
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this answer's question quiz course
+                if not answer.question.quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only update answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can update quiz answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not answer.question.quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only update answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can update quiz answers")
+        
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        # Check if user has permission to delete this answer
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Check if user is instructor for this answer's question quiz course
+                if not instance.question.quiz.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied("You can only delete answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can delete quiz answers")
+        except AttributeError:
+            # If user has no profile, check if they have instructor attribute
+            if hasattr(user, 'instructor'):
+                if not instance.question.quiz.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied("You can only delete answers for your own course quiz questions")
+            else:
+                raise PermissionDenied("Only instructors can delete quiz answers")
+        
+        instance.delete()
+
+
+class QuizAttemptViewSet(ModelViewSet):
+    """ViewSet for QuizAttempt model"""
+    queryset = QuizAttempt.objects.select_related('user', 'quiz').all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['quiz', 'user', 'passed']
+    ordering_fields = ['start_time', 'end_time', 'score']
+    ordering = ['-start_time']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizAttemptCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return QuizAttemptDetailSerializer
+        return QuizAttemptSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by quiz if provided
+        quiz_id = self.request.query_params.get('quiz')
+        if quiz_id:
+            queryset = queryset.filter(quiz_id=quiz_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own attempts
+                queryset = queryset.filter(user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see attempts from their course students
+                queryset = queryset.filter(quiz__course__instructors__profile=profile)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'student'):
+                queryset = queryset.filter(user=user)
+            elif hasattr(user, 'instructor'):
+                queryset = queryset.filter(quiz__course__instructors=user.instructor)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Check if user has permission to create attempts for this quiz
+        user = self.request.user
+        quiz = serializer.validated_data['quiz']
+        
+        # Check if user is enrolled in the course
+        from courses.models import Enrollment
+        enrollment = Enrollment.objects.filter(
+            student=user,
+            course=quiz.course,
+            status__in=['active', 'completed']
+        ).first()
+        
+        if not enrollment:
+            raise PermissionDenied("You must be enrolled in the course to take this quiz")
+        
+        # Check if user has already taken the quiz (if multiple attempts not allowed)
+        if not quiz.allow_multiple_attempts:
+            existing_attempts = QuizAttempt.objects.filter(user=user, quiz=quiz)
+            if existing_attempts.exists():
+                raise PermissionDenied("Multiple attempts are not allowed for this quiz")
+        
+        # Check max attempts
+        if quiz.max_attempts:
+            existing_attempts = QuizAttempt.objects.filter(user=user, quiz=quiz)
+            if existing_attempts.count() >= quiz.max_attempts:
+                raise PermissionDenied(f"You have reached the maximum number of attempts ({quiz.max_attempts})")
+        
+        serializer.save(user=user)
+
+    @action(detail=True, methods=['patch'])
+    def finish(self, request, pk=None):
+        """Finish a quiz attempt"""
+        attempt = self.get_object()
+        
+        # Check if user owns this attempt
+        if attempt.user != request.user:
+            return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Calculate score and mark as finished
+        from django.utils import timezone
+        attempt.end_time = timezone.now()
+        attempt.calculate_score()
+        attempt.save()
+        
+        serializer = QuizAttemptDetailSerializer(attempt)
+        return Response(serializer.data)
+
+
+class QuizUserAnswerViewSet(ModelViewSet):
+    """ViewSet for QuizUserAnswer model"""
+    queryset = QuizUserAnswer.objects.select_related('attempt', 'question', 'selected_answer').all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['attempt', 'question', 'is_correct']
+    ordering_fields = ['created_at']
+    ordering = ['created_at']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return QuizUserAnswerCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return QuizUserAnswerDetailSerializer
+        return QuizUserAnswerSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by attempt if provided
+        attempt_id = self.request.query_params.get('attempt')
+        if attempt_id:
+            queryset = queryset.filter(attempt_id=attempt_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own answers
+                queryset = queryset.filter(attempt__user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see answers from their course students
+                queryset = queryset.filter(attempt__quiz__course__instructors__profile=profile)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'student'):
+                queryset = queryset.filter(attempt__user=user)
+            elif hasattr(user, 'instructor'):
+                queryset = queryset.filter(attempt__quiz__course__instructors=user.instructor)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Check if user has permission to create answers for this attempt
+        user = self.request.user
+        attempt = serializer.validated_data['attempt']
+        
+        # Check if user owns this attempt
+        if attempt.user != user:
+            raise PermissionDenied("You can only submit answers for your own attempts")
+        
+        # Check if attempt is still active
+        if attempt.end_time:
+            raise PermissionDenied("Cannot submit answers to a finished attempt")
+        
+        serializer.save()
+
+    @action(detail=False, methods=['post'])
+    def submit_answers(self, request):
+        """Submit multiple answers at once"""
+        attempt_id = request.data.get('attempt')
+        answers_data = request.data.get('answers', [])
+        
+        if not attempt_id:
+            return Response({'error': 'Attempt ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            attempt = QuizAttempt.objects.get(id=attempt_id, user=request.user)
+        except QuizAttempt.DoesNotExist:
+            return Response({'error': 'Attempt not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if attempt is still active
+        if attempt.end_time:
+            return Response({'error': 'Cannot submit answers to a finished attempt'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create answers
+        created_answers = []
+        for answer_data in answers_data:
+            answer_data['attempt'] = attempt_id
+            serializer = QuizUserAnswerCreateSerializer(data=answer_data)
+            if serializer.is_valid():
+                answer = serializer.save()
+                created_answers.append(answer)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Return created answers
+        serializer = QuizUserAnswerDetailSerializer(created_answers, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
  

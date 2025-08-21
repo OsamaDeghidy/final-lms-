@@ -62,7 +62,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
     left: 0,
     right: 0,
     height: '4px',
-    background: 'linear-gradient(90deg, #7c4dff, #43a047)',
+    background: progress >= 100 ? 'linear-gradient(90deg, #43a047, #66bb6a)' : 'linear-gradient(90deg, #7c4dff, #43a047)',
     zIndex: 1
   }
 }));
@@ -111,24 +111,29 @@ const EmptyState = () => (
   </Fade>
 );
 
-const CourseCard = ({ course, onClick }) => (
+const CourseCard = ({ course, onClick }) => {
+  // Ensure progress is a valid number between 0 and 100
+  const progress = Math.min(Math.max(course.progress || 0, 0), 100);
+  
+  return (
   <Card
     sx={{
       display: 'flex',
       alignItems: 'center',
       borderRadius: '48px',
       minHeight: 220,
-      boxShadow: '0 8px 32px 0 rgba(124,77,255,0.10)',
+      boxShadow: progress >= 100 ? '0 8px 32px 0 rgba(67,160,71,0.10)' : '0 8px 32px 0 rgba(124,77,255,0.10)',
       mb: 3,
       overflow: 'hidden',
-      background: 'linear-gradient(120deg, #f3e5f5 0%, #fff 100%)',
+      background: progress >= 100 ? 'linear-gradient(120deg, #e8f5e9 0%, #fff 100%)' : 'linear-gradient(120deg, #f3e5f5 0%, #fff 100%)',
       transition: 'transform 0.25s, box-shadow 0.25s',
       px: 4,
       py: 2,
+      border: progress >= 100 ? '2px solid #43a047' : '2px solid transparent',
       '&:hover': {
         transform: 'translateY(-8px) scale(1.03)',
-        boxShadow: '0 16px 48px 0 rgba(124,77,255,0.18)',
-        border: '2px solid #7c4dff',
+        boxShadow: progress >= 100 ? '0 16px 48px 0 rgba(67,160,71,0.18)' : '0 16px 48px 0 rgba(124,77,255,0.18)',
+        border: progress >= 100 ? '2px solid #43a047' : '2px solid #7c4dff',
       }
     }}
     onClick={() => onClick(course.id)}
@@ -148,13 +153,52 @@ const CourseCard = ({ course, onClick }) => (
                   {course.instructor}
                 </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-        <Box sx={{ width: '100%', mr: 1 }}>
-          <Box sx={{ height: 10, bgcolor: '#ede7f6', borderRadius: 5, overflow: 'hidden' }}>
-            <Box sx={{ width: `${course.progress}%`, height: '100%', bgcolor: '#7c4dff', borderRadius: 5, transition: 'width 0.8s' }} />
+        <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ 
+            height: 12, 
+            bgcolor: '#ede7f6', 
+            borderRadius: 6, 
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <Box 
+              sx={{ 
+                width: `${progress}%`, 
+                height: '100%', 
+                background: 'linear-gradient(90deg, #7c4dff 0%, #43a047 100%)',
+                borderRadius: 6, 
+                transition: 'width 0.8s ease-in-out',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%)',
+                  borderRadius: 6
+                }
+              }} 
+            />
           </Box>
         </Box>
-        <Typography variant="body2" fontWeight={700} color="#7c4dff" sx={{ fontSize: 16 }}>
-          {course.progress}%
+        <Typography 
+          variant="body2" 
+          fontWeight={700} 
+          color="#7c4dff" 
+          sx={{ 
+            fontSize: 16,
+            minWidth: '45px',
+            textAlign: 'center',
+            background: 'rgba(124,77,255,0.1)',
+            borderRadius: 2,
+            px: 1,
+            py: 0.5
+          }}
+        >
+          {Math.round(progress)}%
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
@@ -163,22 +207,24 @@ const CourseCard = ({ course, onClick }) => (
           size="large"
           startIcon={<PlayIcon />}
           sx={{
-            bgcolor: '#43a047',
+            bgcolor: progress >= 100 ? '#7c4dff' : '#43a047',
             color: '#fff',
             borderRadius: 3,
             fontWeight: 700,
             fontSize: 18,
             px: 5,
             py: 1.5,
-            boxShadow: '0 2px 12px 0 rgba(67,160,71,0.10)',
-            '&:hover': { bgcolor: '#388e3c' }
+            boxShadow: progress >= 100 ? '0 2px 12px 0 rgba(124,77,255,0.10)' : '0 2px 12px 0 rgba(67,160,71,0.10)',
+            '&:hover': { 
+              bgcolor: progress >= 100 ? '#673ab7' : '#388e3c' 
+            }
           }}
           onClick={e => {
             e.stopPropagation();
             onClick(course.id);
           }}
         >
-          استكمال التعلم
+          {progress >= 100 ? 'مراجعة الكورس' : 'استكمال التعلم'}
         </Button>
       </Box>
     </CardContent>
@@ -189,26 +235,42 @@ const CourseCard = ({ course, onClick }) => (
       sx={{ width: 180, height: 180, objectFit: 'cover', borderRadius: '40px', ml: 2 }}
     />
   </Card>
-);
+  );
+};
 
-const CompletedCourseCard = ({ course }) => (
+const CompletedCourseCard = ({ course }) => {
+  // For completed courses, progress should be 100%
+  const progress = 100;
+  
+  return (
   <Card
     sx={{
       display: 'flex',
       alignItems: 'center',
       borderRadius: '48px',
       minHeight: 220,
-      boxShadow: '0 8px 32px 0 rgba(124,77,255,0.10)',
+      boxShadow: '0 8px 32px 0 rgba(67,160,71,0.10)',
       mb: 3,
       overflow: 'hidden',
-      background: 'linear-gradient(120deg, #f3e5f5 0%, #fff 100%)',
+      background: 'linear-gradient(120deg, #e8f5e9 0%, #fff 100%)',
       transition: 'transform 0.25s, box-shadow 0.25s',
       px: 4,
       py: 2,
+      border: '2px solid #43a047',
       '&:hover': {
         transform: 'translateY(-8px) scale(1.03)',
-        boxShadow: '0 16px 48px 0 rgba(124,77,255,0.18)',
-        border: '2px solid #7c4dff',
+        boxShadow: '0 16px 48px 0 rgba(67,160,71,0.18)',
+        border: '2px solid #43a047',
+      },
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '4px',
+        background: 'linear-gradient(90deg, #43a047, #66bb6a)',
+        zIndex: 1
       }
     }}
   >
@@ -227,9 +289,58 @@ const CompletedCourseCard = ({ course }) => (
         {course.instructor}
         </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+        <Box sx={{ flexGrow: 1 }}>
+          <Box sx={{ 
+            height: 12, 
+            bgcolor: '#e8f5e9', 
+            borderRadius: 6, 
+            overflow: 'hidden',
+            position: 'relative',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          }}>
+            <Box 
+              sx={{ 
+                width: `${progress}%`, 
+                height: '100%', 
+                background: 'linear-gradient(90deg, #43a047 0%, #66bb6a 100%)',
+                borderRadius: 6, 
+                transition: 'width 0.8s ease-in-out',
+                position: 'relative',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%)',
+                  borderRadius: 6
+                }
+              }} 
+            />
+          </Box>
+        </Box>
         <CheckCircleIcon sx={{ color: '#43a047', fontSize: 28 }} />
+        <Typography 
+          variant="body2" 
+          fontWeight={700} 
+          color="#43a047" 
+          sx={{ 
+            fontSize: 16,
+            minWidth: '45px',
+            textAlign: 'center',
+            background: 'rgba(67,160,71,0.1)',
+            borderRadius: 2,
+            px: 1,
+            py: 0.5
+          }}
+        >
+          {Math.round(progress)}%
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
         <Typography variant="body2" fontWeight={700} color="#43a047" sx={{ fontSize: 16 }}>
-          مكتمل - {course.grade}
+          مكتمل - {course.grade || 'A'}
         </Typography>
         {course.completion_date && (
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
@@ -264,7 +375,8 @@ const CompletedCourseCard = ({ course }) => (
       sx={{ width: 180, height: 180, objectFit: 'cover', borderRadius: '40px', ml: 2 }}
     />
   </Card>
-);
+  );
+};
 
 const MyCourses = () => {
   const [tab, setTab] = useState(0);
@@ -418,7 +530,7 @@ const MyCourses = () => {
                 ? completedCourses.map(course => (
                     <Grid item xs={12} sm={6} md={6} key={course.id}>
                       <CompletedCourseCard course={course} />
-        </Grid>
+                    </Grid>
                   ))
                 : <EmptyState />)
           }

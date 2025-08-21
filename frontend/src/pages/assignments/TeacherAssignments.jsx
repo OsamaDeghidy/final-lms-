@@ -4,7 +4,8 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Paper,
   LinearProgress, Alert, Snackbar, Divider, List, ListItem, ListItemText,
-  ListItemIcon, Badge, Tooltip, Avatar, Fab
+  ListItemIcon, Badge, Tooltip, Avatar, Fab, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, TablePagination
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon, CheckCircle as CheckCircleIcon,
@@ -48,6 +49,8 @@ const TeacherAssignments = () => {
   // Removed create dialog; use page route instead
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const navigate = useNavigate();
 
   const [assignments, setAssignments] = useState([]);
@@ -138,6 +141,15 @@ const TeacherAssignments = () => {
     console.log('Downloading file:', fileName);
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const filteredAssignments = assignments.filter(assignment => {
     if (tabValue === 0) return true; // All assignments
     if (tabValue === 1) return assignment.is_active;
@@ -145,6 +157,11 @@ const TeacherAssignments = () => {
     if (tabValue === 3) return assignment.submissions_count > 0;
     return true;
   });
+
+  const paginatedAssignments = filteredAssignments.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
     <Box className="assignments-container">
@@ -323,85 +340,134 @@ const TeacherAssignments = () => {
         </Fab>
       </Box>
 
-      {/* Assignments Grid */}
-      <Grid container spacing={3} sx={{ maxWidth: '100%', mx: 'auto' }}>
-        {filteredAssignments.map((assignment) => {
+      {/* Assignments Table */}
+      <Paper className="assignments-table" sx={{ width: '100%', overflow: 'hidden', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+        <TableContainer sx={{ maxHeight: 600 }}>
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  عنوان الواجب
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  المقرر
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  الحالة
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  تاريخ التسليم
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  التسليمات
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  معدل التسليم
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0' }}>
+                  الدرجة
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#2c3e50', borderBottom: '2px solid #e0e0e0', textAlign: 'center' }}>
+                  الإجراءات
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginatedAssignments.map((assignment) => {
           const status = assignment.is_active ? 'active' : 'inactive';
           const submissionRate = assignment.total_students > 0 ? (assignment.submissions_count / assignment.total_students) * 100 : 0;
-          const gradingRate = assignment.submissions_count > 0 ? (assignment.graded_count / assignment.submissions_count) * 100 : 0;
           
           return (
-            <Grid xs={12} lg={4} md={6} key={assignment.id}>
-              <Card 
+                  <TableRow 
+                    key={assignment.id}
                 sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  minHeight: 450,
-                  maxHeight: 550,
-                  borderRadius: 3,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                  transition: 'all 0.3s ease',
-                  border: status === 'active' ? '2px solid #4caf50' : '1px solid #e0e0e0',
-                  background: status === 'active' ? 'linear-gradient(135deg, #f8fff8 0%, #ffffff 100%)' : '#ffffff',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                  },
-                }}
-              >
-                {/* Card Header */}
-                <Box sx={{ 
-                  p: 2.5, 
-                  borderBottom: '1px solid #f0f0f0',
-                  background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)',
-                  borderRadius: '12px 12px 0 0'
-                }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ flex: 1, minHeight: 60 }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 600, 
-                          color: '#2c3e50',
-                          lineHeight: 1.3,
-                          mb: 1,
+                      '&:hover': { backgroundColor: '#f8f9fa' },
+                      transition: 'background-color 0.2s ease'
+                    }}
+                  >
+                    <TableCell>
+                      <Box className="table-cell-content">
+                        <Typography className="table-cell-title" variant="subtitle1" fontWeight={600} color="#2c3e50" sx={{ mb: 0.5 }}>
+                          {assignment.title}
+                        </Typography>
+                        <Typography className="table-cell-description" variant="body2" color="text.secondary" sx={{ 
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
                           overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}
-                      >
-                        {assignment.title}
+                          textOverflow: 'ellipsis',
+                          maxWidth: 200
+                        }}>
+                          {assignment.description}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box className="table-cell-meta">
+                        <SchoolIcon sx={{ color: '#ff6b6b', fontSize: 18 }} />
+                        <Typography variant="body2" fontWeight={500}>
+                          {assignment.course_title}
+                        </Typography>
+                      </Box>
+                      {assignment.module_name && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          {assignment.module_name}
                       </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      )}
+                    </TableCell>
+                    <TableCell>
                         <StatusChip
                           label={getStatusText(status)}
                           status={status}
                           size="small"
                         />
-                        {assignment.has_questions && (
-                          <Chip
-                            label={`${assignment.questions_count} سؤال`}
-                            size="small"
-                            icon={<QuizIcon />}
-                            variant="outlined"
-                            sx={{ borderColor: '#ff6b6b', color: '#ff6b6b' }}
-                          />
-                        )}
-                        {assignment.has_file_upload && (
-                          <Chip
-                            label="رفع ملف"
-                            size="small"
-                            icon={<FileUploadIcon />}
-                            variant="outlined"
-                            sx={{ borderColor: '#2e7d32', color: '#2e7d32' }}
-                          />
-                        )}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {new Date(assignment.due_date).toLocaleDateString('ar-SA')}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {assignment.submissions_count} / {assignment.total_students}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {assignment.graded_count} تم التصحيح
+                        </Typography>
                       </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    </TableCell>
+                    <TableCell>
+                      <Box className="table-progress-container">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {Math.round(submissionRate)}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          className="table-progress-bar"
+                          variant="determinate"
+                          value={submissionRate}
+                          sx={{
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: '#e0e0e0',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 3,
+                              background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)'
+                            }
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500} color="#2c3e50">
+                        {assignment.points} نقطة
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box className="table-cell-actions">
+                        <Tooltip title="عرض التفاصيل">
                       <IconButton
                         size="small"
                         onClick={() => handleAssignmentDetails(assignment)}
@@ -412,6 +478,8 @@ const TeacherAssignments = () => {
                       >
                         <VisibilityIcon />
                       </IconButton>
+                        </Tooltip>
+                        <Tooltip title="تعديل الواجب">
                       <IconButton
                         size="small"
                         onClick={() => handleEditAssignment(assignment.id)}
@@ -422,218 +490,55 @@ const TeacherAssignments = () => {
                       >
                         <EditIcon />
                       </IconButton>
-                    </Box>
-                  </Box>
-                </Box>
-                
-                {/* Card Content */}
-                <Box sx={{ 
-                  p: 2.5, 
-                  flex: 1, 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  gap: 1.5
-                }}>
-                  {/* Course and Module */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <SchoolIcon sx={{ color: '#ff6b6b', fontSize: 20 }} />
-                    <Typography variant="body2" fontWeight={500} sx={{ color: '#2c3e50' }}>
-                          {assignment.course_title}
-                    </Typography>
-                  </Box>
-                      {assignment.module_name && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <BookIcon sx={{ color: '#666', fontSize: 20 }} />
-                      <Typography variant="body2" color="text.secondary">
-                            {assignment.module_name}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* Description */}
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: '#666',
-                      lineHeight: 1.5,
-                      mb: 1,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      minHeight: 60
-                    }}
-                  >
-                    {assignment.description}
-                  </Typography>
-
-                  {/* Assignment Info */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <CalendarTodayIcon sx={{ color: '#666', fontSize: 18 }} />
-                    <Typography variant="body2" sx={{ color: '#666' }}>
-                      تاريخ التسليم: {new Date(assignment.due_date).toLocaleDateString('ar-SA')}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <GradeIcon sx={{ color: '#666', fontSize: 18 }} />
-                    <Typography variant="body2" sx={{ color: '#666' }}>
-                      الدرجة: {assignment.points} نقطة
-                    </Typography>
-                  </Box>
-
-                  {/* Submission Stats */}
-                  <Box sx={{ mb: 2, mt: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        معدل التسليم
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                        {Math.round(submissionRate)}%
-                      </Typography>
-                    </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={submissionRate}
-                      sx={{
-                        height: 6,
-                        borderRadius: 3,
-                        backgroundColor: '#e0e0e0',
-                        mb: 2,
-                        '& .MuiLinearProgress-bar': {
-                          borderRadius: 3,
-                          background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)'
-                        }
-                      }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {assignment.submissions_count} من {assignment.total_students} طالب
-                    </Typography>
-                  </Box>
-
-                  {/* Grading Progress */}
-                  {assignment.submissions_count > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          معدل التصحيح
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-                          {Math.round(gradingRate)}%
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={gradingRate}
-                        sx={{
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: '#e0e0e0',
-                          '& .MuiLinearProgress-bar': {
-                            borderRadius: 3,
-                            background: 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)'
-                          }
-                        }}
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {assignment.graded_count} من {assignment.submissions_count} تم التصحيح
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* Actions - Inline grid buttons (side by side) */}
-                  <Box sx={{ mt: 'auto', pt: 3, pb: 1, borderTop: '1px solid #f0f0f0' }}>
-                    <Grid container spacing={1.5}>
-                      {assignment.assignment_file && (
-                        <Grid xs={12} sm={4}>
-                          <Button
-                            fullWidth
-                            variant="outlined"
+                        </Tooltip>
+                        <Tooltip title="تصحيح الواجبات">
+                          <IconButton
                             size="small"
-                            startIcon={<DownloadIcon />}
-                            onClick={() => handleDownloadFile(assignment.assignment_file)}
+                            onClick={() => handleViewSubmissions(assignment.id)}
                             sx={{
-                              borderColor: '#ff6b6b',
-                              color: '#ff6b6b',
-                              fontWeight: 600,
-                              '&:hover': {
-                                borderColor: '#ff5252',
-                                backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                              }
+                              color: '#2e7d32',
+                              '&:hover': { backgroundColor: 'rgba(46, 125, 50, 0.1)' }
                             }}
                           >
-                            تحميل الملف
-                          </Button>
-                        </Grid>
-                      )}
-                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
-                        <Button
-                          fullWidth
-                          variant="outlined"
+                            <AssessmentIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="إدارة الأسئلة">
+                          <IconButton
                           size="small"
-                          startIcon={<EditIcon />}
-                          onClick={() => handleEditAssignment(assignment.id)}
-                          sx={{
-                            borderColor: '#673ab7',
-                            color: '#673ab7',
-                            fontWeight: 600,
-                            '&:hover': {
-                              borderColor: '#5e35b1',
-                              backgroundColor: 'rgba(103, 58, 183, 0.1)',
-                            }
-                          }}
-                        >
-                          تعديل الواجب
-                        </Button>
-                      </Grid>
-                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          size="medium"
-                          startIcon={<AssessmentIcon />}
-                          onClick={() => handleViewSubmissions(assignment.id)}
-                          sx={{
-                            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
-                            color: 'white',
-                            fontWeight: 600,
-                            py: 1,
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)',
-                            }
-                          }}
-                        >
-                          تصحيح الواجبات
-                        </Button>
-                      </Grid>
-                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          size="small"
-                          startIcon={<QuizIcon />}
                           onClick={() => handleManageQuestions(assignment.id)}
                           sx={{
-                            borderColor: '#4caf50',
                             color: '#4caf50',
-                            fontWeight: 600,
-                            '&:hover': {
-                              borderColor: '#388e3c',
-                              backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                            }
-                          }}
-                        >
-                          إضافة أسئلة
-                        </Button>
-                      </Grid>
-                    </Grid>
+                              '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' }
+                            }}
+                          >
+                            <QuizIcon />
+                          </IconButton>
+                        </Tooltip>
                   </Box>
-                </Box>
-              </Card>
-            </Grid>
+                    </TableCell>
+                  </TableRow>
           );
         })}
-      </Grid>
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={filteredAssignments.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          labelRowsPerPage="صفوف في الصفحة:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+          sx={{
+            backgroundColor: '#f8f9fa',
+            borderTop: '1px solid #e0e0e0'
+          }}
+        />
+      </Paper>
 
       {/* Snackbar */}
       <Snackbar
@@ -646,8 +551,6 @@ const TeacherAssignments = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      {/* Create Assignment Dialog removed; using page route */}
 
       {/* Assignment Details Dialog */}
       <Dialog
@@ -697,14 +600,14 @@ const TeacherAssignments = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <SchoolIcon sx={{ color: '#ff6b6b' }} />
                       <Typography variant="body1" fontWeight={500}>
-                        المقرر: {selectedAssignment.course}
+                        المقرر: {selectedAssignment.course_title}
                       </Typography>
                     </Box>
-                    {selectedAssignment.module && (
+                    {selectedAssignment.module_name && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                         <BookIcon sx={{ color: '#666' }} />
                         <Typography variant="body1">
-                          الوحدة: {selectedAssignment.module}
+                          الوحدة: {selectedAssignment.module_name}
                         </Typography>
                       </Box>
                     )}

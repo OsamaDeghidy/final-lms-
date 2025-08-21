@@ -104,6 +104,61 @@ export const quizAPI = {
       console.error('Error fetching quiz attempt answers:', error);
       throw error;
     }
+  },
+
+  // Get courses for quiz creation/editing
+  getCourses: async () => {
+    try {
+      const response = await api.get('/courses/courses/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      throw error;
+    }
+  },
+
+  // Get modules for a specific course
+  getModules: async (courseId) => {
+    try {
+      const response = await api.get(`/courses/courses/${courseId}/modules/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching modules:', error);
+      throw error;
+    }
+  },
+
+  // Create new quiz
+  createQuiz: async (quizData) => {
+    try {
+      const response = await api.post('/assignments/quizzes/', quizData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating quiz:', error);
+      throw error;
+    }
+  },
+
+  // Update quiz
+  updateQuiz: async (quizId, quizData) => {
+    try {
+      const response = await api.patch(`/assignments/quizzes/${quizId}/`, quizData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating quiz:', error);
+      throw error;
+    }
+  },
+
+  // Delete quiz
+  deleteQuiz: async (quizId) => {
+    try {
+      const response = await api.delete(`/assignments/quizzes/${quizId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      throw error;
+    }
   }
 };
 

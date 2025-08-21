@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Card, CardContent, CardActions, IconButton, Grid, Tooltip, Chip, Stack, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, FormControl, InputLabel, Select, Paper } from '@mui/material';
+import { Box, Typography, Button, Card, CardContent, CardActions, IconButton, Grid, Tooltip, Chip, Stack, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, FormControl, InputLabel, Select, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination } from '@mui/material';
 import { Add, Edit, Delete, Visibility, Quiz, Search, FilterList } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { quizAPI } from '../../../services/quiz.service';
@@ -11,6 +11,8 @@ const QuizzesList = () => {
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,6 +147,15 @@ const QuizzesList = () => {
     setQuizToDelete(null);
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCourse('');
@@ -204,7 +215,7 @@ const QuizzesList = () => {
         </Stack>
         
         <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
+          <Grid xs={12} md={3}>
             <TextField
               fullWidth
               label="البحث في الكويزات"
@@ -217,7 +228,7 @@ const QuizzesList = () => {
             />
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>الكورس</InputLabel>
               <Select
@@ -236,7 +247,7 @@ const QuizzesList = () => {
             </FormControl>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid xs={12} md={4}>
             <FormControl fullWidth>
               <InputLabel>الوحدة</InputLabel>
               <Select
@@ -255,7 +266,7 @@ const QuizzesList = () => {
             </FormControl>
           </Grid>
           
-          <Grid item xs={12} md={1}>
+          <Grid xs={12} md={1}>
             <Button
               variant="outlined"
               onClick={clearFilters}
@@ -282,60 +293,374 @@ const QuizzesList = () => {
           </Button>
         </Box>
       ) : (
-        <Grid container spacing={3}>
-          {quizzes.map((quiz) => (
-            <Grid item xs={12} md={6} lg={4} key={quiz.id}>
-              <Card sx={{ borderRadius: 3, boxShadow: 3, position: 'relative', overflow: 'visible' }}>
-                <Box sx={{ position: 'absolute', top: -28, right: 16, bgcolor: 'primary.main', borderRadius: '50%', p: 1 }}>
-                  <Quiz sx={{ color: 'white', fontSize: 32 }} />
-                </Box>
-                <CardContent>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                    <Typography variant="h6" fontWeight={700}>{quiz.title}</Typography>
-                    <Chip label={getQuizTypeLabel(quiz.quiz_type)} size="small" color="secondary" />
-                    {!quiz.is_active && <Chip label="غير نشط" size="small" color="warning" />}
-                  </Stack>
-                  {quiz.description && (
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      {quiz.description.length > 100 ? `${quiz.description.substring(0, 100)}...` : quiz.description}
-                    </Typography>
-                  )}
-                  {quiz.course && (
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      الكورس: {quiz.course.title}
-                    </Typography>
-                  )}
-                  {quiz.module && (
-                    <Typography variant="body2" color="text.secondary" mb={1}>
-                      الوحدة: {quiz.module.name}
-                    </Typography>
-                  )}
-                  <Typography variant="body2" color="text.secondary">
-                    {quiz.time_limit && `الزمن: ${quiz.time_limit} دقيقة | `}
-                    {quiz.pass_mark && `النجاح: ${quiz.pass_mark}%`}
-                  </Typography>
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end', pb: 2 }}>
-                  <Tooltip title="عرض التفاصيل">
-                    <IconButton color="primary" onClick={() => navigate(`/teacher/quizzes/${quiz.id}`)}>
-                      <Visibility />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="تعديل الكويز">
-                    <IconButton color="secondary" onClick={() => navigate(`/teacher/quizzes/${quiz.id}/edit`)}>
-                      <Edit />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="حذف الكويز">
-                    <IconButton color="error" onClick={() => openDeleteDialog(quiz)}>
-                      <Delete />
-                    </IconButton>
-                  </Tooltip>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <Paper className="assignments-table" sx={{ width: '100%', overflow: 'hidden', borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <TableContainer sx={{ maxHeight: 600 }}>
+            <Table stickyHeader>
+                          <TableHead>
+              <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'right',
+                  py: 2
+                }}>
+                  عنوان الكويز
+                </TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'right',
+                  py: 2
+                }}>
+                  الكورس والوحدة
+                </TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'center',
+                  py: 2
+                }}>
+                  النوع
+                </TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'center',
+                  py: 2
+                }}>
+                  الحالة
+                </TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'right',
+                  py: 2
+                }}>
+                  الزمن ونسبة النجاح
+                </TableCell>
+                <TableCell sx={{ 
+                  fontWeight: 800, 
+                  color: '#2c3e50', 
+                  borderBottom: '3px solid #673ab7',
+                  fontSize: '0.95rem',
+                  textAlign: 'center',
+                  py: 2
+                }}>
+                  الإجراءات
+                </TableCell>
+              </TableRow>
+            </TableHead>
+              <TableBody>
+                {quizzes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((quiz) => (
+                  <TableRow 
+                    key={quiz.id}
+                    sx={{ 
+                      '&:hover': { 
+                        backgroundColor: '#f8f9fa',
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      },
+                      transition: 'all 0.2s ease',
+                      borderBottom: '1px solid #f0f0f0'
+                    }}
+                  >
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            width: 32, 
+                            height: 32, 
+                            borderRadius: '50%',
+                            backgroundColor: '#f3e5f5',
+                            color: '#673ab7'
+                          }}>
+                            <Quiz sx={{ fontSize: 18 }} />
+                          </Box>
+                          <Typography 
+                            variant="subtitle1" 
+                            fontWeight={700} 
+                            color="#2c3e50"
+                            sx={{ 
+                              fontSize: '1rem',
+                              lineHeight: 1.2,
+                              maxWidth: 200,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {quiz.title}
+                          </Typography>
+                        </Box>
+                        {quiz.description && (
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              fontSize: '0.85rem',
+                              lineHeight: 1.4,
+                              maxWidth: 280,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              opacity: 0.8
+                            }}
+                          >
+                            {quiz.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {quiz.course && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: '50%',
+                              backgroundColor: '#673ab7'
+                            }} />
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={600} 
+                              color="#2c3e50"
+                              sx={{ 
+                                fontSize: '0.9rem',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {quiz.course.title}
+                            </Typography>
+                          </Box>
+                        )}
+                        {quiz.module && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
+                            <Box sx={{ 
+                              width: 6, 
+                              height: 6, 
+                              borderRadius: '50%',
+                              backgroundColor: '#9e9e9e'
+                            }} />
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{ 
+                                fontSize: '0.8rem',
+                                lineHeight: 1.2,
+                                opacity: 0.8
+                              }}
+                            >
+                              {quiz.module.name}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Chip 
+                          label={getQuizTypeLabel(quiz.quiz_type)} 
+                          size="small" 
+                          color="secondary" 
+                          sx={{ 
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: '#f3e5f5',
+                            color: '#673ab7',
+                            border: '1px solid #e1bee7'
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Chip 
+                          label={quiz.is_active ? 'نشط' : 'غير نشط'} 
+                          size="small" 
+                          color={quiz.is_active ? 'success' : 'warning'}
+                          sx={{ 
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: quiz.is_active ? '#e8f5e8' : '#fff3e0',
+                            color: quiz.is_active ? '#2e7d32' : '#f57c00',
+                            border: quiz.is_active ? '1px solid #c8e6c9' : '1px solid #ffcc80'
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {quiz.time_limit && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ 
+                              width: 16, 
+                              height: 16, 
+                              borderRadius: '50%',
+                              backgroundColor: '#e3f2fd',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Box sx={{ 
+                                width: 8, 
+                                height: 8, 
+                                borderRadius: '50%',
+                                backgroundColor: '#1976d2'
+                              }} />
+                            </Box>
+                            <Typography 
+                              variant="body2" 
+                              fontWeight={600} 
+                              color="#2c3e50"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                lineHeight: 1.2
+                              }}
+                            >
+                              {quiz.time_limit} دقيقة
+                            </Typography>
+                          </Box>
+                        )}
+                        {quiz.pass_mark && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ 
+                              width: 16, 
+                              height: 16, 
+                              borderRadius: '50%',
+                              backgroundColor: '#e8f5e8',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <Box sx={{ 
+                                width: 8, 
+                                height: 8, 
+                                borderRadius: '50%',
+                                backgroundColor: '#2e7d32'
+                              }} />
+                            </Box>
+                            <Typography 
+                              variant="body2" 
+                              color="text.secondary"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                lineHeight: 1.2,
+                                opacity: 0.8
+                              }}
+                            >
+                              {quiz.pass_mark}% نجاح
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: 1, 
+                        justifyContent: 'center', 
+                        flexWrap: 'wrap'
+                      }}>
+                        <Tooltip title="عرض التفاصيل">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/teacher/quizzes/${quiz.id}`)}
+                            sx={{ 
+                              color: '#1976d2',
+                              backgroundColor: '#e3f2fd',
+                              width: 32,
+                              height: 32,
+                              '&:hover': { 
+                                backgroundColor: '#bbdefb',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <Visibility sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="تعديل الكويز">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/teacher/quizzes/${quiz.id}/edit`)}
+                            sx={{ 
+                              color: '#9c27b0',
+                              backgroundColor: '#f3e5f5',
+                              width: 32,
+                              height: 32,
+                              '&:hover': { 
+                                backgroundColor: '#e1bee7',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <Edit sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="حذف الكويز">
+                          <IconButton
+                            size="small"
+                            onClick={() => openDeleteDialog(quiz)}
+                            sx={{ 
+                              color: '#d32f2f',
+                              backgroundColor: '#ffebee',
+                              width: 32,
+                              height: 32,
+                              '&:hover': { 
+                                backgroundColor: '#ffcdd2',
+                                transform: 'scale(1.1)'
+                              },
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <Delete sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={quizzes.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="صفوف في الصفحة:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+            sx={{
+              backgroundColor: '#f8f9fa',
+              borderTop: '1px solid #e0e0e0'
+            }}
+          />
+        </Paper>
       )}
 
       {/* Delete Confirmation Dialog */}

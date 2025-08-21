@@ -29,7 +29,6 @@ import {
 
 const drawerWidth = 270;
 
-
 // Navigation items for teacher
 const teacherNavItems = [
   { text: 'الرئيسية', icon: <HomeIcon />, path: '/', exact: true },
@@ -57,7 +56,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { getUserRole } = useAuth(); // Changed to use getUserRole from useAuth
+  const { getUserRole, user } = useAuth(); // Get user data from auth context
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const profileRef = useRef(null);
@@ -71,6 +70,30 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
   ];
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Get user data with fallbacks
+  const getUserData = () => {
+    if (user) {
+      return {
+        name: user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : user.username || 'مستخدم',
+        email: user.email || '',
+        avatar: user.profile_picture || '/profile.svg',
+        role: getUserRole() === 'instructor' ? 'مدرس' : 'طالب',
+        description: user.bio || (getUserRole() === 'instructor' ? 'مدرس في المنصة' : 'طالب في المنصة')
+      };
+    }
+    return {
+      name: 'مستخدم',
+      email: '',
+      avatar: '/profile.svg',
+      role: 'طالب',
+      description: 'طالب في المنصة'
+    };
+  };
+
+  const userData = getUserData();
 
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -150,11 +173,15 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
         display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3,
         background: 'rgba(245,245,255,0.7)', borderRadius: 3, p: 2, boxShadow: '0 2px 8px 0 rgba(103,58,183,0.07)'
       }}>
-        <Avatar src="/path/to/avatar.jpg" sx={{
-          width: 90, height: 90, mb: 1, border: '3px solid #ede7f6', boxShadow: '0 2px 8px 0 rgba(103,58,183,0.09)'
-        }} />
-        <Typography fontWeight={700}>اسم المستخدم</Typography>
-        <Typography variant="caption" color="text.secondary">وصف مختصر</Typography>
+        <Avatar 
+          src={userData.avatar} 
+          alt={userData.name}
+          sx={{
+            width: 90, height: 90, mb: 1, border: '3px solid #ede7f6', boxShadow: '0 2px 8px 0 rgba(103,58,183,0.09)'
+          }}
+        />
+        <Typography fontWeight={700}>{userData.name}</Typography>
+        <Typography variant="caption" color="text.secondary">{userData.description}</Typography>
       </Box>
       <Divider sx={{ width: '100%', mb: 2 }} />
       {/* Navigation */}
@@ -385,7 +412,8 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                   sx={{ p: 0, '&:hover': { opacity: 0.8 } }}
                 >
                   <Avatar 
-                    src="/path/to/avatar.jpg" 
+                    src={userData.avatar}
+                    alt={userData.name}
                     sx={{ 
                       width: 40, 
                       height: 40, 
@@ -419,7 +447,8 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                   >
                     <Box sx={{ p: 2, textAlign: 'center', borderBottom: '1px solid #f0f0f0' }}>
                       <Avatar 
-                        src="/path/to/avatar.jpg" 
+                        src={userData.avatar}
+                        alt={userData.name}
                         sx={{ 
                           width: 64, 
                           height: 64, 
@@ -428,8 +457,11 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                           border: '2px solid #ede7f6'
                         }} 
                       />
-                      <Typography variant="subtitle1" fontWeight={600}>اسم المستخدم</Typography>
-                      <Typography variant="body2" color="text.secondary">طالب</Typography>
+                      <Typography variant="subtitle1" fontWeight={600}>{userData.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{userData.role}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {userData.email}
+                      </Typography>
                     </Box>
                     <List sx={{ p: 0 }}>
                       <ListItemButton sx={{ '&:hover': { bgcolor: '#f9f5ff' } }}>
