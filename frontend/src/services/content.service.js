@@ -22,8 +22,23 @@ export const contentAPI = {
     return response.data;
   },
   createLesson: async (payload) => {
-    const response = await api.post('/content/lessons/', payload);
-    return response.data;
+    try {
+      console.log('Creating lesson with payload:', payload);
+      const response = await api.post('/content/lessons/', payload);
+      console.log('Lesson created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating lesson:', error);
+      console.error('Error response:', error.response?.data);
+      if (error.response?.data) {
+        const errorMessage = error.response.data.error || 
+                           error.response.data.details || 
+                           error.response.data.message ||
+                           'حدث خطأ أثناء إنشاء الدرس';
+        throw new Error(errorMessage);
+      }
+      throw new Error('حدث خطأ أثناء إنشاء الدرس');
+    }
   },
   updateLesson: async (lessonId, payload) => {
     const response = await api.patch(`/content/lessons/${lessonId}/`, payload);
@@ -84,28 +99,68 @@ export const contentAPI = {
   },
   createLessonResource: async (payload) => {
     // payload: { lesson, title, resource_type, file?, url?, description?, is_public?, order? }
-    const form = new FormData();
-    Object.entries(payload || {}).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) form.append(k, v);
-    });
-    const response = await api.post('/content/resources/', form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
+    try {
+      console.log('Creating lesson resource with payload:', payload);
+      
+      const form = new FormData();
+      Object.entries(payload || {}).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          console.log(`Adding to FormData: ${k} = ${v}`);
+          form.append(k, v);
+        }
+      });
+      
+      console.log('FormData entries:');
+      for (let [key, value] of form.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+      
+      const response = await api.post('/content/resources/', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating lesson resource:', error);
+      console.error('Error response:', error.response?.data);
+      if (error.response?.data) {
+        const errorMessage = error.response.data.error || 
+                           error.response.data.details || 
+                           error.response.data.message ||
+                           'حدث خطأ أثناء إنشاء المورد';
+        throw new Error(errorMessage);
+      }
+      throw new Error('حدث خطأ أثناء إنشاء المورد');
+    }
   },
   updateLessonResource: async (resourceId, payload) => {
-    const form = new FormData();
-    Object.entries(payload || {}).forEach(([k, v]) => {
-      if (v !== undefined && v !== null) form.append(k, v);
-    });
-    const response = await api.patch(`/content/resources/${resourceId}/`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response.data;
+    try {
+      const form = new FormData();
+      Object.entries(payload || {}).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) form.append(k, v);
+      });
+      const response = await api.patch(`/content/resources/${resourceId}/`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating lesson resource:', error);
+      if (error.response?.data) {
+        throw new Error(error.response.data.error || error.response.data.details || 'حدث خطأ أثناء تحديث المورد');
+      }
+      throw new Error('حدث خطأ أثناء تحديث المورد');
+    }
   },
   deleteLessonResource: async (resourceId) => {
-    const response = await api.delete(`/content/resources/${resourceId}/`);
-    return response.data;
+    try {
+      const response = await api.delete(`/content/resources/${resourceId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting lesson resource:', error);
+      if (error.response?.data) {
+        throw new Error(error.response.data.error || error.response.data.details || 'حدث خطأ أثناء حذف المورد');
+      }
+      throw new Error('حدث خطأ أثناء حذف المورد');
+    }
   },
 };
 

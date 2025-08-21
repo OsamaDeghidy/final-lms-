@@ -41,7 +41,8 @@ import {
   Slide,
   Grow,
   Modal,
-  Backdrop
+  Backdrop,
+  Alert
 } from '@mui/material';
 import { 
   PlayCircleOutline, 
@@ -107,6 +108,8 @@ import ExamStart from './exam/ExamStart';
 import ExamTaking from './exam/ExamTaking';
 import ExamResult from './exam/ExamResult';
 import FinalExamModal from './FinalExamModal';
+import { courseAPI } from '../../services/api.service';
+
 // Simple video player component to replace ReactPlayer
 const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, width, height, style }) => {
   const videoRef = React.useRef(null);
@@ -181,121 +184,7 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 import { toggleDarkMode } from '../../store/slices/uiSlice';
 
-// Mock data - Replace with actual API calls
-const mockCourseData = {
-  id: "1",
-  title: "دورة تطوير تطبيقات الويب المتقدمة",
-  instructor: "أحمد محمد",
-  instructorAvatar: "/images/instructors/ahmed.jpg",
-  category: "تطوير الويب",
-  level: "متوسط",
-  duration: 45,
-  progress: 65,
-  rating: 4.8,
-  totalStudents: 1245,
-  lastAccessed: {
-    moduleId: "m3",
-    lessonId: "l3-2",
-    title: "مقدمة في React Hooks",
-    duration: 15,
-    completion: 30
-  },
-  enrolledDate: '2023-10-15',
-  hasFinalExam: true, // تمت الإضافة هنا
-  modules: [
-    {
-      id: 'm1',
-      title: 'مقدمة في تطوير الويب',
-      progress: 100,
-      totalLessons: 5,
-      completedLessons: 5,
-      lessons: [
-        { id: 'l1', title: 'مقدمة الدورة', duration: '12:30', type: 'video', completed: true },
-        { id: 'l2', title: 'أدوات المطور', duration: '18:45', type: 'video', completed: true },
-        { id: 'l3', title: 'أساسيات HTML', duration: '25:10', type: 'video', completed: true },
-        { id: 'l4', title: 'تمارين HTML', duration: '30:00', type: 'assignment', completed: true },
-        { id: 'l5', title: 'اختبار قصير', duration: '15:00', type: 'quiz', completed: true },
-      ]
-    },
-    {
-      id: 'm2',
-      title: 'CSS المتقدم',
-      progress: 80,
-      totalLessons: 6,
-      completedLessons: 4,
-      lessons: [
-        { id: 'l6', title: 'مقدمة في CSS', duration: '20:15', type: 'video', completed: true },
-        { id: 'l7', title: 'Flexbox', duration: '25:30', type: 'video', completed: true },
-        { id: 'l8', title: 'Grid', duration: '30:45', type: 'video', completed: true },
-        { id: 'l9', title: 'التحريك في CSS', duration: '22:10', type: 'video', completed: true },
-        { id: 'l10', title: 'مشروع مصغر', duration: '45:00', type: 'assignment', completed: false },
-        { id: 'l11', title: 'اختبار قصير', duration: '20:00', type: 'quiz', completed: false },
-      ]
-    },
-    {
-      id: 'm3',
-      title: 'جافاسكريبت الحديثة',
-      progress: 30,
-      totalLessons: 8,
-      completedLessons: 2,
-      lessons: [
-        { id: 'l12', title: 'مقدمة JavaScript', duration: '15:20', type: 'video', completed: true },
-        { id: 'l13', title: 'الوظائف والسهام', duration: '28:45', type: 'video', completed: true },
-        { id: 'l14', title: 'الوعد والانتظار', duration: '35:10', type: 'video', completed: false },
-        { id: 'l15', title: 'المعاملات', duration: '32:00', type: 'video', completed: false },
-        { id: 'l16', title: 'الوحدات', duration: '25:15', type: 'video', completed: false },
-        { id: 'l17', title: 'تمارين JavaScript', duration: '40:00', type: 'assignment', completed: false },
-        { id: 'l18', title: 'مشروع مصغر', duration: '60:00', type: 'assignment', completed: false },
-        { id: 'l19', title: 'اختبار نهائي', duration: '30:00', type: 'quiz', completed: false },
-      ]
-    },
-    {
-      id: 'm4',
-      title: 'إطار العمل React',
-      progress: 0,
-      totalLessons: 7,
-      completedLessons: 0,
-      lessons: [
-        { id: 'l20', title: 'مقدمة React', duration: '22:30', type: 'video', completed: false },
-        { id: 'l21', title: 'المكونات والدوال', duration: '28:15', type: 'video', completed: false },
-        { id: 'l22', title: 'الحالة والخصائص', duration: '35:40', type: 'video', completed: false },
-        { id: 'l23', title: 'دورة حياة المكون', duration: '30:20', type: 'video', completed: false },
-        { id: 'l24', title: 'Hooks', duration: '45:00', type: 'video', completed: false },
-        { id: 'l25', title: 'التوجيه', duration: '25:10', type: 'video', completed: false },
-        { id: 'l26', title: 'مشروع تطبيقي', duration: '90:00', type: 'assignment', completed: false },
-      ]
-    },
-    {
-      id: 'm5',
-      title: 'قواعد البيانات',
-      progress: 0,
-      totalLessons: 6,
-      completedLessons: 0,
-      lessons: [
-        { id: 'l27', title: 'مقدمة في قواعد البيانات', duration: '18:20', type: 'video', completed: false },
-        { id: 'l28', title: 'MongoDB الأساسيات', duration: '32:45', type: 'video', completed: false },
-        { id: 'l29', title: 'Mongoose ODM', duration: '40:10', type: 'video', completed: false },
-        { id: 'l30', title: 'العلاقات بين الجداول', duration: '35:30', type: 'video', completed: false },
-        { id: 'l31', title: 'الاستعلامات المتقدمة', duration: '45:15', type: 'video', completed: false },
-        { id: 'l32', title: 'مشروع قاعدة البيانات', duration: '120:00', type: 'assignment', completed: false },
-      ]
-    },
-    {
-      id: 'm6',
-      title: 'مشروع التخرج',
-      progress: 0,
-      totalLessons: 5,
-      completedLessons: 0,
-      lessons: [
-        { id: 'l33', title: 'تخطيط المشروع', duration: '25:00', type: 'video', completed: false },
-        { id: 'l34', title: 'تنفيذ الواجهة الأمامية', duration: '90:00', type: 'assignment', completed: false },
-        { id: 'l35', title: 'تنفيذ الواجهة الخلفية', duration: '120:00', type: 'assignment', completed: false },
-        { id: 'l36', title: 'ربط المكونات', duration: '90:00', type: 'assignment', completed: false },
-        { id: 'l37', title: 'عرض المشروع', duration: '60:00', type: 'assignment', completed: false },
-      ]
-    }
-  ]
-};
+
 
 // Animation
 // Styled Components
@@ -479,7 +368,7 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
       </Box>
       
       <List sx={{ p: 0 }}>
-        {modules.map((module, moduleIndex) => (
+        {(modules || []).map((module, moduleIndex) => (
           <React.Fragment key={module.id}>
             <ListItem 
               button 
@@ -549,7 +438,7 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
             
             <Collapse in={expandedModule === module.id} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
-                {module.lessons.map((lesson, lessonIndex) => (
+                {(module.lessons || []).map((lesson, lessonIndex) => (
                   <ListItem
                     key={lesson.id}
                     button
@@ -674,14 +563,15 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
 };
 
 const CourseTracking = () => {
-  const { courseId } = useParams();
+  const { id: courseId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedModule, setExpandedModule] = useState('m1');
-  const [courseData, setCourseData] = useState(mockCourseData);
-  const [isLoading, setIsLoading] = useState(false);
+  const [courseData, setCourseData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [bookmarkedLessons, setBookmarkedLessons] = useState({});
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -694,29 +584,128 @@ const CourseTracking = () => {
   const [openQuiz, setOpenQuiz] = useState(false);
   const [activeQuizId, setActiveQuizId] = useState(null);
   const [showQuizResult, setShowQuizResult] = useState(false);
-  const [examStep, setExamStep] = useState('start'); // start | taking | result
+  const [examStep, setExamStep] = useState('start');
   const [openFinalExam, setOpenFinalExam] = useState(false);
   
-  // Calculate course statistics
-  const courseStats = calculateCourseStats(courseData.modules);
-  const nextLesson = findNextIncompleteLesson(courseData.modules);
-
-  // حساب إذا كل الدروس مكتملة
-  const allLessonsCompleted = courseStats.completionPercentage === 100;
-
-  // Set initial current lesson on component mount
+  // Fetch course data on component mount
   useEffect(() => {
-    if (courseData.modules.length > 0 && !currentLesson) {
-      const firstModule = courseData.modules[0];
-      if (firstModule.lessons.length > 0) {
+    if (courseId) {
+      fetchCourseData();
+    }
+  }, [courseId]);
+
+  const fetchCourseData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!courseId) {
+        setError('معرف الدورة غير صحيح');
+        setIsLoading(false);
+        return;
+      }
+      
+      const response = await courseAPI.getCourseTrackingData(courseId);
+      
+      // Check if response has required data
+      if (!response || !response.course) {
+        setError('بيانات الدورة غير متاحة');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Transform API data to match component structure
+      const transformedData = {
+        id: response.course.id,
+        title: response.course.title,
+        instructor: response.course.instructor,
+        instructorAvatar: response.course.instructor_avatar,
+        category: response.course.category,
+        level: response.course.level,
+        duration: response.course.duration,
+        progress: response.course.overall_progress,
+        rating: response.course.rating,
+        totalStudents: response.course.total_students,
+        lastAccessed: {
+          moduleId: response.course.modules[0]?.id || 'm1',
+          lessonId: response.course.modules[0]?.lessons[0]?.id || 'l1',
+          title: response.course.modules[0]?.lessons[0]?.title || 'الدرس الأول',
+          duration: response.course.modules[0]?.lessons[0]?.duration_minutes || 15,
+          completion: response.course.completed_lessons
+        },
+        enrolledDate: response.enrollment?.enrollment_date,
+        hasFinalExam: response.course.has_final_exam,
+        modules: (response.course.modules || []).map(module => ({
+          id: module.id,
+          title: module.name,
+          progress: module.progress,
+          totalLessons: module.total_lessons,
+          completedLessons: module.completed_lessons,
+          lessons: (module.lessons || []).map(lesson => ({
+            id: lesson.id,
+            title: lesson.title,
+            duration: `${Math.floor(lesson.duration_minutes / 60)}:${(lesson.duration_minutes % 60).toString().padStart(2, '0')}`,
+            type: lesson.lesson_type,
+            completed: lesson.completed,
+            videoUrl: lesson.video_url,
+            content: lesson.content,
+            resources: lesson.resources || []
+          }))
+        })),
+        assignments: response.assignments || [],
+        exams: response.exams || [],
+        quizzes: response.quizzes || []
+      };
+      
+      setCourseData(transformedData);
+      
+      // Set initial current lesson
+      if (transformedData.modules && transformedData.modules.length > 0 && 
+          transformedData.modules[0].lessons && transformedData.modules[0].lessons.length > 0) {
+        const firstLesson = transformedData.modules[0].lessons[0];
         setCurrentLesson({
-          moduleId: firstModule.id,
-          lessonId: firstModule.lessons[0].id,
-          ...firstModule.lessons[0]
+          moduleId: transformedData.modules[0].id,
+          lessonId: firstLesson.id,
+          ...firstLesson
         });
       }
+      
+    } catch (err) {
+      console.error('Error fetching course data:', err);
+      if (err.response?.status === 404) {
+        setError('الدورة غير موجودة أو غير متاحة لك.');
+      } else if (err.response?.status === 403) {
+        setError('أنت غير مسجل في هذه الدورة.');
+      } else if (err.response?.status === 401) {
+        setError('يرجى تسجيل الدخول مرة أخرى.');
+      } else {
+        setError('حدث خطأ أثناء جلب بيانات الدورة. يرجى المحاولة مرة أخرى.');
+      }
+    } finally {
+      setIsLoading(false);
     }
-  }, [courseData, currentLesson]);
+  };
+
+  // Calculate course statistics
+  const courseStats = courseData ? {
+    totalLessons: (courseData.modules || []).reduce((sum, module) => sum + (module.lessons?.length || 0), 0),
+    completedLessons: (courseData.modules || []).reduce((sum, module) => sum + (module.completedLessons || 0), 0),
+    completionPercentage: courseData.progress || 0,
+    totalDuration: courseData.duration || 0,
+    totalAssignments: (courseData.assignments || []).length,
+    totalExams: (courseData.exams || []).length,
+    totalQuizzes: (courseData.quizzes || []).length
+  } : { totalLessons: 0, completedLessons: 0, completionPercentage: 0, totalDuration: 0, totalAssignments: 0, totalExams: 0, totalQuizzes: 0 };
+
+  const nextLesson = courseData ? (() => {
+    for (const module of (courseData.modules || [])) {
+      const incompleteLesson = (module.lessons || []).find(lesson => !lesson.completed);
+      if (incompleteLesson) {
+        return { module, lesson: incompleteLesson };
+      }
+    }
+    return null;
+  })() : null;
 
   // Handle module expansion
   const handleModuleClick = (moduleId) => {
@@ -725,9 +714,9 @@ const CourseTracking = () => {
 
   // Handle lesson selection
   const handleLessonClick = (moduleId, lessonId) => {
-    const module = courseData.modules.find(m => m.id === moduleId);
+    const module = (courseData.modules || []).find(m => m.id === moduleId);
     if (module) {
-      const lesson = module.lessons.find(l => l.id === lessonId);
+      const lesson = (module.lessons || []).find(l => l.id === lessonId);
       if (lesson) {
         setCurrentLesson({
           moduleId,
@@ -735,7 +724,6 @@ const CourseTracking = () => {
           ...lesson
         });
         setIsPlaying(true);
-        // Close sidebar on mobile after selecting a lesson
         if (isMobile) {
           setShowSidebar(false);
         }
@@ -936,24 +924,6 @@ const CourseTracking = () => {
     );
   };
 
-  // ... (rest of the code remains the same)
-  // Fetch course data on component mount
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setCourseData(mockCourseData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching course data:', error);
-        setIsLoading(false);
-      }
-    };
-
-    fetchCourseData();
-  }, [courseId]);
-
   const toggleBookmark = (lessonId) => {
     setBookmarkedLessons(prev => ({
       ...prev,
@@ -970,7 +940,71 @@ const CourseTracking = () => {
         height: '100vh',
         bgcolor: 'background.default'
       }}>
-        <CircularProgress />
+        <CircularProgress size={60} sx={{ color: '#7c4dff' }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        bgcolor: 'background.default',
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={fetchCourseData}
+          sx={{ bgcolor: '#7c4dff' }}
+        >
+          إعادة المحاولة
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!courseId) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        bgcolor: 'background.default',
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          معرف الدورة غير صحيح
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={() => navigate('/student/my-courses')}
+          sx={{ bgcolor: '#7c4dff' }}
+        >
+          العودة إلى كورساتي
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!courseData) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        bgcolor: 'background.default'
+      }}>
+        <Typography>لا توجد بيانات متاحة</Typography>
       </Box>
     );
   }
@@ -1035,7 +1069,7 @@ const CourseTracking = () => {
               </Typography>
             </Box>
             
-            {/* Back Button - Moved to right side */}
+            {/* Back Button */}
             <Button 
               startIcon={<ArrowBack />} 
               onClick={() => navigate(-1)}
@@ -1254,7 +1288,7 @@ const CourseTracking = () => {
                         {currentLesson?.title || 'اختر درسًا لبدء التعلم'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {currentLesson?.description || 'قم بتحديد درس من القائمة الجانبية لبدء التعلم'}
+                        {currentLesson?.content || 'قم بتحديد درس من القائمة الجانبية لبدء التعلم'}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
@@ -1287,23 +1321,23 @@ const CourseTracking = () => {
                       disabled={!currentLesson}
                       onClick={() => {
                         // Navigate to previous lesson
-                        const currentModuleIndex = courseData.modules.findIndex(m => m.id === currentLesson?.moduleId);
+                        const currentModuleIndex = (courseData.modules || []).findIndex(m => m.id === currentLesson?.moduleId);
                         if (currentModuleIndex >= 0) {
                           const currentModule = courseData.modules[currentModuleIndex];
-                          const currentLessonIndex = currentModule.lessons.findIndex(l => l.id === currentLesson?.id);
+                          const currentLessonIndex = (currentModule.lessons || []).findIndex(l => l.id === currentLesson?.id);
                           
-                          if (currentLessonIndex > 0) {
-                            // Previous lesson in same module
-                            const prevLesson = currentModule.lessons[currentLessonIndex - 1];
-                            handleLessonClick(currentModule.id, prevLesson.id);
-                          } else if (currentModuleIndex > 0) {
-                            // Last lesson of previous module
-                            const prevModule = courseData.modules[currentModuleIndex - 1];
-                            if (prevModule.lessons.length > 0) {
-                              const prevLesson = prevModule.lessons[prevModule.lessons.length - 1];
-                              handleLessonClick(prevModule.id, prevLesson.id);
+                                                      if (currentLessonIndex > 0) {
+                              // Previous lesson in same module
+                              const prevLesson = (currentModule.lessons || [])[currentLessonIndex - 1];
+                              handleLessonClick(currentModule.id, prevLesson.id);
+                            } else if (currentModuleIndex > 0) {
+                              // Last lesson of previous module
+                              const prevModule = courseData.modules[currentModuleIndex - 1];
+                              if ((prevModule.lessons || []).length > 0) {
+                                const prevLesson = prevModule.lessons[prevModule.lessons.length - 1];
+                                handleLessonClick(prevModule.id, prevLesson.id);
+                              }
                             }
-                          }
                         }
                       }}
                     >
@@ -1333,25 +1367,25 @@ const CourseTracking = () => {
                       variant="outlined" 
                       endIcon={<ArrowBack sx={{ transform: 'scaleX(-1)' }} />}
                       disabled={!currentLesson}
-                      onClick={() => {
-                        // Navigate to next lesson
-                        const currentModuleIndex = courseData.modules.findIndex(m => m.id === currentLesson?.moduleId);
-                        if (currentModuleIndex >= 0) {
-                          const currentModule = courseData.modules[currentModuleIndex];
-                          const currentLessonIndex = currentModule.lessons.findIndex(l => l.id === currentLesson?.id);
+                                              onClick={() => {
+                          // Navigate to next lesson
+                          const currentModuleIndex = (courseData.modules || []).findIndex(m => m.id === currentLesson?.moduleId);
+                          if (currentModuleIndex >= 0) {
+                            const currentModule = courseData.modules[currentModuleIndex];
+                            const currentLessonIndex = (currentModule.lessons || []).findIndex(l => l.id === currentLesson?.id);
                           
-                          if (currentLessonIndex < currentModule.lessons.length - 1) {
-                            // Next lesson in same module
-                            const nextLesson = currentModule.lessons[currentLessonIndex + 1];
-                            handleLessonClick(currentModule.id, nextLesson.id);
-                          } else if (currentModuleIndex < courseData.modules.length - 1) {
-                            // First lesson of next module
-                            const nextModule = courseData.modules[currentModuleIndex + 1];
-                            if (nextModule.lessons.length > 0) {
-                              const nextLesson = nextModule.lessons[0];
-                              handleLessonClick(nextModule.id, nextLesson.id);
+                                                      if (currentLessonIndex < (currentModule.lessons || []).length - 1) {
+                              // Next lesson in same module
+                              const nextLesson = (currentModule.lessons || [])[currentLessonIndex + 1];
+                              handleLessonClick(currentModule.id, nextLesson.id);
+                            } else if (currentModuleIndex < (courseData.modules || []).length - 1) {
+                              // First lesson of next module
+                              const nextModule = courseData.modules[currentModuleIndex + 1];
+                              if ((nextModule.lessons || []).length > 0) {
+                                const nextLesson = nextModule.lessons[0];
+                                handleLessonClick(nextModule.id, nextLesson.id);
+                              }
                             }
-                          }
                         }
                       }}
                     >
@@ -1378,17 +1412,17 @@ const CourseTracking = () => {
                     عن هذا الدرس
                   </Typography>
                   <Typography variant="body1" paragraph>
-                    {currentLesson?.description || 'لا يوجد وصف متوفر لهذا الدرس. يرجى اختيار درس آخر.'}
+                    {currentLesson?.content || 'لا يوجد وصف متوفر لهذا الدرس. يرجى اختيار درس آخر.'}
                   </Typography>
                   
                   {/* Resources */}
-                  <Box sx={{ mt: 3 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                      المرفقات والموارد
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                      {currentLesson?.resources?.length > 0 ? (
-                        currentLesson.resources.map((resource, index) => (
+                  {currentLesson?.resources && currentLesson.resources.length > 0 && (
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+                        المرفقات والموارد
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                        {(currentLesson.resources || []).map((resource, index) => (
                           <Paper 
                             key={index}
                             elevation={0}
@@ -1421,9 +1455,9 @@ const CourseTracking = () => {
                                 color: 'primary.contrastText'
                               }}
                             >
-                              {resource.type === 'pdf' ? <PictureAsPdf /> : 
-                               resource.type === 'doc' ? <Description /> :
-                               resource.type === 'zip' ? <FolderZip /> : <InsertDriveFile />}
+                              {resource.resource_type === 'document' ? <DescriptionOutlined /> : 
+                               resource.resource_type === 'video' ? <VideoLibrary /> :
+                               resource.resource_type === 'link' ? <Link /> : <NoteAlt />}
                             </Box>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography 
@@ -1435,7 +1469,7 @@ const CourseTracking = () => {
                                   textOverflow: 'ellipsis'
                                 }}
                               >
-                                {resource.name}
+                                {resource.title}
                               </Typography>
                               <Typography 
                                 variant="caption" 
@@ -1447,633 +1481,26 @@ const CourseTracking = () => {
                                   textOverflow: 'ellipsis'
                                 }}
                               >
-                                {resource.size} • {resource.type.toUpperCase()}
+                                {resource.resource_type}
                               </Typography>
                             </Box>
                             <IconButton size="small" sx={{ ml: 1 }}>
-                              <CloudDownload />
+                              <Download />
                             </IconButton>
                           </Paper>
-                        ))
-                      ) : (
-                        <Box 
-                          sx={{ 
-                            width: '100%', 
-                            py: 4, 
-                            textAlign: 'center',
-                            border: '1px dashed',
-                            borderColor: 'divider',
-                            borderRadius: 2
-                          }}
-                        >
-                          <CloudOff sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
-                          <Typography variant="body2" color="text.secondary">
-                            لا توجد مرفقات متاحة لهذا الدرس
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-              
-              {/* Comments Section */}
-              <Card 
-                elevation={0}
-                sx={{
-                  mb: 3,
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
-                    التعليقات والمناقشات
-                  </Typography>
-                  
-                  {/* Add Comment */}
-                  <Box sx={{ display: 'flex', mb: 3 }}>
-                    <Avatar 
-                      src="/images/avatars/default-avatar.png" 
-                      alt="User"
-                      sx={{ width: 48, height: 48, mr: 2 }}
-                    />
-                    <Box sx={{ flex: 1, position: 'relative' }}>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={3}
-                        placeholder="اكتب تعليقك هنا..."
-                        variant="outlined"
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                              borderColor: 'primary.main',
-                            },
-                          },
-                        }}
-                      />
-                      <Button 
-                        variant="contained" 
-                        sx={{ 
-                          position: 'absolute',
-                          bottom: 12,
-                          left: 12,
-                          borderRadius: 2,
-                          px: 3,
-                          py: 0.8,
-                          textTransform: 'none',
-                          fontWeight: 'bold',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                          '&:hover': {
-                            boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15)',
-                          },
-                        }}
-                      >
-                        نشر التعليق
-                      </Button>
-                    </Box>
-                  </Box>
-                  
-                  {/* Comments List */}
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-                      {courseData.comments?.length || 0} تعليق
-                    </Typography>
-                    
-                    {courseData.comments?.length > 0 ? (
-                      courseData.comments.map((comment, index) => (
-                        <Box 
-                          key={index} 
-                          sx={{ 
-                            display: 'flex', 
-                            mb: 3,
-                            p: 2,
-                            borderRadius: 2,
-                            bgcolor: index % 2 === 0 ? 'background.paper' : 'action.hover',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
-                            },
-                          }}
-                        >
-                          <Avatar 
-                            src={comment.avatar} 
-                            alt={comment.author}
-                            sx={{ width: 40, height: 40, mr: 2 }}
-                          />
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mr: 1 }}>
-                                {comment.author}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {new Date(comment.date).toLocaleDateString('ar-EG')}
-                              </Typography>
-                            </Box>
-                            <Typography variant="body2" paragraph sx={{ mb: 1 }}>
-                              {comment.text}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <IconButton size="small" sx={{ mr: 1 }}>
-                                <ThumbUp fontSize="small" />
-                              </IconButton>
-                              <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
-                                {comment.likes}
-                              </Typography>
-                              <IconButton size="small">
-                                <ChatBubbleOutline fontSize="small" />
-                              </IconButton>
-                              <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
-                                {comment.replies?.length || 0}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      ))
-                    ) : (
-                      <Box 
-                        sx={{ 
-                          py: 4, 
-                          textAlign: 'center',
-                          border: '1px dashed',
-                          borderColor: 'divider',
-                          borderRadius: 2
-                        }}
-                      >
-                        <Forum sx={{ fontSize: 40, color: 'text.disabled', mb: 1 }} />
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          لا توجد تعليقات حتى الآن. كن أول من يعلق!
-                        </Typography>
+                        ))}
                       </Box>
-                    )}
-                  </Box>
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Box>
           </Box>
-
-          {/* Sidebar Toggle Button - Desktop */}
-          <Tooltip title={isSidebarExpanded ? 'إخفاء القائمة الجانبية' : 'إظهار القائمة الجانبية'}>
-            <IconButton
-              onClick={toggleSidebarExpand}
-              sx={{
-                display: { xs: 'none', md: 'flex' },
-                position: 'fixed',
-                top: '50%',
-                right: isSidebarExpanded ? 'calc(350px + 16px)' : '16px',
-                transform: 'translateY(-50%)',
-                zIndex: 1100,
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                '&:hover': {
-                  bgcolor: 'background.paper',
-                  transform: 'translateY(-50%) scale(1.1)'
-                }
-              }}
-            >
-              {isSidebarExpanded ? <ChevronRight /> : <ChevronLeft />}
-            </IconButton>
-          </Tooltip>
-
-          {/* Tab Content */}
-          <Box sx={{ mt: 3 }}>
-            {activeTab === 'modules' && (
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                    محتوى الدورة
-                  </Typography>
-                  <Chip 
-                    label={`${courseStats.totalLessons} دروس`} 
-                    color="primary" 
-                    variant="outlined"
-                    size="small"
-                    sx={{ fontWeight: 'bold' }}
-                  />
-                </Box>
-                
-                {courseData.modules.map((module, index) => (
-                  <ModuleCard 
-                    key={module.id} 
-                    sx={{ 
-                      mb: 2,
-                      borderLeft: `4px solid ${theme.palette.primary.main}`
-                    }}
-                    component={motion.div}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        p: 2,
-                        bgcolor: expandedModule === module.id ? 'action.hover' : 'background.paper',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          bgcolor: 'action.hover'
-                        }
-                      }}
-                      onClick={() => handleModuleClick(module.id)}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        <Box 
-                          sx={{ 
-                            width: 44, 
-                            height: 44, 
-                            borderRadius: '12px', 
-                            bgcolor: 'primary.light',
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            color: 'primary.main',
-                            mr: 2,
-                            flexShrink: 0
-                          }}
-                        >
-                          {getModuleIcon(module.id)}
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                              {module.title}
-                            </Typography>
-                            {module.progress === 100 && (
-                              <CheckCircleIcon 
-                                color="success" 
-                                sx={{ fontSize: 18, ml: 1 }} 
-                              />
-                            )}
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ width: '100%', maxWidth: 200, mr: 2 }}>
-                              <LinearProgress 
-                                variant="determinate" 
-                                value={module.progress} 
-                                sx={{ 
-                                  height: 6, 
-                                  borderRadius: 3,
-                                  bgcolor: 'grey.200',
-                                  '& .MuiLinearProgress-bar': {
-                                    borderRadius: 3,
-                                    background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
-                                  }
-                                }} 
-                              />
-                            </Box>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                              {module.completedLessons} من {module.totalLessons} دروس • {module.progress}%
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Box>
-                      <Box sx={{ ml: 2, color: 'text.secondary' }}>
-                        {expandedModule === module.id ? <ExpandLess /> : <ExpandMore />}
-                      </Box>
-                    </Box>
-                    
-                    <Collapse in={expandedModule === module.id} timeout="auto" unmountOnExit>
-                      <Divider />
-                      <List dense disablePadding>
-                        {module.lessons.map((lesson, lessonIndex) => (
-                          <React.Fragment key={lesson.id}>
-                            <ListItem 
-                              button 
-                              sx={{ 
-                                pl: { xs: 2, sm: 8 },
-                                pr: 2,
-                                py: 1.5,
-                                transition: 'all 0.2s',
-                                '&:hover': {
-                                  bgcolor: 'action.hover',
-                                  transform: 'translateX(4px)'
-                                },
-                                bgcolor: lesson.completed ? 'action.selected' : 'transparent',
-                                borderLeft: lesson.completed 
-                                  ? `4px solid ${theme.palette.success.main}` 
-                                  : '4px solid transparent',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::before': {
-                                  content: '""',
-                                  position: 'absolute',
-                                  left: 0,
-                                  top: 0,
-                                  bottom: 0,
-                                  width: '4px',
-                                  bgcolor: 'primary.main',
-                                  opacity: 0,
-                                  transition: 'opacity 0.2s',
-                                },
-                                '&:hover::before': {
-                                  opacity: 1,
-                                }
-                              }}
-                              onClick={() => handleLessonClick(module.id, lesson.id)}
-                            >
-                              <ListItemIcon sx={{ minWidth: 36, color: lesson.completed ? 'success.main' : 'text.secondary' }}>
-                                {lesson.completed ? (
-                                  <CheckCircle sx={{ color: 'success.main' }} />
-                                ) : (
-                                  <PlayCircleOutline color={lesson.id === courseData.lastAccessed?.lessonId ? 'primary' : 'action'} />
-                                )}
-                              </ListItemIcon>
-                              <ListItemText 
-                                primary={
-                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Typography 
-                                      variant="body2" 
-                                      sx={{ 
-                                        textDecoration: lesson.completed ? 'line-through' : 'none',
-                                        color: lesson.completed ? 'text.secondary' : 'text.primary',
-                                        fontWeight: lesson.id === courseData.lastAccessed?.lessonId ? 'bold' : 'normal'
-                                      }}
-                                    >
-                                      {lesson.title}
-                                    </Typography>
-                                    {lesson.id === courseData.lastAccessed?.lessonId && (
-                                      <Chip 
-                                        label="آخر محتوى" 
-                                        size="small" 
-                                        color="primary" 
-                                        variant="outlined"
-                                        sx={{ height: 20, ml: 1, fontSize: '0.65rem' }}
-                                      />
-                                    )}
-                                  </Box>
-                                }
-                                secondary={
-                                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                                    <Box sx={{ 
-                                      display: 'inline-flex', 
-                                      alignItems: 'center', 
-                                      mr: 1.5,
-                                      color: lesson.completed ? 'success.main' : 'text.secondary',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                      {getLessonIcon(lesson.type)}
-                                      <Box component="span" sx={{ mr: 0.5, ml: 0.5 }}>
-                                        {lesson.duration}
-                                      </Box>
-                                    </Box>
-                                    {bookmarkedLessons[lesson.id] && (
-                                      <Bookmark 
-                                        color="primary" 
-                                        sx={{ fontSize: 16, ml: 1 }} 
-                                      />
-                                    )}
-                                  </Box>
-                                }
-                              />
-                            </ListItem>
-                            {lessonIndex < module.lessons.length - 1 && <Divider variant="inset" component="li" />}
-                          </React.Fragment>
-                        ))}
-                      </List>
-                    </Collapse>
-                  </ModuleCard>
-                ))}
-              </Box>
-            )}
-
-            {activeTab === 'progress' && (
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                  تقدمك في الدورة
-                </Typography>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, mb: 4 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                        إحصائيات التقدم
-                      </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-                            {courseStats.completionPercentage}%
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">مكتمل</Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                            {courseStats.completedLessons}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {courseStats.completedLessons === 1 ? 'درس مكتمل' : 'دروس مكتملة'}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'center' }}>
-                          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                            {courseStats.totalLessons - courseStats.completedLessons}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {courseStats.totalLessons - courseStats.completedLessons === 1 ? 'درس متبقي' : 'دروس متبقية'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                          الوقت المستغرق
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <AccessTime color="primary" />
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2">
-                              {Math.floor(courseStats.totalDuration * 0.6)} ساعة من أصل {courseStats.totalDuration} ساعة
-                            </Typography>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={60} 
-                              sx={{ 
-                                height: 8, 
-                                borderRadius: 4, 
-                                mt: 1,
-                                '& .MuiLinearProgress-bar': {
-                                  background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
-                                }
-                              }} 
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-                      <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
-                        النشاط الأخير
-                      </Typography>
-                      {nextLesson ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box sx={{ 
-                            width: 56, 
-                            height: 56, 
-                            borderRadius: 2,
-                            bgcolor: 'primary.light',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'primary.main',
-                            flexShrink: 0
-                          }}>
-                            {getLessonIcon(nextLesson.lesson.type)}
-                          </Box>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                              {nextLesson.lesson.title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {nextLesson.module.title}
-                            </Typography>
-                            <Button 
-                              variant="contained" 
-                              size="small" 
-                              sx={{ mt: 1 }}
-                              onClick={() => handleLessonClick(nextLesson.module.id, nextLesson.lesson.id)}
-                            >
-                              {nextLesson.lesson.completed ? 'إعادة المشاهدة' : 'استمر في التعلم'}
-                            </Button>
-                          </Box>
-                        </Box>
-                      ) : (
-                        <Box sx={{ textAlign: 'center', py: 3 }}>
-                          <EmojiEvents sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                            مبروك!
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            لقد أكملت جميع دروس هذه الدورة بنجاح
-                          </Typography>
-                        </Box>
-                      )}
-                    </Paper>
-                  </Box>
-                </Box>
-                
-                <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
-                  تقدم الوحدات
-                </Typography>
-                <Grid container spacing={2}>
-                  {courseData.modules.map((module) => (
-                    <Grid item xs={12} md={6} key={module.id}>
-                      <Paper sx={{ p: 2, borderRadius: 3, height: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                            {module.title}
-                          </Typography>
-                          <Typography variant="body2" color="primary">
-                            {module.progress}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={module.progress} 
-                          sx={{ 
-                            height: 8, 
-                            borderRadius: 4, 
-                            mb: 1.5,
-                            '& .MuiLinearProgress-bar': {
-                              background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
-                            }
-                          }} 
-                        />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="caption" color="text.secondary">
-                            {module.completedLessons} من {module.totalLessons} دروس
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {module.progress === 100 ? 'مكتمل' : 'قيد التقدم'}
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            )}
-
-            {activeTab === 'resources' && (
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 3 }}>
-                  موارد الدورة
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <DescriptionOutlined color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                          المذكرات والملفات
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        جميع الملفات والمستندات المتعلقة بهذه الدورة
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        startIcon={<DescriptionOutlined />}
-                        fullWidth
-                        sx={{ mt: 'auto' }}
-                      >
-                        عرض الكل
-                      </Button>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 3, borderRadius: 3, height: '100%' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <BookmarkBorder color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                          الدروس المحفوظة
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        الدروس التي قمت بحفظها للرجوع إليها لاحقًا
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        startIcon={<Bookmark />}
-                        fullWidth
-                        sx={{ mt: 'auto' }}
-                      >
-                        عرض المحفوظات
-                      </Button>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Paper sx={{ p: 3, borderRadius: 3 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <Assignment color="primary" sx={{ fontSize: 32, mr: 1.5 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                          الواجبات والاختبارات
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        الواجبات والاختبارات المتعلقة بهذه الدورة
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        startIcon={<Assignment />}
-                        fullWidth
-                      >
-                        عرض الواجبات
-                      </Button>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </Box>
-            )}
-          </Box>
         </Box>
       </Container>
       <Footer />
+      
+      {/* Quiz Modal */}
       <Modal
         open={openQuiz}
         onClose={() => setOpenQuiz(false)}
@@ -2118,7 +1545,8 @@ const CourseTracking = () => {
           </Box>
         </Fade>
       </Modal>
-      {/* بعد CourseContent مباشرة في الـ sidebar */}
+      
+      {/* Final Exam Modal */}
       <Modal
         open={openFinalExam}
         onClose={() => setOpenFinalExam(false)}
@@ -2148,7 +1576,6 @@ const CourseTracking = () => {
             >
               <Close />
             </IconButton>
-            {/* هنا سيتم وضع مكون الامتحان الشامل */}
             <FinalExamModal onClose={() => setOpenFinalExam(false)} />
           </Box>
         </Fade>

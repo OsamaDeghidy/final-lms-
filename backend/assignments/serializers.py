@@ -376,15 +376,79 @@ class ExamQuestionCreateSerializer(serializers.ModelSerializer):
 
 
 class AssignmentBasicSerializer(serializers.ModelSerializer):
+    course_title = serializers.SerializerMethodField()
+    module_name = serializers.SerializerMethodField()
+    submissions_count = serializers.SerializerMethodField()
+    graded_count = serializers.SerializerMethodField()
+    total_students = serializers.SerializerMethodField()
+    average_grade = serializers.SerializerMethodField()
+    questions_count = serializers.SerializerMethodField()
+    total_points = serializers.SerializerMethodField()
+    
     class Meta:
         model = Assignment
-        fields = ['id', 'title', 'description', 'due_date', 'points', 'is_active', 'created_at']
+        fields = [
+            'id', 'title', 'description', 'course', 'module', 'due_date', 'points', 
+            'allow_late_submissions', 'late_submission_penalty', 'has_questions', 
+            'has_file_upload', 'assignment_file', 'is_active', 'created_at', 'updated_at',
+            'course_title', 'module_name', 'submissions_count', 'graded_count', 
+            'total_students', 'average_grade', 'questions_count', 'total_points'
+        ]
+    
+    def get_course_title(self, obj):
+        return obj.course.title if obj.course else ''
+    
+    def get_module_name(self, obj):
+        return obj.module.name if obj.module else ''
+    
+    def get_submissions_count(self, obj):
+        return obj.submissions.count()
+    
+    def get_graded_count(self, obj):
+        return obj.submissions.filter(status='graded').count()
+    
+    def get_total_students(self, obj):
+        if obj.course:
+            from courses.models import Enrollment
+            return Enrollment.objects.filter(
+                course=obj.course, 
+                status__in=['active', 'completed']
+            ).count()
+        return 0
+    
+    def get_average_grade(self, obj):
+        from django.db.models import Avg
+        avg = obj.submissions.filter(
+            status='graded', 
+            grade__isnull=False
+        ).aggregate(avg_grade=Avg('grade'))['avg_grade']
+        return float(avg) if avg else 0
+    
+    def get_questions_count(self, obj):
+        return obj.questions.count()
+    
+    def get_total_points(self, obj):
+        return obj.get_total_points()
 
 
 class AssignmentDetailSerializer(serializers.ModelSerializer):
+    course_title = serializers.SerializerMethodField()
+    module_name = serializers.SerializerMethodField()
+    questions = serializers.SerializerMethodField()
+    
     class Meta:
         model = Assignment
         fields = '__all__'
+    
+    def get_course_title(self, obj):
+        return obj.course.title if obj.course else ''
+    
+    def get_module_name(self, obj):
+        return obj.module.name if obj.module else ''
+    
+    def get_questions(self, obj):
+        questions = obj.questions.all().prefetch_related('answers').order_by('order')
+        return AssignmentQuestionWithAnswersSerializer(questions, many=True).data
 
 
 class AssignmentCreateSerializer(serializers.ModelSerializer):
@@ -398,15 +462,59 @@ class AssignmentCreateSerializer(serializers.ModelSerializer):
 
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    assignment_title = serializers.SerializerMethodField()
+    assignment_points = serializers.SerializerMethodField()
+    question_responses = serializers.SerializerMethodField()
+    
     class Meta:
         model = AssignmentSubmission
-        fields = '__all__'
+        fields = [
+            'id', 'assignment', 'user', 'submission_text', 'submitted_file',
+            'status', 'grade', 'feedback', 'graded_by', 'graded_at',
+            'submitted_at', 'is_late', 'student_name', 'student_email',
+            'assignment_title', 'assignment_points', 'question_responses'
+        ]
+    
+    def get_student_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
+    
+    def get_student_email(self, obj):
+        return obj.user.email
+    
+    def get_assignment_title(self, obj):
+        return obj.assignment.title
+    
+    def get_assignment_points(self, obj):
+        return obj.assignment.points
+    
+    def get_question_responses(self, obj):
+        responses = obj.question_responses.all().select_related('question')
+        return AssignmentQuestionResponseSerializer(responses, many=True).data
 
 
 class AssignmentSubmissionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = ['assignment', 'submission_text', 'submitted_file']
+
+
+class AssignmentSubmissionGradeSerializer(serializers.ModelSerializer):
+    """Serializer for grading submissions"""
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['grade', 'feedback', 'status']
+    
+    def update(self, instance, validated_data):
+        from django.utils import timezone
+        instance.grade = validated_data.get('grade', instance.grade)
+        instance.feedback = validated_data.get('feedback', instance.feedback)
+        instance.status = validated_data.get('status', 'graded')
+        instance.graded_by = self.context['request'].user
+        instance.graded_at = timezone.now()
+        instance.save()
+        return instance
 
 
 class AssignmentQuestionSerializer(serializers.ModelSerializer):

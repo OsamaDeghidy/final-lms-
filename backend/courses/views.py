@@ -609,3 +609,349 @@ def public_courses(request):
             'error': 'حدث خطأ أثناء جلب الدورات',
             'detail': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_enrolled_courses(request):
+    """جلب الكورسات المسجلة للطالب مع معلومات التسجيل والتقدم"""
+    try:
+        user = request.user
+        
+        # Get enrolled courses with enrollment details
+        enrollments = Enrollment.objects.filter(
+            student=user,
+            status__in=['active', 'completed']
+        ).select_related(
+            'course', 
+            'course__category'
+        ).prefetch_related(
+            'course__instructors',
+            'course__instructors__profile',
+            'course__tags'
+        ).order_by('-enrollment_date')
+        
+        enrolled_courses = []
+        completed_courses = []
+        
+        for enrollment in enrollments:
+            course_data = {
+                'id': enrollment.course.id,
+                'title': enrollment.course.title,
+                'description': enrollment.course.short_description or enrollment.course.description,
+                'image': request.build_absolute_uri(enrollment.course.image.url) if enrollment.course.image else None,
+                'instructor': enrollment.course.instructors.first().profile.name if enrollment.course.instructors.exists() and hasattr(enrollment.course.instructors.first(), 'profile') else 'غير محدد',
+                'progress': enrollment.progress,
+                'totalLessons': enrollment.course.modules.count() if hasattr(enrollment.course, 'modules') else 0,
+                'completedLessons': int((enrollment.progress / 100) * (enrollment.course.modules.count() if hasattr(enrollment.course, 'modules') else 0)),
+                'category': enrollment.course.category.name if enrollment.course.category else 'غير محدد',
+                'enrollment_date': enrollment.enrollment_date,
+                'completion_date': enrollment.completion_date,
+                'status': enrollment.status,
+                'grade': 'A' if enrollment.progress >= 90 else 'B' if enrollment.progress >= 80 else 'C' if enrollment.progress >= 70 else 'D' if enrollment.progress >= 60 else 'F'
+            }
+            
+            if enrollment.status == 'completed':
+                completed_courses.append(course_data)
+            else:
+                enrolled_courses.append(course_data)
+        
+        return Response({
+            'enrolled_courses': enrolled_courses,
+            'completed_courses': completed_courses,
+            'total_enrolled': len(enrolled_courses),
+            'total_completed': len(completed_courses)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error in my_enrolled_courses: {str(e)}", exc_info=True)
+        return Response({
+            'error': 'حدث خطأ أثناء جلب الكورسات المسجلة',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def course_tracking_data(request, course_id):
+    """جلب بيانات تتبع الكورس الشاملة مع المحتوى والتقدم والكويزات والواجبات والامتحانات"""
+    try:
+        user = request.user
+        
+        # Get course with all related data
+        course = Course.objects.select_related('category').prefetch_related(
+            'instructors', 
+            'instructors__profile',
+            'tags'
+        ).get(id=course_id, status='published')
+        
+        # Check if user is enrolled
+        enrollment = Enrollment.objects.filter(
+            student=user,
+            course=course,
+            status__in=['active', 'completed']
+        ).first()
+        
+        if not enrollment:
+            return Response({
+                'error': 'أنت غير مسجل في هذه الدورة'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get course modules with lessons
+        modules = course.modules.filter(
+            status='published',
+            is_active=True
+        ).order_by('order').prefetch_related(
+            'lessons',
+            'lessons__lesson_resources'
+        )
+        
+        # Get user progress for course
+        from content.models import UserProgress, ModuleProgress
+        user_progress, _ = UserProgress.get_or_create_progress(user, course)
+        
+        # Get module progress for all modules
+        module_progress_data = {}
+        for module in modules:
+            module_progress, _ = ModuleProgress.get_or_create_progress(user, module)
+            module_progress_data[module.id] = {
+                'status': module_progress.status,
+                'is_completed': module_progress.is_completed,
+                'video_watched': module_progress.video_watched,
+                'video_progress': module_progress.video_progress,
+                'pdf_viewed': module_progress.pdf_viewed,
+                'notes_read': module_progress.notes_read,
+                'quiz_completed': module_progress.quiz_completed,
+                'quiz_score': module_progress.quiz_score,
+                'completion_percentage': module_progress.get_completion_percentage()
+            }
+        
+        # Get quizzes for course and modules
+        from assignments.models import Quiz, QuizAttempt
+        course_quizzes = Quiz.objects.filter(
+            course=course,
+            is_active=True
+        ).prefetch_related('questions', 'questions__answers')
+        
+        module_quizzes = Quiz.objects.filter(
+            module__in=modules,
+            is_active=True
+        ).prefetch_related('questions', 'questions__answers')
+        
+        # Get user quiz attempts
+        quiz_attempts = QuizAttempt.objects.filter(
+            user=user,
+            quiz__in=list(course_quizzes) + list(module_quizzes)
+        ).select_related('quiz')
+        
+        # Get assignments
+        from assignments.models import Assignment, AssignmentSubmission
+        assignments = Assignment.objects.filter(
+            course=course,
+            is_active=True
+        ).prefetch_related('questions', 'questions__answers')
+        
+        # Get user assignment submissions
+        assignment_submissions = AssignmentSubmission.objects.filter(
+            user=user,
+            assignment__in=assignments
+        ).select_related('assignment')
+        
+        # Get exams
+        from assignments.models import Exam, UserExamAttempt
+        exams = Exam.objects.filter(
+            course=course,
+            is_active=True
+        ).prefetch_related('questions', 'questions__answers')
+        
+        # Get user exam attempts
+        exam_attempts = UserExamAttempt.objects.filter(
+            user=user,
+            exam__in=exams
+        ).select_related('exam')
+        
+        # Get certificate if exists
+        from certificates.models import Certificate
+        certificate = Certificate.objects.filter(
+            user=user,
+            course=course,
+            status='active'
+        ).first()
+        
+        # Prepare modules data
+        modules_data = []
+        total_lessons = 0
+        completed_lessons = 0
+        
+        for module in modules:
+            module_progress = module_progress_data.get(module.id, {})
+            
+            # Get lessons for this module
+            lessons = module.lessons.filter(is_active=True).order_by('order')
+            module_lessons = []
+            
+            for lesson in lessons:
+                total_lessons += 1
+                # For now, we'll assume lesson completion based on module progress
+                # In a real implementation, you'd have lesson-level progress tracking
+                lesson_completed = module_progress.get('is_completed', False)
+                if lesson_completed:
+                    completed_lessons += 1
+                
+                module_lessons.append({
+                    'id': lesson.id,
+                    'title': lesson.title,
+                    'description': lesson.description,
+                    'lesson_type': lesson.lesson_type,
+                    'duration_minutes': lesson.duration_minutes,
+                    'order': lesson.order,
+                    'completed': lesson_completed,
+                    'video_url': lesson.video_url,
+                    'content': lesson.content,
+                    'resources': [
+                        {
+                            'id': resource.id,
+                            'title': resource.title,
+                            'description': resource.description,
+                            'resource_type': resource.resource_type,
+                            'file_url': resource.file.url if resource.file else None,
+                            'url': resource.url,
+                            'is_downloadable': resource.is_downloadable
+                        }
+                        for resource in lesson.lesson_resources.filter(is_public=True)
+                    ]
+                })
+            
+            # Get module quiz
+            module_quiz = module_quizzes.filter(module=module).first()
+            module_quiz_data = None
+            if module_quiz:
+                quiz_attempt = quiz_attempts.filter(quiz=module_quiz).first()
+                module_quiz_data = {
+                    'id': module_quiz.id,
+                    'title': module_quiz.title,
+                    'description': module_quiz.description,
+                    'time_limit': module_quiz.time_limit,
+                    'pass_mark': module_quiz.pass_mark,
+                    'total_questions': module_quiz.get_total_questions(),
+                    'attempted': quiz_attempt is not None,
+                    'score': quiz_attempt.score if quiz_attempt else None,
+                    'passed': quiz_attempt.passed if quiz_attempt else None,
+                    'attempt_number': quiz_attempt.attempt_number if quiz_attempt else 0
+                }
+            
+            modules_data.append({
+                'id': module.id,
+                'name': module.name,
+                'description': module.description,
+                'order': module.order,
+                'video_url': module.video.url if module.video else None,
+                'video_duration': module.video_duration,
+                'pdf_url': module.pdf.url if module.pdf else None,
+                'note': module.note,
+                'lessons': module_lessons,
+                'total_lessons': len(module_lessons),
+                'completed_lessons': len([l for l in module_lessons if l['completed']]),
+                'progress': module_progress.get('completion_percentage', 0),
+                'is_completed': module_progress.get('is_completed', False),
+                'quiz': module_quiz_data
+            })
+        
+        # Prepare course data
+        course_data = {
+            'id': course.id,
+            'title': course.title,
+            'description': course.description,
+            'short_description': course.short_description,
+            'image': request.build_absolute_uri(course.image.url) if course.image else None,
+            'category': course.category.name if course.category else None,
+            'level': course.level,
+            'instructor': course.instructors.first().profile.name if course.instructors.exists() and hasattr(course.instructors.first(), 'profile') else 'غير محدد',
+            'instructor_avatar': request.build_absolute_uri(course.instructors.first().profile.image_profile.url) if course.instructors.exists() and hasattr(course.instructors.first(), 'profile') and course.instructors.first().profile.image_profile else None,
+            'rating': course.average_rating,
+            'total_students': course.total_enrollments,
+            'duration': sum(module['video_duration'] for module in modules_data),
+            'modules': modules_data,
+            'total_modules': len(modules_data),
+            'total_lessons': total_lessons,
+            'completed_lessons': completed_lessons,
+            'overall_progress': user_progress.overall_progress,
+            'status': user_progress.status,
+            'enrolled_date': enrollment.enrollment_date,
+            'last_accessed': user_progress.last_accessed,
+            'time_spent_minutes': user_progress.time_spent_minutes,
+            'has_final_exam': exams.filter(is_final=True).exists(),
+            'certificate': {
+                'id': certificate.certificate_id if certificate else None,
+                'status': certificate.status if certificate else None,
+                'date_issued': certificate.date_issued if certificate else None,
+                'download_url': certificate.get_download_url() if certificate else None
+            } if certificate else None
+        }
+        
+        # Prepare assignments data
+        assignments_data = []
+        for assignment in assignments:
+            submission = assignment_submissions.filter(assignment=assignment).first()
+            assignments_data.append({
+                'id': assignment.id,
+                'title': assignment.title,
+                'description': assignment.description,
+                'due_date': assignment.due_date,
+                'points': assignment.points,
+                'allow_late_submissions': assignment.allow_late_submissions,
+                'has_questions': assignment.has_questions,
+                'has_file_upload': assignment.has_file_upload,
+                'total_questions': assignment.get_questions_count(),
+                'submitted': submission is not None,
+                'submission_status': submission.status if submission else None,
+                'grade': submission.grade if submission else None,
+                'feedback': submission.feedback if submission else None,
+                'is_overdue': assignment.is_overdue()
+            })
+        
+        # Prepare exams data
+        exams_data = []
+        for exam in exams:
+            attempt = exam_attempts.filter(exam=exam).first()
+            exams_data.append({
+                'id': exam.id,
+                'title': exam.title,
+                'description': exam.description,
+                'time_limit': exam.time_limit,
+                'pass_mark': exam.pass_mark,
+                'is_final': exam.is_final,
+                'total_points': exam.total_points,
+                'total_questions': exam.questions.count(),
+                'allow_multiple_attempts': exam.allow_multiple_attempts,
+                'max_attempts': exam.max_attempts,
+                'attempted': attempt is not None,
+                'score': attempt.score if attempt else None,
+                'passed': attempt.passed if attempt else None,
+                'attempt_number': attempt.attempt_number if attempt else 0
+            })
+        
+        return Response({
+            'course': course_data,
+            'assignments': assignments_data,
+            'exams': exams_data,
+            'enrollment': {
+                'id': enrollment.id,
+                'status': enrollment.status,
+                'progress': enrollment.progress,
+                'enrollment_date': enrollment.enrollment_date,
+                'completion_date': enrollment.completion_date,
+                'last_accessed': enrollment.last_accessed
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except Course.DoesNotExist:
+        return Response({
+            'error': 'الدورة غير موجودة'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error in course_tracking_data: {str(e)}", exc_info=True)
+        return Response({
+            'error': 'حدث خطأ أثناء جلب بيانات الدورة',
+            'detail': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 

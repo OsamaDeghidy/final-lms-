@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.db.models import Count, Avg, Sum
+from django.db.models import Count, Avg, Sum, Max
 from django.utils import timezone
 from courses.models import Course, Enrollment
 from content.models import Module, UserProgress, ModuleProgress, Lesson, LessonResource
@@ -227,8 +227,19 @@ class LessonCreateUpdateSerializer(serializers.ModelSerializer):
         # Auto-assign order if not provided
         if 'order' not in validated_data or validated_data.get('order') in [None, 0]:
             module = validated_data['module']
-            max_order = module.lessons.aggregate(max_o=serializers.models.Max('order')).get('max_o') or 0
+            max_order = module.lessons.aggregate(max_o=Max('order')).get('max_o') or 0
             validated_data['order'] = max_order + 1
+        
+        # Set default values for optional fields
+        if 'description' not in validated_data or validated_data['description'] is None:
+            validated_data['description'] = ""
+        if 'is_active' not in validated_data:
+            validated_data['is_active'] = True
+        if 'is_free' not in validated_data:
+            validated_data['is_free'] = False
+        if 'difficulty' not in validated_data:
+            validated_data['difficulty'] = 'beginner'
+        
         return super().create(validated_data)
 
 
@@ -241,15 +252,69 @@ class LessonResourceSerializer(serializers.ModelSerializer):
             'is_public', 'order', 'created_at', 'updated_at', 'metadata'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'lesson': {'required': True},
+            'title': {'required': True},
+            'resource_type': {'required': True},
+            'description': {'required': False, 'allow_blank': True},
+            'file': {'required': False},
+            'url': {'required': False},
+            'is_public': {'required': False},
+            'order': {'required': False},
+            'metadata': {'required': False}
+        }
 
     def validate(self, attrs):
+        # Set default values for optional fields
+        if 'metadata' not in attrs or attrs['metadata'] is None:
+            attrs['metadata'] = {}
+        if 'description' not in attrs or attrs['description'] is None:
+            attrs['description'] = ""
+        if 'is_public' not in attrs:
+            attrs['is_public'] = True
+        if 'order' not in attrs:
+            attrs['order'] = 0
+        
+        # Convert string values to appropriate types
+        if 'is_public' in attrs and isinstance(attrs['is_public'], str):
+            attrs['is_public'] = attrs['is_public'].lower() in ['true', '1', 'yes']
+        if 'order' in attrs and isinstance(attrs['order'], str):
+            try:
+                attrs['order'] = int(attrs['order'])
+            except ValueError:
+                attrs['order'] = 0
+        
         file = attrs.get('file') or getattr(self.instance, 'file', None)
         url = attrs.get('url') or getattr(self.instance, 'url', None)
+        
         if not file and not url:
             raise serializers.ValidationError('Either a file or URL must be provided')
         if file and url:
             raise serializers.ValidationError('Cannot have both file and URL')
+        
         return attrs
+
+    def create(self, validated_data):
+        # Set default values if not provided
+        if 'metadata' not in validated_data or validated_data['metadata'] is None:
+            validated_data['metadata'] = {}
+        if 'description' not in validated_data or validated_data['description'] is None:
+            validated_data['description'] = ""
+        if 'is_public' not in validated_data:
+            validated_data['is_public'] = True
+        if 'order' not in validated_data:
+            validated_data['order'] = 0
+        
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Set default values if not provided
+        if 'metadata' not in validated_data or validated_data['metadata'] is None:
+            validated_data['metadata'] = {}
+        if 'description' not in validated_data or validated_data['description'] is None:
+            validated_data['description'] = ""
+        
+        return super().update(instance, validated_data)
 
 
 class UserProgressSerializer(serializers.ModelSerializer):

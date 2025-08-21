@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Container, 
   Grid, 
@@ -11,7 +11,9 @@ import {
   Chip,
   Fade,
   IconButton,
-  Tooltip
+  Tooltip,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { 
   School as SchoolIcon, 
@@ -23,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/system';
+import { courseAPI } from '../../services/api.service';
 
 const pulse = keyframes`
   0% { transform: scale(1); }
@@ -81,43 +84,7 @@ const StyledCardMedia = styled(CardMedia)({
   }
 });
 
-const mockEnrolledCourses = [
-  {
-    id: 1,
-    title: 'تطوير تطبيقات الويب المتقدمة',
-    description: 'تعلم أحدث تقنيات تطوير تطبيقات الويب',
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80',
-    instructor: 'أحمد محمد',
-    progress: 65,
-    totalLessons: 24,
-    completedLessons: 15,
-    category: 'برمجة'
-  },
-  {
-    id: 2,
-    title: 'تعلم لغة JavaScript',
-    description: 'دورة شاملة لتعلم لغة JavaScript من الصفر',
-    image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
-    instructor: 'سارة أحمد',
-    progress: 30,
-    totalLessons: 30,
-    completedLessons: 9,
-    category: 'برمجة'
-  },
-];
 
-const mockCompletedCourses = [
-  {
-    id: 3,
-    title: 'أساسيات HTML و CSS',
-    description: 'تعلم أساسيات تطوير واجهات الويب',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
-    instructor: 'محمد علي',
-    completedDate: '15 مايو 2023',
-    grade: 'A',
-    category: 'تطوير ويب'
-  }
-];
 
 const EmptyState = () => (
   <Fade in={true} timeout={500}>
@@ -264,6 +231,11 @@ const CompletedCourseCard = ({ course }) => (
         <Typography variant="body2" fontWeight={700} color="#43a047" sx={{ fontSize: 16 }}>
           مكتمل - {course.grade}
         </Typography>
+        {course.completion_date && (
+          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
+            تم الإكمال في: {new Date(course.completion_date).toLocaleDateString('ar-EG')}
+          </Typography>
+        )}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
         <Button
@@ -296,9 +268,78 @@ const CompletedCourseCard = ({ course }) => (
 
 const MyCourses = () => {
   const [tab, setTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState([]);
   const navigate = useNavigate();
-  const enrolledCourses = mockEnrolledCourses;
-  const completedCourses = mockCompletedCourses;
+
+  useEffect(() => {
+    fetchMyCourses();
+  }, []);
+
+  const fetchMyCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await courseAPI.getMyEnrolledCourses();
+      
+      setEnrolledCourses(response.enrolled_courses || []);
+      setCompletedCourses(response.completed_courses || []);
+      
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      setError('حدث خطأ أثناء جلب الكورسات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCourseClick = (courseId) => {
+    navigate(`/student/courses/${courseId}`);
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(120deg, #ede7f6 0%, #fff 100%)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}
+      >
+        <CircularProgress size={60} sx={{ color: '#7c4dff' }} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(120deg, #ede7f6 0%, #fff 100%)',
+          py: 4
+        }}
+      >
+        <Container maxWidth="xl">
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+          <Button 
+            variant="contained" 
+            onClick={fetchMyCourses}
+            sx={{ bgcolor: '#7c4dff' }}
+          >
+            إعادة المحاولة
+          </Button>
+        </Container>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -343,7 +384,7 @@ const MyCourses = () => {
               '&:hover': { bgcolor: '#ede7f6', color: '#7c4dff' }
             }}
           >
-            الكورسات المسجلة
+            الكورسات المسجلة ({enrolledCourses.length})
           </Button>
           <Button
             variant={tab === 1 ? 'contained' : 'outlined'}
@@ -361,7 +402,7 @@ const MyCourses = () => {
               '&:hover': { bgcolor: '#e8f5e9', color: '#43a047' }
             }}
           >
-            الكورسات المكتملة
+            الكورسات المكتملة ({completedCourses.length})
           </Button>
         </Box>
         <Grid container spacing={3}>
@@ -369,7 +410,7 @@ const MyCourses = () => {
             ? (enrolledCourses.length > 0
                 ? enrolledCourses.map(course => (
                     <Grid item xs={12} sm={6} md={6} key={course.id}>
-                      <CourseCard course={course} onClick={id => navigate(`/student/courses/${id}`)} />
+                      <CourseCard course={course} onClick={handleCourseClick} />
                     </Grid>
                   ))
                 : <EmptyState />)

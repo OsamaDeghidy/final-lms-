@@ -14,6 +14,12 @@ urlpatterns = [
     # Public courses (no authentication required)
     path('public/', views.public_courses, name='public_courses'),
     
+    # Student enrolled courses
+    path('my-enrolled-courses/', views.my_enrolled_courses, name='my_enrolled_courses'),
+    
+    # Course tracking data
+    path('course-tracking/<int:course_id>/', views.course_tracking_data, name='course_tracking_data'),
+    
     # Search and filtering
     path('search/', views.course_search, name='course_search'),
     path('featured/', views.featured_courses, name='featured_courses'),

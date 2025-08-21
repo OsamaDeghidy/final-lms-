@@ -59,33 +59,26 @@ const TeacherAssignments = () => {
       setLoading(true);
       try {
         const data = await assignmentsAPI.getAssignments();
-        const items = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : data?.assignments || []);
-        // Normalize for UI consumption
-        const normalized = items.map((a) => ({
-          id: a.id,
-          title: a.title,
-          description: a.description,
-          course: a.course_title || a.course || '',
-          module: a.module_name || a.module || '',
-          due_date: a.due_date,
-          points: a.points,
-          allow_late_submissions: a.allow_late_submissions,
-          has_questions: a.has_questions,
-          has_file_upload: a.has_file_upload,
-          assignment_file: a.assignment_file,
-          is_active: a.is_active,
-          created_at: a.created_at,
-          // Optional stats if provided by API; fallback zeros
-          submissions_count: a.submissions_count || 0,
-          graded_count: a.graded_count || 0,
-          total_students: a.total_students || 0,
-          average_grade: a.average_grade || 0,
-          questions_count: a.questions_count || 0,
-          total_points: a.total_points || a.points || 0,
-        }));
-        setAssignments(normalized);
+        console.log('Assignments API response:', data);
+        
+        // The API now returns properly formatted data with statistics
+        const items = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+        
+        // Data should already be normalized from the backend
+        setAssignments(items);
+        setSnackbar({ 
+          open: true, 
+          message: `تم تحميل ${items.length} واجب بنجاح`, 
+          severity: 'success' 
+        });
       } catch (err) {
-        setSnackbar({ open: true, message: 'تعذر تحميل الواجبات', severity: 'error' });
+        console.error('Error fetching assignments:', err);
+        setSnackbar({ 
+          open: true, 
+          message: `تعذر تحميل الواجبات: ${err?.response?.data?.detail || err.message}`, 
+          severity: 'error' 
+        });
+        setAssignments([]);
       } finally {
         setLoading(false);
       }
@@ -134,6 +127,10 @@ const TeacherAssignments = () => {
 
   const handleViewSubmissions = (assignmentId) => {
     navigate(`/teacher/assignments/${assignmentId}/submissions`);
+  };
+
+  const handleManageQuestions = (assignmentId) => {
+    navigate(`/teacher/assignments/${assignmentId}/questions`);
   };
 
   const handleDownloadFile = (fileName) => {
@@ -334,7 +331,7 @@ const TeacherAssignments = () => {
           const gradingRate = assignment.submissions_count > 0 ? (assignment.graded_count / assignment.submissions_count) * 100 : 0;
           
           return (
-            <Grid item xs={12} md={6} lg={4} key={assignment.id}>
+            <Grid xs={12} lg={4} md={6} key={assignment.id}>
               <Card 
                 sx={{
                   height: '100%',
@@ -441,14 +438,14 @@ const TeacherAssignments = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <SchoolIcon sx={{ color: '#ff6b6b', fontSize: 20 }} />
                     <Typography variant="body2" fontWeight={500} sx={{ color: '#2c3e50' }}>
-                      {assignment.course}
+                          {assignment.course_title}
                     </Typography>
                   </Box>
-                  {assignment.module && (
+                      {assignment.module_name && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                       <BookIcon sx={{ color: '#666', fontSize: 20 }} />
                       <Typography variant="body2" color="text.secondary">
-                        {assignment.module}
+                            {assignment.module_name}
                       </Typography>
                     </Box>
                   )}
@@ -548,7 +545,7 @@ const TeacherAssignments = () => {
                   <Box sx={{ mt: 'auto', pt: 3, pb: 1, borderTop: '1px solid #f0f0f0' }}>
                     <Grid container spacing={1.5}>
                       {assignment.assignment_file && (
-                        <Grid item xs={12} sm={4}>
+                        <Grid xs={12} sm={4}>
                           <Button
                             fullWidth
                             variant="outlined"
@@ -569,7 +566,7 @@ const TeacherAssignments = () => {
                           </Button>
                         </Grid>
                       )}
-                      <Grid item xs={12} sm={assignment.assignment_file ? 4 : 6}>
+                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
                         <Button
                           fullWidth
                           variant="outlined"
@@ -589,7 +586,7 @@ const TeacherAssignments = () => {
                           تعديل الواجب
                         </Button>
                       </Grid>
-                      <Grid item xs={12} sm={assignment.assignment_file ? 4 : 6}>
+                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
                         <Button
                           fullWidth
                           variant="contained"
@@ -607,6 +604,26 @@ const TeacherAssignments = () => {
                           }}
                         >
                           تصحيح الواجبات
+                        </Button>
+                      </Grid>
+                      <Grid xs={12} sm={assignment.assignment_file ? 4 : 6}>
+                        <Button
+                          fullWidth
+                          variant="outlined"
+                          size="small"
+                          startIcon={<QuizIcon />}
+                          onClick={() => handleManageQuestions(assignment.id)}
+                          sx={{
+                            borderColor: '#4caf50',
+                            color: '#4caf50',
+                            fontWeight: 600,
+                            '&:hover': {
+                              borderColor: '#388e3c',
+                              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            }
+                          }}
+                        >
+                          إضافة أسئلة
                         </Button>
                       </Grid>
                     </Grid>
@@ -676,7 +693,7 @@ const TeacherAssignments = () => {
                 <Divider />
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid xs={12} md={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <SchoolIcon sx={{ color: '#ff6b6b' }} />
                       <Typography variant="body1" fontWeight={500}>
@@ -698,7 +715,7 @@ const TeacherAssignments = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid xs={12} md={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <CalendarTodayIcon sx={{ color: '#666' }} />
                       <Typography variant="body1">
@@ -727,7 +744,7 @@ const TeacherAssignments = () => {
                     إحصائيات الواجب
                   </Typography>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={4}>
+                    <Grid xs={12} md={4}>
                       <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
                         <Typography variant="h4" fontWeight={700} color="primary">
                           {selectedAssignment.submissions_count}
@@ -737,7 +754,7 @@ const TeacherAssignments = () => {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid xs={12} md={4}>
                       <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
                         <Typography variant="h4" fontWeight={700} color="success.main">
                           {selectedAssignment.graded_count}
@@ -747,7 +764,7 @@ const TeacherAssignments = () => {
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid item xs={12} md={4}>
+                    <Grid xs={12} md={4}>
                       <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
                         <Typography variant="h4" fontWeight={700} color="secondary.main">
                           {selectedAssignment.average_grade > 0 ? selectedAssignment.average_grade.toFixed(1) : 0}%

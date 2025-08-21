@@ -462,6 +462,10 @@ class UserProgress(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to ensure clean is called"""
+        # Set default values for notes if it is None
+        if self.notes is None:
+            self.notes = ""
+        
         self.full_clean()
         
         # Update status based on progress
@@ -557,10 +561,10 @@ class UserProgress(models.Model):
             user=user,
             course=course,
             defaults={
-                'last_accessed': timezone.now()
+                'last_accessed': timezone.now(),
+                'notes': ""
             }
         )
-        return self.overall_progress
 
     def __str__(self):
         return f"{self.user.username}'s progress in {self.course.title}"
@@ -673,11 +677,15 @@ class ModuleProgress(models.Model):
     completion_requirements = models.JSONField(
         _('completion requirements'),
         default=dict,
+        blank=True,
+        null=True,
         help_text=_('Structured data about completion requirements')
     )
     metadata = models.JSONField(
         _('metadata'),
         default=dict,
+        blank=True,
+        null=True,
         help_text=_('Additional metadata about the module progress')
     )
 
@@ -713,6 +721,12 @@ class ModuleProgress(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to ensure clean is called and status is updated"""
+        # Set default values for JSON fields if they are None
+        if self.completion_requirements is None:
+            self.completion_requirements = {}
+        if self.metadata is None:
+            self.metadata = {}
+        
         self.full_clean()
         
         # Update status based on completion
@@ -949,6 +963,8 @@ class LessonResource(models.Model):
     metadata = models.JSONField(
         _('metadata'),
         default=dict,
+        blank=True,
+        null=True,
         help_text=_('Additional metadata about the resource')
     )
 
@@ -976,6 +992,16 @@ class LessonResource(models.Model):
             raise ValidationError({
                 'file': _('Cannot have both a file and a URL')
             })
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure default values are set"""
+        # Set default values for optional fields if they are None
+        if self.metadata is None:
+            self.metadata = {}
+        if self.description is None:
+            self.description = ""
+        
+        super().save(*args, **kwargs)
     
     def get_absolute_url(self):
         """Get URL for this resource"""
@@ -1031,5 +1057,9 @@ def create_initial_module_progress(sender, instance, created, **kwargs):
         for module in instance.course.modules.all():
             ModuleProgress.objects.get_or_create(
                 user=instance.user,
-                module=module
+                module=module,
+                defaults={
+                    'completion_requirements': {},
+                    'metadata': {}
+                }
             )

@@ -81,6 +81,7 @@ import GradeSubmission from './pages/assignments/GradeSubmission';
 import SubmitAssignment from './pages/assignments/SubmitAssignment';
 import CreateAssignment from './pages/assignments/CreateAssignment';
 import EditAssignment from './pages/assignments/EditAssignment';
+import AssignmentQuestions from './pages/assignments/AssignmentQuestions';
 import ExamStart from './pages/student/exam/ExamStart';
 import ExamTaking from './pages/student/exam/ExamTaking';
 import ExamResult from './pages/student/exam/ExamResult';
@@ -342,6 +343,7 @@ const AppContent = () => {
                           <Route path="assignments" element={<TeacherAssignments />} />
                           <Route path="assignments/new" element={<CreateAssignment />} />
                           <Route path="assignments/:assignmentId/edit" element={<EditAssignment />} />
+                          <Route path="assignments/:assignmentId/questions" element={<AssignmentQuestions />} />
                           <Route path="assignments/:assignmentId/submissions" element={<AssignmentSubmissions />} />
                           <Route path="assignments/:assignmentId/submissions/:submissionId" element={<GradeSubmission />} />
                           <Route path="students" element={<div>الطلاب</div>} />

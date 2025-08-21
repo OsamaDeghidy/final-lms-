@@ -10,7 +10,7 @@ from users.models import Profile
 from content.models import Module, ModuleProgress, UserProgress, Lesson, LessonResource
 from content.serializers import (
     ModuleDetailSerializer, ModuleCreateSerializer, ProgressUpdateSerializer,
-    LessonSerializer, LessonCreateUpdateSerializer, LessonResourceSerializer
+    LessonSerializer, LessonDetailSerializer, LessonCreateUpdateSerializer, LessonResourceSerializer
 )
 
 
@@ -173,6 +173,45 @@ class LessonViewSet(ModelViewSet):
             qs = qs.filter(module__course_id=course_id)
         return qs.order_by('order', 'created_at')
 
+    def create(self, request, *args, **kwargs):
+        """Create a new lesson with better error handling"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            else:
+                return Response({
+                    'error': 'بيانات غير صحيحة',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء إنشاء الدرس',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, *args, **kwargs):
+        """Update a lesson with better error handling"""
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                return Response(serializer.data)
+            else:
+                return Response({
+                    'error': 'بيانات غير صحيحة',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء تحديث الدرس',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class LessonResourceViewSet(ModelViewSet):
     """CRUD for lesson resources (files/links)"""
@@ -192,6 +231,45 @@ class LessonResourceViewSet(ModelViewSet):
         if module_id:
             qs = qs.filter(lesson__module_id=module_id)
         return qs.order_by('order', 'created_at')
+
+    def create(self, request, *args, **kwargs):
+        """Create a new lesson resource with better error handling"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            else:
+                return Response({
+                    'error': 'بيانات غير صحيحة',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء إنشاء المورد',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def update(self, request, *args, **kwargs):
+        """Update a lesson resource with better error handling"""
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                return Response(serializer.data)
+            else:
+                return Response({
+                    'error': 'بيانات غير صحيحة',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء تحديث المورد',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Add this to the end of the file to make the mixin available for import

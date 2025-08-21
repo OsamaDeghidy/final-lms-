@@ -7,21 +7,35 @@ const api = axios.create(API_CONFIG);
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
+    console.log('Request interceptor - Token exists:', !!token);
+    console.log('Request URL:', config.url);
+    console.log('Request method:', config.method);
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('Authorization header added');
+    } else {
+      console.log('No token found in localStorage');
     }
     return config;
   },
   (error) => {
+    console.log('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for handling errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response interceptor - Success:', response.status, response.config.url);
+    return response;
+  },
   (error) => {
+    console.log('Response interceptor - Error:', error.response?.status, error.response?.data, error.config?.url);
+    
     if (error.response?.status === 401) {
+      console.log('Unauthorized access - redirecting to login');
       // Handle unauthorized access
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -251,6 +265,52 @@ export const courseAPI = {
   getDashboardStats: async () => {
     const response = await api.get('/courses/dashboard/stats/');
     return response.data;
+  },
+
+  // Get my enrolled courses
+  getMyEnrolledCourses: async () => {
+    try {
+      const response = await api.get('/courses/my-enrolled-courses/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching enrolled courses:', error);
+      throw error;
+    }
+  },
+
+  // Get course tracking data
+  getCourseTrackingData: async (courseId) => {
+    try {
+      const response = await api.get(`/courses/course-tracking/${courseId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course tracking data:', error);
+      throw error;
+    }
+  },
+
+  // Get quiz data
+  getQuizData: async (quizId) => {
+    try {
+      const response = await api.get(`/assignments/quiz/${quizId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quiz data:', error);
+      throw error;
+    }
+  },
+
+  // Submit quiz attempt
+  submitQuizAttempt: async (quizId, answers) => {
+    try {
+      const response = await api.post(`/assignments/quiz/${quizId}/submit/`, {
+        answers: answers
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error submitting quiz attempt:', error);
+      throw error;
+    }
   },
 };
 

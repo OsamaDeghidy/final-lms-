@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Card, Button, Chip, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
@@ -24,6 +24,7 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';
 import './Assignments.css';
+import assignmentsAPI from '../../services/assignment.service';
 
 // Styled Components
 const StatusChip = styled(Chip)(({ status }) => ({
@@ -61,128 +62,59 @@ const AssignmentSubmissions = () => {
     rubric_scores: {}
   });
 
-  // Sample assignment data
-  const assignment = {
-    id: assignmentId,
-    title: 'واجب الرياضيات - الجبر الخطي',
-    description: 'حل مسائل من 1 إلى 10 في الكتاب مع شرح الخطوات بالتفصيل.',
-    course: 'الرياضيات 101',
-    module: 'الجبر الخطي',
-    due_date: '2024-01-25T23:59:00',
-    points: 100,
-    total_students: 25,
-    submissions_count: 18,
-    graded_count: 12,
-    questions: [
-      { id: 1, text: 'ما هو حل المعادلة: 2x + 5 = 13؟', points: 20 },
-      { id: 2, text: 'أي من المعادلات التالية تمثل خط مستقيم؟', points: 15 },
-      { id: 3, text: 'هل المعادلة y = 3x + 2 تمثل خط مستقيم؟', points: 10 },
-      { id: 4, text: 'اشرح خطوات حل المعادلة التربيعية', points: 30 },
-      { id: 5, text: 'ارفع ملف يحتوي على حلولك', points: 25 }
-    ]
-  };
+  // State for real data
+  const [assignment, setAssignment] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample submissions data
-  const submissions = [
-    {
-      id: 1,
+  // Fetch assignment and submissions data
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch assignment details
+        const assignmentData = await assignmentsAPI.getAssignmentById(assignmentId);
+        setAssignment(assignmentData);
+
+        // Fetch submissions for this assignment
+        const submissionsData = await assignmentsAPI.getAssignmentSubmissions(assignmentId);
+        
+        // Transform submissions data to match frontend expectations
+        const transformedSubmissions = submissionsData.map(sub => ({
+          id: sub.id,
       student: {
-        id: 1,
-        name: 'أحمد محمد علي',
-        email: 'ahmed@example.com',
+            id: sub.user,
+            name: sub.student_name,
+            email: sub.student_email,
         avatar: null
       },
-      submitted_at: '2024-01-24T15:30:00',
-      status: 'submitted',
-      grade: null,
-      feedback: '',
-      is_late: false,
-      answers: {
-        1: 'x = 4',
-        2: 'y = 2x + 3',
-        3: 'صح',
-        4: 'المعادلة التربيعية x² - 4x + 3 = 0 يمكن حلها باستخدام...',
-        5: 'math_solution.pdf'
-      },
+          submitted_at: sub.submitted_at,
+          status: sub.status,
+          grade: sub.grade,
+          feedback: sub.feedback,
+          is_late: sub.is_late,
+          answers: sub.question_responses ? sub.question_responses.reduce((acc, resp) => {
+            acc[resp.question] = resp.text_answer || resp.selected_answer || resp.file_answer;
+            return acc;
+          }, {}) : {},
       rubric_scores: {}
-    },
-    {
-      id: 2,
-      student: {
-        id: 2,
-        name: 'فاطمة أحمد محمد',
-        email: 'fatima@example.com',
-        avatar: null
-      },
-      submitted_at: '2024-01-25T10:15:00',
-      status: 'graded',
-      grade: 85,
-      feedback: 'عمل جيد، لكن يرجى تحسين الخط في السؤال الرابع',
-      is_late: false,
-      answers: {
-        1: 'x = 4',
-        2: 'y = 2x + 3',
-        3: 'صح',
-        4: 'المعادلة التربيعية x² - 4x + 3 = 0...',
-        5: 'math_solution_fatima.pdf'
-      },
-      rubric_scores: {
-        accuracy: 4,
-        completeness: 4,
-        clarity: 3,
-        timeliness: 5
+        }));
+
+        setSubmissions(transformedSubmissions);
+      } catch (err) {
+        console.error('Error fetching assignment data:', err);
+        setError(`تعذر تحميل بيانات الواجب: ${err?.response?.data?.detail || err.message}`);
+      } finally {
+        setLoading(false);
       }
-    },
-    {
-      id: 3,
-      student: {
-        id: 3,
-        name: 'محمد علي أحمد',
-        email: 'mohamed@example.com',
-        avatar: null
-      },
-      submitted_at: '2024-01-26T09:45:00',
-      status: 'submitted',
-      grade: null,
-      feedback: '',
-      is_late: true,
-      answers: {
-        1: 'x = 4',
-        2: 'y = x² + 1',
-        3: 'خطأ',
-        4: 'المعادلة التربيعية...',
-        5: 'math_solution_mohamed.pdf'
-      },
-      rubric_scores: {}
-    },
-    {
-      id: 4,
-      student: {
-        id: 4,
-        name: 'سارة محمد علي',
-        email: 'sara@example.com',
-        avatar: null
-      },
-      submitted_at: '2024-01-24T14:20:00',
-      status: 'graded',
-      grade: 95,
-      feedback: 'عمل ممتاز! الحلول واضحة ومنظمة',
-      is_late: false,
-      answers: {
-        1: 'x = 4',
-        2: 'y = 2x + 3',
-        3: 'صح',
-        4: 'المعادلة التربيعية x² - 4x + 3 = 0...',
-        5: 'math_solution_sara.pdf'
-      },
-      rubric_scores: {
-        accuracy: 5,
-        completeness: 5,
-        clarity: 5,
-        timeliness: 5
-      }
+    };
+
+    if (assignmentId) {
+      fetchData();
     }
-  ];
+  }, [assignmentId]);
 
   const submissionStats = {
     total: submissions.length,
@@ -218,13 +150,33 @@ const AssignmentSubmissions = () => {
 
   const handleSaveGrade = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Saving grade:', { submissionId: selectedSubmission.id, ...gradingData });
+      // Call the real API to grade the submission
+      const gradePayload = {
+        grade: gradingData.grade,
+        feedback: gradingData.feedback,
+        status: 'graded'
+      };
+
+      await assignmentsAPI.gradeSubmission(selectedSubmission.id, gradePayload);
+      
+      // Update local state to reflect the changes
+      setSubmissions(prev => prev.map(sub => 
+        sub.id === selectedSubmission.id 
+          ? { 
+              ...sub, 
+              grade: gradingData.grade, 
+              feedback: gradingData.feedback,
+              status: 'graded',
+              rubric_scores: gradingData.rubric_scores
+            }
+          : sub
+      ));
+
       setOpenGradeDialog(false);
-      // Refresh data or update local state
+      console.log('Grade saved successfully');
     } catch (error) {
       console.error('Error saving grade:', error);
+      // Could add error handling/notification here
     }
   };
 
@@ -239,6 +191,43 @@ const AssignmentSubmissions = () => {
     if (tabValue === 3) return submission.is_late;
     return true;
   });
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box className="assignments-container" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <LinearProgress sx={{ width: '300px' }} />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box className="assignments-container">
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button onClick={() => navigate('/teacher/assignments')} variant="contained">
+          العودة إلى الواجبات
+        </Button>
+      </Box>
+    );
+  }
+
+  // Show message if no assignment found
+  if (!assignment) {
+    return (
+      <Box className="assignments-container">
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          لم يتم العثور على الواجب المطلوب
+        </Alert>
+        <Button onClick={() => navigate('/teacher/assignments')} variant="contained">
+          العودة إلى الواجبات
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box className="assignments-container">
@@ -283,14 +272,14 @@ const AssignmentSubmissions = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <SchoolIcon sx={{ color: '#ff6b6b' }} />
               <Typography variant="h6" fontWeight={600}>
-                {assignment.course}
+                  {assignment.course_title || assignment.course}
               </Typography>
             </Box>
-            {assignment.module && (
+              {(assignment.module_name || assignment.module) && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <BookIcon sx={{ color: '#666' }} />
                 <Typography variant="body1" color="text.secondary">
-                  {assignment.module}
+                    {assignment.module_name || assignment.module}
                 </Typography>
               </Box>
             )}
@@ -314,7 +303,7 @@ const AssignmentSubmissions = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <PeopleIcon sx={{ color: '#666' }} />
               <Typography variant="body1">
-                الطلاب: {assignment.submissions_count}/{assignment.total_students}
+                الطلاب: {assignment.submissions_count || submissions.length}/{assignment.total_students || 0}
               </Typography>
             </Box>
           </Grid>
@@ -623,7 +612,8 @@ const AssignmentSubmissions = () => {
                       الإجابات
                     </Typography>
                     <List dense>
-                      {assignment.questions.map((question, index) => (
+                      {assignment.questions && assignment.questions.length > 0 ? (
+                        assignment.questions.map((question, index) => (
                         <ListItem key={question.id}>
                           <ListItemIcon>
                             <QuizIcon />
@@ -640,7 +630,15 @@ const AssignmentSubmissions = () => {
                             />
                           )}
                         </ListItem>
-                      ))}
+                        ))
+                      ) : (
+                        <ListItem>
+                          <ListItemText 
+                            primary="لا توجد أسئلة لهذا الواجب"
+                            secondary="الواجب قد يكون عبارة عن رفع ملف أو كتابة نص فقط"
+                          />
+                        </ListItem>
+                      )}
                     </List>
                   </Grid>
                 </Grid>

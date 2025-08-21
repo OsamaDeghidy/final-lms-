@@ -6,7 +6,7 @@ import {
   ListItemText, ListItemIcon, Dialog, DialogTitle, DialogContent,
   DialogActions, Stepper, Step, StepLabel, StepContent,
   Switch, FormControlLabel, Checkbox, Radio, RadioGroup,
-  Accordion, AccordionSummary, AccordionDetails
+  Accordion, AccordionSummary, AccordionDetails, Snackbar
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon, CheckCircle as CheckCircleIcon,
@@ -55,7 +55,6 @@ const CreateAssignment = () => {
     has_questions: false,
     has_file_upload: false,
     assignment_file: null,
-    questions: [],
     max_attempts: 1,
     is_active: true
   });
@@ -106,16 +105,6 @@ const CreateAssignment = () => {
     fetchModules();
   }, [assignmentData.course]);
 
-  // removed mock courses; real courses are loaded via API into `courses` state
-
-  const questionTypes = [
-    { value: 'multiple_choice', label: 'اختيار من متعدد', icon: <RadioButtonCheckedIcon /> },
-    { value: 'true_false', label: 'صح أو خطأ', icon: <CheckBoxIcon /> },
-    { value: 'short_answer', label: 'إجابة قصيرة', icon: <TextFieldsIcon /> },
-    { value: 'essay', label: 'مقال', icon: <DescriptionIcon /> },
-    { value: 'file_upload', label: 'رفع ملف', icon: <FileUploadIcon /> }
-  ];
-
   const steps = [
     {
       label: 'معلومات الواجب الأساسية',
@@ -124,10 +113,6 @@ const CreateAssignment = () => {
     {
       label: 'إعدادات الواجب',
       description: 'التواريخ والدرجات والإعدادات'
-    },
-    {
-      label: 'إضافة الأسئلة',
-      description: 'إنشاء أسئلة الواجب'
     },
     {
       label: 'مراجعة وإرسال',
@@ -150,93 +135,30 @@ const CreateAssignment = () => {
     }));
   };
 
-  const handleAddQuestion = () => {
-    const newQuestion = {
-      id: `tmp-${Date.now()}`,
-      text: '',
-      question_type: 'essay',
-      points: 10,
-      explanation: '',
-      is_required: true,
-      order: assignmentData.questions.length + 1,
-      answers: []
-    };
-    setAssignmentData(prev => ({ ...prev, questions: [...prev.questions, newQuestion] }));
-  };
-
-  const handleQuestionChange = (questionId, field, value) => {
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId ? { ...q, [field]: value } : q
-      )
-    }));
-  };
-
-  const handleDeleteQuestion = (questionId) => {
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: prev.questions.filter(q => q.id !== questionId)
-    }));
-  };
-
-  const handleAddAnswer = (questionId) => {
-    const newAnswer = {
-      id: Date.now(),
-      text: '',
-      is_correct: false,
-      explanation: '',
-      order: assignmentData.questions.find(q => q.id === questionId)?.answers?.length || 0
-    };
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId 
-          ? { ...q, answers: [...(q.answers || []), newAnswer] }
-          : q
-      )
-    }));
-  };
-
-  const handleAnswerChange = (questionId, answerId, field, value) => {
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId 
-          ? {
-              ...q,
-              answers: q.answers?.map(a => 
-                a.id === answerId ? { ...a, [field]: value } : a
-              ) || []
-            }
-          : q
-      )
-    }));
-  };
-
-  const handleDeleteAnswer = (questionId, answerId) => {
-    setAssignmentData(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => 
-        q.id === questionId 
-          ? {
-              ...q,
-              answers: q.answers?.filter(a => a.id !== answerId) || []
-            }
-          : q
-      )
-    }));
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Map to API payload (supports file upload & extended fields)
+      // Validate required fields
+      if (!assignmentData.title || !assignmentData.description || !assignmentData.course || !assignmentData.due_date) {
+        setSnackbar({ 
+          open: true, 
+          message: 'يرجى ملء جميع الحقول المطلوبة (العنوان، الوصف، المقرر، تاريخ التسليم)', 
+          severity: 'error' 
+        });
+        return;
+      }
+
+      // Debug: Check authentication
+      const token = localStorage.getItem('token');
+      console.log('Token exists:', !!token);
+      console.log('User data:', localStorage.getItem('user'));
+      
+      // Map to API payload (clean up undefined/null values)
       const payload = {
         title: assignmentData.title,
         description: assignmentData.description,
-        course: assignmentData.course || null,
-        module: assignmentData.module || undefined,
+        course: assignmentData.course,
+        module: assignmentData.module || null,
         due_date: assignmentData.due_date,
         points: assignmentData.points,
         allow_late_submissions: assignmentData.allow_late_submissions,
@@ -246,50 +168,73 @@ const CreateAssignment = () => {
         assignment_file: assignmentData.assignment_file,
         is_active: assignmentData.is_active,
       };
+      
+      console.log('Sending payload:', payload);
       const created = await assignmentsAPI.createAssignment(payload);
+      console.log('Assignment creation response:', created);
+      
+      // Get assignment ID from response
       const assignmentId = created?.id;
-      // Persist questions and answers if any
-      if (assignmentId && assignmentData.has_questions && assignmentData.questions.length) {
-        for (const q of assignmentData.questions) {
-          const qRes = await assignmentsAPI.createQuestion({
-            assignment: assignmentId,
-            text: q.text,
-            question_type: q.question_type,
-            points: q.points,
-            explanation: q.explanation,
-            order: q.order,
-            is_required: q.is_required,
-          });
-          const questionId = qRes?.id;
-          if (questionId && q.answers?.length) {
-            for (const a of q.answers) {
-              await assignmentsAPI.createAnswer({
-                question: questionId,
-                text: a.text,
-                is_correct: !!a.is_correct,
-                explanation: a.explanation || '',
-                order: a.order || 0,
-              });
-            }
-          }
-        }
+      console.log('Assignment created with ID:', assignmentId);
+      
+      if (!assignmentId) {
+        console.error('Could not get assignment ID from response:', created);
+        setSnackbar({ 
+          open: true, 
+          message: 'تم إنشاء الواجب بنجاح، لكن لم نتمكن من الحصول على معرف الواجب.', 
+          severity: 'warning' 
+        });
+        navigate('/teacher/assignments');
+        return;
       }
-      setSnackbar({ open: true, message: 'تم إنشاء الواجب بنجاح', severity: 'success' });
+      
+      // Show success message
+      const fileMessage = assignmentData.assignment_file ? ' مع ملف مرفق' : '';
+      
+      setSnackbar({ 
+        open: true, 
+        message: `تم إنشاء الواجب "${assignmentData.title}" بنجاح${fileMessage}. يمكنك الآن إضافة الأسئلة من صفحة إدارة الواجبات.`, 
+        severity: 'success' 
+      });
+      
+      // Navigate to assignments list
+      setTimeout(() => {
       navigate('/teacher/assignments');
+      }, 2000);
     } catch (error) {
-      const msg = error?.response?.data?.detail || error?.response?.data?.error || 'تعذر إنشاء الواجب. تحقق من الحقول.';
-      setSnackbar({ open: true, message: msg, severity: 'error' });
+      console.error('Error creating assignment:', error);
+      
+      let errorMessage = 'تعذر إنشاء الواجب. تحقق من الحقول.';
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (typeof errorData === 'object') {
+          // Handle field-specific errors
+          const fieldErrors = Object.entries(errorData)
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+            .join('\n');
+          errorMessage = `أخطاء في الحقول:\n${fieldErrors}`;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      // Add more specific error messages
+      if (error?.response?.status === 404) {
+        errorMessage = 'خطأ في الـ API endpoint. تأكد من أن الخادم يعمل.';
+      } else if (error?.response?.status === 500) {
+        errorMessage = 'خطأ في الخادم. حاول مرة أخرى لاحقاً.';
+      }
+      
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const getQuestionIcon = (questionType) => {
-    const type = questionTypes.find(t => t.value === questionType);
-    return type ? type.icon : <QuizIcon />;
-  };
-
-  const totalPoints = assignmentData.questions.reduce((sum, q) => sum + q.points, 0);
 
   return (
     <Box className="assignments-container">
@@ -322,7 +267,7 @@ const CreateAssignment = () => {
             </Typography>
           </Box>
           <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
-            إنشاء واجب جديد مع الأسئلة والإعدادات
+            إنشاء واجب جديد - يمكنك إضافة الأسئلة لاحقاً
           </Typography>
         </Box>
       </Box>
@@ -402,7 +347,7 @@ const CreateAssignment = () => {
                   {index === 1 && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                       <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
+                        <Grid xs={12} md={6}>
                           <TextField
                             fullWidth
                             label="تاريخ ووقت التسليم"
@@ -414,7 +359,7 @@ const CreateAssignment = () => {
                             required
                           />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid xs={12} md={6}>
                           <TextField
                             fullWidth
                             label="المدة (بالدقائق)"
@@ -428,7 +373,7 @@ const CreateAssignment = () => {
                       </Grid>
                       
                       <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
+                        <Grid xs={12} md={6}>
                           <TextField
                             fullWidth
                             label="الدرجة الكلية"
@@ -439,7 +384,7 @@ const CreateAssignment = () => {
                             inputProps={{ min: 1 }}
                           />
                         </Grid>
-                        <Grid item xs={12} md={6}>
+                        <Grid xs={12} md={6}>
                           <TextField
                             fullWidth
                             label="الحد الأقصى للمحاولات"
@@ -481,7 +426,7 @@ const CreateAssignment = () => {
                             onChange={(e) => handleAssignmentChange('has_questions', e.target.checked)}
                           />
                         }
-                        label="يحتوي على أسئلة"
+                        label="يحتوي على أسئلة (يمكن إضافتها لاحقاً)"
                       />
                       
                       <FormControlLabel
@@ -493,185 +438,45 @@ const CreateAssignment = () => {
                         }
                         label="يسمح برفع ملفات"
                       />
+                      
+                      {assignmentData.has_file_upload && (
+                        <Box sx={{ mt: 2 }}>
+                          <input
+                            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                            style={{ display: 'none' }}
+                            id="assignment-file-upload"
+                            type="file"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                handleAssignmentChange('assignment_file', file);
+                              }
+                            }}
+                          />
+                          <label htmlFor="assignment-file-upload">
+                                        <Button
+                                          variant="outlined"
+                              component="span"
+                              startIcon={<FileUploadIcon />}
+                              sx={{ mb: 2 }}
+                            >
+                              رفع ملف الواجب
+                                        </Button>
+                          </label>
+                          {assignmentData.assignment_file && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                              <FileUploadIcon color="success" />
+                              <Typography variant="body2" color="success.main">
+                                تم اختيار: {assignmentData.assignment_file.name}
+                              </Typography>
+                                      </Box>
+                          )}
+                        </Box>
+                      )}
                     </Box>
                   )}
                   
                   {index === 2 && (
-                    <Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                        <Typography variant="h6" fontWeight={600}>
-                          أسئلة الواجب
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddQuestion}
-                          sx={{
-                            background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)',
-                            }
-                          }}
-                        >
-                          إضافة سؤال
-                        </Button>
-                      </Box>
-                      
-                      {assignmentData.questions.length === 0 ? (
-                        <Alert severity="info">
-                          لا توجد أسئلة بعد. اضغط على "إضافة سؤال" لبدء إنشاء الأسئلة.
-                        </Alert>
-                      ) : (
-                        <List>
-                          {assignmentData.questions.map((question, index) => (
-                            <ListItem key={question.id} sx={{ mb: 2, p: 0 }}>
-                              <QuestionCard sx={{ width: '100%', p: 3 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {getQuestionIcon(question.question_type)}
-                                    <Typography variant="h6" fontWeight={600}>
-                                      السؤال {index + 1}
-                                    </Typography>
-                                  </Box>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleDeleteQuestion(question.id)}
-                                    sx={{ color: '#d32f2f' }}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Box>
-                                
-                                <TextField
-                                  fullWidth
-                                  label="نص السؤال"
-                                  variant="outlined"
-                                  multiline
-                                  rows={2}
-                                  value={question.text}
-                                  onChange={(e) => handleQuestionChange(question.id, 'text', e.target.value)}
-                                  sx={{ mb: 2 }}
-                                />
-                                
-                                <Grid container spacing={2} sx={{ mb: 2 }}>
-                                  <Grid item xs={12} md={6}>
-                                    <FormControl fullWidth>
-                                      <InputLabel>نوع السؤال</InputLabel>
-                                      <Select
-                                        value={question.question_type}
-                                        onChange={(e) => handleQuestionChange(question.id, 'question_type', e.target.value)}
-                                        label="نوع السؤال"
-                                      >
-                                        {questionTypes.map((type) => (
-                                          <MenuItem key={type.value} value={type.value}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                              {type.icon}
-                                              {type.label}
-                                            </Box>
-                                          </MenuItem>
-                                        ))}
-                                      </Select>
-                                    </FormControl>
-                                  </Grid>
-                                  <Grid item xs={12} md={6}>
-                                    <TextField
-                                      fullWidth
-                                      label="الدرجة"
-                                      type="number"
-                                      variant="outlined"
-                                      value={question.points}
-                                      onChange={(e) => handleQuestionChange(question.id, 'points', Number(e.target.value))}
-                                      inputProps={{ min: 1 }}
-                                    />
-                                  </Grid>
-                                </Grid>
-                                
-                                <TextField
-                                  fullWidth
-                                  label="شرح السؤال (اختياري)"
-                                  variant="outlined"
-                                  multiline
-                                  rows={2}
-                                  value={question.explanation}
-                                  onChange={(e) => handleQuestionChange(question.id, 'explanation', e.target.value)}
-                                  sx={{ mb: 2 }}
-                                />
-                                
-                                {/* Answers for multiple choice questions */}
-                                {(question.question_type === 'multiple_choice' || question.question_type === 'true_false') && (
-                                  <Accordion>
-                                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                      <Typography variant="subtitle1" fontWeight={600}>
-                                        الإجابات
-                                      </Typography>
-                                    </AccordionSummary>
-                                    <AccordionDetails>
-                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                        {question.answers?.map((answer, aIndex) => (
-                                          <Box key={answer.id} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                            <TextField
-                                              fullWidth
-                                              label={`الإجابة ${aIndex + 1}`}
-                                              variant="outlined"
-                                              size="small"
-                                              value={answer.text}
-                                              onChange={(e) => handleAnswerChange(question.id, answer.id, 'text', e.target.value)}
-                                            />
-                                            <FormControlLabel
-                                              control={
-                                                <Radio
-                                                  checked={answer.is_correct}
-                                                  onChange={(e) => handleAnswerChange(question.id, answer.id, 'is_correct', e.target.checked)}
-                                                />
-                                              }
-                                              label="صحيحة"
-                                            />
-                                            <IconButton
-                                              size="small"
-                                              onClick={() => handleDeleteAnswer(question.id, answer.id)}
-                                              sx={{ color: '#d32f2f' }}
-                                            >
-                                              <DeleteIcon />
-                                            </IconButton>
-                                          </Box>
-                                        ))}
-                                        <Button
-                                          variant="outlined"
-                                          startIcon={<AddIcon />}
-                                          onClick={() => handleAddAnswer(question.id)}
-                                          size="small"
-                                        >
-                                          إضافة إجابة
-                                        </Button>
-                                      </Box>
-                                    </AccordionDetails>
-                                  </Accordion>
-                                )}
-                                
-                                <FormControlLabel
-                                  control={
-                                    <Checkbox
-                                      checked={question.is_required}
-                                      onChange={(e) => handleQuestionChange(question.id, 'is_required', e.target.checked)}
-                                    />
-                                  }
-                                  label="سؤال إجباري"
-                                />
-                              </QuestionCard>
-                            </ListItem>
-                          ))}
-                        </List>
-                      )}
-                      
-                      {assignmentData.questions.length > 0 && (
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                          إجمالي الدرجات: {totalPoints} نقطة
-                        </Alert>
-                      )}
-                    </Box>
-                  )}
-                  
-                  {index === 3 && (
                     <Box>
                       <Typography variant="h6" gutterBottom>
                         مراجعة الواجب
@@ -686,7 +491,7 @@ const CreateAssignment = () => {
                         </Typography>
                         
                         <Grid container spacing={2}>
-                          <Grid item xs={12} md={6}>
+                          <Grid xs={12} md={6}>
                             <Typography variant="body2" color="text.secondary">
                               المقرر: {assignmentData.course || 'غير محدد'}
                             </Typography>
@@ -694,7 +499,7 @@ const CreateAssignment = () => {
                               الوحدة: {assignmentData.module || 'غير محدد'}
                             </Typography>
                           </Grid>
-                          <Grid item xs={12} md={6}>
+                          <Grid xs={12} md={6}>
                             <Typography variant="body2" color="text.secondary">
                               تاريخ التسليم: {assignmentData.due_date ? new Date(assignmentData.due_date).toLocaleString('ar-SA') : 'غير محدد'}
                             </Typography>
@@ -704,6 +509,12 @@ const CreateAssignment = () => {
                           </Grid>
                         </Grid>
                       </Card>
+                      
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        <Typography variant="body2">
+                          <strong>ملاحظة:</strong> بعد إنشاء الواجب، يمكنك إضافة الأسئلة من صفحة إدارة الواجبات.
+                        </Typography>
+                      </Alert>
                       
                       <Typography variant="body2" color="text.secondary">
                         تأكد من مراجعة جميع المعلومات قبل إنشاء الواجب.
@@ -769,6 +580,22 @@ const CreateAssignment = () => {
           </Box>
         </Paper>
       )}
+
+      {/* Snackbar for messages */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

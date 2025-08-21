@@ -140,22 +140,30 @@ const LessonForm = ({ isEdit = false }) => {
 
       // Optionally create a resource if provided
       if (currentLessonId && resourceMode !== 'none') {
+        console.log('Creating resource with mode:', resourceMode);
+        console.log('Current lesson ID:', currentLessonId);
+        console.log('Resource data:', resource);
+        
         if (resourceMode === 'file' && resource.file) {
-          await contentAPI.createLessonResource({
+          const resourceData = {
             lesson: currentLessonId,
             title: resource.title || 'Resource',
             resource_type: resource.resource_type || 'document',
             file: resource.file,
             is_public: resource.is_public ? 'true' : 'false',
-          });
+          };
+          console.log('Creating file resource with data:', resourceData);
+          await contentAPI.createLessonResource(resourceData);
         } else if (resourceMode === 'url' && resource.url) {
-          await contentAPI.createLessonResource({
+          const resourceData = {
             lesson: currentLessonId,
             title: resource.title || 'Resource',
             resource_type: 'link',
             url: resource.url,
             is_public: resource.is_public ? 'true' : 'false',
-          });
+          };
+          console.log('Creating URL resource with data:', resourceData);
+          await contentAPI.createLessonResource(resourceData);
         }
       }
       navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons`);

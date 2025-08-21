@@ -38,7 +38,6 @@ const EditAssignment = () => {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  const [questions, setQuestions] = useState([]);
   const [courses, setCourses] = useState([]);
   const [modules, setModules] = useState([]);
   const [loadingModules, setLoadingModules] = useState(false);
@@ -79,42 +78,6 @@ const EditAssignment = () => {
           max_attempts: data.max_attempts || 1,
           is_active: data.is_active !== false,
         });
-        // Always load questions via API (combined endpoint → fallback per-question)
-        try {
-          const qa = await assignmentsAPI.getAssignmentQuestionsWithAnswers(assignmentId);
-          const list = Array.isArray(qa?.results) ? qa.results : (Array.isArray(qa) ? qa : qa?.questions || qa || []);
-          const normalized = list.map((q, qi) => ({
-            id: q.id,
-            text: q.text || '',
-            question_type: q.question_type || 'essay',
-            points: q.points ?? 0,
-            explanation: q.explanation || '',
-            order: q.order ?? qi,
-            is_required: q.is_required !== false,
-            answers: Array.isArray(q.answers) ? q.answers.map((a, ai) => ({
-              id: a.id,
-              text: a.text || '',
-              is_correct: !!a.is_correct,
-              explanation: a.explanation || '',
-              order: a.order ?? ai,
-            })) : [],
-          }));
-          setQuestions(normalized);
-        } catch {
-          const qData = await assignmentsAPI.getAssignmentQuestions(assignmentId);
-          const list = Array.isArray(qData?.results) ? qData.results : (Array.isArray(qData) ? qData : qData?.questions || qData || []);
-          const withAnswers = [];
-          for (const q of list) {
-            try {
-              const aData = await assignmentsAPI.getQuestionAnswers(q.id);
-              const answers = Array.isArray(aData?.results) ? aData.results : (Array.isArray(aData) ? aData : aData?.answers || []);
-              withAnswers.push({ ...q, answers });
-            } catch {
-              withAnswers.push({ ...q, answers: [] });
-            }
-          }
-          setQuestions(withAnswers);
-        }
       } catch (e) {
         setError('تعذر تحميل بيانات الواجب');
       }
@@ -163,60 +126,6 @@ const EditAssignment = () => {
         assignment_file: form.assignment_file,
         is_active: form.is_active,
       });
-      // Persist questions and answers (basic sync: create new, update existing by id, ignore deletions for now)
-      for (const q of questions) {
-        if (String(q.id || '').startsWith('tmp-')) {
-          const createdQ = await assignmentsAPI.createQuestion({
-            assignment: assignmentId,
-            text: q.text,
-            question_type: q.question_type || 'essay',
-            points: q.points || 0,
-            explanation: q.explanation || '',
-            order: q.order || 0,
-            is_required: q.is_required !== false,
-          });
-          if (createdQ?.id && Array.isArray(q.answers)) {
-            for (const a of q.answers) {
-              await assignmentsAPI.createAnswer({
-                question: createdQ.id,
-                text: a.text || '',
-                is_correct: !!a.is_correct,
-                explanation: a.explanation || '',
-                order: a.order || 0,
-              });
-            }
-          }
-        } else {
-          await assignmentsAPI.updateQuestion(q.id, {
-            text: q.text,
-            question_type: q.question_type,
-            points: q.points,
-            explanation: q.explanation,
-            order: q.order,
-            is_required: q.is_required,
-          });
-          if (Array.isArray(q.answers)) {
-            for (const a of q.answers) {
-              if (a.id) {
-                await assignmentsAPI.updateAnswer(a.id, {
-                  text: a.text,
-                  is_correct: a.is_correct,
-                  explanation: a.explanation,
-                  order: a.order,
-                });
-              } else {
-                await assignmentsAPI.createAnswer({
-                  question: q.id,
-                  text: a.text,
-                  is_correct: a.is_correct,
-                  explanation: a.explanation,
-                  order: a.order,
-                });
-              }
-            }
-          }
-        }
-      }
       navigate('/teacher/assignments');
     } catch (e) {
       setError('تعذر حفظ التعديلات');
@@ -225,38 +134,20 @@ const EditAssignment = () => {
     }
   };
 
-  const addQuestion = () => {
-    setQuestions(prev => ([
-      ...prev,
-      { id: `tmp-${Date.now()}`, text: '', question_type: 'essay', points: 0, explanation: '', order: prev.length + 1, is_required: true, answers: [] }
-    ]));
-  };
-
-  const updateQuestion = (qid, field, value) => {
-    setQuestions(prev => prev.map(q => q.id === qid ? { ...q, [field]: value } : q));
-  };
-
-  const removeQuestion = (qid) => {
-    setQuestions(prev => prev.filter(q => q.id !== qid));
-  };
-
-  const addAnswer = (qid) => {
-    setQuestions(prev => prev.map(q => q.id === qid ? { ...q, answers: [...(q.answers || []), { text: '', is_correct: false, explanation: '', order: (q.answers?.length || 0) }] } : q));
-  };
-
-  const updateAnswer = (qid, idx, field, value) => {
-    setQuestions(prev => prev.map(q => q.id === qid ? {
-      ...q,
-      answers: (q.answers || []).map((a, i) => i === idx ? { ...a, [field]: value } : a)
-    } : q));
-  };
-
-  const removeAnswer = (qid, idx) => {
-    setQuestions(prev => prev.map(q => q.id === qid ? {
-      ...q,
-      answers: (q.answers || []).filter((_, i) => i !== idx)
-    } : q));
-  };
+  const steps = [
+    {
+      label: 'معلومات الواجب الأساسية',
+      description: 'عنوان الواجب والوصف والمقرر'
+    },
+    {
+      label: 'إعدادات الواجب',
+      description: 'التواريخ والدرجات والإعدادات'
+    },
+    {
+      label: 'مراجعة وحفظ',
+      description: 'مراجعة التعديلات وحفظها'
+    }
+  ];
 
   return (
     <Box className="assignments-container">
@@ -268,7 +159,7 @@ const EditAssignment = () => {
             <AssignmentIcon sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>تعديل الواجب</Typography>
           </Box>
-          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>تعديل بيانات الواجب والأسئلة</Typography>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>تعديل بيانات الواجب الأساسية</Typography>
         </Box>
       </Box>
 
@@ -335,7 +226,7 @@ const EditAssignment = () => {
                 {form.allow_late_submissions && (
                   <TextField fullWidth label="خصم التسليم المتأخر (%)" type="number" variant="outlined" value={form.late_submission_penalty} onChange={(e) => setForm({ ...form, late_submission_penalty: Number(e.target.value) })} inputProps={{ min: 0, max: 100 }} />
                 )}
-                <FormControlLabel control={<Switch checked={form.has_questions} onChange={(e) => setForm({ ...form, has_questions: e.target.checked })} />} label="يحتوي على أسئلة" />
+                <FormControlLabel control={<Switch checked={form.has_questions} onChange={(e) => setForm({ ...form, has_questions: e.target.checked })} />} label="يحتوي على أسئلة (يمكن إدارتها منفصلة)" />
                 <FormControlLabel control={<Switch checked={form.has_file_upload} onChange={(e) => setForm({ ...form, has_file_upload: e.target.checked })} />} label="يسمح برفع ملفات" />
               </Box>
               <Box sx={{ mt: 2 }}>
@@ -347,86 +238,8 @@ const EditAssignment = () => {
 
           <Step>
             <StepLabel>
-              <Typography variant="h6" fontWeight={600}>إضافة الأسئلة</Typography>
-              <Typography variant="body2" color="text.secondary">إنشاء أسئلة الواجب</Typography>
-            </StepLabel>
-            <StepContent>
-              <Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h6" fontWeight={600}>أسئلة الواجب</Typography>
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={addQuestion} sx={{ background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)', '&:hover': { background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)' } }}>إضافة سؤال</Button>
-                </Box>
-                {questions.length === 0 ? (
-                  <Alert severity="info">لا توجد أسئلة بعد. اضغط على "إضافة سؤال" لبدء إنشاء الأسئلة.</Alert>
-                ) : (
-                  <Grid container spacing={2}>
-                    {questions.map((q, qi) => (
-                      <Grid item xs={12} key={q.id}>
-                        <Card sx={{ p: 3 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="subtitle1">سؤال {qi + 1}</Typography>
-                            <IconButton color="error" onClick={() => removeQuestion(q.id)}><DeleteIcon /></IconButton>
-          </Box>
-                          <TextField fullWidth label="نص السؤال" value={q.text} onChange={(e) => updateQuestion(q.id, 'text', e.target.value)} sx={{ mb: 2 }} />
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} md={6}>
-                              <FormControl fullWidth>
-                                <InputLabel>نوع السؤال</InputLabel>
-                                <Select value={q.question_type} label="نوع السؤال" onChange={(e) => updateQuestion(q.id, 'question_type', e.target.value)}>
-                                  <MenuItem value="multiple_choice">اختيار من متعدد</MenuItem>
-                                  <MenuItem value="true_false">صح أو خطأ</MenuItem>
-                                  <MenuItem value="short_answer">إجابة قصيرة</MenuItem>
-                                  <MenuItem value="essay">مقال</MenuItem>
-                                  <MenuItem value="file_upload">رفع ملف</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Grid>
-                            <Grid item xs={12} md={3}>
-                              <TextField label="الدرجة" type="number" fullWidth value={q.points || 0} onChange={(e) => updateQuestion(q.id, 'points', Number(e.target.value))} />
-                            </Grid>
-                            <Grid item xs={12} md={3}>
-                              <TextField label="الترتيب" type="number" fullWidth value={q.order || 0} onChange={(e) => updateQuestion(q.id, 'order', Number(e.target.value))} />
-                            </Grid>
-                          </Grid>
-                          {(q.question_type === 'multiple_choice' || q.question_type === 'true_false') && (
-                            <Box sx={{ mt: 2 }}>
-                              <Typography variant="subtitle2" sx={{ mb: 1 }}>الإجابات</Typography>
-                              {(q.answers || []).map((a, ai) => (
-                                <Grid container spacing={1} alignItems="center" key={ai} sx={{ mb: 1 }}>
-                                  <Grid item xs={12} md={6}>
-                                    <TextField fullWidth label={`الإجابة ${ai + 1}`} value={a.text} onChange={(e) => updateAnswer(q.id, ai, 'text', e.target.value)} />
-                                  </Grid>
-                                  <Grid item xs={12} md={3}>
-                                    <FormControlLabel control={<Switch checked={!!a.is_correct} onChange={(e) => updateAnswer(q.id, ai, 'is_correct', e.target.checked)} />} label="صحيحة" />
-                                  </Grid>
-                                  <Grid item xs={12} md={2}>
-                                    <TextField fullWidth label="ترتيب" type="number" value={a.order || 0} onChange={(e) => updateAnswer(q.id, ai, 'order', Number(e.target.value))} />
-                                  </Grid>
-                                  <Grid item xs={12} md={1}>
-                                    <IconButton color="error" onClick={() => removeAnswer(q.id, ai)}><DeleteIcon /></IconButton>
-                                  </Grid>
-                                </Grid>
-                              ))}
-                              <Button size="small" variant="outlined" onClick={() => addAnswer(q.id)} startIcon={<AddIcon />}>إضافة إجابة</Button>
-                            </Box>
-                          )}
-                        </Card>
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
-              </Box>
-              <Box sx={{ mt: 2 }}>
-                <Button variant="contained" onClick={handleNext} sx={{ mr: 1 }}>التالي</Button>
-                <Button onClick={handleBack} sx={{ mr: 1 }}>السابق</Button>
-              </Box>
-            </StepContent>
-          </Step>
-
-          <Step>
-            <StepLabel>
-              <Typography variant="h6" fontWeight={600}>مراجعة وإرسال</Typography>
-              <Typography variant="body2" color="text.secondary">مراجعة الواجب وحفظه</Typography>
+              <Typography variant="h6" fontWeight={600}>مراجعة وحفظ</Typography>
+              <Typography variant="body2" color="text.secondary">مراجعة التعديلات وحفظها</Typography>
             </StepLabel>
             <StepContent>
               <Card sx={{ p: 3, mb: 3 }}>
@@ -442,11 +255,18 @@ const EditAssignment = () => {
                     <Typography variant="body2" color="text.secondary">الدرجة: {form.points} نقطة</Typography>
                   </Grid>
                 </Grid>
-        </Card>
+              </Card>
+              
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2">
+                  <strong>ملاحظة:</strong> يمكنك إدارة أسئلة الواجب من صفحة إدارة الواجبات.
+                </Typography>
+              </Alert>
+              
               <Box sx={{ mt: 2 }}>
                 <Button variant="contained" onClick={handleSave} disabled={saving} sx={{ mr: 1 }}>حفظ التعديلات</Button>
                 <Button onClick={handleBack} sx={{ mr: 1 }}>السابق</Button>
-      </Box>
+              </Box>
             </StepContent>
           </Step>
         </Stepper>
