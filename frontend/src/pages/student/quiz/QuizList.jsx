@@ -170,16 +170,16 @@ const QuizList = () => {
                     <TableCell>
                       <Box className="table-cell-content">
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Tooltip title={getQuizTypeLabel(quiz.quiz_type)}>
-                            <IconButton size="small" color="primary">
-                              {getQuizTypeIcon(quiz.quiz_type)}
-                            </IconButton>
-                          </Tooltip>
+                    <Tooltip title={getQuizTypeLabel(quiz.quiz_type)}>
+                      <IconButton size="small" color="primary">
+                        {getQuizTypeIcon(quiz.quiz_type)}
+                      </IconButton>
+                    </Tooltip>
                           <Typography className="table-cell-title" variant="subtitle1" fontWeight={600} color="#2c3e50">
-                            {quiz.title}
-                          </Typography>
+                      {quiz.title}
+                    </Typography>
                         </Box>
-                        {quiz.description && (
+                  {quiz.description && (
                           <Typography className="table-cell-description" variant="body2" color="text.secondary" sx={{ 
                             display: '-webkit-box',
                             WebkitLineClamp: 2,
@@ -188,20 +188,20 @@ const QuizList = () => {
                             textOverflow: 'ellipsis',
                             maxWidth: 250
                           }}>
-                            {quiz.description}
-                          </Typography>
-                        )}
+                      {quiz.description}
+                    </Typography>
+                  )}
                       </Box>
                     </TableCell>
                     <TableCell>
-                      {quiz.course && (
+                    {quiz.course && (
                         <Box className="table-cell-meta">
                           <Typography variant="body2" fontWeight={500} color="#2c3e50">
                             {quiz.course.title}
                           </Typography>
                         </Box>
-                      )}
-                      {quiz.module && (
+                    )}
+                    {quiz.module && (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                           {quiz.module.name}
                         </Typography>
@@ -224,16 +224,16 @@ const QuizList = () => {
                           </Typography>
                         </Box>
                       ) : (
-                        <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary">
                           غير محدد
-                        </Typography>
+                    </Typography>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Chip 
-                        label={`${quiz.pass_mark}%`} 
-                        size="small" 
-                        color={quiz.pass_mark >= 60 ? 'success' : 'warning'}
+                    <Chip 
+                      label={`${quiz.pass_mark}%`} 
+                      size="small" 
+                      color={quiz.pass_mark >= 60 ? 'success' : 'warning'}
                         sx={{ fontWeight: 600 }}
                       />
                     </TableCell>
@@ -242,27 +242,27 @@ const QuizList = () => {
                         <Tooltip title="بدء الكويز">
                           <IconButton
                             size="small"
-                            onClick={() => handleStartQuiz(quiz.id)}
+                      onClick={() => handleStartQuiz(quiz.id)}
                             sx={{ 
                               color: '#2e7d32',
                               '&:hover': { backgroundColor: 'rgba(46, 125, 50, 0.1)' }
                             }}
-                          >
+                    >
                             <PlayArrow />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="عرض المحاولات السابقة">
-                          <IconButton
+                    <Tooltip title="عرض المحاولات السابقة">
+                      <IconButton
                             size="small"
-                            onClick={() => handleViewHistory(quiz.id)}
+                        onClick={() => handleViewHistory(quiz.id)}
                             sx={{ 
                               color: '#1976d2',
                               '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }
                             }}
-                          >
-                            <History />
-                          </IconButton>
-                        </Tooltip>
+                      >
+                        <History />
+                      </IconButton>
+                    </Tooltip>
                       </Box>
                     </TableCell>
                   </TableRow>

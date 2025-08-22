@@ -297,6 +297,23 @@ class Order(models.Model):
         self.tax = self.subtotal * Decimal('0.1')  # 10% tax
         self.total = self.subtotal + self.tax
         self.save()
+    
+    def create_enrollments_after_payment(self):
+        """Create enrollments for all order items after successful payment"""
+        if self.status == 'completed' and self.user:
+            for item in self.items.all():
+                if not item.enrollment:
+                    item.create_enrollment(self.user)
+    
+    def mark_as_paid(self, payment_id, payment_status='completed'):
+        """Mark order as paid and create enrollments"""
+        self.status = 'completed'
+        self.payment_id = payment_id
+        self.payment_status = payment_status
+        self.save()
+        
+        # Create enrollments for all courses
+        self.create_enrollments_after_payment()
 
 
 class OrderItem(models.Model):
@@ -316,6 +333,14 @@ class OrderItem(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)]
     )
+    # Reference to enrollment after successful payment
+    enrollment = models.ForeignKey(
+        'courses.Enrollment',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='order_items'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -323,3 +348,33 @@ class OrderItem(models.Model):
     
     def __str__(self):
         return f"{self.course.title} in order {self.order.order_number}"
+    
+    def create_enrollment(self, user):
+        """Create enrollment for this order item"""
+        from courses.models import Enrollment
+        
+        enrollment, created = Enrollment.objects.get_or_create(
+            student=user,
+            course=self.course,
+            defaults={
+                'is_paid': True,
+                'payment_amount': self.price,
+                'payment_date': timezone.now(),
+                'transaction_id': self.order.payment_id,
+                'status': 'active'
+            }
+        )
+        
+        if not created:
+            # Update existing enrollment
+            enrollment.is_paid = True
+            enrollment.payment_amount = self.price
+            enrollment.payment_date = timezone.now()
+            enrollment.transaction_id = self.order.payment_id
+            enrollment.status = 'active'
+            enrollment.save()
+        
+        self.enrollment = enrollment
+        self.save()
+        
+        return enrollment

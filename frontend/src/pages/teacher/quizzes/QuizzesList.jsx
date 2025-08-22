@@ -404,8 +404,8 @@ const QuizzesList = () => {
                           >
                             {quiz.title}
                           </Typography>
-                        </Box>
-                        {quiz.description && (
+                </Box>
+                  {quiz.description && (
                           <Typography 
                             variant="body2" 
                             color="text.secondary" 
@@ -422,13 +422,13 @@ const QuizzesList = () => {
                             }}
                           >
                             {quiz.description}
-                          </Typography>
-                        )}
+                    </Typography>
+                  )}
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        {quiz.course && (
+                  {quiz.course && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Box sx={{ 
                               width: 8, 
@@ -446,10 +446,10 @@ const QuizzesList = () => {
                               }}
                             >
                               {quiz.course.title}
-                            </Typography>
+                    </Typography>
                           </Box>
-                        )}
-                        {quiz.module && (
+                  )}
+                  {quiz.module && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
                             <Box sx={{ 
                               width: 6, 
@@ -538,7 +538,7 @@ const QuizzesList = () => {
                               }}
                             >
                               {quiz.time_limit} دقيقة
-                            </Typography>
+                    </Typography>
                           </Box>
                         )}
                         {quiz.pass_mark && (
@@ -569,7 +569,7 @@ const QuizzesList = () => {
                               }}
                             >
                               {quiz.pass_mark}% نجاح
-                            </Typography>
+                  </Typography>
                           </Box>
                         )}
                       </Box>
@@ -581,7 +581,7 @@ const QuizzesList = () => {
                         justifyContent: 'center', 
                         flexWrap: 'wrap'
                       }}>
-                        <Tooltip title="عرض التفاصيل">
+                  <Tooltip title="عرض التفاصيل">
                           <IconButton
                             size="small"
                             onClick={() => navigate(`/teacher/quizzes/${quiz.id}`)}
@@ -598,9 +598,9 @@ const QuizzesList = () => {
                             }}
                           >
                             <Visibility sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="تعديل الكويز">
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="تعديل الكويز">
                           <IconButton
                             size="small"
                             onClick={() => navigate(`/teacher/quizzes/${quiz.id}/edit`)}
@@ -617,9 +617,9 @@ const QuizzesList = () => {
                             }}
                           >
                             <Edit sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="حذف الكويز">
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="حذف الكويز">
                           <IconButton
                             size="small"
                             onClick={() => openDeleteDialog(quiz)}
@@ -636,8 +636,8 @@ const QuizzesList = () => {
                             }}
                           >
                             <Delete sx={{ fontSize: 16 }} />
-                          </IconButton>
-                        </Tooltip>
+                    </IconButton>
+                  </Tooltip>
                       </Box>
                     </TableCell>
                   </TableRow>
