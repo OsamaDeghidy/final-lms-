@@ -99,6 +99,17 @@ export const courseAPI = {
     return response.data;
   },
 
+  // Get public courses (no authentication required)
+  getPublicCourses: async (params = {}) => {
+    try {
+      const response = await api.get('/courses/public/', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching public courses:', error);
+      throw error;
+    }
+  },
+
   // Get course by ID
   getCourse: async (id) => {
     try {

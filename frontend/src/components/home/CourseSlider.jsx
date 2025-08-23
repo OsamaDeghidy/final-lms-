@@ -3,64 +3,7 @@ import { Box, Button, Card, CardContent, CardMedia, Container, IconButton, Ratin
 import { styled } from '@mui/material/styles';
 import { KeyboardArrowLeft, KeyboardArrowRight, PlayCircleOutline } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-
-const courses = [
-  {
-    id: 1,
-    title: 'تطوير تطبيقات الويب المتقدمة',
-    instructor: 'أحمد محمد',
-    rating: 4.8,
-    students: 1250,
-    price: '199 ر.س',
-    originalPrice: '399 ر.س',
-    image: 'https://via.placeholder.com/300x180',
-    category: 'تطوير الويب'
-  },
-  {
-    id: 2,
-    title: 'تعلم الذكاء الاصطناعي من الصفر',
-    instructor: 'سارة أحمد',
-    rating: 4.9,
-    students: 980,
-    price: '249 ر.س',
-    originalPrice: '499 ر.س',
-    image: 'https://via.placeholder.com/300x180',
-    category: 'الذكاء الاصطناعي'
-  },
-  {
-    id: 3,
-    title: 'أساسيات تحليل البيانات',
-    instructor: 'خالد عبدالله',
-    rating: 4.7,
-    students: 876,
-    price: '179 ر.س',
-    originalPrice: '299 ر.س',
-    image: 'https://via.placeholder.com/300x180',
-    category: 'تحليل البيانات'
-  },
-  {
-    id: 4,
-    title: 'التسويق الرقمي المتكامل',
-    instructor: 'نورة سعيد',
-    rating: 4.6,
-    students: 1540,
-    price: '159 ر.س',
-    originalPrice: '299 ر.س',
-    image: 'https://via.placeholder.com/300x180',
-    category: 'التسويق'
-  },
-  {
-    id: 5,
-    title: 'تصميم تجربة المستخدم UX/UI',
-    instructor: 'محمد علي',
-    rating: 4.8,
-    students: 2100,
-    price: '229 ر.س',
-    originalPrice: '399 ر.س',
-    image: 'https://via.placeholder.com/300x180',
-    category: 'التصميم'
-  },
-];
+import { courseAPI } from '../../services/courseService';
 
 const SliderContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
@@ -114,16 +57,13 @@ const SliderTrack = styled(Box)(({ theme }) => ({
 }));
 
 const CourseCard = styled(Card)(({ theme }) => ({
-  minWidth: 300,
+  width: '100%',
   borderRadius: theme.shape.borderRadius,
   overflow: 'hidden',
   transition: 'transform 0.3s ease, box-shadow 0.3s ease',
   '&:hover': {
     transform: 'translateY(-8px)',
     boxShadow: theme.shadows[8],
-  },
-  [theme.breakpoints.down('sm')]: {
-    minWidth: '85%',
   },
 }));
 
@@ -253,163 +193,286 @@ const Dot = styled(Box, {
   }),
 }));
 
-const CourseSlider = () => {
+const CourseCollections = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
-  const sliderRef = useRef(null);
   
-  const slidesToShow = isMobile ? 1 : isTablet ? 2 : 3;
-  const slideWidth = isMobile ? 280 : 300; // Slightly reduced width for better fit
-  const slideGap = isMobile ? 16 : 20; // Reduced gap for better fit
-  const containerWidth = '100%';
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const totalSlides = Math.ceil(courses.length / slidesToShow);
-  
-  // Auto slide functionality
+  // Fetch collections from API
   useEffect(() => {
-    if (isHovered || totalSlides <= 1) return;
-    
-    const interval = setInterval(() => {
-      setCurrentSlide(prev => (prev >= totalSlides - 1 ? 0 : prev + 1));
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [totalSlides, isHovered]);
-  
-  const goToSlide = (index) => {
-    if (index < 0 || index >= totalSlides) return;
-    setCurrentSlide(index);
-  };
-  
-  // Calculate translateX based on current slide and viewport width
-  const getTranslateX = () => {
-    if (isMobile) {
-      return `calc(50% - ${(slideWidth / 2) + (currentSlide * (slideWidth + slideGap))}px)`;
-    }
-    return `calc(50% - ${(slidesToShow * slideWidth / 2) + ((slidesToShow - 1) * slideGap / 2) + (currentSlide * (slideWidth + slideGap) * slidesToShow)}px)`;
-  };
+    const fetchCollections = async () => {
+      try {
+        setLoading(true);
+        const data = await courseAPI.getCourseCollections();
+        setCollections(data);
+      } catch (err) {
+        console.error('Error fetching collections:', err);
+        setError('حدث خطأ في تحميل المجموعات');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+  if (loading) {
+    return (
+      <SliderContainer>
+        <Container maxWidth="lg">
+          {[1, 2, 3].map((index) => (
+            <Box key={index} sx={{ mb: 6 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box>
+                  <Box sx={{ width: 200, height: 32, bgcolor: 'grey.300', borderRadius: 1, mb: 1 }} />
+                  <Box sx={{ width: 300, height: 20, bgcolor: 'grey.200', borderRadius: 1 }} />
+                </Box>
+                <Box sx={{ width: 100, height: 36, bgcolor: 'grey.300', borderRadius: 1 }} />
+              </Box>
+              <Box sx={{ 
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  sm: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  md: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  lg: 'repeat(auto-fill, minmax(350px, 1fr))'
+                },
+                gap: 3
+              }}>
+                {[1, 2, 3, 4].map((courseIndex) => (
+                  <Box key={courseIndex} sx={{ 
+                    bgcolor: 'grey.100', 
+                    borderRadius: 2, 
+                    height: 400,
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}>
+                    <Box sx={{ height: 200, bgcolor: 'grey.300', borderRadius: '8px 8px 0 0' }} />
+                    <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Box sx={{ width: '60%', height: 16, bgcolor: 'grey.300', borderRadius: 1 }} />
+                      <Box sx={{ width: '90%', height: 20, bgcolor: 'grey.300', borderRadius: 1 }} />
+                      <Box sx={{ width: '70%', height: 16, bgcolor: 'grey.200', borderRadius: 1 }} />
+                      <Box sx={{ width: '40%', height: 16, bgcolor: 'grey.200', borderRadius: 1 }} />
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          ))}
+        </Container>
+      </SliderContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <SliderContainer>
+        <Container maxWidth="lg">
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Typography variant="h5" color="error.main" sx={{ mb: 2 }}>
+              حدث خطأ في تحميل المجموعات
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              {error}
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={() => window.location.reload()}
+              sx={{ borderRadius: '8px', textTransform: 'none' }}
+            >
+              إعادة المحاولة
+            </Button>
+          </Box>
+        </Container>
+      </SliderContainer>
+    );
+  }
+
+  if (!collections || collections.length === 0) {
+    return (
+      <SliderContainer>
+        <Container maxWidth="lg">
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2
+          }}>
+            <Typography variant="h5" color="text.secondary" sx={{ mb: 2 }}>
+              لا توجد مجموعات متاحة حالياً
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              سيتم إضافة مجموعات جديدة قريباً
+            </Typography>
+            <Button 
+              variant="outlined" 
+              color="primary"
+              component={RouterLink}
+              to="/courses"
+              sx={{ borderRadius: '8px', textTransform: 'none' }}
+            >
+              تصفح جميع الدورات
+            </Button>
+          </Box>
+        </Container>
+      </SliderContainer>
+    );
+  }
 
   return (
     <SliderContainer>
       <Container maxWidth="lg">
-        <SliderHeader>
-          <SectionTitle variant="h4" component="h2">
-            دورات مميزة لك
-          </SectionTitle>
-          <Button 
-            variant="outlined" 
-            color="primary"
-            component={RouterLink}
-            to="/courses"
-            endIcon={<KeyboardArrowLeft />}
-            sx={{
-              borderRadius: '8px',
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 3,
-              '&:hover': {
-                backgroundColor: 'rgba(74, 108, 247, 0.05)',
-              },
-              '& .MuiButton-endIcon': {
-                marginRight: '4px',
-                marginLeft: '-4px',
-              }
-            }}
-          >
-            عرض الكل
-          </Button>
-        </SliderHeader>
-        
-        <Box 
-          ref={sliderRef}
-          sx={{ 
-            overflow: 'hidden', 
-            width: '100%', 
-            margin: '0 auto',
-            '&:hover': {
-              cursor: 'grab',
-            },
-            '&:active': {
-              cursor: 'grabbing',
-            },
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <SliderTrack 
-            sx={{ 
-              transform: getTranslateX(),
-              transition: 'transform 0.5s ease-in-out',
-              width: 'fit-content',
-              margin: '0 auto',
-              padding: theme.spacing(0, 2, 4, 2),
-              [theme.breakpoints.down('sm')]: {
-                padding: theme.spacing(0, 1, 4, 1),
-              },
-            }}
-          >
-            {courses.map((course) => (
-              <CourseCard key={course.id}>
-                <Box sx={{ position: 'relative' }}>
-                  <CourseMedia
-                    image={course.image}
-                    title={course.title}
-                  >
-                    <PlayButton className="play-button">
-                      <PlayCircleOutline fontSize="large" color="primary" />
-                    </PlayButton>
-                  </CourseMedia>
-                  <DiscountBadge>
-                    {Math.round((1 - parseFloat(course.price) / parseFloat(course.originalPrice)) * 100)}% خصم
-                  </DiscountBadge>
-                </Box>
-                <CourseCardContent>
-                  <CourseCategory>{course.category}</CourseCategory>
-                  <CourseTitle variant="subtitle1" component="h3">
-                    {course.title}
-                  </CourseTitle>
-                  <InstructorText>
-                    {course.instructor}
-                  </InstructorText>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <Rating value={course.rating} precision={0.1} readOnly size="small" />
-                    <Typography variant="caption" color="text.secondary">
-                      ({course.rating})
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-                    <PriceContainer>
-                      <CurrentPrice>{course.price}</CurrentPrice>
-                      <OriginalPrice>{course.originalPrice}</OriginalPrice>
-                    </PriceContainer>
-                    <StudentsCount>
-                      <span>•</span> {course.students.toLocaleString()} طالب
-                    </StudentsCount>
-                  </Box>
-                </CourseCardContent>
-              </CourseCard>
-            ))}
-          </SliderTrack>
-        </Box>
-        
-        {!isMobile && totalSlides > 1 && (
-          <SliderDots>
-            {Array.from({ length: totalSlides }).map((_, index) => (
-              <Dot 
-                key={index} 
-                active={index === currentSlide} 
-                onClick={() => goToSlide(index)}
-                aria-label={`انتقل إلى الشريحة ${index + 1}`}
-              />
-            ))}
-          </SliderDots>
-        )}
+        {collections.map((collection, collectionIndex) => (
+          <Box key={collection.id} sx={{ mb: 6 }}>
+                         <SliderHeader>
+               <Box>
+                 <SectionTitle variant="h4" component="h2">
+                   {collection.name}
+                 </SectionTitle>
+                 {collection.description && (
+                   <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                     {collection.description}
+                   </Typography>
+                 )}
+               </Box>
+               <Button 
+                 variant="outlined" 
+                 color="primary"
+                 component={RouterLink}
+                 to={`/courses?collection=${collection.slug}`}
+                 endIcon={<KeyboardArrowLeft />}
+                 sx={{
+                   borderRadius: '8px',
+                   textTransform: 'none',
+                   fontWeight: 500,
+                   px: 3,
+                   '&:hover': {
+                     backgroundColor: 'rgba(74, 108, 247, 0.05)',
+                   },
+                   '& .MuiButton-endIcon': {
+                     marginRight: '4px',
+                     marginLeft: '-4px',
+                   }
+                 }}
+               >
+                 عرض الكل
+               </Button>
+             </SliderHeader>
+            
+                         {collection.courses && collection.courses.length > 0 ? (
+               <Box 
+                 sx={{ 
+                   overflow: 'hidden', 
+                   width: '100%', 
+                   margin: '0 auto',
+                 }}
+               >
+                                 <SliderTrack 
+                   sx={{ 
+                     display: 'grid',
+                     gridTemplateColumns: {
+                       xs: 'repeat(auto-fill, minmax(280px, 1fr))',
+                       sm: 'repeat(auto-fill, minmax(300px, 1fr))',
+                       md: 'repeat(auto-fill, minmax(320px, 1fr))',
+                       lg: 'repeat(auto-fill, minmax(350px, 1fr))'
+                     },
+                     gap: theme.spacing(2.5),
+                     width: '100%',
+                     padding: theme.spacing(0, 2, 4, 2),
+                     [theme.breakpoints.down('sm')]: {
+                       gap: theme.spacing(2),
+                       padding: theme.spacing(0, 1, 4, 1),
+                     },
+                   }}
+                 >
+                  {collection.courses.map((course) => (
+                    <CourseCard key={course.id} component={RouterLink} to={`/courses/${course.id}`} sx={{ textDecoration: 'none', color: 'inherit' }}>
+                      <Box sx={{ position: 'relative' }}>
+                        <CourseMedia
+                          image={course.image_url || 'https://via.placeholder.com/300x180'}
+                          title={course.title}
+                        >
+                          <PlayButton className="play-button">
+                            <PlayCircleOutline fontSize="large" color="primary" />
+                          </PlayButton>
+                        </CourseMedia>
+                                                 {course.discount_price && course.price && course.discount_price !== course.price && (
+                           <DiscountBadge>
+                             {Math.round((1 - parseFloat(course.discount_price) / parseFloat(course.price)) * 100)}% خصم
+                           </DiscountBadge>
+                         )}
+                      </Box>
+                      <CourseCardContent>
+                        <CourseCategory>{course.category_name || 'بدون تصنيف'}</CourseCategory>
+                        <CourseTitle variant="subtitle1" component="h3">
+                          {course.title}
+                        </CourseTitle>
+                        <InstructorText>
+                          {course.instructors && course.instructors.length > 0 
+                            ? course.instructors[0].name 
+                            : 'مدرب غير محدد'
+                          }
+                        </InstructorText>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <Rating value={course.rating || 0} precision={0.1} readOnly size="small" />
+                          <Typography variant="caption" color="text.secondary">
+                            ({course.rating || 0})
+                          </Typography>
+                        </Box>
+                                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                           <PriceContainer>
+                             <CurrentPrice>
+                               {course.is_free ? 'مجاني' : `${course.discount_price || course.price} ر.س`}
+                             </CurrentPrice>
+                             {course.discount_price && course.price && course.discount_price !== course.price && (
+                               <OriginalPrice>{`${course.price} ر.س`}</OriginalPrice>
+                             )}
+                           </PriceContainer>
+                           <StudentsCount>
+                             <span>•</span> {course.enrolled_count || 0} طالب
+                           </StudentsCount>
+                         </Box>
+                      </CourseCardContent>
+                    </CourseCard>
+                                     ))}
+                 </SliderTrack>
+               </Box>
+             ) : (
+               <Box sx={{ 
+                 textAlign: 'center', 
+                 py: 6,
+                 bgcolor: 'grey.50',
+                 borderRadius: 2,
+                 border: '1px dashed',
+                 borderColor: 'grey.300'
+               }}>
+                 <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                   لا توجد دورات في هذه المجموعة حالياً
+                 </Typography>
+                 <Typography variant="body2" color="text.secondary">
+                   سيتم إضافة دورات جديدة قريباً
+                 </Typography>
+               </Box>
+             )}
+          </Box>
+        ))}
       </Container>
     </SliderContainer>
   );
 };
 
-export default CourseSlider;
+export default CourseCollections;

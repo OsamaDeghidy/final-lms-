@@ -171,13 +171,13 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
       {/* User Profile */}
       <Box sx={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3,
-        background: 'rgba(245,245,255,0.7)', borderRadius: 3, p: 2, boxShadow: '0 2px 8px 0 rgba(103,58,183,0.07)'
+        background: 'rgba(14,81,129,0.05)', borderRadius: 3, p: 2, boxShadow: '0 2px 8px 0 rgba(14,81,129,0.07)'
       }}>
         <Avatar 
           src={userData.avatar} 
           alt={userData.name}
           sx={{
-            width: 90, height: 90, mb: 1, border: '3px solid #ede7f6', boxShadow: '0 2px 8px 0 rgba(103,58,183,0.09)'
+            width: 90, height: 90, mb: 1, border: '3px solid #e5978b', boxShadow: '0 2px 8px 0 rgba(14,81,129,0.09)'
           }}
         />
         <Typography fontWeight={700}>{userData.name}</Typography>
@@ -198,23 +198,23 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                 display: 'block',
                 marginBottom: '8px',
                 borderRadius: '8px',
-                background: active ? 'linear-gradient(90deg, #ede7f6 0%, #fff 100%)' : 'none',
-                boxShadow: active ? '0 2px 8px 0 rgba(103,58,183,0.10)' : 'none',
+                background: active ? 'linear-gradient(90deg, rgba(14,81,129,0.1) 0%, #fff 100%)' : 'none',
+                boxShadow: active ? '0 2px 8px 0 rgba(14,81,129,0.10)' : 'none',
               }}
             >
               <ListItemButton
                 sx={{
                   borderRadius: 2,
-                  color: active ? '#673ab7' : '#757575',
+                  color: active ? '#0e5181' : '#757575',
                   '&:hover': {
-                    background: 'linear-gradient(90deg, #f3e5f5 0%, #fff 100%)',
-                    color: '#673ab7'
+                    background: 'linear-gradient(90deg, rgba(14,81,129,0.05) 0%, #fff 100%)',
+                    color: '#0e5181'
                   }
                 }}
               >
                 <ListItemIcon sx={{
                   minWidth: 36,
-                  color: active ? '#673ab7' : '#bdbdbd',
+                  color: active ? '#0e5181' : '#bdbdbd',
                   fontSize: 24
                 }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} sx={{ fontWeight: 600 }} />
@@ -324,7 +324,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
         <Box sx={{ position: 'relative', zIndex: 1000 }}>
         {/* AppBar */}
         <AppBar position="static" elevation={0} sx={{
-          background: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 10px 0 rgba(103,58,183,0.04)', mb: 3, borderRadius: 3
+          background: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 10px 0 rgba(14,81,129,0.04)', mb: 3, borderRadius: 3
         }}>
           <Toolbar sx={{ justifyContent: 'space-between' }}>
             <Paper
@@ -338,7 +338,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
               <Box ref={notifRef} sx={{ position: 'relative' }}>
                 <IconButton 
                   color="inherit" 
-                  sx={{ bgcolor: notifAnchorEl ? '#e8dff5' : '#f3e5f5', p: 1.2 }}
+                  sx={{ bgcolor: notifAnchorEl ? 'rgba(14,81,129,0.1)' : 'rgba(229,151,139,0.1)', p: 1.2 }}
                   onClick={handleNotifMenuOpen}
                 >
                   <Badge badgeContent={unreadCount} color="error">
@@ -377,8 +377,8 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                           sx={{
                             borderRadius: 1,
                             mb: 0.5,
-                            bgcolor: !notification.read ? '#f9f5ff' : 'transparent',
-                            '&:hover': { bgcolor: '#f3e5f5' }
+                            bgcolor: !notification.read ? 'rgba(14,81,129,0.05)' : 'transparent',
+                            '&:hover': { bgcolor: 'rgba(229,151,139,0.05)' }
                           }}
                         >
                           <Box sx={{ width: '100%' }}>
@@ -417,12 +417,12 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                     sx={{ 
                       width: 40, 
                       height: 40, 
-                      border: '2px solid #ede7f6',
+                      border: '2px solid #e5978b',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       '&:hover': {
                         transform: 'scale(1.05)',
-                        boxShadow: '0 2px 8px rgba(103,58,183,0.3)'
+                        boxShadow: '0 2px 8px rgba(14,81,129,0.3)'
                       }
                     }} 
                   />
@@ -454,7 +454,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                           height: 64, 
                           mb: 1,
                           mx: 'auto',
-                          border: '2px solid #ede7f6'
+                          border: '2px solid #e5978b'
                         }} 
                       />
                       <Typography variant="subtitle1" fontWeight={600}>{userData.name}</Typography>
@@ -464,11 +464,11 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                       </Typography>
                     </Box>
                     <List sx={{ p: 0 }}>
-                      <ListItemButton sx={{ '&:hover': { bgcolor: '#f9f5ff' } }}>
+                      <ListItemButton sx={{ '&:hover': { bgcolor: 'rgba(14,81,129,0.05)' } }}>
                         <ListItemIcon sx={{ minWidth: 36 }}><SettingsIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="إعدادات الحساب" />
                       </ListItemButton>
-                      <ListItemButton sx={{ '&:hover': { bgcolor: '#f9f5ff' } }}>
+                      <ListItemButton sx={{ '&:hover': { bgcolor: 'rgba(14,81,129,0.05)' } }}>
                         <ListItemIcon sx={{ minWidth: 36 }}><NotificationsIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="الإشعارات" />
                       </ListItemButton>

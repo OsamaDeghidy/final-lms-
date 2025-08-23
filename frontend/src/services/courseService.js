@@ -99,6 +99,12 @@ export const courseAPI = {
     const response = await api.get(`/courses/courses/${courseId}/related/`);
     return response.data;
   },
+
+  // Get course collections with courses
+  getCourseCollections: async () => {
+    const response = await api.get('/extras/collections/with_courses/');
+    return response.data;
+  },
 };
 
 // Cart API methods (moved from api.service.js)

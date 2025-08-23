@@ -46,7 +46,7 @@ const FooterTitle = styled(Typography)(({ theme }) => ({
     bottom: 0,
     width: 50,
     height: 3,
-    background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
     borderRadius: 3,
   },
 }));
@@ -60,7 +60,7 @@ const FooterLink = styled(Link)(({ theme }) => ({
   transition: 'all 0.3s ease',
   fontSize: '0.95rem',
   '&:hover': {
-    color: '#4ECDC4',
+    color: '#0e5181',
     paddingRight: theme.spacing(1),
     '& .arrow-icon': {
       opacity: 1,
@@ -94,10 +94,10 @@ const SocialIcon = styled(IconButton)(({ theme }) => ({
   margin: theme.spacing(0, 1, 1, 0),
   transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: '#0e5181',
     color: '#1A1A2E',
     transform: 'translateY(-3px)',
-    boxShadow: '0 5px 15px rgba(78, 205, 196, 0.3)',
+    boxShadow: '0 5px 15px rgba(14, 81, 129, 0.3)',
   },
 }));
 
@@ -160,13 +160,13 @@ const Footer = () => {
             gap: 2
           }}
         >
-          <Typography variant="subtitle2" sx={{ color: '#4ECDC4', fontWeight: 600 }}>
+          <Typography variant="subtitle2" sx={{ color: '#0e5181', fontWeight: 600 }}>
             تواصل معنا
           </Typography>
           <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
             {contactInfo.map((item, index) => (
               <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ color: '#4ECDC4' }}>{item.icon}</Box>
+                <Box sx={{ color: '#0e5181' }}>{item.icon}</Box>
                 <Typography variant="body2" sx={{ color: '#E6E6E6', fontSize: '0.85rem' }}>
                   {item.text}
                 </Typography>

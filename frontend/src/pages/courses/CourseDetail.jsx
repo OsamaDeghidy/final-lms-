@@ -320,11 +320,11 @@ const HeroSection = styled('div')(({ theme }) => ({
   color: theme.palette.primary.contrastText,
   // Animated gradient using brand colors
   background: `linear-gradient(135deg,
-    ${alpha(theme.palette.primary.main, 0.96)},
-    ${alpha(theme.palette.primary.dark, 0.95)}, 
-    ${alpha(theme.palette.secondary.main || theme.palette.primary.dark, 0.9)},
-    ${alpha(theme.palette.primary.dark, 0.95)}, 
-    ${alpha(theme.palette.primary.main, 0.96)}
+    ${alpha('#0e5181', 0.96)},
+    ${alpha('#0e5181', 0.95)}, 
+    ${alpha('#e5978b', 0.9)},
+    ${alpha('#0e5181', 0.95)}, 
+    ${alpha('#0e5181', 0.96)}
   )`,
   backgroundSize: '220% 220%',
   animation: `${gradientDrift} 26s ease-in-out infinite alternate`,
@@ -337,8 +337,8 @@ const HeroSection = styled('div')(({ theme }) => ({
     content: '""',
     position: 'absolute',
     inset: 0,
-    background: `radial-gradient( circle at 20% 80%, ${alpha(theme.palette.primary.light, 0.25)} 0%, transparent 55%),
-                 radial-gradient( circle at 85% 20%, ${alpha(theme.palette.secondary.light || theme.palette.primary.light, 0.22)} 0%, transparent 50%)`,
+    background: `radial-gradient( circle at 20% 80%, ${alpha('#e5978b', 0.25)} 0%, transparent 55%),
+                 radial-gradient( circle at 85% 20%, ${alpha('#0e5181', 0.22)} 0%, transparent 50%)`,
     animation: `${glowPulse} 8s ease-in-out infinite`,
     pointerEvents: 'none',
   },
@@ -636,15 +636,15 @@ const EnrollButton = styled(Button)(({ theme }) => ({
   overflow: 'hidden',
   transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
   background: `linear-gradient(135deg, 
-    ${theme.palette.primary.main} 0%, 
-    ${theme.palette.primary.dark} 50%,
-    ${alpha(theme.palette.primary.dark, 0.9)} 100%)`,
-  boxShadow: `0 12px 30px ${alpha(theme.palette.primary.main, 0.4)},
-              0 4px 8px ${alpha(theme.palette.primary.main, 0.2)}`,
+    #0e5181 0%, 
+    #0e5181 50%,
+    ${alpha('#0e5181', 0.9)} 100%)`,
+  boxShadow: `0 12px 30px ${alpha('#0e5181', 0.4)},
+              0 4px 8px ${alpha('#0e5181', 0.2)}`,
   '&:hover': {
     transform: 'translateY(-3px) scale(1.02)',
-    boxShadow: `0 12px 35px ${alpha(theme.palette.primary.main, 0.4)}`,
-    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+    boxShadow: `0 12px 35px ${alpha('#0e5181', 0.4)}`,
+    background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
   },
   '&:active': {
     transform: 'translateY(-1px) scale(0.98)',
@@ -685,7 +685,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
     left: 0,
     width: '80px',
     height: '4px',
-    background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+    background: `linear-gradient(90deg, #0e5181 0%, #e5978b 100%)`,
     borderRadius: '2px',
   },
 }));
@@ -926,21 +926,30 @@ const CourseDetail = () => {
   // Choose lesson icon by status/type
   const getLessonIcon = (lesson) => {
     if (lesson?.completed) {
-      return <CheckCircle htmlColor={theme.palette.success.main} />;
+      return <CheckCircle htmlColor="#0e5181" />;
     }
     if (lesson?.type === 'video') {
-      return <VideoIcon htmlColor={theme.palette.primary.main} />;
+      return <VideoIcon htmlColor="#0e5181" />;
     }
     if (lesson?.type === 'article') {
-      return <InsertDriveFileIcon htmlColor={alpha(theme.palette.text.primary, 0.8)} />;
+      return <InsertDriveFileIcon htmlColor="#e5978b" />;
     }
-    if (lesson?.type === 'quiz' || lesson?.type === 'exercise') {
-      return <QuizIconFilled htmlColor={theme.palette.primary.main} />;
+    if (lesson?.type === 'quiz') {
+      return <QuizIconFilled htmlColor="#0e5181" />;
+    }
+    if (lesson?.type === 'assignment') {
+      return <AssignmentIcon htmlColor="#e5978b" />;
+    }
+    if (lesson?.type === 'exam') {
+      return <QuizIcon htmlColor="#0e5181" />;
+    }
+    if (lesson?.type === 'file') {
+      return <DownloadIcon htmlColor="#e5978b" />;
     }
     if (lesson?.isPreview) {
-      return <PlayCircleOutline htmlColor={theme.palette.primary.main} />;
+      return <PlayCircleOutline htmlColor="#0e5181" />;
     }
-    return <DescriptionOutlined htmlColor={alpha(theme.palette.text.primary, 0.7)} />;
+    return <DescriptionOutlined htmlColor="#0e5181" />;
   };
 
   // Mock FAQ data
@@ -1248,10 +1257,17 @@ const CourseDetail = () => {
 
   // Transform API data to match expected format
   const transformCourseData = (apiCourse, modulesData = []) => {
+    console.log('Transforming course data:', apiCourse);
+    
     // Handle image URLs
     const getImageUrl = (imageField) => {
       if (!imageField) return 'https://source.unsplash.com/random/1600x500?programming,react';
-      if (typeof imageField === 'string') return imageField;
+      if (typeof imageField === 'string') {
+        // Check if it's already a full URL
+        if (imageField.startsWith('http')) return imageField;
+        // If it's a relative path, prepend the base URL
+        return `http://127.0.0.1:8000${imageField}`;
+      }
       if (imageField.url) return imageField.url;
       return 'https://source.unsplash.com/random/1600x500?programming,react';
     };
@@ -1259,7 +1275,10 @@ const CourseDetail = () => {
     // Handle file URLs (e.g., PDFs)
     const getFileUrl = (fileField) => {
       if (!fileField) return null;
-      if (typeof fileField === 'string') return fileField;
+      if (typeof fileField === 'string') {
+        if (fileField.startsWith('http')) return fileField;
+        return `http://127.0.0.1:8000${fileField}`;
+      }
       if (fileField.url) return fileField.url;
       return null;
     };
@@ -1269,37 +1288,44 @@ const CourseDetail = () => {
     const discountPrice = parseFloat(apiCourse.discount_price) || 0;
     const discount = discountPrice > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
 
+    // Calculate total lessons and hours from modules
+    const totalLessons = Array.isArray(modulesData) ? modulesData.reduce((total, module) => {
+      return total + (Array.isArray(module.lessons || module.content) ? (module.lessons || module.content).length : 0);
+    }, 0) : 0;
+
+    const totalHours = Math.round(totalLessons * 0.5); // Estimate 30 minutes per lesson
+
     return {
       id: apiCourse.id,
       title: apiCourse.title || '',
-      subtitle: apiCourse.subtitle || '',
+      subtitle: apiCourse.subtitle || apiCourse.short_description || '',
       description: apiCourse.description || '',
-      longDescription: apiCourse.description || '',
-      instructor: apiCourse.instructors?.[0]?.name || 'Unknown Instructor',
-      instructorTitle: apiCourse.instructors?.[0]?.bio || '',
-      instructorBio: apiCourse.instructors?.[0]?.bio || '',
-      instructorAvatar: getImageUrl(apiCourse.instructors?.[0]?.profile_pic),
-      instructorRating: 4.9,
-      instructorStudents: apiCourse.total_enrollments || 0,
-      instructorCourses: 8,
-      bannerImage: getImageUrl(apiCourse.image),
-      thumbnail: getImageUrl(apiCourse.image),
+      longDescription: apiCourse.description || apiCourse.long_description || '',
+      instructor: apiCourse.instructors?.[0]?.name || apiCourse.instructor?.name || 'Unknown Instructor',
+      instructorTitle: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.title || '',
+      instructorBio: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.bio || '',
+      instructorAvatar: getImageUrl(apiCourse.instructors?.[0]?.profile_pic || apiCourse.instructor?.profile_pic),
+      instructorRating: apiCourse.instructor?.rating || 4.9,
+      instructorStudents: apiCourse.instructor?.students_count || apiCourse.total_enrollments || 0,
+      instructorCourses: apiCourse.instructor?.courses_count || 8,
+      bannerImage: getImageUrl(apiCourse.image || apiCourse.banner_image),
+      thumbnail: getImageUrl(apiCourse.image || apiCourse.thumbnail),
       category: apiCourse.category?.name || 'Web Development',
       level: apiCourse.level || 'beginner',
-      duration: '8 weeks',
-      totalHours: 35,
-      lectures: 125,
-      resources: 45,
-      students: apiCourse.total_enrollments || 0,
-      rating: apiCourse.average_rating || 4.8,
+      duration: apiCourse.duration || `${totalHours} ساعة`,
+      totalHours: totalHours,
+      lectures: totalLessons,
+      resources: apiCourse.resources_count || 45,
+      students: apiCourse.total_enrollments || apiCourse.students_count || 0,
+      rating: apiCourse.average_rating || apiCourse.rating || 4.8,
       reviews: apiCourse.reviews?.length || 0,
       price: price,
       originalPrice: discountPrice > 0 ? price : price,
       discount: discount,
       isBestseller: apiCourse.is_featured || false,
-      lastUpdated: apiCourse.updated_at ? new Date(apiCourse.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' }) : 'Recently',
-      language: apiCourse.language || 'English',
-      captions: ['English', 'Spanish', 'French'],
+      lastUpdated: apiCourse.updated_at ? new Date(apiCourse.updated_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long' }) : 'مؤخراً',
+      language: apiCourse.language || 'العربية',
+      captions: apiCourse.captions || ['العربية', 'English'],
       features: [
         'وصول مدى الحياة',
         'الوصول عبر الجوال والتلفاز',
@@ -1309,8 +1335,10 @@ const CourseDetail = () => {
         'واجبات واختبارات'
       ],
       isEnrolled: apiCourse.is_enrolled || false,
-      planPdfUrl: getFileUrl(apiCourse.timeline_pdf || apiCourse.plan_pdf || apiCourse.plan) || null,
-      enrichmentPdfUrl: getFileUrl(apiCourse.enrichment_pdf || apiCourse.resources_pdf) || null,
+      planPdfUrl: getFileUrl(apiCourse.timeline_pdf || apiCourse.plan_pdf || apiCourse.plan || apiCourse.syllabus_pdf),
+      enrichmentPdfUrl: getFileUrl(apiCourse.enrichment_pdf || apiCourse.resources_pdf || apiCourse.materials_pdf),
+      requirements: apiCourse.requirements || [],
+      whoIsThisFor: apiCourse.who_is_this_for || apiCourse.target_audience || [],
       modules: transformModulesData(modulesData, apiCourse),
       curriculum: [
         { title: 'البداية', duration: '2h 45m', lectures: 5, completed: 2 },
@@ -1319,28 +1347,28 @@ const CourseDetail = () => {
         { title: 'تحسين الأداء', duration: '3h 45m', lectures: 5, completed: 0 },
       ],
       reviews: apiCourse.reviews || [],
-    faqs: [
-      {
-        question: 'كيف يمكنني الوصول إلى دورتي بعد الشراء؟',
-        answer: 'بعد الشراء، يمكنك الوصول إلى دورتك فوراً عن طريق الذهاب إلى "تعلمي" في حسابك. ستكون الدورة متاحة هناك للوصول مدى الحياة.'
-      },
-      {
-        question: 'هل تقدمون شهادة إتمام؟',
-        answer: 'نعم، ستحصل على شهادة إتمام بمجرد إنهاء جميع محتوى الدورة واجتياز أي تقييمات مطلوبة.'
-      },
-      {
-        question: 'هل يمكنني تحميل فيديوهات الدورة؟',
-        answer: 'لأسباب حقوق النشر والترخيص، لا نسمح بتحميل فيديوهات الدورة. ومع ذلك، يمكنك الوصول إليها في أي وقت من خلال منصتنا مع اتصال بالإنترنت.'
-      },
-      {
-        question: 'ماذا لو احتجت إلى مساعدة أثناء الدورة؟',
-        answer: 'يمكنك طرح الأسئلة في منطقة مناقشة الدورة حيث يمكن للمدرب والطلاب الآخرين المساعدة. للمشكلات التقنية، فريق الدعم لدينا متاح على مدار الساعة طوال أيام الأسبوع.'
-      },
-      {
-        question: 'هل هناك ضمان استرداد الأموال؟',
-        answer: 'نعم، نقدم ضمان استرداد الأموال لمدة 30 يوماً إذا لم تكن راضياً عن الدورة لأي سبب.'
-      }
-    ]
+      faqs: apiCourse.faqs || [
+        {
+          question: 'كيف يمكنني الوصول إلى دورتي بعد الشراء؟',
+          answer: 'بعد الشراء، يمكنك الوصول إلى دورتك فوراً عن طريق الذهاب إلى "تعلمي" في حسابك. ستكون الدورة متاحة هناك للوصول مدى الحياة.'
+        },
+        {
+          question: 'هل تقدمون شهادة إتمام؟',
+          answer: 'نعم، ستحصل على شهادة إتمام بمجرد إنهاء جميع محتوى الدورة واجتياز أي تقييمات مطلوبة.'
+        },
+        {
+          question: 'هل يمكنني تحميل فيديوهات الدورة؟',
+          answer: 'لأسباب حقوق النشر والترخيص، لا نسمح بتحميل فيديوهات الدورة. ومع ذلك، يمكنك الوصول إليها في أي وقت من خلال منصتنا مع اتصال بالإنترنت.'
+        },
+        {
+          question: 'ماذا لو احتجت إلى مساعدة أثناء الدورة؟',
+          answer: 'يمكنك طرح الأسئلة في منطقة مناقشة الدورة حيث يمكن للمدرب والطلاب الآخرين المساعدة. للمشكلات التقنية، فريق الدعم لدينا متاح على مدار الساعة طوال أيام الأسبوع.'
+        },
+        {
+          question: 'هل هناك ضمان استرداد الأموال؟',
+          answer: 'نعم، نقدم ضمان استرداد الأموال لمدة 30 يوماً إذا لم تكن راضياً عن الدورة لأي سبب.'
+        }
+      ]
     };
   };
 
@@ -1387,18 +1415,50 @@ const CourseDetail = () => {
       ];
     }
 
-    const result = modulesData.map((module, index) => ({
-      id: module.id || index + 1,
-      title: module.name || module.title || `الوحدة ${index + 1}`,
-      description: module.description || '',
-      duration: module.duration || '1h 00m',
-      lessons: Array.isArray(module.lessons || module.content || []) 
-        ? (module.lessons || module.content || []).map((lesson, lIndex) => ({
-            ...lesson,
-            title: lesson?.title || `الدرس ${lIndex + 1}`
-          }))
-        : []
-    }));
+    const result = modulesData.map((module, index) => {
+      // Transform lessons with better type detection
+      const transformLessons = (lessons) => {
+        if (!Array.isArray(lessons)) return [];
+        
+        return lessons.map((lesson, lIndex) => {
+          // Determine lesson type based on content or type field
+          let lessonType = lesson.type || 'video';
+          
+          if (lesson.title?.toLowerCase().includes('واجب') || lesson.title?.toLowerCase().includes('assignment')) {
+            lessonType = 'assignment';
+          } else if (lesson.title?.toLowerCase().includes('كويز') || lesson.title?.toLowerCase().includes('quiz')) {
+            lessonType = 'quiz';
+          } else if (lesson.title?.toLowerCase().includes('امتحان') || lesson.title?.toLowerCase().includes('exam')) {
+            lessonType = 'exam';
+          } else if (lesson.title?.toLowerCase().includes('مقال') || lesson.title?.toLowerCase().includes('article')) {
+            lessonType = 'article';
+          } else if (lesson.title?.toLowerCase().includes('ملف') || lesson.title?.toLowerCase().includes('file')) {
+            lessonType = 'file';
+          }
+          
+          return {
+            id: lesson.id || lIndex + 1,
+            title: lesson.title || lesson.name || `الدرس ${lIndex + 1}`,
+            duration: lesson.duration || lesson.length || '15:00',
+            type: lessonType,
+            isPreview: lesson.is_preview || lesson.isPreview || false,
+            completed: lesson.completed || lesson.is_completed || false,
+            description: lesson.description || '',
+            videoUrl: lesson.video_url || lesson.videoUrl || null,
+            fileUrl: lesson.file_url || lesson.fileUrl || null,
+            ...lesson
+          };
+        });
+      };
+
+      return {
+        id: module.id || index + 1,
+        title: module.name || module.title || `الوحدة ${index + 1}`,
+        description: module.description || '',
+        duration: module.duration || '1h 00m',
+        lessons: transformLessons(module.lessons || module.content || module.lectures || [])
+      };
+    });
     
     console.log('transformModulesData result:', result);
     return result;
@@ -1638,10 +1698,24 @@ const CourseDetail = () => {
               </CourseSubtitle>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                    <IconButton color={isInWishlist ? 'primary' : 'default'} onClick={handleAddToWishlist} sx={{ bgcolor: 'rgba(255,255,255,0.12)' }}>
+                    <IconButton onClick={handleAddToWishlist} sx={{ 
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      color: isInWishlist ? '#0e5181' : 'rgba(255,255,255,0.8)',
+                      '&:hover': {
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        transform: 'scale(1.1)'
+                      }
+                    }}>
                       {isInWishlist ? <BookmarkAdded /> : <BookmarkBorder />}
                     </IconButton>
-                    <IconButton onClick={handleOpenShare} sx={{ bgcolor: 'rgba(255,255,255,0.12)' }}>
+                    <IconButton onClick={handleOpenShare} sx={{ 
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      color: 'rgba(255,255,255,0.8)',
+                      '&:hover': {
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        transform: 'scale(1.1)'
+                      }
+                    }}>
                       <ShareIcon />
                     </IconButton>
                   </Box>
@@ -1768,11 +1842,16 @@ const CourseDetail = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 2 }}>
                   <Button 
                     variant="outlined" 
-                    color="inherit" 
                     sx={{ 
                       borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
-                      borderColor: 'common.white', color: 'common.white', 
-                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.12)' },
+                      borderColor: 'rgba(255,255,255,0.8)', color: 'common.white', 
+                      background: 'rgba(255,255,255,0.1)',
+                      backdropFilter: 'blur(10px)',
+                      '&:hover': { 
+                        borderColor: 'common.white', 
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        transform: 'translateY(-2px)'
+                      },
                       '& .MuiButton-startIcon': { ml: 1, mr: 0 }
                     }} 
                     onClick={handleOpenPreview} 
@@ -1783,12 +1862,17 @@ const CourseDetail = () => {
                   
                   <Button 
                     variant="outlined" 
-                    color="inherit" 
                     disabled={isAddingToCart}
                     sx={{ 
                       borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
-                      borderColor: 'common.white', color: 'common.white', 
-                      '&:hover': { borderColor: 'common.white', bgcolor: 'rgba(255,255,255,0.12)' },
+                      borderColor: 'rgba(255,255,255,0.8)', color: 'common.white', 
+                      background: 'rgba(255,255,255,0.1)',
+                      backdropFilter: 'blur(10px)',
+                      '&:hover': { 
+                        borderColor: 'common.white', 
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        transform: 'translateY(-2px)'
+                      },
                       '& .MuiButton-startIcon': { ml: 1, mr: 0 }
                     }} 
                     onClick={handleAddToCart} 
@@ -1799,9 +1883,21 @@ const CourseDetail = () => {
                   
                   <Button 
                     variant="contained" 
-                    color="primary" 
                     disabled={isProcessingPayment}
-                    sx={{ borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, '& .MuiButton-startIcon': { ml: 1, mr: 0 } }} 
+                    sx={{ 
+                      borderRadius: 999, 
+                      px: 4, 
+                      py: 1.25, 
+                      fontWeight: 700, 
+                      background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                      boxShadow: '0 8px 25px rgba(14, 81, 129, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+                        boxShadow: '0 12px 35px rgba(14, 81, 129, 0.4)',
+                        transform: 'translateY(-2px)'
+                      },
+                      '& .MuiButton-startIcon': { ml: 1, mr: 0 }
+                    }} 
                     onClick={handleDirectPayment} 
                     startIcon={isProcessingPayment ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
                   >
@@ -1972,35 +2068,55 @@ const CourseDetail = () => {
                   <SoftDivider sx={{ my: 3 }} />
 
                   {/* أقسام إضافية مقترحة */}
-                  <Grid container spacing={2}>
+                  <Grid container spacing={3}>
                     {Array.isArray(course.requirements) && course.requirements.length > 0 && (
                       <Grid xs={12} md={6}>
-                        <SectionTitle variant="h6" component="h3" sx={{ mb: 2 }}>المتطلبات</SectionTitle>
-                        <List disablePadding>
-                          {course.requirements.map((req, idx) => (
-                            <ListItem key={idx} disableGutters sx={{ py: 0.75 }}>
-                              <ListItemIcon sx={{ minWidth: 30 }}>
-                                <CheckCircle color="primary" fontSize="small" />
-                              </ListItemIcon>
-                              <ListItemText primary={<Typography variant="body2" dir="rtl">{req}</Typography>} />
-                            </ListItem>
-                          ))}
-                        </List>
+                        <Box sx={{ 
+                          p: 3, 
+                          borderRadius: 3, 
+                          background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.05) 0%, rgba(14, 81, 129, 0.02) 100%)',
+                          border: '1px solid rgba(14, 81, 129, 0.1)',
+                          boxShadow: '0 4px 15px rgba(14, 81, 129, 0.05)'
+                        }}>
+                          <SectionTitle variant="h6" component="h3" sx={{ mb: 2, color: '#0e5181' }}>
+                            📋 المتطلبات الأساسية
+                          </SectionTitle>
+                          <List disablePadding>
+                            {course.requirements.map((req, idx) => (
+                              <ListItem key={idx} disableGutters sx={{ py: 0.75 }}>
+                                <ListItemIcon sx={{ minWidth: 30 }}>
+                                  <CheckCircle htmlColor="#0e5181" fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary={<Typography variant="body2" dir="rtl" sx={{ color: 'text.primary' }}>{req}</Typography>} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
                       </Grid>
                     )}
                     {Array.isArray(course.whoIsThisFor) && course.whoIsThisFor.length > 0 && (
                       <Grid xs={12} md={6}>
-                        <SectionTitle variant="h6" component="h3" sx={{ mb: 2 }}>هذه الدورة مناسبة لـ</SectionTitle>
-                        <List disablePadding>
-                          {course.whoIsThisFor.map((who, idx) => (
-                            <ListItem key={idx} disableGutters sx={{ py: 0.75 }}>
-                              <ListItemIcon sx={{ minWidth: 30 }}>
-                                <CheckCircle color="primary" fontSize="small" />
-                              </ListItemIcon>
-                              <ListItemText primary={<Typography variant="body2" dir="rtl">{who}</Typography>} />
-                            </ListItem>
-                          ))}
-                        </List>
+                        <Box sx={{ 
+                          p: 3, 
+                          borderRadius: 3, 
+                          background: 'linear-gradient(135deg, rgba(229, 151, 139, 0.05) 0%, rgba(229, 151, 139, 0.02) 100%)',
+                          border: '1px solid rgba(229, 151, 139, 0.1)',
+                          boxShadow: '0 4px 15px rgba(229, 151, 139, 0.05)'
+                        }}>
+                          <SectionTitle variant="h6" component="h3" sx={{ mb: 2, color: '#e5978b' }}>
+                            🎯 هذه الدورة مناسبة لـ
+                          </SectionTitle>
+                          <List disablePadding>
+                            {course.whoIsThisFor.map((who, idx) => (
+                              <ListItem key={idx} disableGutters sx={{ py: 0.75 }}>
+                                <ListItemIcon sx={{ minWidth: 30 }}>
+                                  <CheckCircle htmlColor="#e5978b" fontSize="small" />
+                                </ListItemIcon>
+                                <ListItemText primary={<Typography variant="body2" dir="rtl" sx={{ color: 'text.primary' }}>{who}</Typography>} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Box>
                       </Grid>
                     )}
                   </Grid>
@@ -2013,16 +2129,57 @@ const CourseDetail = () => {
                         الخطة الزمنية
                       </SectionTitle>
                       {course.planPdfUrl ? (
-                        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
-                          <Box component="iframe" src={course.planPdfUrl} title="الخطة الزمنية" width="100%" height="600px" style={{ border: 0 }} />
-                          <Box sx={{ p: 1, textAlign: 'left' }}>
-                            <Button variant="outlined" size="small" component={Link} to={course.planPdfUrl} target="_blank" rel="noopener">
+                        <Box sx={{ 
+                          border: '2px solid', 
+                          borderColor: 'rgba(14, 81, 129, 0.2)', 
+                          borderRadius: 3, 
+                          overflow: 'hidden',
+                          boxShadow: '0 8px 25px rgba(14, 81, 129, 0.1)',
+                          background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
+                        }}>
+                          <Box sx={{ 
+                            p: 2, 
+                            background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                            color: 'white',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <Typography variant="h6" fontWeight={600}>
+                              📅 الخطة الزمنية للدورة
+                            </Typography>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              component={Link} 
+                              to={course.planPdfUrl} 
+                              target="_blank" 
+                              rel="noopener"
+                              sx={{ 
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                color: 'white',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                              }}
+                            >
                               فتح في نافذة جديدة
                             </Button>
                           </Box>
+                          <Box component="iframe" 
+                            src={course.planPdfUrl} 
+                            title="الخطة الزمنية" 
+                            width="100%" 
+                            height="600px" 
+                            style={{ border: 0 }} 
+                          />
                         </Box>
                       ) : (
-                        <Alert severity="info">لا توجد خطة زمنية متاحة حالياً.</Alert>
+                        <Alert severity="info" sx={{ 
+                          borderRadius: 2,
+                          background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
+                          border: '1px solid rgba(14, 81, 129, 0.1)'
+                        }}>
+                          لا توجد خطة زمنية متاحة حالياً.
+                        </Alert>
                       )}
                     </Box>
                   )}
@@ -2033,16 +2190,57 @@ const CourseDetail = () => {
                         المحتوى الإثرائي
                       </SectionTitle>
                       {course.enrichmentPdfUrl ? (
-                        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
-                          <Box component="iframe" src={course.enrichmentPdfUrl} title="المحتوى الإثرائي" width="100%" height="600px" style={{ border: 0 }} />
-                          <Box sx={{ p: 1, textAlign: 'left' }}>
-                            <Button variant="outlined" size="small" component={Link} to={course.enrichmentPdfUrl} target="_blank" rel="noopener">
+                        <Box sx={{ 
+                          border: '2px solid', 
+                          borderColor: 'rgba(14, 81, 129, 0.2)', 
+                          borderRadius: 3, 
+                          overflow: 'hidden',
+                          boxShadow: '0 8px 25px rgba(14, 81, 129, 0.1)',
+                          background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
+                        }}>
+                          <Box sx={{ 
+                            p: 2, 
+                            background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                            color: 'white',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <Typography variant="h6" fontWeight={600}>
+                              📚 المحتوى الإثرائي والموارد
+                            </Typography>
+                            <Button 
+                              variant="contained" 
+                              size="small" 
+                              component={Link} 
+                              to={course.enrichmentPdfUrl} 
+                              target="_blank" 
+                              rel="noopener"
+                              sx={{ 
+                                bgcolor: 'rgba(255,255,255,0.2)',
+                                color: 'white',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                              }}
+                            >
                               فتح في نافذة جديدة
                             </Button>
                           </Box>
+                          <Box component="iframe" 
+                            src={course.enrichmentPdfUrl} 
+                            title="المحتوى الإثرائي" 
+                            width="100%" 
+                            height="600px" 
+                            style={{ border: 0 }} 
+                          />
                         </Box>
                       ) : (
-                        <Alert severity="info">لا يوجد محتوى إثرائي متاح حالياً.</Alert>
+                        <Alert severity="info" sx={{ 
+                          borderRadius: 2,
+                          background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
+                          border: '1px solid rgba(14, 81, 129, 0.1)'
+                        }}>
+                          لا يوجد محتوى إثرائي متاح حالياً.
+                        </Alert>
                       )}
                     </Box>
                   )}
@@ -2068,47 +2266,54 @@ const CourseDetail = () => {
                   {/* Course Curriculum styled like screenshots */}
                    <Box sx={{ mb: 1 }}>
                     {Array.isArray(course.modules) ? course.modules.map((module, moduleIndex) => (
-                      <ModuleCard 
-                        key={module.id} 
-                        elevation={0}
-                        sx={{ 
-                          mb: 2.5,
-                          borderRadius: 3,
-                          background: (theme) => `linear-gradient(180deg, ${alpha(theme.palette.primary.dark, 0.15)} 0%, ${alpha(theme.palette.common.black, 0.2)} 100%)`,
-                          border: `1px solid ${alpha(theme.palette.common.white, 0.08)}`,
-                          boxShadow: `0 20px 50px ${alpha(theme.palette.common.black, 0.35)}`,
-                        }}
-                      >
+                                              <ModuleCard 
+                          key={module.id} 
+                          elevation={0}
+                          sx={{ 
+                            mb: 2.5,
+                            borderRadius: 3,
+                            background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
+                            border: '1px solid rgba(14, 81, 129, 0.1)',
+                            boxShadow: '0 8px 25px rgba(14, 81, 129, 0.1)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              boxShadow: '0 12px 35px rgba(14, 81, 129, 0.15)',
+                              borderColor: 'rgba(14, 81, 129, 0.2)',
+                            }
+                          }}
+                        >
                         <ModuleHeader 
                           onClick={() => toggleModule(module.id)}
                           sx={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            p: 2,
+                            p: 3,
                             bgcolor: 'background.paper',
                             cursor: 'pointer',
+                            borderRadius: 3,
                             '&:hover': {
-                              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                              bgcolor: 'rgba(14, 81, 129, 0.04)',
                             },
                           }}
                         >
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                              <Box sx={{ 
-                              width: 36,
-                              height: 36,
+                              width: 40,
+                              height: 40,
                               borderRadius: '50%',
-                                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                                border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                bgcolor: 'rgba(14, 81, 129, 0.1)',
+                                border: '2px solid rgba(14, 81, 129, 0.3)',
                                display: 'flex', 
                                alignItems: 'center', 
                                justifyContent: 'center',
                               fontWeight: 800,
-                                color: 'text.primary'
+                                color: '#0e5181',
+                                fontSize: '1.1rem'
                              }}>
                                {moduleIndex + 1}
                              </Box>
-                             <Typography variant="subtitle1" fontWeight={700} dir="rtl" sx={{ color: 'text.primary' }}>
+                             <Typography variant="subtitle1" fontWeight={700} dir="rtl" sx={{ color: '#0e5181', fontSize: '1.1rem' }}>
                                 {module.title}
                               </Typography>
                             </Box>
@@ -2120,16 +2325,20 @@ const CourseDetail = () => {
                               return (
                                 <Chip 
                                   size="small" 
-                                  color="success" 
                                   variant="outlined" 
                                   icon={<CheckCircleOutline />} 
                                   label={`إنجاز: ${completedInModule}/${totalInModule} (${percent}%)`} 
-                                  sx={{ bgcolor: (theme) => alpha(theme.palette.success.main, 0.08) }}
+                                  sx={{ 
+                                    bgcolor: 'rgba(14, 81, 129, 0.08)',
+                                    borderColor: '#0e5181',
+                                    color: '#0e5181',
+                                    fontWeight: 600
+                                  }}
                                 />
                               );
                             })()}
-                            <AccessTime fontSize="small" sx={{ color: 'text.secondary', opacity: 0.9 }} />
-                            <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.9 }}>
+                            <AccessTime fontSize="small" sx={{ color: '#e5978b', opacity: 0.9 }} />
+                            <Typography variant="body2" sx={{ color: '#e5978b', opacity: 0.9, fontWeight: 600 }}>
                                 {module.duration}
                               </Typography>
                             </Box>
@@ -2158,28 +2367,29 @@ const CourseDetail = () => {
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     flexDirection: 'row-reverse',
-                                    border: (theme) => `1px solid ${alpha(theme.palette.grey[400], 0.7)}`,
+                                    border: '1px solid rgba(14, 81, 129, 0.2)',
                                     borderRadius: 2,
-                                    px: 2,
-                                    py: 1.25,
+                                    px: 2.5,
+                                    py: 1.5,
                                     bgcolor: 'background.paper',
-                                    '&:hover': { borderColor: (theme) => alpha(theme.palette.primary.main, 0.5) }
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': { 
+                                      borderColor: '#0e5181',
+                                      bgcolor: 'rgba(14, 81, 129, 0.02)',
+                                      transform: 'translateX(-5px)'
+                                    }
                                   }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                                       {/* Icon on the far right (RTL) */}
                                       <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', opacity: 0.95 }}>
-                                        {lesson?.type === 'video' && <VideocamIcon fontSize="small" />}
-                                        {lesson?.type === 'article' && <InsertDriveFileIcon fontSize="small" />}
-                                        {lesson?.type === 'quiz' && <QuizIconFilled fontSize="small" />}
-                                        {(lesson?.type === 'list' || lesson?.type === 'requirements') && <ListAltIcon fontSize="small" />}
-                                        {!lesson?.type && getLessonIcon(lesson)}
+                                        {getLessonIcon(lesson)}
                                       </Box>
-                                      <Typography variant="body2" dir="rtl" sx={{ color: 'text.primary' }}>
+                                                                              <Typography variant="body2" dir="rtl" sx={{ color: 'text.primary', fontWeight: 500 }}>
                                           {lesson.title}
                                     </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                      <Typography variant="caption" sx={{ color: '#e5978b', fontWeight: 600 }}>
                                         {lesson.duration}
                                         </Typography>
                                       </Box>
@@ -2245,7 +2455,15 @@ const CourseDetail = () => {
                     </Box>
                       <Chip size="small" color="default" variant="outlined" label={`${course.instructorStudents?.toLocaleString?.() || course.instructorStudents || 0} طالب`} />
                       <Chip size="small" color="default" variant="outlined" label={`${course.instructorCourses || 0} دورة`} />
-                      <Button variant="text" size="small" sx={{ textTransform: 'none' }}>
+                      <Button variant="text" size="small" sx={{ 
+                        textTransform: 'none',
+                        color: '#0e5181',
+                        fontWeight: 600,
+                        '&:hover': {
+                          bgcolor: 'rgba(14, 81, 129, 0.1)',
+                          color: '#0e5181'
+                        }
+                      }}>
                         عرض الملف الشخصي
                       </Button>
                       </Box>
@@ -2286,7 +2504,6 @@ const CourseDetail = () => {
                     </Box>
                     <Button 
                       variant="contained" 
-                      color="primary"
                       startIcon={<DescriptionOutlined />}
                       sx={{ 
                         borderRadius: 3,
@@ -2294,7 +2511,13 @@ const CourseDetail = () => {
                         py: 1.5,
                         textTransform: 'none',
                         fontWeight: 600,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                        boxShadow: '0 8px 25px rgba(14, 81, 129, 0.2)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+                          boxShadow: '0 12px 35px rgba(14, 81, 129, 0.3)',
+                          transform: 'translateY(-2px)'
+                        }
                       }}
                     >
                       كتابة تقييم
@@ -2395,13 +2618,20 @@ const CourseDetail = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Button 
                         variant="outlined" 
-                        color="primary"
                         sx={{ 
                           borderRadius: 3,
                           px: 4,
                           py: 1.5,
                           textTransform: 'none',
-                          fontWeight: 600
+                          fontWeight: 600,
+                          borderColor: '#0e5181',
+                          color: '#0e5181',
+                          '&:hover': {
+                            bgcolor: '#0e5181',
+                            color: 'white',
+                            borderColor: '#0e5181',
+                            transform: 'translateY(-2px)'
+                          }
                         }}
                       >
                         تحميل المزيد من التقييمات
@@ -2487,11 +2717,11 @@ const CourseDetail = () => {
             width: 60,
             height: 60,
             borderRadius: '50%',
-            boxShadow: `0 8px 25px ${alpha(theme.palette.primary.main, 0.3)}`,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            boxShadow: '0 8px 25px rgba(14, 81, 129, 0.3)',
+            background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
             '&:hover': {
               transform: 'scale(1.1)',
-              boxShadow: `0 12px 35px ${alpha(theme.palette.primary.main, 0.4)}`,
+              boxShadow: '0 12px 35px rgba(14, 81, 129, 0.4)',
             },
             transition: 'all 0.3s ease',
           }}
@@ -2506,7 +2736,7 @@ const CourseDetail = () => {
         {/* Related Courses Section */}
         {Array.isArray(relatedCourses) && relatedCourses.length > 0 && (
         <Container maxWidth="lg" sx={{ pt: 1, pb: 4, px: { xs: 2, sm: 3, md: 4 } }}>
-          <Box sx={{ mb: 1 }}>
+          <Box sx={{ mb: 4 }}>
             <SectionTitle variant="h4" component="h2" gutterBottom>
               الدورات ذات الصلة
             </SectionTitle>
@@ -2523,108 +2753,103 @@ const CourseDetail = () => {
                   sx={{ 
                     height: '100%',
                     cursor: 'pointer',
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    borderRadius: 4,
+                    boxShadow: '0 8px 25px rgba(14, 81, 129, 0.1)',
                     border: '1px solid',
-                    borderColor: 'divider',
-                    transition: 'all 0.3s ease',
+                    borderColor: 'rgba(14, 81, 129, 0.1)',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
+                    backdropFilter: 'blur(10px)',
                     '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 12px 30px rgba(0,0,0,0.12)',
+                      transform: 'translateY(-12px) scale(1.02)',
+                      boxShadow: '0 20px 40px rgba(14, 81, 129, 0.2)',
+                      borderColor: 'rgba(14, 81, 129, 0.3)',
                     },
                   }}
                   onClick={() => navigate(`/courses/${relatedCourse.id}`)}
                 >
-                  {/* Card Header with Bookmark and Provider */}
-                  <Box sx={{ position: 'relative', p: 2, pb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      {/* Bookmark Icon */}
-                      <IconButton 
-                        size="small" 
-                        sx={{ 
-                          color: 'text.secondary',
-                          '&:hover': { color: 'primary.main' }
-                        }}
-                      >
-                        <BookmarkBorder fontSize="small" />
-                      </IconButton>
-                      
-                      {/* Provider Info */}
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar 
-                          src={relatedCourse.instructorAvatar} 
-                          alt={relatedCourse.instructor}
-                          sx={{ width: 24, height: 24, mr: 1 }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                          معهد التطوير المهني
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                  
-                  {/* Course Image */}
-                  <Box sx={{ position: 'relative', px: 2, pb: 2 }}>
+                  {/* Course Image with Overlay */}
+                  <Box sx={{ position: 'relative', overflow: 'hidden' }}>
                     <Box sx={{
                       width: '100%',
-                      height: 160,
-                      borderRadius: 2,
-                      bgcolor: 'grey.100',
+                      height: 200,
+                      background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      overflow: 'hidden',
+                      position: 'relative',
                     }}>
                       <img 
-                        src={relatedCourse.image || 'https://source.unsplash.com/random/400x160?programming'}
+                        src={relatedCourse.image || relatedCourse.thumbnail || 'https://source.unsplash.com/random/400x200?programming'}
                         alt={relatedCourse.title}
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
+                          transition: 'transform 0.4s ease',
+                        }}
+                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                      />
+                      {/* Gradient Overlay */}
+                      <Box sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.3) 0%, rgba(229, 151, 139, 0.3) 100%)',
+                        opacity: 0,
+                        transition: 'opacity 0.3s ease',
+                        '&:hover': { opacity: 1 }
+                      }} />
+                      
+                      {/* Category Badge */}
+                      <Chip 
+                        label={relatedCourse.category || "التدريب الإلكتروني"}
+                        size="small" 
+                        sx={{ 
+                          position: 'absolute',
+                          top: 16,
+                          right: 16,
+                          bgcolor: 'rgba(255,255,255,0.9)',
+                          color: '#0e5181',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          backdropFilter: 'blur(10px)',
                         }}
                       />
+                      
+                      {/* Bookmark Icon */}
+                      <IconButton 
+                        size="small" 
+                        sx={{ 
+                          position: 'absolute',
+                          top: 16,
+                          left: 16,
+                          bgcolor: 'rgba(255,255,255,0.9)',
+                          color: '#0e5181',
+                          '&:hover': { 
+                            bgcolor: '#0e5181',
+                            color: 'white',
+                            transform: 'scale(1.1)'
+                          },
+                          transition: 'all 0.3s ease',
+                        }}
+                      >
+                        <BookmarkBorder fontSize="small" />
+                      </IconButton>
                     </Box>
                   </Box>
                   
                   {/* Course Content */}
-                  <CardContent sx={{ p: 2, pt: 0 }}>
-                    {/* Category Tag */}
-                    <Chip 
-                      label="التدريب الإلكتروني" 
-                      size="small" 
-                      color="primary" 
-                      variant="outlined"
-                      sx={{ 
-                        mb: 2,
-                        fontSize: '0.7rem',
-                        height: 24,
-                        '& .MuiChip-label': { px: 1.5 }
-                      }}
-                    />
-                    
-                    {/* Course Details (Lessons & Students) */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <VideoIcon fontSize="small" sx={{ color: 'text.secondary', mr: 0.5 }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {relatedCourse.lectures || 4} درس
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <PeopleAltOutlined fontSize="small" sx={{ color: 'text.secondary', mr: 0.5 }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {relatedCourse.students || 6} طالب
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
+                  <CardContent sx={{ p: 3 }}>
                     {/* Course Title */}
                     <Typography 
                       variant="h6" 
                       component="h3" 
                       sx={{ 
-                        fontWeight: 600,
+                        fontWeight: 700,
                         lineHeight: 1.3,
                         mb: 2,
                         display: '-webkit-box',
@@ -2632,12 +2857,46 @@ const CourseDetail = () => {
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        fontSize: '1rem',
+                        fontSize: '1.1rem',
+                        color: '#0e5181',
                       }}
                       dir="rtl"
                     >
                       {relatedCourse.title}
                     </Typography>
+                    
+                    {/* Instructor Info */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Avatar 
+                        src={relatedCourse.instructorAvatar || relatedCourse.instructor?.avatar} 
+                        alt={relatedCourse.instructor}
+                        sx={{ 
+                          width: 32, 
+                          height: 32, 
+                          mr: 1.5,
+                          border: '2px solid #e5978b'
+                        }}
+                      />
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                        {relatedCourse.instructor || 'مدرس محترف'}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Course Stats */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <VideoIcon fontSize="small" sx={{ color: '#0e5181', mr: 0.5 }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {relatedCourse.lectures || 4} درس
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <PeopleAltOutlined fontSize="small" sx={{ color: '#e5978b', mr: 0.5 }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {relatedCourse.students || 6} طالب
+                        </Typography>
+                      </Box>
+                    </Box>
                     
                     {/* Rating */}
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -2660,7 +2919,7 @@ const CourseDetail = () => {
                         sx={{ 
                           mr: 1.25,
                           '& .MuiRating-iconFilled': {
-                            color: 'warning.main',
+                            color: '#e5978b',
                           },
                         }}
                       />
@@ -2680,24 +2939,49 @@ const CourseDetail = () => {
                     </Box>
                     
                     {/* Price */}
-                    <Typography 
-                      variant="h6" 
-                      color="warning.main" 
-                      fontWeight={700}
-                      sx={{ fontSize: '1.1rem' }}
-                    >
-                      {(() => {
-                        const price = relatedCourse.price;
-                        if (typeof price === 'number') {
-                          return price.toFixed(2);
-                        } else if (typeof price === 'string') {
-                          const numPrice = parseFloat(price);
-                          return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
-                        } else {
-                          return '0.00';
-                        }
-                      })()} ر.س
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          fontSize: '1.2rem',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        {(() => {
+                          const price = relatedCourse.price;
+                          if (typeof price === 'number') {
+                            return price.toFixed(2);
+                          } else if (typeof price === 'string') {
+                            const numPrice = parseFloat(price);
+                            return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
+                          } else {
+                            return '0.00';
+                          }
+                        })()} ر.س
+                      </Typography>
+                      
+                      <Button 
+                        variant="outlined" 
+                        size="small"
+                        sx={{ 
+                          borderColor: '#0e5181',
+                          color: '#0e5181',
+                          '&:hover': {
+                            bgcolor: '#0e5181',
+                            color: 'white',
+                            borderColor: '#0e5181',
+                          },
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          fontWeight: 600,
+                        }}
+                      >
+                        عرض الدورة
+                      </Button>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>

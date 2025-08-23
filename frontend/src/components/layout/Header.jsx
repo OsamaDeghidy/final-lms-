@@ -61,17 +61,17 @@ const StyledAppBar = styled(AppBar, {
 }));
 
 const GradientButton = styled(Button)(({ theme }) => ({
-  background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   color: 'white',
   borderRadius: '25px',
   padding: '10px 25px',
   fontWeight: '600',
   textTransform: 'none',
-  boxShadow: '0 4px 15px rgba(78, 205, 196, 0.3)',
+  boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
   transition: 'all 0.3s ease',
   '&:hover': {
     transform: 'translateY(-2px)',
-    boxShadow: '0 6px 20px rgba(78, 205, 196, 0.4)',
+    boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
   },
 }));
 
@@ -101,7 +101,7 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: '#4ECDC4',
+  color: '#0e5181',
   pointerEvents: 'none',
 }));
 
@@ -133,7 +133,7 @@ const NavButton = styled(Button)(({ theme }) => ({
     transform: 'translateY(-2px)',
   },
   '&.active': {
-    color: '#4ECDC4',
+    color: '#0e5181',
     fontWeight: '600',
   },
   '& .MuiButton-endIcon': {
@@ -176,7 +176,7 @@ const LogoImage = styled('img')({
 const LogoText = styled(Typography)(({ theme }) => ({
   fontWeight: 700,
   fontSize: '1.4rem',
-  background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   marginRight: '12px',
@@ -202,17 +202,17 @@ const UserMenu = styled(Menu)({
 const UserMenuItem = styled(MenuItem)({
   padding: '10px 20px',
   '&:hover': {
-    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+    backgroundColor: 'rgba(14, 81, 129, 0.1)',
   },
   '& .MuiSvgIcon-root': {
     marginLeft: '10px',
-    color: '#4ECDC4',
+    color: '#0e5181',
   },
 });
 
 const NotificationBadge = styled(Badge)({
   '& .MuiBadge-badge': {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#e5978b',
     color: '#FFFFFF',
     border: '2px solid #1A1A2E',
   },
@@ -362,7 +362,7 @@ const Header = () => {
           '&:hover': {
             '& .MuiAvatar-root': {
               transform: 'scale(1.1)',
-              boxShadow: '0 0 0 2px #4ECDC4',
+              boxShadow: '0 0 0 2px #0e5181',
             },
           },
         }}
@@ -374,7 +374,7 @@ const Header = () => {
             width: 40,
             height: 40,
             transition: 'all 0.3s ease',
-            border: '2px solid #4ECDC4',
+            border: '2px solid #0e5181',
           }}
         />
       </IconButton>
@@ -477,7 +477,7 @@ const Header = () => {
                 borderRadius: '8px',
                 padding: '10px 15px',
                 '&:hover': {
-                  backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
                 },
               }}
               onClick={() => setMobileMenuOpen(false)}
@@ -496,7 +496,7 @@ const Header = () => {
             onClick={handleLogout}
             startIcon={<ExitToAppIcon />}
             sx={{
-              background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
               '&:hover': {
                 opacity: 0.9,
               },
@@ -516,8 +516,8 @@ const Header = () => {
                 borderColor: 'rgba(255, 255, 255, 0.2)',
                 mb: 1,
                 '&:hover': {
-                  borderColor: '#4ECDC4',
-                  backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                  borderColor: '#0e5181',
+                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
                 },
               }}
               onClick={() => setMobileMenuOpen(false)}
@@ -530,7 +530,7 @@ const Header = () => {
               component={RouterLink}
               to="/register"
               sx={{
-                background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+                background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                 '&:hover': {
                   opacity: 0.9,
                 },
@@ -642,12 +642,12 @@ const Header = () => {
                             sx={{
                               color: '#E6E6E6',
                               '&:hover': {
-                                backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                                color: '#4ECDC4',
+                                backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                                color: '#0e5181',
                               },
                               '&.Mui-selected': {
-                                backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                                color: '#4ECDC4',
+                                backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                                color: '#0e5181',
                               },
                             }}
                           >
@@ -747,7 +747,7 @@ const Header = () => {
                       '&:hover': {
                         '& .MuiAvatar-root': {
                           transform: 'scale(1.1)',
-                          boxShadow: '0 0 0 2px #4ECDC4',
+                          boxShadow: '0 0 0 2px #0e5181',
                         },
                       },
                     }}
@@ -759,7 +759,7 @@ const Header = () => {
                         width: 40,
                         height: 40,
                         transition: 'all 0.3s ease',
-                        border: '2px solid #4ECDC4',
+                        border: '2px solid #0e5181',
                       }}
                     />
                   </IconButton>
@@ -903,12 +903,12 @@ const Header = () => {
                   startIcon={item.icon}
                   sx={{
                     justifyContent: 'flex-start',
-                    color: location.pathname === item.path ? '#4ECDC4' : '#FFFFFF',
+                    color: location.pathname === item.path ? '#0e5181' : '#FFFFFF',
                     mb: 1,
                     borderRadius: '8px',
                     padding: '10px 15px',
                     '&:hover': {
-                      backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
                     },
                   }}
                   onClick={() => setMobileMenuOpen(false)}
@@ -927,12 +927,12 @@ const Header = () => {
                 startIcon={<ShoppingCartIcon />}
                 sx={{
                   justifyContent: 'flex-start',
-                  color: location.pathname === '/cart' ? '#4ECDC4' : '#FFFFFF',
+                  color: location.pathname === '/cart' ? '#0e5181' : '#FFFFFF',
                   mb: 1,
                   borderRadius: '8px',
                   padding: '10px 15px',
                   '&:hover': {
-                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    backgroundColor: 'rgba(14, 81, 129, 0.1)',
                   },
                 }}
                 onClick={() => setMobileMenuOpen(false)}
@@ -950,7 +950,7 @@ const Header = () => {
                 onClick={handleLogout}
                 startIcon={<ExitToAppIcon />}
                 sx={{
-                  background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': {
                     opacity: 0.9,
                   },
@@ -970,8 +970,8 @@ const Header = () => {
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     mb: 1,
                     '&:hover': {
-                      borderColor: '#4ECDC4',
-                      backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                      borderColor: '#0e5181',
+                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
                     },
                   }}
                   onClick={() => setMobileMenuOpen(false)}
@@ -984,7 +984,7 @@ const Header = () => {
                   component={RouterLink}
                   to="/register"
                   sx={{
-                    background: 'linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%)',
+                    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                     '&:hover': {
                       opacity: 0.9,
                     },

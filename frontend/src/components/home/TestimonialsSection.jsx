@@ -11,7 +11,7 @@ const testimonials = [
     avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
     content: 'الدورات المقدمة ممتازة وسهلة الفهم. ساعدتني في تطوير مهاراتي البرمجية بشكل كبير.',
     rating: 5,
-    bgColor: '#4A6CF7'
+    bgColor: '#0e5181'
   },
   {
     id: 2,
@@ -20,7 +20,7 @@ const testimonials = [
     avatar: 'https://randomuser.me/api/portraits/women/1.jpg',
     content: 'تجربة تعليمية رائعة مع معهد التطوير المهني. المحتوى منظم والمدربون محترفون للغاية.',
     rating: 5,
-    bgColor: '#8B5CF6'
+    bgColor: '#e5978b'
   },
   {
     id: 3,
@@ -29,7 +29,7 @@ const testimonials = [
     avatar: 'https://randomuser.me/api/portraits/men/2.jpg',
     content: 'استفدت كثيراً من دورات تحليل البيانات. أنصح الجميع بالانضمام إلى هذا المعهد المتميز.',
     rating: 4,
-    bgColor: '#6C63FF'
+    bgColor: '#0e5181'
   },
   {
     id: 4,
@@ -38,7 +38,7 @@ const testimonials = [
     avatar: 'https://randomuser.me/api/portraits/women/2.jpg',
     content: 'دورات التسويق الرقمي غنية بالمعلومات العملية والتطبيقية. شكراً لفريق العمل الرائع.',
     rating: 5,
-    bgColor: '#4A6CF7'
+    bgColor: '#e5978b'
   },
   {
     id: 5,
@@ -47,7 +47,7 @@ const testimonials = [
     avatar: 'https://randomuser.me/api/portraits/men/3.jpg',
     content: 'المحتوى المقدم حديث ومتوافق مع أحدث التقنيات. أنصح بهذا المعهد لكل من يريد تطوير مهاراته التقنية.',
     rating: 4,
-    bgColor: '#8B5CF6'
+    bgColor: '#0e5181'
   },
 ];
 
@@ -71,7 +71,7 @@ const SectionContainer = styled(Box)(({ theme }) => ({
     width: '500px',
     height: '500px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(74, 108, 247, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.1) 0%, rgba(229, 151, 139, 0.1) 100%)',
     top: '-250px',
     right: '-250px',
     zIndex: 0,
@@ -82,7 +82,7 @@ const SectionContainer = styled(Box)(({ theme }) => ({
     width: '300px',
     height: '300px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(74, 108, 247, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.1) 0%, rgba(229, 151, 139, 0.1) 100%)',
     bottom: '-150px',
     left: '-150px',
     zIndex: 0,
@@ -104,7 +104,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(3),
   position: 'relative',
   display: 'inline-block',
-  background: 'linear-gradient(90deg, #4A6CF7 0%, #8B5CF6 100%)',
+  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   fontSize: '2.5rem',
@@ -119,7 +119,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
     transform: 'translateX(50%)',
     width: 60,
     height: 4,
-    background: 'linear-gradient(90deg, #FF6B6B 0%, #FF8E53 100%)',
+    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
     borderRadius: 2,
   },
 }));

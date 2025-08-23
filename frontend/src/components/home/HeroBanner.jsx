@@ -46,7 +46,7 @@ const Image3DContainer = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(45deg, #6e45e2 0%, #89d4cf 100%)',
+    background: 'linear-gradient(45deg, #0e5181 0%, #e5978b 100%)',
     animation: '${gradientBG} 15s ease infinite',
     backgroundSize: '400% 400%',
     zIndex: 0,

@@ -308,8 +308,8 @@ const FloatingShape = styled('div')({
 const HeroSection = styled('div')(({ theme }) => ({
   background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
   color: 'white',
-  padding: '80px 0 60px',
-  margin: '0 0 40px 0',
+  padding: '50px 0 40px',
+  margin: '0 0 30px 0',
   position: 'relative',
   overflow: 'hidden',
   boxShadow: '0 15px 50px rgba(0, 0, 0, 0.3)',
@@ -481,8 +481,18 @@ const Courses = () => {
           courseAPI.getCategories()
         ]);
         
-        setCourses(coursesResponse.results || coursesResponse);
-        setCategories(categoriesResponse.results || categoriesResponse);
+        const coursesData = coursesResponse.results || coursesResponse;
+        const categoriesData = categoriesResponse.results || categoriesResponse;
+        
+        // Debug logging
+        console.log('Courses data:', coursesData);
+        console.log('Categories data:', categoriesData);
+        if (coursesData.length > 0) {
+          console.log('Sample course category structure:', coursesData[0].category);
+        }
+        
+        setCourses(coursesData);
+        setCategories(categoriesData);
         
         // Load cart items
         try {
@@ -520,13 +530,40 @@ const Courses = () => {
                            instructor.name?.toLowerCase().includes(searchLower)
                          ));
     
-    // Category filter
-    const matchesCategory = activeCategory === 'all' || course.category?.id === parseInt(activeCategory);
+    // Category filter - handle different data structures
+    let matchesCategory = activeCategory === 'all';
+    if (!matchesCategory && course.category) {
+      // Check if category is an object with id or just an id
+      const categoryId = typeof course.category === 'object' ? course.category.id : course.category;
+      matchesCategory = categoryId == activeCategory; // Use == to handle string/number comparison
+      
+      // Debug logging for first few courses
+      if (courses.indexOf(course) < 3) {
+        console.log(`Course "${course.title}":`, {
+          courseCategory: course.category,
+          categoryId: categoryId,
+          activeCategory: activeCategory,
+          matchesCategory: matchesCategory
+        });
+      }
+    }
     
     // Level filter
     const matchesLevel = tabValue === 'all' || course.level === tabValue;
     
-    return matchesSearch && matchesCategory && matchesLevel;
+    const result = matchesSearch && matchesCategory && matchesLevel;
+    
+    // Debug logging for filtering
+    if (courses.indexOf(course) < 3) {
+      console.log(`Course "${course.title}" filter result:`, {
+        matchesSearch,
+        matchesCategory,
+        matchesLevel,
+        finalResult: result
+      });
+    }
+    
+    return result;
   });
 
   const handleTabChange = (event, newValue) => {
@@ -534,6 +571,7 @@ const Courses = () => {
   };
 
   const handleCategoryChange = (categoryId) => {
+    console.log('Category changed to:', categoryId);
     setActiveCategory(categoryId);
   };
 
@@ -687,7 +725,7 @@ const Courses = () => {
           >
             <Box sx={{ 
               textAlign: 'center', 
-              py: 10,
+              py: 6,
               position: 'relative',
               '&::before, &::after': {
                 content: '""',
@@ -719,7 +757,7 @@ const Courses = () => {
                   background: 'linear-gradient(90deg, #fff, #e94560)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' },
+                  fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
                   lineHeight: 1.2,
                   textShadow: '0 2px 10px rgba(0,0,0,0.1)'
                 }}
@@ -736,7 +774,7 @@ const Courses = () => {
                   sx={{ 
                     maxWidth: '700px', 
                     mx: 'auto', 
-                    mb: 4,
+                    mb: 3,
                     color: 'rgba(255,255,255,0.9)',
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     lineHeight: 1.6,
@@ -776,8 +814,8 @@ const Courses = () => {
                       paddingRight: '20px',
                     },
                     '& .MuiInputBase-input': {
-                      padding: '15px 24px',
-                      fontSize: '1rem',
+                      padding: '12px 20px',
+                      fontSize: '0.95rem',
                       '&::placeholder': {
                         opacity: 0.7,
                         color: theme.palette.text.secondary,
@@ -870,22 +908,25 @@ const Courses = () => {
                     },
                   }}
                 />
-                {categories.map((category) => (
-                  <CategoryChip
-                    key={category.id}
-                    label={category.name}
-                    selected={activeCategory === category.id.toString()}
-                    onClick={() => handleCategoryChange(category.id.toString())}
-                    sx={{
-                      backgroundColor: activeCategory === category.id.toString() ? 'primary.main' : 'background.paper',
-                      color: activeCategory === category.id.toString() ? 'white' : 'text.primary',
-                      '&:hover': {
-                        backgroundColor: activeCategory === category.id.toString() ? 'primary.dark' : 'primary.light',
-                        color: 'white',
-                      },
-                    }}
-                  />
-                ))}
+                {categories.map((category) => {
+                  console.log('Rendering category:', category);
+                  return (
+                    <CategoryChip
+                      key={category.id}
+                      label={category.name}
+                      selected={activeCategory === category.id.toString()}
+                      onClick={() => handleCategoryChange(category.id.toString())}
+                      sx={{
+                        backgroundColor: activeCategory === category.id.toString() ? 'primary.main' : 'background.paper',
+                        color: activeCategory === category.id.toString() ? 'white' : 'text.primary',
+                        '&:hover': {
+                          backgroundColor: activeCategory === category.id.toString() ? 'primary.dark' : 'primary.light',
+                          color: 'white',
+                        },
+                      }}
+                    />
+                  );
+                })}
               </Box>
             </Box>
           </motion.div>
@@ -898,7 +939,7 @@ const Courses = () => {
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <span style={{ fontWeight: 600, color: 'primary.main' }}>{filteredCourses.length}</span>
-                دورة متاحة
+                دورة متاحة من إجمالي {courses.length} دورة
                 {(activeCategory !== 'all' || searchTerm || tabValue !== 'all') && (
                   <Chip 
                     label="مفلترة" 

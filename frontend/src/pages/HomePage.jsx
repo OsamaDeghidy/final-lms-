@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import HeroBanner from '../components/home/HeroBanner';
-import CourseSlider from '../components/home/CourseSlider';
+import CourseCollections from '../components/home/CourseSlider';
 import TestimonialsSection from '../components/home/TestimonialsSection';
 import LearningMethodsSection from '../components/home/LearningMethodsSection';
 
@@ -34,9 +34,9 @@ const HomePage = () => {
           <LearningMethodsSection />
         </Box>
  
-        {/* Featured Courses Section */}
-        <Box component="section" id="featured-courses" sx={{ bgcolor: 'background.default' }}>
-          <CourseSlider />
+        {/* Course Collections Section */}
+        <Box component="section" id="course-collections" sx={{ bgcolor: 'background.default' }}>
+          <CourseCollections />
         </Box>
 
         {/* Testimonials Section */}

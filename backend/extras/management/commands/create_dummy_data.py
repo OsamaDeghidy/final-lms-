@@ -10,6 +10,7 @@ django.setup()
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.utils.text import slugify
 from extras.models import Banner, CourseCollection
 from courses.models import Course, Category, Enrollment
 from reviews.models import CourseReview, Comment
@@ -18,33 +19,56 @@ from users.models import Profile, Instructor, Student
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Create dummy data for the LMS platform'
+    help = 'Create dummy data for testing'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS('🚀 بدء إنشاء البيانات الوهمية...'))
+        self.stdout.write('Creating dummy data...')
         
-        # إنشاء المستخدمين
-        self.create_users()
+        # Create course collections
+        collections_data = [
+            {
+                'name': 'دورات تطوير الويب',
+                'description': 'مجموعة شاملة من دورات تطوير الويب للمبتدئين والمتقدمين',
+                'display_order': 1
+            },
+            {
+                'name': 'دورات الذكاء الاصطناعي',
+                'description': 'تعلم أحدث تقنيات الذكاء الاصطناعي والتعلم الآلي',
+                'display_order': 2
+            },
+            {
+                'name': 'دورات التسويق الرقمي',
+                'description': 'استراتيجيات التسويق الرقمي الفعالة لبناء الأعمال',
+                'display_order': 3
+            },
+            {
+                'name': 'دورات التصميم والإبداع',
+                'description': 'دورات تصميم تجربة المستخدم والتصميم الجرافيكي',
+                'display_order': 4
+            }
+        ]
         
-        # إنشاء التصنيفات
-        self.create_categories()
+        for collection_data in collections_data:
+            collection, created = CourseCollection.objects.get_or_create(
+                name=collection_data['name'],
+                defaults={
+                    'slug': slugify(collection_data['name']),
+                    'description': collection_data['description'],
+                    'display_order': collection_data['display_order']
+                }
+            )
+            
+            if created:
+                self.stdout.write(f'Created collection: {collection.name}')
+            else:
+                self.stdout.write(f'Collection already exists: {collection.name}')
+            
+            # Add some courses to each collection
+            courses = Course.objects.filter(status='published')[:5]
+            collection.courses.add(*courses)
+            self.stdout.write(f'Added {courses.count()} courses to {collection.name}')
         
-        # إنشاء الدورات
-        self.create_courses()
-        
-        # إنشاء مجموعات الدورات
-        self.create_course_collections()
-        
-        # إنشاء البانرات
-        self.create_banners()
-        
-        # إنشاء التسجيلات
-        self.create_enrollments()
-        
-        # إنشاء المراجعات
-        self.create_reviews()
-        
-        self.stdout.write(self.style.SUCCESS('✅ تم إنشاء جميع البيانات الوهمية بنجاح!'))
+        self.stdout.write(self.style.SUCCESS('Successfully created dummy data'))
 
     def create_users(self):
         self.stdout.write('📥 إنشاء المستخدمين...')

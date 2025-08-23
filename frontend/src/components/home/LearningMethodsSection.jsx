@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Container, 
@@ -14,7 +15,9 @@ import {
   styled,
   keyframes,
   Fade,
-  Grow
+  Grow,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { 
   Code, 
@@ -25,6 +28,7 @@ import {
   ArrowForward,
   CheckCircle
 } from '@mui/icons-material';
+import { courseAPI } from '../../services/api.service';
 
 const floatAnimation = keyframes`
   0% { transform: translateY(0px); }
@@ -43,7 +47,7 @@ const SectionContainer = styled(Box)(({ theme }) => ({
     width: '500px',
     height: '500px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(74, 108, 247, 0.07) 0%, rgba(139, 92, 246, 0.07) 100%)',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.07) 0%, rgba(229, 151, 139, 0.07) 100%)',
     top: '-250px',
     right: '-250px',
     zIndex: 0,
@@ -57,7 +61,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 800,
   textAlign: 'center',
   marginBottom: theme.spacing(1),
-  background: 'linear-gradient(90deg, #4A6CF7 0%, #8B5CF6 100%)',
+  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   fontSize: '2.5rem',
@@ -101,13 +105,13 @@ const StyledTabs = styled(Tabs)(({ theme }) => ({
     borderRadius: '50px',
     transition: 'all 0.3s ease',
     '&:hover': {
-      color: theme.palette.primary.main,
+      color: '#0e5181',
       transform: 'translateY(-2px)',
     },
     '&.Mui-selected': {
       color: '#fff',
-      background: 'linear-gradient(90deg, #4A6CF7 0%, #8B5CF6 100%)',
-      boxShadow: '0 4px 15px rgba(74, 108, 247, 0.3)',
+      background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+      boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
     },
   },
   '& .MuiTabs-indicator': {
@@ -136,12 +140,20 @@ const MethodCard = styled(Card, {
   transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
   overflow: 'hidden',
   position: 'relative',
+  cursor: 'pointer',
   '&:hover': {
     transform: 'translateY(-8px)',
     boxShadow: '0 20px 40px rgba(0, 0, 0, 0.08)',
     '& .card-hover-effect': {
       opacity: 1,
       transform: 'scale(1.03)',
+    },
+    '& .course-image': {
+      transform: 'scale(1.05)',
+    },
+    '& .course-stats': {
+      opacity: 1,
+      transform: 'translateY(0)',
     },
   },
   '&:before': {
@@ -151,18 +163,55 @@ const MethodCard = styled(Card, {
     left: 0,
     right: 0,
     height: '5px',
-    background: 'linear-gradient(90deg, #4A6CF7 0%, #8B5CF6 100%)',
+    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
     borderTopLeftRadius: '20px',
     borderTopRightRadius: '20px',
+    zIndex: 2,
   },
   animation: `${floatAnimation} 6s ease-in-out infinite`,
   animationDelay: `${delay * 0.2}s`,
   opacity: 1,
 }));
 
+const CourseImageContainer = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  height: { xs: '160px', sm: '180px', md: '200px' },
+  overflow: 'hidden',
+  background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+  '& .course-image': {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transition: 'transform 0.4s ease',
+  },
+}));
+
+const CourseBadge = styled(Box)(({ theme, variant = 'primary' }) => ({
+  position: 'absolute',
+  top: '12px',
+  right: '12px',
+  padding: '4px 12px',
+  borderRadius: '20px',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  zIndex: 3,
+  ...(variant === 'free' && {
+    background: 'linear-gradient(90deg, #e5978b 0%, #d18a7a 100%)',
+    color: '#fff',
+  }),
+  ...(variant === 'featured' && {
+    background: 'linear-gradient(90deg, #ffc107 0%, #ff9800 100%)',
+    color: '#fff',
+  }),
+  ...(variant === 'new' && {
+    background: 'linear-gradient(90deg, #4caf50 0%, #45a049 100%)',
+    color: '#fff',
+  }),
+}));
+
 const MethodHeader = styled(Box)(({ theme, bgcolor }) => ({
   padding: theme.spacing(2.5, 3),
-  background: 'linear-gradient(135deg, #4A6CF7 0%, #8B5CF6 100%)',
+  background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
   color: '#fff',
   display: 'flex',
   alignItems: 'center',
@@ -196,7 +245,7 @@ const MethodHeader = styled(Box)(({ theme, bgcolor }) => ({
 }));
 
 const MethodContent = styled(CardContent)(({ theme }) => ({
-  padding: theme.spacing(3),
+  padding: { xs: theme.spacing(2), sm: theme.spacing(3) },
   position: 'relative',
   zIndex: 1,
   background: '#fff',
@@ -209,15 +258,24 @@ const MethodContent = styled(CardContent)(({ theme }) => ({
     marginBottom: theme.spacing(1.5),
     color: theme.palette.text.primary,
     fontWeight: 700,
-    fontSize: '1.25rem',
+    fontSize: { xs: '1.1rem', sm: '1.25rem' },
     lineHeight: 1.4,
+    minHeight: { xs: '2.5rem', sm: '3rem' },
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
   },
   '& p': {
     color: theme.palette.text.secondary,
     marginBottom: theme.spacing(2),
-    minHeight: '72px',
+    minHeight: { xs: '60px', sm: '72px' },
     lineHeight: 1.7,
-    fontSize: '0.95rem',
+    fontSize: { xs: '0.9rem', sm: '0.95rem' },
+    display: '-webkit-box',
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
   },
   '& ul': {
     paddingRight: '20px',
@@ -234,7 +292,7 @@ const MethodContent = styled(CardContent)(({ theme }) => ({
         width: '8px',
         height: '8px',
         borderRadius: '50%',
-        background: theme.palette.primary.main,
+        background: '#0e5181',
       },
     },
   },
@@ -256,17 +314,17 @@ const MethodFooter = styled(Box)(({ theme }) => ({
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: 'transparent',
-    color: theme.palette.primary.main,
-    border: `1.5px solid ${theme.palette.primary.light}`,
+    color: '#0e5181',
+    border: `1.5px solid #0e5181`,
     '&:hover': {
-      backgroundColor: 'rgba(74, 108, 247, 0.04)',
+      backgroundColor: 'rgba(14, 81, 129, 0.04)',
       transform: 'translateY(-2px)',
-      boxShadow: '0 6px 12px rgba(74, 108, 247, 0.1)',
-      borderColor: theme.palette.primary.main,
+      boxShadow: '0 6px 12px rgba(14, 81, 129, 0.1)',
+      borderColor: '#0e5181',
     },
     '&:active': {
       transform: 'translateY(0)',
-      boxShadow: '0 2px 4px rgba(74, 108, 247, 0.1)',
+      boxShadow: '0 2px 4px rgba(14, 81, 129, 0.1)',
     },
     '& .MuiButton-endIcon': {
       transition: 'transform 0.3s ease',
@@ -291,7 +349,7 @@ const MethodFooter = styled(Box)(({ theme }) => ({
     color: theme.palette.text.secondary,
     fontSize: '0.85rem',
     '& svg': {
-      color: theme.palette.primary.main,
+      color: '#0e5181',
       fontSize: '1rem',
     },
   },
@@ -316,373 +374,468 @@ const LearningMethodsSection = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [value, setValue] = useState(0);
+  const [categories, setCategories] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
+    if (categories[newValue]) {
+      loadCoursesByCategory(categories[newValue].id);
+    }
   };
 
-  // Sample data for each tab
-  const howTos = [
-    {
-      id: 1,
-      title: 'كيفية إنشاء قاعدة في جدار حماية Windows',
-      description: 'تعلم كيفية إنشاء قاعدة جدار حماية مخصصة في نظام Windows لحماية جهازك.',
-      category: 'شبكات',
-      level: 'متوسط',
-      icon: <Code />,
-      bgColor: '#4A6CF7',
-    },
-    {
-      id: 2,
-      title: 'كيفية استخدام ListView.builder',
-      description: 'دليل شامل لاستخدام ListView.builder في Flutter لإنشاء قوائم فعالة.',
-      category: 'برمجة',
-      level: 'مبتدئ',
-      icon: <School />,
-      bgColor: '#8B5CF6',
-    },
-    {
-      id: 3,
-      title: 'كيفية إنشاء Dashboard في Tableau',
-      description: 'تعلم إنشاء لوحات تحكم تفاعلية باستخدام Tableau لتحليل البيانات.',
-      category: 'تحليل بيانات',
-      level: 'متقدم',
-      icon: <MenuBook />,
-      bgColor: '#6C63FF',
-    },
-  ];
-
-  const courses = [
-    {
-      id: 1,
-      title: 'أساسيات الأمن السيبراني',
-      description: 'تعلم أساسيات الأمن السيبراني وكيفية حماية أنظمتك من الاختراقات.',
-      duration: '10 ساعات',
-      lessons: 24,
-      level: 'مبتدئ',
-      icon: <Code />,
-      bgColor: '#4A6CF7',
-    },
-    {
-      id: 2,
-      title: 'تعلم Flutter من الصفر',
-      description: 'دورة شاملة لتعلم Flutter لتطوير تطبيقات الجوال.',
-      duration: '30 ساعة',
-      lessons: 45,
-      level: 'متوسط',
-      icon: <School />,
-      bgColor: '#8B5CF6',
-    },
-    {
-      id: 3,
-      title: 'تحليل البيانات باستخدام Python',
-      description: 'تعلم تحليل البيانات باستخدام مكتبات Python مثل Pandas و NumPy.',
-      duration: '20 ساعة',
-      lessons: 35,
-      level: 'متقدم',
-      icon: <MenuBook />,
-      bgColor: '#6C63FF',
-    },
-  ];
-
-  const paths = [
-    {
-      id: 1,
-      title: 'مسار تطوير تطبيقات الجوال',
-      description: 'احترف تطوير تطبيقات الجوال من الصفر وحتى الاحتراف.',
-      courses: 8,
-      duration: '6 أشهر',
-      level: 'مبتدئ - متقدم',
-      icon: <Code />,
-      bgColor: '#4A6CF7',
-    },
-    {
-      id: 2,
-      title: 'مسار علم البيانات',
-      description: 'احترف تحليل البيانات وتعلم الآلة من البداية وحتى الاحتراف.',
-      courses: 12,
-      duration: '9 أشهر',
-      level: 'متوسط - متقدم',
-      icon: <School />,
-      bgColor: '#8B5CF6',
-    },
-    {
-      id: 3,
-      title: 'مسار أمن المعلومات',
-      description: 'تعلم أساسيات أمن المعلومات والاختراق الأخلاقي.',
-      courses: 6,
-      duration: '4 أشهر',
-      level: 'مبتدئ - متوسط',
-      icon: <MenuBook />,
-      bgColor: '#6C63FF',
-    },
-  ];
-
-  const renderHowTos = () => (
-    <Box sx={{
-      display: 'grid',
-      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-      gap: 3,
-      width: '100%',
-      maxWidth: '1400px',
-      mx: 'auto',
-      px: 3,
-      '& > *': {
-        display: 'flex',
-        height: '100%',
+  // Load categories from API
+  const loadCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await courseAPI.getCategories();
+      setCategories(response);
+      if (response.length > 0) {
+        // Load courses for the first category
+        await loadCoursesByCategory(response[0].id);
       }
-    }}>
-      {howTos.map((item, index) => (
-        <Box key={item.id} sx={{ width: '100%' }}>
-          <Grow in={true} timeout={index * 200}>
-            <Box>
-              <MethodCard delay={index}>
-                <MethodHeader bgcolor={item.bgColor}>
-                  {React.cloneElement(item.icon, { style: { color: '#fff' } })}
-                  <Typography variant="h6" component="h3">
-                    {item.category}
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setError('حدث خطأ في تحميل التصنيفات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load courses by category
+  const loadCoursesByCategory = async (categoryId) => {
+    try {
+      setLoading(true);
+      const response = await courseAPI.getPublicCourses({ category: categoryId });
+      setCourses(Array.isArray(response) ? response : response.results || response.data || []);
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      setError('حدث خطأ في تحميل الدورات');
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const getCategoryIcon = (categoryName) => {
+    const name = categoryName?.toLowerCase() || '';
+    if (name.includes('دورة') || name.includes('course')) return <School />;
+    if (name.includes('تدريب') || name.includes('training')) return <Code />;
+    if (name.includes('دبلوم') || name.includes('diploma')) return <MenuBook />;
+    return <School />;
+  };
+
+  const handleCourseClick = (courseId) => {
+    navigate(`/courses/${courseId}`);
+  };
+
+  const renderCourses = () => {
+    if (loading) {
+      return (
+    <Box sx={{
+        display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center', 
+          py: 6,
+          gap: 2
+        }}>
+          <CircularProgress sx={{ color: '#0e5181' }} />
+          <Typography variant="body1" color="text.secondary">
+            جاري تحميل الدورات...
                   </Typography>
-                </MethodHeader>
-                <MethodContent>
-                  <Typography variant="h6" component="h3">
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2">{item.description}</Typography>
-                </MethodContent>
-                <MethodFooter>
-                  <Typography variant="body2">
-                    <CheckCircle fontSize="small" />
-                    {item.level}
-                  </Typography>
+                    </Box>
+      );
+    }
+
+    if (error) {
+      return (
+                    <Box sx={{
+          py: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              maxWidth: '600px', 
+              width: '100%',
+              '& .MuiAlert-message': {
+                textAlign: 'center'
+              }
+            }}
+          >
+            {error}
+          </Alert>
                   <Button
                     variant="outlined"
-                    size="small"
-                    endIcon={<ArrowForward />}
-                    disableRipple
-                    disableTouchRipple
-                    sx={{
-                      minWidth: '140px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(74, 108, 247, 0.05)',
-                      },
-                      '&:active': {
-                        transform: 'none !important',
-                        boxShadow: 'none !important'
-                      },
-                      '& .MuiTouchRipple-root': {
-                        display: 'none !important'
-                      },
-                      '&:focus': {
-                        transform: 'scale(1) !important',
-                      },
-                    }}
-                  >
-                    اقرأ المزيد
+            onClick={() => {
+              setError(null);
+              loadCategories();
+            }}
+            sx={{ color: '#0e5181', borderColor: '#0e5181' }}
+          >
+            إعادة المحاولة
                   </Button>
-                </MethodFooter>
-              </MethodCard>
             </Box>
-          </Grow>
+      );
+    }
+
+    if (courses.length === 0) {
+      return (
+        <Box sx={{ 
+          textAlign: 'center', 
+          py: 6,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <Box sx={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            bgcolor: 'rgba(14, 81, 129, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mb: 2
+          }}>
+            <School sx={{ fontSize: '2rem', color: '#0e5181' }} />
         </Box>
-      ))}
+          <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+            لا توجد دورات متاحة في هذا التصنيف حالياً
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            سيتم إضافة دورات جديدة قريباً
+          </Typography>
     </Box>
   );
+    }
 
-  const renderCourses = () => (
+    return (
     <Box sx={{
       display: 'grid',
-      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-      gap: 3,
+        gridTemplateColumns: { 
+          xs: '1fr', 
+          sm: 'repeat(2, 1fr)', 
+          md: 'repeat(2, 1fr)',
+          lg: 'repeat(3, 1fr)' 
+        },
+        gap: { xs: 2, sm: 3 },
       width: '100%',
       maxWidth: '1400px',
       mx: 'auto',
-      px: 3
+        px: { xs: 2, sm: 3 }
     }}>
-      {courses.map((course, index) => (
-        <Box key={course.id} sx={{ width: '100%' }}>
-          <Grow in={true} timeout={index * 200}>
-            <Box>
-              <MethodCard delay={index}>
-                <MethodHeader bgcolor={course.bgColor}>
-                  {React.cloneElement(course.icon, { style: { color: '#fff' } })}
-                  <Typography variant="h6" component="h3">
-                    {course.duration}
-                  </Typography>
-                </MethodHeader>
-                <MethodContent>
-                  <Typography variant="h6" component="h3">
-                    {course.title}
-                  </Typography>
-                  <Typography variant="body2">{course.description}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                    <Box sx={{
-                      bgcolor: 'rgba(74, 108, 247, 0.1)',
-                      color: 'primary.main',
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                    }}>
-                      {course.lessons} درس
-                    </Box>
-                    <Box sx={{
-                      bgcolor: 'rgba(139, 92, 246, 0.1)',
-                      color: 'secondary.main',
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                    }}>
-                      {course.level}
-                    </Box>
-                  </Box>
-                </MethodContent>
-                <MethodFooter>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    disableRipple
-                    disableTouchRipple
-                    endIcon={<ArrowForward />}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'rgba(74, 108, 247, 0.05)',
-                      },
-                      '&:active': {
-                        transform: 'none !important',
-                        boxShadow: 'none !important'
-                      },
-                      '& .MuiTouchRipple-root': {
-                        display: 'none !important'
-                      },
-                      '&:focus': {
-                        transform: 'scale(1) !important',
-                      },
-                    }}
-                  >
-                    سجل الآن
-                  </Button>
-                </MethodFooter>
-              </MethodCard>
-            </Box>
-          </Grow>
-        </Box>
-      ))}
-    </Box>
-  );
-
-  const renderPaths = () => (
-    <Box sx={{
-      display: 'grid',
-      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' },
-      gap: 3,
-      width: '100%',
-      maxWidth: '1400px',
-      mx: 'auto',
-      px: 3
-    }}>
-      {paths.map((path, index) => (
-        <Box key={path.id} sx={{ width: '100%' }}>
-          <Grow in={true} timeout={index * 200}>
-            <Box>
-              <MethodCard delay={index}>
-                <MethodHeader bgcolor={path.bgColor}>
-                  {React.cloneElement(path.icon, { style: { color: '#fff' } })}
-                  <Typography variant="h6" component="h3">
-                    {path.duration}
-                  </Typography>
-                </MethodHeader>
-                <MethodContent>
-                  <Typography variant="h6" component="h3">
-                    {path.title}
-                  </Typography>
-                  <Typography variant="body2">{path.description}</Typography>
-                  <Box mt={2}>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1,
-                      mb: 1.5,
-                      '& > *': {
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        '& svg': {
-                          fontSize: '1rem',
-                        }
-                      }
-                    }}>
-                      <Box sx={{ color: 'primary.main' }}>
-                        <School fontSize="small" />
-                        {path.courses} دورات
-                      </Box>
+        {courses.map((course, index) => (
+          <Box key={course.id} sx={{ width: '100%' }}>
+            <Grow in={true} timeout={index * 200}>
+              <Box>
+                <MethodCard 
+                  delay={index}
+                  onClick={() => handleCourseClick(course.id)}
+                >
+                  <CourseImageContainer>
+                    <img 
+                      src={course.image_url || '/src/assets/images/bannar.jpeg'} 
+                      alt={course.title} 
+                      className="course-image"
+                      onError={(e) => {
+                        e.target.src = '/src/assets/images/bannar.jpeg';
+                      }}
+                    />
+                    
+                    {/* Course Badges */}
+                    {course.is_free && (
+                      <CourseBadge variant="free">
+                        مجاني
+                      </CourseBadge>
+                    )}
+                    {course.is_featured && (
+                      <CourseBadge variant="featured">
+                        مميز
+                      </CourseBadge>
+                    )}
+                    {course.is_certified && (
+                      <CourseBadge variant="new">
+                        معتمد
+                      </CourseBadge>
+                    )}
+                  </CourseImageContainer>
+                  
+                  <MethodContent>
+                    <Typography variant="h6" component="h3">
+                      {course.title}
+                    </Typography>
+                    
+                    <Typography variant="body2">
+                      {course.short_description || course.description?.substring(0, 120) + '...' || 'لا يوجد وصف متاح'}
+                    </Typography>
+                    
+                    {course.instructors && course.instructors.length > 0 && (
                       <Box sx={{ 
-                        width: '4px',
-                        height: '4px',
-                        borderRadius: '50%',
-                        bgcolor: 'divider',
-                      }} />
-                      <Box sx={{ color: 'secondary.main' }}>
-                        <MenuBook fontSize="small" />
-                        {path.level}
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1, 
+                        mt: 1.5,
+                        p: 1,
+                        bgcolor: 'rgba(14, 81, 129, 0.05)',
+                        borderRadius: '8px'
+                      }}>
+                        <Box sx={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          bgcolor: '#0e5181',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: '0.7rem',
+                          fontWeight: 600
+                        }}>
+                          {course.instructors[0]?.name?.charAt(0) || 'م'}
+                        </Box>
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                          {course.instructors[0]?.name || 'مدرب غير محدد'}
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+                      {course.level && (
+                      <Box sx={{
+                        bgcolor: 'rgba(14, 81, 129, 0.1)',
+                        color: '#0e5181',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                      }}>
+                          {course.level === 'beginner' ? 'مبتدئ' : 
+                           course.level === 'intermediate' ? 'متوسط' : 
+                           course.level === 'advanced' ? 'متقدم' : course.level}
+                      </Box>
+                      )}
+                      {course.price && !course.is_free && (
+                      <Box sx={{
+                          bgcolor: 'rgba(14, 81, 129, 0.1)',
+                          color: '#0e5181',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                      }}>
+                          {course.price} ريال
+                      </Box>
+                      )}
+                      {course.average_rating && (
+                      <Box sx={{
+                          bgcolor: 'rgba(255, 193, 7, 0.1)',
+                          color: '#ffc107',
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5
+                      }}>
+                          ⭐ {course.average_rating.toFixed(1)}
+                      </Box>
+                      )}
+                      {course.total_enrollments && (
+                        <Box sx={{
+                          bgcolor: 'rgba(76, 175, 80, 0.1)',
+                          color: '#4caf50',
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5
+                        }}>
+                          👥 {course.total_enrollments}
+                    </Box>
+      )}
+    </Box>
+                    
+                    {/* Course Stats */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                      justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                      mt: 2,
+                      pt: 2,
+                      borderTop: '1px solid rgba(0, 0, 0, 0.05)',
+                      opacity: 0.8,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        opacity: 1,
+                      }
+                    }} className="course-stats">
+                      <Box sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                        gap: 0.5,
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          color: '#0e5181',
+                        }
+                      }}>
+                        <School sx={{ fontSize: '1rem', color: '#0e5181' }} />
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {course.modules?.length || 0} وحدة
+                        </Typography>
+                        </Box>
+                        <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.5,
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          color: '#e5978b',
+                        }
+                      }}>
+                        <MenuBook sx={{ fontSize: '1rem', color: '#e5978b' }} />
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {course.lessons?.length || 0} درس
+                        </Typography>
+                        </Box>
+                      <Box sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                        gap: 0.5,
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          color: '#4caf50',
+                        }
+                      }}>
+                        <Code sx={{ fontSize: '1rem', color: '#4caf50' }} />
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          {course.duration || 'غير محدد'}
+                        </Typography>
                       </Box>
                     </Box>
-                    <Box>
-                      <Typography variant="body2" sx={{ 
-                        fontWeight: 600, 
-                        mb: 1,
-                        color: 'text.primary',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
+                    
+                    {/* Course Tags */}
+                    {course.tags && course.tags.length > 0 && (
+                      <Box sx={{ 
+                        display: 'flex', 
+                        gap: 0.5, 
+                        mt: 1.5,
+                        flexWrap: 'wrap'
                       }}>
-                        <CheckCircle color="primary" fontSize="small" />
-                        المهارات المكتسبة:
-                      </Typography>
-                      <ul style={{ margin: 0, paddingLeft: '24px' }}>
-                        <li>مهارة أولى في المجال</li>
-                        <li>مهارة متوسطة المستوى</li>
-                        <li>مهارة متقدمة احترافية</li>
-                      </ul>
+                        {course.tags.slice(0, 3).map((tag, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              bgcolor: 'rgba(14, 81, 129, 0.08)',
+                              color: '#0e5181',
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: '12px',
+                              fontSize: '0.65rem',
+                              fontWeight: 500,
+                              border: '1px solid rgba(14, 81, 129, 0.1)',
+                            }}
+                          >
+                            {tag.name}
+                          </Box>
+                        ))}
+                        {course.tags.length > 3 && (
+                          <Box
+                            sx={{
+                              bgcolor: 'rgba(229, 151, 139, 0.08)',
+                              color: '#e5978b',
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: '12px',
+                              fontSize: '0.65rem',
+                              fontWeight: 500,
+                              border: '1px solid rgba(229, 151, 139, 0.1)',
+                            }}
+                          >
+                            +{course.tags.length - 3}
+                      </Box>
+                        )}
                     </Box>
-                  </Box>
-                </MethodContent>
-                <MethodFooter>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    disableRipple
-                    disableTouchRipple
-                    endIcon={<ArrowForward />}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'rgba(74, 108, 247, 0.05)',
-                      },
-                      '&:active': {
-                        transform: 'none !important',
-                        boxShadow: 'none !important'
-                      },
-                      '& .MuiTouchRipple-root': {
-                        display: 'none !important'
-                      }
-                    }}
-                  >
-                    ابدأ المسار
-                  </Button>
-                </MethodFooter>
-              </MethodCard>
-            </Box>
-          </Grow>
-        </Box>
-      ))}
+                    )}
+                  </MethodContent>
+                  
+                  <MethodFooter>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      disableRipple
+                      disableTouchRipple
+                      endIcon={<ArrowForward />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCourseClick(course.id);
+                      }}
+                      sx={{
+                        background: 'linear-gradient(90deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
+                        border: '1.5px solid #0e5181',
+                        color: '#0e5181',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        padding: '10px 20px',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+                          color: '#fff',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 6px 12px rgba(14, 81, 129, 0.2)',
+                          borderColor: 'transparent',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          boxShadow: '0 2px 4px rgba(14, 81, 129, 0.1)',
+                        },
+                        '& .MuiTouchRipple-root': {
+                          display: 'none !important'
+                        },
+                        '&:focus': {
+                          transform: 'scale(1) !important',
+                        },
+                        '& .MuiButton-endIcon': {
+                          transition: 'transform 0.3s ease',
+                        },
+                        '&:hover .MuiButton-endIcon': {
+                          transform: 'translateX(4px)',
+                        },
+                      }}
+                    >
+                      عرض الدورة
+                    </Button>
+                  </MethodFooter>
+                </MethodCard>
+              </Box>
+            </Grow>
+          </Box>
+        ))}
     </Box>
   );
+  };
 
   return (
     <SectionContainer>
@@ -707,6 +860,21 @@ const LearningMethodsSection = () => {
         <Box sx={{ position: 'relative', zIndex: 1 }}>
           <Fade in={true} timeout={500}>
             <Box>
+              {loading && categories.length === 0 ? (
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  alignItems: 'center', 
+                  py: 6,
+                  gap: 2
+                }}>
+                  <CircularProgress sx={{ color: '#0e5181' }} />
+                  <Typography variant="body1" color="text.secondary">
+                    جاري تحميل التصنيفات...
+                  </Typography>
+                </Box>
+              ) : (
+                <>
               <StyledTabs
                 value={value}
                 onChange={handleChange}
@@ -717,46 +885,42 @@ const LearningMethodsSection = () => {
                 data-aos="fade-up"
                 data-aos-delay="300"
               >
+                    {categories.map((category, index) => (
                 <Tab 
+                        key={category.id}
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Code fontSize="small" />
-                      <span>كيفية</span>
+                            {getCategoryIcon(category.name)}
+                            <span>{category.name}</span>
+                            {category.courses_count > 0 && (
+                              <Box sx={{
+                                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                color: '#fff',
+                                px: 1,
+                                py: 0.2,
+                                borderRadius: '10px',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                minWidth: '20px',
+                                textAlign: 'center'
+                              }}>
+                                {category.courses_count}
+                    </Box>
+                            )}
                     </Box>
                   } 
                   iconPosition="start"
                 />
-                <Tab 
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <School fontSize="small" />
-                      <span>دورات</span>
-                    </Box>
-                  } 
-                  iconPosition="start"
-                />
-                <Tab 
-                  label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MenuBook fontSize="small" />
-                      <span>مسارات</span>
-                    </Box>
-                  } 
-                  iconPosition="start"
-                />
+                    ))}
               </StyledTabs>
 
               <Box mt={2}>
-                <TabPanel value={value} index={0}>
-                  {renderHowTos()}
-                </TabPanel>
-                <TabPanel value={value} index={1}>
+                    <TabPanel value={value} index={value}>
                   {renderCourses()}
                 </TabPanel>
-                <TabPanel value={value} index={2}>
-                  {renderPaths()}
-                </TabPanel>
               </Box>
+                </>
+              )}
             </Box>
           </Fade>
         </Box>
@@ -768,22 +932,22 @@ const LearningMethodsSection = () => {
             size="large"
             endIcon={theme.direction === 'rtl' ? <ChevronLeft /> : <ChevronRight />}
             sx={{
-              background: 'linear-gradient(90deg, #4A6CF7 0%, #8B5CF6 100%)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
               borderRadius: '12px',
               padding: '12px 32px',
               fontSize: '1rem',
               fontWeight: 600,
               textTransform: 'none',
-              boxShadow: '0 10px 20px rgba(74, 108, 247, 0.2)',
+              boxShadow: '0 10px 20px rgba(14, 81, 129, 0.2)',
               transition: 'all 0.3s ease',
               '&:hover': {
                 transform: 'translateY(-2px)',
-                boxShadow: '0 15px 25px rgba(74, 108, 247, 0.3)',
-                background: 'linear-gradient(90deg, #3a5bd9 0%, #7b4ad9 100%)',
+                boxShadow: '0 15px 25px rgba(14, 81, 129, 0.3)',
+                background: 'linear-gradient(90deg, #0a3d5f 0%, #d18a7a 100%)',
               },
             }}
           >
-            {value === 0 ? 'تصفح جميع الكيفيات' : value === 1 ? 'استكشف جميع الدورات' : 'اكتشف جميع المسارات'}
+            استكشف جميع الدورات
           </Button>
         </Box>
       </Container>

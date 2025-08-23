@@ -29,11 +29,12 @@ class CourseBasicSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     enrolled_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
         fields = [
-            'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'price',
+            'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'image_url', 'price',
             'discount_price', 'category', 'category_name', 'instructors', 'tags',
             'level', 'status', 'is_complete_course', 'created_at', 'rating', 'enrolled_count',
             'is_free', 'is_featured', 'is_certified', 'total_enrollments', 'average_rating'
@@ -86,6 +87,11 @@ class CourseBasicSerializer(serializers.ModelSerializer):
     
     def get_rating(self, obj):
         return obj.average_rating
+    
+    def get_image_url(self, obj):
+        if obj.image:
+            return self.context['request'].build_absolute_uri(obj.image.url)
+        return None
 
 
 class CourseInstructorSerializer(serializers.Serializer):

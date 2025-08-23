@@ -101,6 +101,34 @@ class CourseCollectionViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
 
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action in ['list', 'retrieve', 'with_courses']:
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAdminUser]
+        return [permission() for permission in permission_classes]
+
+    @action(detail=False, methods=['get'])
+    def with_courses(self, request, *args, **kwargs):
+        """
+        Get all collections with their courses for the homepage.
+        """
+        collections = CourseCollection.objects.filter(
+            courses__status='published',
+            courses__is_active=True
+        ).distinct().prefetch_related(
+            'courses__category',
+            'courses__instructors',
+            'courses__instructors__profile',
+            'courses__tags'
+        ).order_by('display_order', 'name')
+        
+        serializer = CourseCollectionDetailSerializer(collections, many=True, context={'request': request})
+        return Response(serializer.data)
+
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
