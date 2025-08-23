@@ -204,11 +204,31 @@ export const assignmentsAPI = {
   },
 
   createSubmission: async (payload) => {
-    // payload: { assignment, submission_text, submitted_file }
+    // payload: { assignment, submission_text, submitted_file, question_responses }
     const form = new FormData();
     if (payload.assignment) form.append('assignment', payload.assignment);
     if (payload.submission_text) form.append('submission_text', payload.submission_text);
     if (payload.submitted_file) form.append('submitted_file', payload.submitted_file);
+
+    // Add question responses if present
+    if (payload.question_responses && Array.isArray(payload.question_responses)) {
+      console.log('Question responses before JSON.stringify:', payload.question_responses);  // Debug log
+      
+      // Convert to JSON string for proper handling
+      form.append('question_responses', JSON.stringify(payload.question_responses));
+      
+      // Also add individual files for question responses
+      payload.question_responses.forEach((response, index) => {
+        if (response.file_answer) {
+          form.append(`question_responses[${index}][file_answer]`, response.file_answer);
+        }
+      });
+    }
+
+    console.log('FormData contents:');  // Debug log
+    for (let [key, value] of form.entries()) {
+      console.log(`${key}: ${value}`);  // Debug log
+    }
 
     const response = await api.post(`${BASE}/submissions/`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -230,6 +250,45 @@ export const assignmentsAPI = {
 
   deleteSubmission: async (id) => {
     const response = await api.delete(`${BASE}/submissions/${id}/`);
+    return response.data;
+  },
+
+  // Additional helper methods
+  downloadAssignmentFile: async (assignmentId) => {
+    const response = await api.get(`${BASE}/assignments/${assignmentId}/download/`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  downloadSubmissionFile: async (submissionId) => {
+    const response = await api.get(`${BASE}/submissions/${submissionId}/download/`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  // Get assignment statistics
+  getAssignmentStats: async (assignmentId) => {
+    const response = await api.get(`${BASE}/assignments/${assignmentId}/statistics/`);
+    return response.data;
+  },
+
+  // Get user's assignment submissions
+  getMySubmissions: async (params = {}) => {
+    const response = await api.get(`${BASE}/submissions/my/`, { params });
+    return response.data;
+  },
+
+  // Get teacher's assignments
+  getTeacherAssignments: async (params = {}) => {
+    const response = await api.get(`${BASE}/assignments/teacher/`, { params });
+    return response.data;
+  },
+
+  // Get student's assignments
+  getStudentAssignments: async (params = {}) => {
+    const response = await api.get(`${BASE}/assignments/student/`, { params });
     return response.data;
   },
 };

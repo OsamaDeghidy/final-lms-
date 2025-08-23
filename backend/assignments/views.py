@@ -11,6 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ValidationError
 from datetime import timedelta, datetime
 import logging
 
@@ -32,7 +33,8 @@ from .serializers import (
     AssignmentBasicSerializer, AssignmentDetailSerializer, AssignmentCreateSerializer, 
     AssignmentQuestionSerializer, AssignmentSubmissionSerializer, AssignmentAnswerSerializer,
     AssignmentQuestionWithAnswersSerializer, AssignmentSubmissionGradeSerializer, 
-    AssignmentSubmissionCreateSerializer, AssignmentQuestionResponseSerializer
+    AssignmentSubmissionCreateSerializer, AssignmentQuestionResponseSerializer,
+    AssignmentStudentSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -611,6 +613,10 @@ class AssignmentViewSet(ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'list':
+            # Use different serializer for students vs teachers
+            user = self.request.user
+            if hasattr(user, 'student'):
+                return AssignmentStudentSerializer
             return AssignmentBasicSerializer
         elif self.action == 'retrieve':
             return AssignmentDetailSerializer
@@ -781,8 +787,29 @@ class AssignmentSubmissionViewSet(ModelViewSet):
         
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except ValidationError as e:
+            return Response(
+                {'non_field_errors': [str(e)]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Check if user already submitted this assignment
+        assignment = serializer.validated_data.get('assignment')
+        user = self.request.user
+        
+        existing_submission = AssignmentSubmission.objects.filter(
+            user=user,
+            assignment=assignment
+        ).first()
+        
+        if existing_submission:
+            raise ValidationError('لقد قمت بتقديم هذا الواجب مسبقاً')
+        
+        serializer.save(user=user)
     
     @action(detail=True, methods=['patch'])
     def grade(self, request, pk=None):
@@ -798,6 +825,13 @@ class AssignmentSubmissionViewSet(ModelViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def my(self, request):
+        """Get current user's submissions"""
+        queryset = self.get_queryset().filter(user=request.user)
+        serializer = AssignmentSubmissionSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class AssignmentAnswerViewSet(ModelViewSet):

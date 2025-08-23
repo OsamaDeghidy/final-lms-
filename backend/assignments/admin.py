@@ -486,18 +486,28 @@ class AssignmentSubmissionAdmin(admin.ModelAdmin):
     
     def grade_display(self, obj):
         if obj.grade is not None:
-            percentage = (obj.grade / obj.assignment.points) * 100
-            if percentage >= 90:
-                color = '#28a745'
-            elif percentage >= 70:
-                color = '#ffc107'
-            else:
-                color = '#dc3545'
-            return format_html(
-                '<span style="color: {}; font-weight: bold;">{}/{} ({:.1f}%)</span>',
-                color, obj.grade, obj.assignment.points, percentage
-            )
-        return 'غير مقيم'
+            try:
+                grade = float(obj.grade)
+                total_points = float(obj.assignment.points)
+                percentage = (grade / total_points) * 100
+                
+                if percentage >= 90:
+                    color = '#28a745'
+                elif percentage >= 70:
+                    color = '#ffc107'
+                else:
+                    color = '#dc3545'
+                
+                return format_html(
+                    '<span style="color: {}; font-weight: bold;">{}/{} ({}%)</span>',
+                    color, 
+                    str(round(grade, 1)), 
+                    str(round(total_points, 1)), 
+                    str(round(percentage, 1))
+                )
+            except (ValueError, TypeError, ZeroDivisionError):
+                return format_html('<span style="color: #dc3545;">خطأ في البيانات</span>')
+        return format_html('<span style="color: #6c757d;">غير مقيم</span>')
     grade_display.short_description = 'الدرجة'
     
     def get_queryset(self, request):

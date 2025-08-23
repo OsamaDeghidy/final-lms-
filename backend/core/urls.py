@@ -40,7 +40,22 @@ urlpatterns = [
     # path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     # path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     
-    # Authentication
+    # API Routes
+    path('api/assignments/', include('assignments.urls')),
+    path('api/auth/', include('authentication.urls')),
+    path('api/users/', include('users.urls')),
+    path('api/courses/', include('courses.urls')),
+    path('api/certificates/', include('certificates.urls')),
+    path('api/meetings/', include('meetings.urls')),
+    path('api/notifications/', include('notifications.urls')),
+    path('api/articles/', include('articles.urls')),
+    path('api/extras/', include('extras.urls')),
+    path('api/content/', include('content.urls')),  # Content app URLs
+    path('api/store/', include('store.urls')),  # Store app URLs
+    path('api/reviews/', include('reviews.urls')),  # Reviews app URLs
+    path('api/permissions/', include('custom_permissions.urls')),  # Custom permissions URLs
+    
+    # Legacy routes (for backward compatibility)
     path('auth/', include('authentication.urls')),
     path('users/', include('users.urls')),
     path('courses/', include('courses.urls')),

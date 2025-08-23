@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Card, Button, TextField, FormControl,
   InputLabel, Select, MenuItem, Paper, Alert, Divider,
   LinearProgress, Chip, IconButton, Grid, List, ListItem,
   ListItemText, ListItemIcon, Dialog, DialogTitle, DialogContent,
-  DialogActions, Stepper, Step, StepLabel, StepContent
+  DialogActions, Stepper, Step, StepLabel, StepContent, CircularProgress
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon, CheckCircle as CheckCircleIcon,
@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';
+import assignmentsAPI from '../../services/assignment.service';
 import './Assignments.css';
 
 // Styled Components
@@ -42,82 +43,45 @@ const SubmitAssignment = () => {
     comments: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assignment, setAssignment] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Sample assignment data based on Django model
-  const assignment = {
-    id: assignmentId,
-    title: 'واجب الرياضيات - الجبر الخطي',
-    description: 'حل مسائل من 1 إلى 10 في الكتاب مع شرح الخطوات بالتفصيل.',
-    course: 'الرياضيات 101',
-    module: 'الجبر الخطي',
-    due_date: '2024-01-25T23:59:00',
-    points: 100,
-    allow_late_submissions: true,
-    late_submission_penalty: 10,
-    has_questions: true,
-    has_file_upload: true,
-    assignment_file: 'math_assignment.pdf',
-    is_active: true,
-    created_at: '2024-01-15T10:00:00',
-    questions: [
-      {
-        id: 1,
-        text: 'ما هو حل المعادلة: 2x + 5 = 13؟',
-        question_type: 'short_answer',
-        points: 20,
-        explanation: 'يجب إيجاد قيمة x',
-        is_required: true,
-        order: 1
-      },
-      {
-        id: 2,
-        text: 'أي من المعادلات التالية تمثل خط مستقيم؟',
-        question_type: 'multiple_choice',
-        points: 15,
-        explanation: 'اختر الإجابة الصحيحة',
-        is_required: true,
-        order: 2,
-        answers: [
-          { id: 1, text: 'y = 2x + 3', is_correct: true },
-          { id: 2, text: 'y = x² + 1', is_correct: false },
-          { id: 3, text: 'y = 1/x', is_correct: false },
-          { id: 4, text: 'y = √x', is_correct: false }
-        ]
-      },
-      {
-        id: 3,
-        text: 'هل المعادلة y = 3x + 2 تمثل خط مستقيم؟',
-        question_type: 'true_false',
-        points: 10,
-        explanation: 'صح أم خطأ',
-        is_required: true,
-        order: 3
-      },
-      {
-        id: 4,
-        text: 'اشرح خطوات حل المعادلة التربيعية: x² - 4x + 3 = 0',
-        question_type: 'essay',
-        points: 30,
-        explanation: 'اشرح بالتفصيل',
-        is_required: true,
-        order: 4
-      },
-      {
-        id: 5,
-        text: 'ارفع ملف يحتوي على حلولك للمسائل من 6 إلى 10',
-        question_type: 'file_upload',
-        points: 25,
-        explanation: 'يجب أن يكون الملف بصيغة PDF أو Word',
-        is_required: true,
-        order: 5
+  // Fetch assignment data from API
+  useEffect(() => {
+    const fetchAssignment = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await assignmentsAPI.getAssignmentById(assignmentId);
+        console.log('Fetched assignment:', data);
+        setAssignment(data);
+        
+        // Check if user has already submitted this assignment
+        try {
+          const submissions = await assignmentsAPI.getMySubmissions();
+          const existingSubmission = submissions.find(sub => sub.assignment === parseInt(assignmentId));
+          if (existingSubmission) {
+            setError('لقد قمت بتقديم هذا الواجب مسبقاً. لا يمكن تقديمه مرة أخرى.');
+          }
+        } catch (submissionErr) {
+          console.log('Could not check existing submissions:', submissionErr);
+        }
+      } catch (err) {
+        console.error('Error fetching assignment:', err);
+        setError('تعذر تحميل بيانات الواجب. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setLoading(false);
       }
-    ],
-    total_points: 100,
-    questions_count: 5
-  };
+    };
 
-  const isOverdue = new Date() > new Date(assignment.due_date);
-  const canSubmit = assignment.is_active && (!isOverdue || assignment.allow_late_submissions);
+    if (assignmentId) {
+      fetchAssignment();
+    }
+  }, [assignmentId]);
+
+  const isOverdue = assignment ? new Date() > new Date(assignment.due_date) : false;
+  const canSubmit = assignment ? assignment.is_active && (!isOverdue || assignment.allow_late_submissions) : false;
 
   const steps = [
     {
@@ -167,15 +131,88 @@ const SubmitAssignment = () => {
   };
 
   const handleSubmit = async () => {
+    // Check if there's an error (e.g., already submitted)
+    if (error) {
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log('Submitting assignment:', submissionData);
+      // Prepare submission data
+      const submissionPayload = {
+        assignment: assignmentId,
+        submission_text: submissionData.comments || '',
+        submitted_file: submissionData.files.main || null
+      };
+
+      // Add question responses if assignment has questions
+      if (assignment.has_questions && assignment.questions) {
+        const questionResponses = [];
+        
+        assignment.questions.forEach(question => {
+          const answer = submissionData.answers[question.id];
+          const file = submissionData.files[question.id];
+          
+          console.log(`Processing question ${question.id} (${question.question_type}): answer=${answer}, file=${file}`);  // Debug log
+          
+          if (answer || file) {
+            // Determine the correct field based on question type
+            let text_answer = null;
+            let selected_answer = null;
+            
+            if (question.question_type === 'multiple_choice' || question.question_type === 'true_false') {
+              selected_answer = answer;
+              console.log(`Setting selected_answer for ${question.question_type}: ${selected_answer}`);  // Debug log
+            } else if (question.question_type === 'short_answer' || question.question_type === 'essay') {
+              text_answer = answer;
+              console.log(`Setting text_answer for ${question.question_type}: ${text_answer}`);  // Debug log
+            }
+            
+            const response = {
+              question: question.id,
+              text_answer: text_answer,
+              selected_answer: selected_answer,
+              file_answer: file || null
+            };
+            
+            console.log(`Question ${question.id} (${question.question_type}):`, response);
+            questionResponses.push(response);
+          }
+        });
+
+        // Add question responses to payload
+        if (questionResponses.length > 0) {
+        submissionPayload.question_responses = questionResponses;
+        }
+      }
+
+      console.log('Submitting assignment with payload:', submissionPayload);
+      
+      // Submit assignment
+      const response = await assignmentsAPI.createSubmission(submissionPayload);
+      console.log('Submission response:', response);
+      
       // Navigate to success page or show success message
       navigate('/student/assignments');
     } catch (error) {
       console.error('Error submitting assignment:', error);
+      
+      // Handle different types of errors
+      if (error.response?.status === 400) {
+        // Validation error from backend
+        const errorData = error.response.data;
+        if (errorData.non_field_errors && errorData.non_field_errors.length > 0) {
+          setError(errorData.non_field_errors[0]);
+        } else if (errorData.detail) {
+          setError(errorData.detail);
+        } else {
+          setError('بيانات غير صحيحة. يرجى التحقق من المدخلات.');
+        }
+      } else if (error.response?.status === 500) {
+        setError('حدث خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً.');
+      } else {
+        setError('حدث خطأ أثناء إرسال الواجب. يرجى المحاولة مرة أخرى.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -292,6 +329,43 @@ const SubmitAssignment = () => {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <Box className="assignments-container" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box className="assignments-container">
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button onClick={() => navigate('/student/assignments')} variant="contained">
+          العودة للواجبات
+        </Button>
+      </Box>
+    );
+  }
+
+  // Show message if no assignment found
+  if (!assignment) {
+    return (
+      <Box className="assignments-container">
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          لم يتم العثور على الواجب المطلوب
+        </Alert>
+        <Button onClick={() => navigate('/student/assignments')} variant="contained">
+          العودة للواجبات
+        </Button>
+      </Box>
+    );
+  }
+
   return (
     <Box className="assignments-container">
       {/* Header */}
@@ -335,14 +409,14 @@ const SubmitAssignment = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <SchoolIcon sx={{ color: '#673ab7' }} />
               <Typography variant="h6" fontWeight={600}>
-                {assignment.course}
+                {assignment.course_title || assignment.course?.title}
               </Typography>
             </Box>
-            {assignment.module && (
+            {(assignment.module_name || assignment.module?.name) && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <BookIcon sx={{ color: '#666' }} />
                 <Typography variant="body1" color="text.secondary">
-                  {assignment.module}
+                  {assignment.module_name || assignment.module?.name}
                 </Typography>
               </Box>
             )}
@@ -366,7 +440,7 @@ const SubmitAssignment = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <QuizIcon sx={{ color: '#666' }} />
               <Typography variant="body1">
-                عدد الأسئلة: {assignment.questions_count}
+                عدد الأسئلة: {assignment.questions_count || 0}
               </Typography>
             </Box>
             {assignment.assignment_file && (
@@ -427,48 +501,56 @@ const SubmitAssignment = () => {
                       <Typography variant="h6" gutterBottom>
                         الأسئلة المطلوبة
                       </Typography>
-                      <List>
-                        {assignment.questions.map((question, qIndex) => (
-                          <ListItem key={question.id} sx={{ mb: 2, p: 0 }}>
-                            <QuestionCard sx={{ width: '100%', p: 3 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                                {getQuestionIcon(question.question_type)}
-                                <Typography variant="h6" fontWeight={600}>
-                                  السؤال {qIndex + 1}
-                                </Typography>
-                                <Chip 
-                                  label={`${question.points} نقطة`} 
-                                  size="small" 
-                                  color="primary" 
-                                  variant="outlined"
-                                />
-                                {question.is_required && (
+                      {assignment.questions && assignment.questions.length > 0 ? (
+                        <List>
+                          {assignment.questions.map((question, qIndex) => (
+                            <ListItem key={question.id} sx={{ mb: 2, p: 0 }}>
+                              <QuestionCard sx={{ width: '100%', p: 3 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                  {getQuestionIcon(question.question_type)}
+                                  <Typography variant="h6" fontWeight={600}>
+                                    السؤال {qIndex + 1}
+                                  </Typography>
                                   <Chip 
-                                    label="إجباري" 
+                                    label={`${question.points} نقطة`} 
                                     size="small" 
-                                    color="error" 
+                                    color="primary" 
                                     variant="outlined"
                                   />
+                                  {question.is_required && (
+                                    <Chip 
+                                      label="إجباري" 
+                                      size="small" 
+                                      color="error" 
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Box>
+                                
+                                <Typography variant="body1" paragraph>
+                                  {question.text}
+                                </Typography>
+                                
+                                {question.explanation && (
+                                  <Alert severity="info" sx={{ mb: 2 }}>
+                                    <Typography variant="body2">
+                                      {question.explanation}
+                                    </Typography>
+                                  </Alert>
                                 )}
-                              </Box>
-                              
-                              <Typography variant="body1" paragraph>
-                                {question.text}
-                              </Typography>
-                              
-                              {question.explanation && (
-                                <Alert severity="info" sx={{ mb: 2 }}>
-                                  <Typography variant="body2">
-                                    {question.explanation}
-                                  </Typography>
-                                </Alert>
-                              )}
-                              
-                              {renderQuestion(question)}
-                            </QuestionCard>
-                          </ListItem>
-                        ))}
-                      </List>
+                                
+                                {renderQuestion(question)}
+                              </QuestionCard>
+                            </ListItem>
+                          ))}
+                        </List>
+                      ) : (
+                        <Alert severity="info">
+                          <Typography variant="body1">
+                            لا توجد أسئلة لهذا الواجب. يمكنك رفع ملف أو كتابة نص في الخطوة التالية.
+                          </Typography>
+                        </Alert>
+                      )}
                     </Box>
                   )}
                   
@@ -480,6 +562,34 @@ const SubmitAssignment = () => {
                       <Typography variant="body2" color="text.secondary" paragraph>
                         تأكد من رفع جميع الملفات المطلوبة بالصيغ المقبولة.
                       </Typography>
+                      
+                      {assignment.has_file_upload && (
+                        <Box sx={{ textAlign: 'center', p: 3, border: '2px dashed #e0e0e0', borderRadius: 2 }}>
+                          <UploadIcon sx={{ fontSize: 48, color: '#666', mb: 2 }} />
+                          <Typography variant="body1" color="text.secondary" gutterBottom>
+                            اسحب الملف هنا أو اضغط للاختيار
+                          </Typography>
+                          <Button
+                            variant="outlined"
+                            component="label"
+                            startIcon={<FileUploadIcon />}
+                            sx={{ mt: 2 }}
+                          >
+                            اختيار ملف
+                            <input
+                              type="file"
+                              hidden
+                              onChange={(e) => handleFileUpload('main', e.target.files[0])}
+                              accept=".pdf,.doc,.docx,.txt"
+                            />
+                          </Button>
+                          {submissionData.files.main && (
+                            <Typography variant="body2" color="success.main" sx={{ mt: 1 }}>
+                              تم اختيار: {submissionData.files.main.name}
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
                     </Box>
                   )}
                   
@@ -538,6 +648,12 @@ const SubmitAssignment = () => {
             تأكد من مراجعة جميع إجاباتك قبل الإرسال النهائي.
           </Typography>
           
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 3 }}>
             <Button
               variant="outlined"
@@ -549,8 +665,8 @@ const SubmitAssignment = () => {
             <Button
               variant="contained"
               onClick={handleSubmit}
-              disabled={isSubmitting || !canSubmit}
-              startIcon={isSubmitting ? <LinearProgress /> : <SendIcon />}
+              disabled={isSubmitting || !canSubmit || error}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : <SendIcon />}
               sx={{
                 background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
                 '&:hover': {
@@ -563,56 +679,6 @@ const SubmitAssignment = () => {
           </Box>
         </Paper>
       )}
-
-      {/* Success Dialog */}
-      <Dialog
-        open={false} // Will be controlled by state
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
-        }}
-      >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          backgroundColor: 'success.main', 
-          color: 'white', 
-          py: 3, 
-          px: 4 
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CheckCircleIcon sx={{ fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={700}>
-              تم إرسال الواجب بنجاح
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="body1" paragraph>
-            تم إرسال واجبك بنجاح. يمكنك متابعة حالة التصحيح من صفحة الواجبات.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={() => navigate('/student/assignments')}
-            variant="contained"
-            sx={{ 
-              borderRadius: 2, 
-              px: 4, 
-              py: 1.5, 
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
-              '&:hover': { 
-                background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)' 
-              } 
-            }}
-          >
-            العودة للواجبات
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

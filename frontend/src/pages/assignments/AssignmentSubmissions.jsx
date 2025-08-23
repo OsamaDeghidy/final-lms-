@@ -5,7 +5,7 @@ import {
   FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Paper,
   LinearProgress, Alert, Divider, List, ListItem, ListItemText,
   ListItemIcon, Badge, Tooltip, Avatar, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Rating
+  TableCell, TableContainer, TableHead, TableRow, Rating, CircularProgress
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon, CheckCircle as CheckCircleIcon,
@@ -84,12 +84,12 @@ const AssignmentSubmissions = () => {
         // Transform submissions data to match frontend expectations
         const transformedSubmissions = submissionsData.map(sub => ({
           id: sub.id,
-      student: {
+          student: {
             id: sub.user,
             name: sub.student_name,
             email: sub.student_email,
-        avatar: null
-      },
+            avatar: null
+          },
           submitted_at: sub.submitted_at,
           status: sub.status,
           grade: sub.grade,
@@ -99,7 +99,7 @@ const AssignmentSubmissions = () => {
             acc[resp.question] = resp.text_answer || resp.selected_answer || resp.file_answer;
             return acc;
           }, {}) : {},
-      rubric_scores: {}
+          rubric_scores: {}
         }));
 
         setSubmissions(transformedSubmissions);
@@ -121,7 +121,7 @@ const AssignmentSubmissions = () => {
     submitted: submissions.filter(s => s.status === 'submitted' || s.status === 'graded').length,
     graded: submissions.filter(s => s.status === 'graded').length,
     late: submissions.filter(s => s.is_late).length,
-    averageGrade: Math.round(submissions.filter(s => s.grade !== null).reduce((sum, s) => sum + s.grade, 0) / submissions.filter(s => s.grade !== null).length),
+    averageGrade: Math.round(submissions.filter(s => s.grade !== null).reduce((sum, s) => sum + s.grade, 0) / submissions.filter(s => s.grade !== null).length) || 0,
   };
 
   const getStatusText = (status, isLate) => {
@@ -196,7 +196,7 @@ const AssignmentSubmissions = () => {
   if (loading) {
     return (
       <Box className="assignments-container" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <LinearProgress sx={{ width: '300px' }} />
+        <CircularProgress size={60} />
       </Box>
     );
   }
@@ -272,14 +272,14 @@ const AssignmentSubmissions = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <SchoolIcon sx={{ color: '#ff6b6b' }} />
               <Typography variant="h6" fontWeight={600}>
-                  {assignment.course_title || assignment.course}
+                {assignment.course_title || assignment.course?.title}
               </Typography>
             </Box>
-              {(assignment.module_name || assignment.module) && (
+            {(assignment.module_name || assignment.module?.name) && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <BookIcon sx={{ color: '#666' }} />
                 <Typography variant="body1" color="text.secondary">
-                    {assignment.module_name || assignment.module}
+                  {assignment.module_name || assignment.module?.name}
                 </Typography>
               </Box>
             )}
@@ -540,15 +540,15 @@ const AssignmentSubmissions = () => {
       >
         {selectedSubmission && (
           <>
-                      <DialogTitle sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            backgroundColor: 'primary.main', 
-            color: 'white', 
-            py: 3, 
-            px: 4 
-          }}>
+            <DialogTitle sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              backgroundColor: 'primary.main', 
+              color: 'white', 
+              py: 3, 
+              px: 4 
+            }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AssessmentIcon sx={{ fontSize: 28 }} />
                 <Typography variant="h6" fontWeight={700}>
@@ -613,24 +613,46 @@ const AssignmentSubmissions = () => {
                     </Typography>
                     <List dense>
                       {assignment.questions && assignment.questions.length > 0 ? (
-                        assignment.questions.map((question, index) => (
-                        <ListItem key={question.id}>
-                          <ListItemIcon>
-                            <QuizIcon />
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={`السؤال ${index + 1}`}
-                            secondary={selectedSubmission.answers[question.id] || 'لم يتم الإجابة'}
-                          />
-                          {question.points && (
-                            <Chip 
-                              label={`${question.points} نقطة`} 
-                              size="small" 
-                              variant="outlined"
-                            />
-                          )}
-                        </ListItem>
-                        ))
+                        assignment.questions.map((question, index) => {
+                          const response = selectedSubmission.answers[question.id];
+                          return (
+                            <ListItem key={question.id} sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, width: '100%' }}>
+                                <QuizIcon sx={{ color: '#673ab7' }} />
+                                <Typography variant="subtitle2" fontWeight={600} color="primary">
+                                  السؤال {index + 1}: {question.text}
+                                </Typography>
+                            {question.points && (
+                              <Chip 
+                                label={`${question.points} نقطة`} 
+                                size="small" 
+                                variant="outlined"
+                                    sx={{ ml: 'auto' }}
+                                  />
+                                )}
+                              </Box>
+                              <Box sx={{ width: '100%', pl: 3 }}>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                  <strong>إجابة الطالب:</strong>
+                                </Typography>
+                                {response ? (
+                                  <Typography variant="body2" sx={{ 
+                                    p: 1, 
+                                    backgroundColor: '#f5f5f5', 
+                                    borderRadius: 1,
+                                    border: '1px solid #e0e0e0'
+                                  }}>
+                                    {response}
+                                  </Typography>
+                                ) : (
+                                  <Typography variant="body2" color="error">
+                                    لم يتم الإجابة
+                                  </Typography>
+                                )}
+                              </Box>
+                          </ListItem>
+                          );
+                        })
                       ) : (
                         <ListItem>
                           <ListItemText 

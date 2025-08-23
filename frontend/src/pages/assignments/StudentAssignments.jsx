@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Grid, Card, Button, Chip, IconButton,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Paper,
   LinearProgress, Alert, Divider, List, ListItem, ListItemText,
   ListItemIcon, Badge, Tooltip, Avatar, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, TablePagination
+  TableContainer, TableHead, TableRow, TablePagination, CircularProgress
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon, CheckCircle as CheckCircleIcon,
@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
+import assignmentsAPI from '../../services/assignment.service';
 import './Assignments.css';
 
 // Styled Components
@@ -49,130 +50,65 @@ const StudentAssignments = () => {
   const [tabValue, setTabValue] = useState(0);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [openGradeDialog, setOpenGradeDialog] = useState(false);
+  const [selectedGrade, setSelectedGrade] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  // Sample data based on the Django model
-  const assignments = [
-    {
-      id: 1,
-      title: 'واجب الرياضيات - الجبر الخطي',
-      description: 'حل مسائل من 1 إلى 10 في الكتاب مع شرح الخطوات بالتفصيل.',
-      course: 'الرياضيات 101',
-      module: 'الجبر الخطي',
-      due_date: '2024-01-25T23:59:00',
-      points: 100,
-      allow_late_submissions: true,
-      late_submission_penalty: 10,
-      has_questions: true,
-      has_file_upload: true,
-      assignment_file: 'math_assignment.pdf',
-      is_active: true,
-      created_at: '2024-01-15T10:00:00',
-      status: 'submitted',
-      grade: 95,
-      feedback: 'عمل ممتاز! الحلول واضحة ومنظمة.',
-      is_late: false,
-      submission_date: '2024-01-24T15:30:00',
-      questions_count: 5,
-      total_points: 100,
-      earned_points: 95,
-    },
-    {
-      id: 2,
-      title: 'تقرير العلوم - دورة الماء',
-      description: 'إعداد تقرير شامل عن دورة الماء في الطبيعة مع الرسوم التوضيحية.',
-      course: 'العلوم البيئية',
-      module: 'دورة الماء',
-      due_date: '2024-01-28T23:59:00',
-      points: 150,
-      allow_late_submissions: false,
-      late_submission_penalty: 0,
-      has_questions: false,
-      has_file_upload: true,
-      assignment_file: 'science_report_guide.pdf',
-      is_active: true,
-      created_at: '2024-01-18T14:00:00',
-      status: 'pending',
-      grade: null,
-      feedback: '',
-      is_late: false,
-      submission_date: null,
-      questions_count: 0,
-      total_points: 150,
-      earned_points: 0,
-    },
-    {
-      id: 3,
-      title: 'موضوع تعبير - العطلة الصيفية',
-      description: 'كتابة موضوع تعبير عن العطلة الصيفية بحد أدنى 500 كلمة.',
-      course: 'اللغة العربية',
-      module: 'التعبير الكتابي',
-      due_date: '2024-01-20T23:59:00',
-      points: 80,
-      allow_late_submissions: true,
-      late_submission_penalty: 5,
-      has_questions: false,
-      has_file_upload: true,
-      assignment_file: 'essay_requirements.pdf',
-      is_active: true,
-      created_at: '2024-01-10T09:00:00',
-      status: 'submitted',
-      grade: 80,
-      feedback: 'يرجى تحسين الخط والاهتمام بالعلامات الترقيمية.',
-      is_late: true,
-      submission_date: '2024-01-22T10:15:00',
-      questions_count: 0,
-      total_points: 80,
-      earned_points: 76, // 80 - 4 (late penalty)
-    },
-    {
-      id: 4,
-      title: 'اختبار البرمجة - Python',
-      description: 'حل مشاكل برمجية باستخدام Python مع شرح الكود.',
-      course: 'مقدمة في البرمجة',
-      module: 'Python Basics',
-      due_date: '2024-01-30T23:59:00',
-      points: 200,
-      allow_late_submissions: false,
-      late_submission_penalty: 0,
-      has_questions: true,
-      has_file_upload: true,
-      assignment_file: 'python_assignment.pdf',
-      is_active: true,
-      created_at: '2024-01-20T16:00:00',
-      status: 'pending',
-      grade: null,
-      feedback: '',
-      is_late: false,
-      submission_date: null,
-      questions_count: 8,
-      total_points: 200,
-      earned_points: 0,
-    },
-  ];
+  // Fetch assignments from API
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await assignmentsAPI.getAssignments();
+        console.log('Fetched assignments:', data);
+        
+        // Transform the data to match our frontend expectations
+        const transformedAssignments = data.results || data || [];
+        
+        setAssignments(transformedAssignments);
+      } catch (err) {
+        console.error('Error fetching assignments:', err);
+        setError('تعذر تحميل الواجبات. يرجى المحاولة مرة أخرى.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
+  }, []);
 
   const assignmentStats = {
     totalAssignments: assignments.length,
-    submitted: assignments.filter(a => a.status === 'submitted' || a.status === 'graded').length,
-    pending: assignments.filter(a => a.status === 'pending').length,
-    averageGrade: Math.round(assignments.filter(a => a.grade !== null).reduce((sum, a) => sum + a.grade, 0) / assignments.filter(a => a.grade !== null).length),
+    submitted: assignments.filter(a => a.submission_status === 'submitted' || a.submission_status === 'graded').length,
+    pending: assignments.filter(a => a.submission_status === 'pending' || !a.submission_status).length,
+    averageGrade: Math.round(assignments.filter(a => a.grade !== null).reduce((sum, a) => sum + (a.grade || 0), 0) / assignments.filter(a => a.grade !== null).length) || 0,
   };
 
-  const getStatusText = (status, isLate) => {
+  const getStatusText = (assignment) => {
+    const status = assignment.submission_status;
+    const isLate = assignment.is_late;
+    
     if (status === 'submitted') return isLate ? 'مُرسل متأخر' : 'مُرسل';
     if (status === 'graded') return 'مُقيم';
-    if (status === 'pending') return 'لم يتم التسليم';
-    if (status === 'overdue') return 'منتهي الصلاحية';
+    if (status === 'pending' || !status) return 'لم يتم التسليم';
+    if (assignment.is_overdue) return 'منتهي الصلاحية';
     return 'غير محدد';
   };
 
-  const getStatusColor = (status, isLate) => {
+  const getStatusColor = (assignment) => {
+    const status = assignment.submission_status;
+    const isLate = assignment.is_late;
+    
     if (status === 'submitted') return isLate ? 'error' : 'success';
     if (status === 'graded') return 'primary';
-    if (status === 'pending') return 'warning';
-    if (status === 'overdue') return 'error';
+    if (status === 'pending' || !status) return 'warning';
+    if (assignment.is_overdue) return 'error';
     return 'default';
   };
 
@@ -183,6 +119,23 @@ const StudentAssignments = () => {
 
   const handleSubmitAssignment = (assignmentId) => {
     navigate(`/student/assignments/${assignmentId}/submit`);
+  };
+
+  const handleViewGrade = async (assignment) => {
+    try {
+      // جلب تفاصيل التسليم مع التقييم
+      const submissions = await assignmentsAPI.getMySubmissions({ assignment: assignment.id });
+      if (submissions && submissions.length > 0) {
+        const submission = submissions[0];
+        setSelectedGrade({
+          assignment: assignment,
+          submission: submission
+        });
+        setOpenGradeDialog(true);
+      }
+    } catch (error) {
+      console.error('Error fetching grade:', error);
+    }
   };
 
   const handleDownloadFile = (fileName) => {
@@ -201,9 +154,9 @@ const StudentAssignments = () => {
 
   const filteredAssignments = assignments.filter(assignment => {
     if (tabValue === 0) return true; // All assignments
-    if (tabValue === 1) return assignment.status === 'pending';
-    if (tabValue === 2) return assignment.status === 'submitted' || assignment.status === 'graded';
-    if (tabValue === 3) return assignment.is_late;
+    if (tabValue === 1) return assignment.submission_status === 'pending' || !assignment.submission_status;
+    if (tabValue === 2) return assignment.submission_status === 'submitted' || assignment.submission_status === 'graded';
+    if (tabValue === 3) return assignment.is_late || assignment.is_overdue;
     return true;
   });
 
@@ -211,6 +164,29 @@ const StudentAssignments = () => {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box className="assignments-container" sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Box className="assignments-container">
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button onClick={() => window.location.reload()} variant="contained">
+          إعادة المحاولة
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box className="assignments-container">
@@ -399,13 +375,13 @@ const StudentAssignments = () => {
             </TableHead>
             <TableBody>
               {paginatedAssignments.map((assignment) => {
-          const isOverdue = new Date() > new Date(assignment.due_date) && assignment.status === 'pending';
-          const status = isOverdue ? 'overdue' : assignment.status;
-          
-          return (
+                const isOverdue = new Date() > new Date(assignment.due_date) && (assignment.submission_status === 'pending' || !assignment.submission_status);
+                const status = isOverdue ? 'overdue' : assignment.submission_status;
+                
+                return (
                   <TableRow 
                     key={assignment.id}
-                sx={{
+                    sx={{
                       '&:hover': { backgroundColor: '#f8f9fa' },
                       transition: 'background-color 0.2s ease'
                     }}
@@ -424,45 +400,45 @@ const StudentAssignments = () => {
                           maxWidth: 200
                         }}>
                           {assignment.description}
-                      </Typography>
+                        </Typography>
                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
-                        {assignment.has_questions && (
-                          <Chip
-                            label={`${assignment.questions_count} سؤال`}
-                            size="small"
-                            icon={<QuizIcon />}
-                            variant="outlined"
+                          {assignment.has_questions && (
+                            <Chip
+                              label={`${assignment.questions_count || 0} سؤال`}
+                              size="small"
+                              icon={<QuizIcon />}
+                              variant="outlined"
                               sx={{ borderColor: '#673ab7', color: '#673ab7', fontSize: '0.7rem' }}
-                          />
-                        )}
-                        {assignment.has_file_upload && (
-                          <Chip
-                            label="رفع ملف"
-                            size="small"
-                            icon={<FileUploadIcon />}
-                            variant="outlined"
+                            />
+                          )}
+                          {assignment.has_file_upload && (
+                            <Chip
+                              label="رفع ملف"
+                              size="small"
+                              icon={<FileUploadIcon />}
+                              variant="outlined"
                               sx={{ borderColor: '#2e7d32', color: '#2e7d32', fontSize: '0.7rem' }}
-                          />
-                        )}
+                            />
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
                     </TableCell>
                     <TableCell>
                       <Box className="table-cell-meta">
                         <SchoolIcon sx={{ color: '#673ab7', fontSize: 18 }} />
                         <Typography variant="body2" fontWeight={500}>
-                          {assignment.course}
+                          {assignment.course_title || assignment.course?.title}
                         </Typography>
                       </Box>
-                      {assignment.module && (
+                      {assignment.module_name || assignment.module?.name && (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                          {assignment.module}
+                          {assignment.module_name || assignment.module?.name}
                         </Typography>
                       )}
                     </TableCell>
                     <TableCell>
                       <StatusChip
-                        label={getStatusText(status, assignment.is_late)}
+                        label={getStatusText(assignment)}
                         status={status}
                         size="small"
                       />
@@ -481,15 +457,15 @@ const StudentAssignments = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {(assignment.status === 'submitted' || assignment.status === 'graded') ? (
+                      {(assignment.submission_status === 'submitted' || assignment.submission_status === 'graded') ? (
                         <Box className="table-progress-container">
                           <Typography variant="body2" fontWeight={600} color="success.main" sx={{ mb: 0.5 }}>
-                            {assignment.earned_points}/{assignment.total_points}
+                            {assignment.grade || 0}/{assignment.points}
                           </Typography>
                           <LinearProgress
                             className="table-progress-bar"
                             variant="determinate"
-                            value={(assignment.earned_points / assignment.total_points) * 100}
+                            value={((assignment.grade || 0) / assignment.points) * 100}
                             sx={{
                               height: 6,
                               borderRadius: 3,
@@ -501,7 +477,7 @@ const StudentAssignments = () => {
                             }}
                           />
                           <Typography variant="caption" color="text.secondary">
-                            {Math.round((assignment.earned_points / assignment.total_points) * 100)}%
+                            {Math.round(((assignment.grade || 0) / assignment.points) * 100)}%
                           </Typography>
                         </Box>
                       ) : (
@@ -513,23 +489,23 @@ const StudentAssignments = () => {
                     <TableCell>
                       <Box className="table-cell-actions">
                         <Tooltip title="عرض التفاصيل">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleAssignmentDetails(assignment)}
-                      sx={{ 
-                        color: '#673ab7',
-                        '&:hover': { backgroundColor: 'rgba(103, 58, 183, 0.1)' }
-                      }}
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleAssignmentDetails(assignment)}
+                            sx={{ 
+                              color: '#673ab7',
+                              '&:hover': { backgroundColor: 'rgba(103, 58, 183, 0.1)' }
+                            }}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
                         </Tooltip>
-                    {assignment.status === 'pending' && (
+                        {(assignment.submission_status === 'pending' || !assignment.submission_status) && (
                           <Tooltip title="تسليم الواجب">
                             <IconButton
                               size="small"
-                        onClick={() => handleSubmitAssignment(assignment.id)}
-                        sx={{
+                              onClick={() => handleSubmitAssignment(assignment.id)}
+                              sx={{
                                 color: '#2e7d32',
                                 '&:hover': { backgroundColor: 'rgba(46, 125, 50, 0.1)' }
                               }}
@@ -538,12 +514,12 @@ const StudentAssignments = () => {
                             </IconButton>
                           </Tooltip>
                         )}
-                      {assignment.assignment_file && (
+                        {assignment.assignment_file && (
                           <Tooltip title="تحميل الملف">
                             <IconButton
-                          size="small"
-                          onClick={() => handleDownloadFile(assignment.assignment_file)}
-                          sx={{
+                              size="small"
+                              onClick={() => handleDownloadFile(assignment.assignment_file)}
+                              sx={{
                                 color: '#1976d2',
                                 '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }
                               }}
@@ -551,12 +527,13 @@ const StudentAssignments = () => {
                               <DownloadIcon />
                             </IconButton>
                           </Tooltip>
-                      )}
-                      {(assignment.status === 'submitted' || assignment.status === 'graded') && (
+                        )}
+                        {(assignment.submission_status === 'submitted' || assignment.submission_status === 'graded') && (
                           <Tooltip title="عرض التقييم">
                             <IconButton
-                          size="small"
-                          sx={{
+                              size="small"
+                              onClick={() => handleViewGrade(assignment)}
+                              sx={{
                                 color: '#f57c00',
                                 '&:hover': { backgroundColor: 'rgba(245, 124, 0, 0.1)' }
                               }}
@@ -564,12 +541,12 @@ const StudentAssignments = () => {
                               <FeedbackIcon />
                             </IconButton>
                           </Tooltip>
-                      )}
-                    </Box>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
-          );
-        })}
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -602,15 +579,15 @@ const StudentAssignments = () => {
       >
         {selectedAssignment && (
           <>
-                    <DialogTitle sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'space-between', 
-          backgroundColor: 'primary.main', 
-          color: 'white', 
-          py: 3, 
-          px: 4 
-        }}>
+            <DialogTitle sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              backgroundColor: 'primary.main', 
+              color: 'white', 
+              py: 3, 
+              px: 4 
+            }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AssignmentIcon sx={{ fontSize: 28 }} />
                 <Typography variant="h6" fontWeight={700}>
@@ -638,14 +615,14 @@ const StudentAssignments = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                       <SchoolIcon sx={{ color: '#673ab7' }} />
                       <Typography variant="body1" fontWeight={500}>
-                        المقرر: {selectedAssignment.course}
+                        المقرر: {selectedAssignment.course_title || selectedAssignment.course?.title}
                       </Typography>
                     </Box>
-                    {selectedAssignment.module && (
+                    {(selectedAssignment.module_name || selectedAssignment.module?.name) && (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                         <BookIcon sx={{ color: '#666' }} />
                         <Typography variant="body1">
-                          الوحدة: {selectedAssignment.module}
+                          الوحدة: {selectedAssignment.module_name || selectedAssignment.module?.name}
                         </Typography>
                       </Box>
                     )}
@@ -682,7 +659,7 @@ const StudentAssignments = () => {
                   </Grid>
                 </Grid>
 
-                {(selectedAssignment.status === 'submitted' || selectedAssignment.status === 'graded') && (
+                {(selectedAssignment.submission_status === 'submitted' || selectedAssignment.submission_status === 'graded') && (
                   <>
                     <Divider />
                     <Box>
@@ -691,10 +668,10 @@ const StudentAssignments = () => {
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                         <Typography variant="h4" fontWeight={700} color="success.main">
-                          {selectedAssignment.earned_points}/{selectedAssignment.total_points}
+                          {selectedAssignment.grade || 0}/{selectedAssignment.points}
                         </Typography>
                         <Typography variant="body1" color="text.secondary">
-                          ({Math.round((selectedAssignment.earned_points / selectedAssignment.total_points) * 100)}%)
+                          ({Math.round(((selectedAssignment.grade || 0) / selectedAssignment.points) * 100)}%)
                         </Typography>
                       </Box>
                       {selectedAssignment.feedback && (
@@ -720,7 +697,7 @@ const StudentAssignments = () => {
               >
                 إغلاق
               </Button>
-              {selectedAssignment.status === 'pending' && (
+              {(selectedAssignment.submission_status === 'pending' || !selectedAssignment.submission_status) && (
                 <Button
                   variant="contained"
                   onClick={() => {
@@ -741,6 +718,171 @@ const StudentAssignments = () => {
                   تسليم الواجب
                 </Button>
               )}
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+      
+      {/* Grade Dialog */}
+      <Dialog
+        open={openGradeDialog}
+        onClose={() => setOpenGradeDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
+        }}
+      >
+        {selectedGrade && (
+          <>
+            <DialogTitle sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              backgroundColor: 'primary.main', 
+              color: 'white', 
+              py: 3, 
+              px: 4 
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <FeedbackIcon sx={{ fontSize: 28 }} />
+                <Typography variant="h6" fontWeight={700}>
+                  تقييم الواجب
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setOpenGradeDialog(false)} sx={{ color: 'white' }}>
+                <CancelIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {/* Assignment Info */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'white', borderRadius: 2 }}>
+                  <AssignmentIcon sx={{ color: '#673ab7', fontSize: 32 }} />
+                  <Box>
+                    <Typography variant="h6" fontWeight={600}>
+                      {selectedGrade.assignment.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedGrade.assignment.course_title}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Submission Details */}
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="h6" gutterBottom>
+                      تفاصيل التسليم
+                    </Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemIcon>
+                          <CalendarTodayIcon />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="تاريخ التسليم"
+                          secondary={new Date(selectedGrade.submission.submitted_at).toLocaleString('ar-SA')}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <StatusChip
+                            label={getStatusText(selectedGrade.assignment, selectedGrade.submission.is_late)}
+                            status={selectedGrade.submission.status}
+                            size="small"
+                          />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary="الحالة"
+                          secondary={selectedGrade.submission.is_late ? 'متأخر' : 'في الوقت المحدد'}
+                        />
+                      </ListItem>
+                    </List>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Typography variant="h6" gutterBottom>
+                      التقييم
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                      <Typography variant="h4" fontWeight={700} color="success.main">
+                        {selectedGrade.submission.grade || 0}/{selectedGrade.assignment.points}
+                      </Typography>
+                      <Typography variant="body1" color="text.secondary">
+                        ({Math.round(((selectedGrade.submission.grade || 0) / selectedGrade.assignment.points) * 100)}%)
+                      </Typography>
+                    </Box>
+                    {selectedGrade.submission.feedback && (
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        <Typography variant="body1" fontWeight={500} gutterBottom>
+                          ملاحظات المعلم:
+                        </Typography>
+                        <Typography variant="body2">
+                          {selectedGrade.submission.feedback}
+                        </Typography>
+                      </Alert>
+                    )}
+                  </Grid>
+                </Grid>
+
+                {/* Question Responses */}
+                {selectedGrade.submission.question_responses && selectedGrade.submission.question_responses.length > 0 && (
+                  <>
+                    <Divider />
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        إجاباتك على الأسئلة
+                      </Typography>
+                      {selectedGrade.submission.question_responses.map((response, index) => (
+                        <Box key={response.id || index} sx={{ mb: 2, p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                          <Typography variant="subtitle1" fontWeight={600} color="primary" gutterBottom>
+                            السؤال {index + 1}: {response.question_text || 'سؤال'}
+                          </Typography>
+                          {response.text_answer && (
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>إجابتك النصية:</strong> {response.text_answer}
+                            </Typography>
+                          )}
+                          {response.selected_answer_text && (
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                              <strong>إجابتك المختارة:</strong> {response.selected_answer_text}
+                            </Typography>
+                          )}
+                          {response.file_answer && (
+                            <Box sx={{ mb: 1 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                الملف المرفوع:
+                              </Typography>
+                              <Button 
+                                variant="text" 
+                                startIcon={<FileUploadIcon />}
+                                onClick={() => window.open(response.file_answer, '_blank')}
+                                size="small"
+                              >
+                                عرض الملف
+                              </Button>
+                            </Box>
+                          )}
+                          {response.points_earned !== undefined && (
+                            <Typography variant="body2" color="success.main" fontWeight={600}>
+                              الدرجة المكتسبة: {response.points_earned}
+                            </Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  </>
+                )}
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
+              <Button
+                onClick={() => setOpenGradeDialog(false)}
+                variant="outlined"
+                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
+              >
+                إغلاق
+              </Button>
             </DialogActions>
           </>
         )}
