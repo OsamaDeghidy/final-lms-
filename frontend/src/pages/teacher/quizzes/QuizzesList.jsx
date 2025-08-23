@@ -1,6 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Card, CardContent, CardActions, IconButton, Grid, Tooltip, Chip, Stack, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, FormControl, InputLabel, Select, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination } from '@mui/material';
-import { Add, Edit, Delete, Visibility, Quiz, Search, FilterList } from '@mui/icons-material';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  Card, 
+  CardContent, 
+  CardActions, 
+  IconButton, 
+  Grid, 
+  Tooltip, 
+  Chip, 
+  Stack, 
+  CircularProgress, 
+  Alert, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions, 
+  TextField, 
+  MenuItem, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  Paper, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  TablePagination 
+} from '@mui/material';
+import { Add, Edit, Delete, Visibility, Quiz, Search, FilterList, Clear } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { quizAPI } from '../../../services/quiz.service';
 
@@ -22,6 +53,7 @@ const QuizzesList = () => {
   // Available options for filters
   const [courses, setCourses] = useState([]);
   const [modules, setModules] = useState([]);
+  const [allQuizzes, setAllQuizzes] = useState([]);
 
   // Fetch quizzes and filter options on component mount
   useEffect(() => {
@@ -115,6 +147,7 @@ const QuizzesList = () => {
       });
       
       setQuizzes(quizzesData);
+      setAllQuizzes(quizzesData);
       
       // Update modules from loaded quizzes if we don't have any modules yet
       if (modules.length === 0 && quizzesData.length > 0) {
@@ -281,6 +314,11 @@ const QuizzesList = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Typography variant="h4" fontWeight={700}>
           إدارة الكويزات
+          {quizzes.length !== allQuizzes.length && (
+            <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 1 }}>
+              ({quizzes.length} من {allQuizzes.length})
+            </Typography>
+          )}
         </Typography>
         <Button
           variant="contained"
@@ -299,36 +337,54 @@ const QuizzesList = () => {
       )}
 
       {/* Filters Section */}
-      <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={2} mb={2}>
-          <FilterList color="primary" />
-          <Typography variant="h6" fontWeight={600}>
-            فلاتر البحث
-          </Typography>
-        </Stack>
-        
-        <Grid container spacing={2}>
-          <Grid xs={12} md={3}>
+      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FilterList sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={600}>
+                فلاتر البحث
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                النتائج:
+              </Typography>
+              <Chip 
+                label={`${quizzes.length} من ${allQuizzes.length}`} 
+                color="primary" 
+                size="small" 
+                variant="outlined"
+              />
+            </Box>
+          </Box>
+          
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'row', 
+            flexWrap: 'wrap', 
+            gap: 2, 
+            alignItems: 'flex-end',
+            '& > *': { flex: '0 0 auto' }
+          }}>
             <TextField
-              fullWidth
               label="البحث في الكويزات"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{ minWidth: 280, flex: '1 1 280px' }}
+              size="small"
               placeholder="ابحث في العنوان أو الوصف..."
               InputProps={{
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />
               }}
             />
-          </Grid>
-          
-          <Grid xs={12} md={4}>
-            <FormControl fullWidth>
+            
+            <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>الكورس</InputLabel>
               <Select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
                 label="الكورس"
-                sx={{ minWidth: 200 }}
               >
                 <MenuItem value="">جميع الكورسات</MenuItem>
                 {courses.map((course) => (
@@ -338,16 +394,13 @@ const QuizzesList = () => {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-          
-          <Grid xs={12} md={4}>
-            <FormControl fullWidth>
+            
+            <FormControl sx={{ minWidth: 200 }} size="small">
               <InputLabel>الوحدة</InputLabel>
               <Select
                 value={selectedModule}
                 onChange={(e) => setSelectedModule(e.target.value)}
                 label="الوحدة"
-                sx={{ minWidth: 200 }}
               >
                 <MenuItem value="">جميع الوحدات</MenuItem>
                 {modules.map((module) => (
@@ -357,20 +410,28 @@ const QuizzesList = () => {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-          
-          <Grid xs={12} md={1}>
-            <Button
-              variant="outlined"
+            
+            <IconButton
               onClick={clearFilters}
-              fullWidth
-              sx={{ height: 56 }}
+              sx={{ 
+                width: 40,
+                height: 40,
+                border: '1px solid',
+                borderColor: 'grey.300',
+                color: 'grey.700',
+                '&:hover': {
+                  borderColor: 'grey.400',
+                  backgroundColor: 'grey.50',
+                  color: 'error.main'
+                }
+              }}
+              title="مسح جميع الفلاتر"
             >
-              مسح
-            </Button>
-          </Grid>
-        </Grid>
-      </Paper>
+              <Clear />
+            </IconButton>
+          </Box>
+        </CardContent>
+      </Card>
 
       {quizzes.length === 0 && !loading ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>

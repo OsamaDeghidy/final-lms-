@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, Avatar, LinearProgress, Chip, useTheme, Divider, alpha } from '@mui/material';
+import { Box, Typography, Button, Grid, Avatar, LinearProgress, Chip, useTheme, Divider, alpha, Skeleton } from '@mui/material';
 import { DashboardCard, StatCard, DashboardSection, ProgressCard, ActivityItem, AnnouncementCard } from './DashboardLayout';
-import { School as SchoolIcon, Group as GroupIcon, 
-  Assignment as AssignmentIcon, Event as EventIcon, 
-  Notifications as NotificationsIcon, BarChart as BarChartIcon,
-  Class as ClassIcon, PersonAdd as PersonAddIcon, 
-  TrendingUp as TrendingUpIcon, CheckCircle as CheckCircleIcon,
-  Message as MessageIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
+import { 
+  School as SchoolIcon, 
+  Group as GroupIcon, 
+  Assignment as AssignmentIcon, 
+  Event as EventIcon, 
+  Notifications as NotificationsIcon, 
+  BarChart as BarChartIcon,
+  Class as ClassIcon, 
+  PersonAdd as PersonAddIcon, 
+  TrendingUp as TrendingUpIcon, 
+  CheckCircle as CheckCircleIcon,
+  Message as MessageIcon, 
+  Schedule as ScheduleIcon,
+  AttachMoney as MoneyIcon,
+  Star as StarIcon,
+  Visibility as VisibilityIcon,
+  PlayArrow as PlayArrowIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import dashboardService from '../../services/dashboard.service';
+import { 
+  EnhancedStatCard, 
+  EnhancedCourseCard, 
+  EnhancedActivityItem, 
+  EnhancedAnnouncementCard 
+} from './DashboardComponents';
+import './index.css';
 
 // Animation variants
 const container = {
@@ -28,69 +48,81 @@ const item = {
 
 const TeacherDashboard = () => {
   const theme = useTheme();
-  const [stats] = useState({
-    courses: 4,
-    students: 85,
-    pending: 3,
-    announcements: 2,
-    attendance: 92,
-    rating: 4.7
-  });
-
-  const recentCourses = [
-    { 
-      id: 1, 
-      name: 'الرياضيات المتقدمة', 
-      students: 25, 
-      assignments: 5,
-      progress: 75,
-      color: 'primary',
-      icon: <TrendingUpIcon />,
-      nextClass: 'غدًا 10:00 ص',
-      pendingAssignments: 12
-    },
-    { 
-      id: 2, 
-      name: 'الفيزياء', 
-      students: 30, 
-      assignments: 3,
-      progress: 60,
-      color: 'secondary',
-      icon: <SchoolIcon />,
-      nextClass: 'بعد غد 2:00 م',
-      pendingAssignments: 5
-    },
-    { 
-      id: 3, 
-      name: 'اللغة العربية', 
-      students: 30, 
-      assignments: 4,
-      progress: 85,
-      color: 'success',
-      icon: <ClassIcon />,
-      nextClass: 'الاثنين 11:00 ص',
-      pendingAssignments: 2
-    },
-  ];
-
-  const recentAnnouncements = [
-    { 
-      id: 1, 
-      title: 'موعد الاختبار النهائي', 
-      course: 'الرياضيات المتقدمة', 
-      date: '2023-11-15',
-      read: false
-    },
-    { 
-      id: 2, 
-      title: 'تم رفع الدرجات', 
-      course: 'الفيزياء', 
-      date: '2023-11-10',
-      read: true
-    },
-  ];
-
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    totalStudents: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+    pendingAssignments: 0,
+    upcomingMeetings: 0,
+    recentEnrollments: 0
+  });
+  const [courses, setCourses] = useState([]);
+  const [studentProgress, setStudentProgress] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [recentAnnouncements, setRecentAnnouncements] = useState([]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // تحميل البيانات بالتوازي
+      const [
+        statsData,
+        coursesData,
+        progressData,
+        activityData,
+        announcementsData
+      ] = await Promise.all([
+        dashboardService.getTeacherStats(),
+        dashboardService.getTeacherCourses(),
+        dashboardService.getStudentProgress(),
+        dashboardService.getRecentActivity(),
+        dashboardService.getRecentAnnouncements()
+      ]);
+
+      setStats(statsData);
+      setCourses(coursesData);
+      setStudentProgress(progressData);
+      setRecentActivity(activityData);
+      setRecentAnnouncements(announcementsData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCourseView = (courseId) => {
+    navigate(`/teacher/courses/${courseId}`);
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('ar-SA', {
+      style: 'currency',
+      currency: 'SAR'
+    }).format(amount);
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <Grid container spacing={3}>
+          {[1, 2, 3, 4].map((item) => (
+            <Grid item xs={12} sm={6} lg={3} key={item}>
+              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 4 }} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -99,6 +131,7 @@ const TeacherDashboard = () => {
         animate="show"
         variants={container}
       >
+        {/* Header Section */}
         <Box sx={{ mb: 4 }}>
           <motion.div variants={item}>
             <Typography 
@@ -140,77 +173,405 @@ const TeacherDashboard = () => {
           </motion.div>
         </Box>
 
-      {/* Stats Cards */}
-      <DashboardSection 
-        title="نظرة عامة" 
-        subtitle="إحصائياتك التدريسية في لمحة"
-      >
+      {/* Stats Cards - نظرة عامة محسنة */}
+      <Box sx={{ mb: 4 }}>
+        <motion.div variants={item}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 3,
+            p: 3,
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05))'
+              : 'linear-gradient(135deg, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.03))',
+            borderRadius: 4,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: 'linear-gradient(90deg, #1976d2, #42a5f5, #90caf9)',
+            }
+          }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                fontWeight={700} 
+                sx={{ 
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block'
+                }}
+              >
+                نظرة عامة
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&::before': {
+                    content: '""',
+                    display: 'block',
+                    width: 20,
+                    height: 2,
+                    background: theme.palette.primary.main,
+                    borderRadius: 1
+                  }
+                }}
+              >
+                إحصائياتك التدريسية في لمحة
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              p: 1.5,
+              borderRadius: 2,
+              background: alpha(theme.palette.primary.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
+            }}>
+              <SchoolIcon sx={{ color: theme.palette.primary.main, fontSize: '1.2rem' }} />
+              <Typography variant="caption" fontWeight={600} color="primary.main">
+                لوحة الإحصائيات
+              </Typography>
+            </Box>
+          </Box>
+        </motion.div>
+
         <Grid container spacing={3}>
-          <Grid xs={12} sm={6} lg={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <motion.div variants={item}>
-              <StatCard 
-                title="المقررات" 
-                value={stats.courses} 
-                icon={<SchoolIcon />} 
-                color="primary"
-                trend="up"
-                trendValue={1}
-                trendLabel="من الشهر الماضي"
-              />
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #2196f3, #64b5f6)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.totalCourses}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      المقررات
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      مقررات نشطة
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <SchoolIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
             </motion.div>
           </Grid>
-          <Grid xs={12} sm={6} lg={3}>
+          
+          <Grid item xs={12} sm={6} lg={3}>
             <motion.div variants={item}>
-              <StatCard 
-                title="الطلاب" 
-                value={stats.students} 
-                icon={<GroupIcon />} 
-                color="secondary"
-                trend="up"
-                trendValue={12}
-                trendLabel="من الشهر الماضي"
-              />
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #673ab7, #9575cd)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.totalStudents}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      الطلاب
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      طلاب مسجلين
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <GroupIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
             </motion.div>
           </Grid>
-          <Grid xs={12} sm={6} lg={3}>
+          
+          <Grid item xs={12} sm={6} lg={3}>
             <motion.div variants={item}>
-              <StatCard 
-                title="الواجبات" 
-                value={stats.assignments} 
-                icon={<AssignmentIcon />} 
-                color="info"
-                trend="down"
-                trendValue={2}
-                trendLabel="من الشهر الماضي"
-              />
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #4caf50, #81c784)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {formatCurrency(stats.totalRevenue)}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      الإيرادات
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      إجمالي الأرباح
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <MoneyIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
             </motion.div>
           </Grid>
-          <Grid xs={12} sm={6} lg={3}>
+          
+          <Grid item xs={12} sm={6} lg={3}>
             <motion.div variants={item}>
-              <StatCard 
-                title="متوسط التقييم" 
-                value={stats.rating} 
-                icon={<BarChartIcon />} 
-                color="warning"
-                trend="up"
-                trendValue={0.5}
-                trendLabel="من الشهر الماضي"
-                valueSuffix={
-                  <Box component="span" sx={{ color: 'warning.main', ml: 0.5 }}>★</Box>
-                }
-              />
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #ff9800, #ffcc02)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.averageRating.toFixed(1)}★
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      متوسط التقييم
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      من 5 نجوم
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <StarIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
             </motion.div>
           </Grid>
         </Grid>
-      </DashboardSection>
+      </Box>
 
-      {/* Quick Actions */}
-      <DashboardSection 
-        title="إجراءات سريعة" 
-        subtitle="الوصول السريع للمهام الشائعة"
-      >
+      {/* Quick Actions - إجراءات سريعة محسنة */}
+      <Box sx={{ mb: 4 }}>
+        <motion.div variants={item}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 3,
+            p: 3,
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05))'
+              : 'linear-gradient(135deg, rgba(232, 245, 233, 0.8), rgba(232, 245, 233, 0.4))',
+            borderRadius: 4,
+            border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: 'linear-gradient(90deg, #4caf50, #66bb6a, #81c784)',
+            }
+          }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                fontWeight={700} 
+                sx={{ 
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block'
+                }}
+              >
+                إجراءات سريعة
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&::before': {
+                    content: '""',
+                    display: 'block',
+                    width: 20,
+                    height: 2,
+                    background: theme.palette.success.main,
+                    borderRadius: 1
+                  }
+                }}
+              >
+                الوصول السريع للمهام الشائعة
+              </Typography>
+            </Box>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              p: 1.5,
+              borderRadius: 2,
+              background: alpha(theme.palette.success.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
+            }}>
+              <TrendingUpIcon sx={{ color: theme.palette.success.main, fontSize: '1.2rem' }} />
+              <Typography variant="caption" fontWeight={600} color="success.main">
+                أدوات سريعة
+              </Typography>
+            </Box>
+          </Box>
+        </motion.div>
+
         <Grid container spacing={2}>
-          <Grid xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <motion.div variants={item}>
               <DashboardCard
                 sx={{
@@ -253,7 +614,7 @@ const TeacherDashboard = () => {
             </motion.div>
           </Grid>
           
-          <Grid xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <motion.div variants={item}>
               <DashboardCard
                 sx={{
@@ -296,7 +657,7 @@ const TeacherDashboard = () => {
             </motion.div>
           </Grid>
           
-          <Grid xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <motion.div variants={item}>
               <DashboardCard
                 sx={{
@@ -339,7 +700,7 @@ const TeacherDashboard = () => {
             </motion.div>
           </Grid>
           
-          <Grid xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <motion.div variants={item}>
               <DashboardCard
                 sx={{
@@ -382,186 +743,181 @@ const TeacherDashboard = () => {
             </motion.div>
           </Grid>
         </Grid>
-      </DashboardSection>
+      </Box>
 
-      {/* Recent Courses */}
-      <DashboardSection 
-        title="مقرراتي النشطة" 
-        subtitle="إدارة فصولك الدراسية بسهولة"
-        action={
-          <Button 
-            variant="outlined" 
-            size="small" 
-            endIcon={<TrendingUpIcon />}
-            sx={{ borderRadius: 3 }}
-          >
-            عرض الكل
-          </Button>
-        }
-      >
-        <Grid container spacing={3}>
-        {recentCourses.map((course) => (
-          <Grid xs={12} md={6} lg={4} key={course.id}>
-            <motion.div 
-              variants={item}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <DashboardCard
-                sx={{
+      {/* Recent Courses - مقرراتي النشطة محسنة */}
+      <Box sx={{ mb: 4 }}>
+        <motion.div variants={item}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 3,
+            p: 3,
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05))'
+              : 'linear-gradient(135deg, rgba(255, 248, 225, 0.8), rgba(255, 248, 225, 0.4))',
+            borderRadius: 4,
+            border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+            position: 'relative',
+            overflow: 'hidden',
                   '&::before': {
-                    background: `radial-gradient(circle, ${theme.palette[course.color || 'primary'].main} 0%, transparent 70%)`,
-                  },
-                  '&:hover': {
-                    '& .course-icon': {
-                      transform: 'scale(1.1) rotate(5deg)'
-                    }
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: 'linear-gradient(90deg, #ffc107, #ffca28, #ffd54f)',
+            }
+          }}>
+            <Box>
+              <Typography 
+                variant="h5" 
+                fontWeight={700} 
+                sx={{ 
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #ffc107, #ffca28)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block'
+                }}
+              >
+                مقرراتي النشطة
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                  gap: 1,
+                  '&::before': {
+                    content: '""',
+                    display: 'block',
+                    width: 20,
+                    height: 2,
+                    background: theme.palette.warning.main,
+                    borderRadius: 1
                   }
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-                  <Box
-                    className="course-icon"
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: theme.palette.mode === 'dark'
-                        ? alpha(theme.palette[course.color || 'primary'].main, 0.2)
-                        : alpha(theme.palette[course.color || 'primary'].light, 0.3),
-                      color: theme.palette[course.color || 'primary'].main,
-                      transition: 'all 0.3s ease',
-                      mr: 2,
-                      '& svg': {
-                        fontSize: '1.8rem'
-                      }
-                    }}
-                  >
-                    {course.icon}
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-                        {course.name}
+                إدارة فصولك الدراسية بسهولة
                       </Typography>
-                      <Chip 
-                        label={`${course.students} طالب`} 
-                        size="small" 
-                        color="info"
-                        variant="outlined"
-                        sx={{ fontWeight: 600 }}
-                      />
                     </Box>
-                    
-                    <Box sx={{ mt: 2, mb: 3 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          تقدم الطلاب
-                        </Typography>
-                        <Typography variant="caption" fontWeight={600}>
-                          {course.progress}%
-                        </Typography>
-                      </Box>
-                      <Box sx={{ 
-                        height: 6, 
-                        borderRadius: 3, 
-                        backgroundColor: theme.palette.mode === 'dark' 
-                          ? alpha(theme.palette.grey[700], 0.5) 
-                          : alpha(theme.palette.grey[300], 0.8),
-                        overflow: 'hidden'
-                      }}>
-                        <Box
+            <Button 
+              variant="contained" 
+              size="small" 
+              endIcon={<TrendingUpIcon />}
                           sx={{
-                            height: '100%',
-                            width: `${course.progress}%`,
-                            background: theme.palette.mode === 'dark'
-                              ? `linear-gradient(90deg, ${theme.palette[course.color || 'primary'].dark}, ${theme.palette[course.color || 'primary'].main})`
-                              : `linear-gradient(90deg, ${theme.palette[course.color || 'primary'].light}, ${theme.palette[course.color || 'primary'].main})`,
                             borderRadius: 3,
-                            transition: 'width 0.6s ease, background 0.3s ease',
-                          }}
-                        />
-                      </Box>
+                background: 'linear-gradient(45deg, #ffc107, #ffca28)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #f57c00, #ffc107)',
+                }
+              }}
+              onClick={() => navigate('/teacher/courses')}
+            >
+              عرض الكل
+            </Button>
+          </Box>
+        </motion.div>
+
+        <Grid container spacing={3}>
+          {courses.map((course) => (
+            <Grid item xs={12} md={6} lg={4} key={course.id}>
+              <motion.div variants={item}>
+                <EnhancedCourseCard
+                  course={course}
+                  variant="teacher"
+                  onView={() => handleCourseView(course.id)}
+                />
+              </motion.div>
+            </Grid>
+          ))}
+        </Grid>
                     </Box>
                     
+      {/* Student Progress - تقدم الطلاب محسن */}
+      <Box sx={{ mb: 4 }}>
+        <motion.div variants={item}>
                     <Box sx={{ 
                       display: 'flex', 
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      mt: 2,
-                      pt: 2,
-                      borderTop: `1px solid ${theme.palette.divider}`
+            mb: 3,
+            p: 3,
+            background: theme.palette.mode === 'dark'
+              ? 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(156, 39, 176, 0.05))'
+              : 'linear-gradient(135deg, rgba(243, 229, 245, 0.8), rgba(243, 229, 245, 0.4))',
+            borderRadius: 4,
+            border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: 'linear-gradient(90deg, #9c27b0, #ba68c8, #ce93d8)',
+            }
                     }}>
                       <Box>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          <ScheduleIcon sx={{ fontSize: '0.9rem', verticalAlign: 'middle', ml: 0.5 }} />
-                          {course.nextClass}
-                        </Typography>
-                      </Box>
-                      <Chip 
-                        label={`${course.pendingAssignments} واجب قيد التصحيح`}
-                        size="small"
-                        color={course.pendingAssignments > 5 ? 'error' : 'warning'}
+              <Typography 
+                variant="h5" 
+                fontWeight={700} 
                         sx={{ 
-                          height: 24,
-                          '& .MuiChip-label': { px: 1.5 }
-                        }}
-                      />
-                    </Box>
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-                  <Button 
-                    variant="contained" 
-                    size="small" 
-                    fullWidth
+                  mb: 1,
+                  background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  display: 'inline-block'
+                }}
+              >
+                تقدم الطلاب
+              </Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
                     sx={{ 
-                      borderRadius: 3,
-                      fontWeight: 600,
-                      background: theme.palette.mode === 'dark'
-                        ? `linear-gradient(45deg, ${theme.palette[course.color || 'primary'].dark}, ${theme.palette[course.color || 'primary'].main})`
-                        : `linear-gradient(45deg, ${theme.palette[course.color || 'primary'].main}, ${theme.palette[course.color || 'primary'].light})`,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 4px 20px 0 ${alpha(theme.palette[course.color || 'primary'].main, 0.3)}`
-                      },
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    إدارة المقرر
-                  </Button>
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    sx={{ 
-                      borderRadius: 3,
-                      minWidth: 40,
-                      px: 2,
-                      '&:hover': {
-                        transform: 'translateY(-2px)'
-                      },
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <MessageIcon fontSize="small" />
-                  </Button>
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  '&::before': {
+                    content: '""',
+                    display: 'block',
+                    width: 20,
+                    height: 2,
+                    background: theme.palette.secondary.main,
+                    borderRadius: 1
+                  }
+                }}
+              >
+                تابع أداء طلابك
+              </Typography>
                 </Box>
-              </DashboardCard>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              p: 1.5,
+              borderRadius: 2,
+              background: alpha(theme.palette.secondary.main, 0.1),
+              border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
+            }}>
+              <GroupIcon sx={{ color: theme.palette.secondary.main, fontSize: '1.2rem' }} />
+              <Typography variant="caption" fontWeight={600} color="secondary.main">
+                متابعة الأداء
+              </Typography>
+            </Box>
+          </Box>
             </motion.div>
-          </Grid>
-        ))}
-        </Grid>
-      </DashboardSection>
       
-      {/* Student Progress */}
-      <DashboardSection title="تقدم الطلاب" subtitle="تابع أداء طلابك">
         <Grid container spacing={3}>
-          {[1, 2, 3, 4].map((student) => (
-            <Grid item xs={12} sm={6} md={6} lg={3} key={student}>
+          {studentProgress.slice(0, 4).map((student) => (
+            <Grid item xs={12} sm={6} md={6} lg={3} key={student.id}>
               <motion.div variants={item}>
                 <DashboardCard>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -574,25 +930,29 @@ const TeacherDashboard = () => {
                       fontWeight: 600
                     }}
                   >
-                    {['أحمد', 'سارة', 'محمد', 'نورا'][student-1].charAt(0)}
+                      {student.name.charAt(0)}
                   </Avatar>
                   <Box sx={{ flexGrow: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="subtitle2" fontWeight={600}>
-                        {['أحمد محمد', 'سارة أحمد', 'محمد علي', 'نورا خالد'][student-1]}
+                          {student.name}
                       </Typography>
                       <Chip 
-                        label={['ممتاز', 'جيد جداً', 'جيد', 'مقبول'][student-1]}
+                          label={student.grade}
                         size="small"
-                        color={['success', 'info', 'warning', 'error'][student-1]}
+                          color={student.grade === 'ممتاز' ? 'success' : 
+                                 student.grade === 'جيد جداً' ? 'info' : 
+                                 student.grade === 'جيد' ? 'warning' : 'error'}
                         sx={{ height: 20, fontSize: '0.65rem' }}
                       />
                     </Box>
                     <Box sx={{ mt: 1 }}>
                       <LinearProgress 
                         variant="determinate" 
-                        value={[92, 85, 78, 65][student-1]}
-                        color={['success', 'info', 'warning', 'error'][student-1]}
+                          value={student.progress}
+                          color={student.progress >= 80 ? 'success' : 
+                                 student.progress >= 60 ? 'info' : 
+                                 student.progress >= 40 ? 'warning' : 'error'}
                         sx={{ height: 6, borderRadius: 3 }}
                       />
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
@@ -600,7 +960,7 @@ const TeacherDashboard = () => {
                           التقدم
                         </Typography>
                         <Typography variant="caption" fontWeight={600}>
-                          {[92, 85, 78, 65][student-1]}%
+                            {student.progress}%
                         </Typography>
                       </Box>
                     </Box>
@@ -611,119 +971,326 @@ const TeacherDashboard = () => {
           </Grid>
         ))}
         </Grid>
-      </DashboardSection>
+      </Box>
 
-      {/* Upcoming Tasks & Announcements */}
+        {/* Recent Activity & Announcements - محسن */}
       <Box sx={{ mt: 4 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <DashboardSection title="المهام القادمة" subtitle="مواعيدك الهامة">
-              {[
-                { id: 1, title: 'تصحيح واجب الرياضيات', due: 'غداً', priority: 'high', type: 'grading' },
-                { id: 2, title: 'إعداد اختبار الفصل الثاني', due: 'بعد غد', priority: 'medium', type: 'preparation' },
-                { id: 3, title: 'اجتماع أولياء الأمور', due: 'الخميس', priority: 'low', type: 'meeting' },
-              ].map((task, index) => (
-                <motion.div key={task.id} variants={item}>
-                  <DashboardCard sx={{ mb: index < 2 ? 2 : 0 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '12px',
+              <Box sx={{ mb: 3 }}>
+                <motion.div variants={item}>
+                  <Box sx={{ 
                           display: 'flex',
+                    justifyContent: 'space-between', 
                           alignItems: 'center',
-                          justifyContent: 'center',
+                    mb: 3,
+                    p: 3,
                           background: theme.palette.mode === 'dark'
-                            ? alpha(theme.palette.primary.main, 0.2)
-                            : alpha(theme.palette.primary.light, 0.3),
-                          color: theme.palette.primary.main,
+                      ? 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(156, 39, 176, 0.05))'
+                      : 'linear-gradient(135deg, rgba(243, 229, 245, 0.8), rgba(243, 229, 245, 0.4))',
+                    borderRadius: 4,
+                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 3,
+                      background: 'linear-gradient(90deg, #9c27b0, #ba68c8, #ce93d8)',
+                    }
+                  }}>
+                    <Box>
+                      <Typography 
+                        variant="h5" 
+                        fontWeight={700} 
+                        sx={{ 
+                          mb: 1,
+                          background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          display: 'inline-block'
                         }}
                       >
-                        {
-                          task.type === 'grading' ? <AssignmentIcon fontSize="small" /> :
-                          task.type === 'preparation' ? <SchoolIcon fontSize="small" /> :
-                          <EventIcon fontSize="small" />
-                        }
+                        النشاطات الأخيرة
+                      </Typography>
+                      <Typography 
+                        variant="body1" 
+                        color="text.secondary"
+                        sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          '&::before': {
+                            content: '""',
+                            display: 'block',
+                            width: 20,
+                            height: 2,
+                            background: theme.palette.secondary.main,
+                            borderRadius: 1
+                          }
+                        }}
+                      >
+                        آخر ما حدث في منصتك
+                      </Typography>
                       </Box>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {task.title}
+                  </Box>
+                </motion.div>
+                
+                {recentActivity.map((activity) => (
+                  <motion.div key={activity.id} variants={item}>
+                    <EnhancedActivityItem activity={activity} />
+                  </motion.div>
+                ))}
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Box sx={{ mb: 3 }}>
+                <motion.div variants={item}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 3,
+                    p: 3,
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.05))'
+                      : 'linear-gradient(135deg, rgba(255, 235, 238, 0.8), rgba(255, 235, 238, 0.4))',
+                    borderRadius: 4,
+                    border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 3,
+                      background: 'linear-gradient(90deg, #f44336, #ef5350, #e57373)',
+                    }
+                  }}>
+                    <Box>
+                      <Typography 
+                        variant="h5" 
+                        fontWeight={700} 
+                        sx={{ 
+                          mb: 1,
+                          background: 'linear-gradient(45deg, #f44336, #ef5350)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          display: 'inline-block'
+                        }}
+                      >
+                        آخر الإعلانات
                           </Typography>
-                          <Chip 
-                            label={task.due}
+                      <Typography 
+                        variant="body1" 
+                        color="text.secondary"
+                        sx={{ 
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          '&::before': {
+                            content: '""',
+                            display: 'block',
+                            width: 20,
+                            height: 2,
+                            background: theme.palette.error.main,
+                            borderRadius: 1
+                          }
+                        }}
+                      >
+                        آخر المستجدات
+                      </Typography>
+                    </Box>
+                    <Button 
+                      variant="contained" 
                             size="small"
-                            color={
-                              task.priority === 'high' ? 'error' :
-                              task.priority === 'medium' ? 'warning' : 'info'
-                            }
-                            variant="outlined"
+                      startIcon={<PersonAddIcon />}
+                      sx={{ 
+                        borderRadius: 3,
+                        background: 'linear-gradient(45deg, #f44336, #ef5350)',
+                        '&:hover': {
+                          background: 'linear-gradient(45deg, #d32f2f, #f44336)',
+                        }
+                      }}
+                      onClick={() => navigate('/teacher/announcements/new')}
+                    >
+                      إعلان جديد
+                    </Button>
+                  </Box>
+                </motion.div>
+                
+                {recentAnnouncements.map((announcement) => (
+                  <motion.div key={announcement.id} variants={item}>
+                    <EnhancedAnnouncementCard announcement={announcement} />
+                  </motion.div>
+                ))}
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Additional Stats */}
+        <Grid container spacing={3} sx={{ mt: 4 }}>
+          <Grid item xs={12} md={4}>
+            <motion.div variants={item}>
+              <DashboardCard 
                             sx={{ 
-                              height: 20, 
-                              fontSize: '0.65rem',
-                              fontWeight: 600,
-                              '& .MuiChip-label': {
-                                px: 1
-                              }
-                            }}
-                          />
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(56, 14, 93, 0.3), rgba(103, 58, 183, 0.1))'
+                    : 'linear-gradient(135deg, rgba(237, 231, 246, 0.8), rgba(237, 231, 246, 0.4))',
+                  border: 'none',
+                  '&:hover': {
+                    transform: 'none',
+                    boxShadow: theme.shadows[5]
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: alpha(theme.palette.warning.main, 0.15),
+                      color: theme.palette.warning.main,
+                      mr: 2,
+                      '& svg': {
+                        fontSize: '1.8rem'
+                      }
+                    }}
+                  >
+                    <AssignmentIcon />
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      الواجبات المعلقة
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.pendingAssignments}
+                      <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        واجب
+                      </Typography>
+                    </Typography>
+                  </Box>
+                </Box>
                           <Typography variant="caption" color="text.secondary">
-                            الأولوية:
+                  {stats.pendingAssignments} واجب يحتاج تصحيح.
                           </Typography>
-                          <Chip 
-                            label={
-                              task.priority === 'high' ? 'عاجل' :
-                              task.priority === 'medium' ? 'متوسط' : 'منخفض'
-                            }
-                            size="small"
-                            color={
-                              task.priority === 'high' ? 'error' :
-                              task.priority === 'medium' ? 'warning' : 'info'
-                            }
+              </DashboardCard>
+            </motion.div>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <motion.div variants={item}>
+              <DashboardCard 
+                sx={{
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(26, 35, 126, 0.3), rgba(57, 73, 171, 0.1))'
+                    : 'linear-gradient(135deg, rgba(232, 234, 246, 0.8), rgba(232, 234, 246, 0.4))',
+                  border: 'none',
+                  '&:hover': {
+                    transform: 'none',
+                    boxShadow: theme.shadows[5]
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
                             sx={{ 
-                              height: 18, 
-                              fontSize: '0.6rem',
-                              fontWeight: 600,
-                              '& .MuiChip-label': {
-                                px: 0.5
-                              }
-                            }}
-                          />
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: alpha(theme.palette.info.main, 0.15),
+                      color: theme.palette.info.main,
+                      mr: 2,
+                      '& svg': {
+                        fontSize: '1.8rem'
+                      }
+                    }}
+                  >
+                    <EventIcon />
                         </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      المحاضرات القادمة
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.upcomingMeetings}
+                      <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        محاضرة
+                      </Typography>
+                    </Typography>
                       </Box>
                     </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {stats.upcomingMeetings} محاضرة مجدولة.
+                </Typography>
                   </DashboardCard>
                 </motion.div>
-              ))}
-            </DashboardSection>
           </Grid>
-          <Grid xs={12} md={6}>
-            <DashboardSection 
-              title="آخر الإعلانات" 
-              subtitle="آخر المستجدات"
-              action={
-                <Button 
-                  variant="outlined" 
-                  size="small" 
-                  startIcon={<PersonAddIcon />}
-                  sx={{ borderRadius: 3 }}
-                >
-                  إعلان جديد
-                </Button>
-              }
-            >
-              {recentAnnouncements.map((announcement) => (
-                <motion.div key={announcement.id} variants={item}>
-                  <AnnouncementCard announcement={announcement} />
+          <Grid item xs={12} md={4}>
+            <motion.div variants={item}>
+              <DashboardCard 
+                sx={{
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, rgba(0, 77, 64, 0.3), rgba(0, 121, 107, 0.1))'
+                    : 'linear-gradient(135deg, rgba(224, 242, 241, 0.8), rgba(224, 242, 241, 0.4))',
+                  border: 'none',
+                  '&:hover': {
+                    transform: 'none',
+                    boxShadow: theme.shadows[5]
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: alpha(theme.palette.success.main, 0.15),
+                      color: theme.palette.success.main,
+                      mr: 2,
+                      '& svg': {
+                        fontSize: '1.8rem'
+                      }
+                    }}
+                  >
+                    <PersonAddIcon />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      التسجيلات الجديدة
+                    </Typography>
+                    <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.recentEnrollments}
+                      <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        طالب
+                      </Typography>
+                    </Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  {stats.recentEnrollments} طالب جديد انضم هذا الأسبوع.
+                </Typography>
+              </DashboardCard>
                 </motion.div>
-              ))}
-            </DashboardSection>
           </Grid>
         </Grid>
-      </Box>
       </motion.div>
     </Box>
   );

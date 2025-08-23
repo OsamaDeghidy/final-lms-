@@ -38,7 +38,7 @@ export const examAPI = {
   // Update exam
   updateExam: async (id, examData) => {
     try {
-      const response = await api.put(`/assignments/exams/${id}/`, examData);
+      const response = await api.patch(`/assignments/exams/${id}/`, examData);
       return response.data;
     } catch (error) {
       console.error('Error updating exam:', error);

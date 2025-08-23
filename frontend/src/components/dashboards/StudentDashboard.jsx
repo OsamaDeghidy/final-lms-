@@ -1,13 +1,33 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, Avatar, LinearProgress, useTheme, Chip } from '@mui/material';
+import { Box, Typography, Button, Grid, Avatar, LinearProgress, useTheme, Chip, Skeleton } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DashboardCard, StatCard, DashboardSection, ProgressCard, ActivityItem, pulse } from './DashboardLayout';
-import { School as SchoolIcon, Assignment as AssignmentIcon, 
-  Event as EventIcon, Grade as GradeIcon, 
-  MenuBook as MenuBookIcon, Quiz as QuizIcon, 
-  EmojiEvents as BadgeIcon, Star as StarIcon,
-  TrendingUp as TrendingUpIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { 
+  School as SchoolIcon, 
+  Assignment as AssignmentIcon, 
+  Event as EventIcon, 
+  Grade as GradeIcon, 
+  MenuBook as MenuBookIcon, 
+  Quiz as QuizIcon, 
+  EmojiEvents as BadgeIcon, 
+  Star as StarIcon,
+  TrendingUp as TrendingUpIcon, 
+  CheckCircle as CheckCircleIcon,
+  PlayArrow as PlayArrowIcon,
+  VideoLibrary as VideoLibraryIcon,
+  AttachMoney as MoneyIcon,
+  Schedule as ScheduleIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import dashboardService from '../../services/dashboard.service';
+import { 
+  EnhancedStatCard, 
+  EnhancedCourseCard, 
+  EnhancedAchievementCard, 
+  EnhancedActivityItem 
+} from './DashboardComponents';
+import './index.css';
 
 // Animation variants
 const container = {
@@ -27,74 +47,100 @@ const item = {
 
 const StudentDashboard = () => {
   const theme = useTheme();
-  const [stats] = useState({
-    courses: 5,
-    assignments: 3,
-    upcoming: 2,
-    averageGrade: 'B+',
-    streak: 7,
-    points: 1245
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    enrolledCourses: 0,
+    completedLessons: 0,
+    pendingAssignments: 0,
+    averageGrade: 0,
+    totalPoints: 0,
+    learningStreak: 0,
+    certificates: 0
   });
+  const [courses, setCourses] = useState([]);
+  const [achievements, setAchievements] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [upcomingAssignments, setUpcomingAssignments] = useState([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
 
-  const recentCourses = [
-    { 
-      id: 1, 
-      name: 'الرياضيات المتقدمة', 
-      progress: 75, 
-      teacher: 'أ. أحمد محمد',
-      icon: <TrendingUpIcon />,
-      color: 'primary',
-      lastActivity: 'منذ ساعتين',
-      nextSession: 'غدًا 10:00 ص'
-    },
-    { 
-      id: 2, 
-      name: 'الفيزياء', 
-      progress: 45, 
-      teacher: 'د. سارة أحمد',
-      icon: <SchoolIcon />,
-      color: 'secondary',
-      lastActivity: 'منذ يومين',
-      nextSession: 'بعد غد 2:00 م'
-    },
-    { 
-      id: 3, 
-      name: 'اللغة العربية', 
-      progress: 90, 
-      teacher: 'أ. محمد علي',
-      icon: <MenuBookIcon />,
-      color: 'success',
-      lastActivity: 'اليوم 9:00 ص',
-      nextSession: 'الاثنين 11:00 ص'
-    },
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  const upcomingAssignments = [
-    { 
-      id: 1, 
-      title: 'واجب الرياضيات', 
-      course: 'الرياضيات المتقدمة', 
-      dueDate: '2023-11-15', 
-      type: 'assignment',
-      priority: 'high',
-      subject: 'math'
-    },
-    { 
-      id: 2, 
-      title: 'اختبار الفصل الثاني', 
-      course: 'الفيزياء', 
-      dueDate: '2023-11-20', 
-      type: 'quiz',
-      priority: 'medium',
-      subject: 'physics'
-    },
-  ];
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // تحميل البيانات بالتوازي
+      const [
+        statsData,
+        coursesData,
+        achievementsData,
+        activityData,
+        assignmentsData,
+        meetingsData
+      ] = await Promise.all([
+        dashboardService.getStudentStats(),
+        dashboardService.getStudentCourses(),
+        dashboardService.getAchievements(),
+        dashboardService.getRecentActivity(),
+        dashboardService.getUpcomingAssignments(),
+        dashboardService.getUpcomingMeetings()
+      ]);
 
-  const achievements = [
-    { id: 1, title: 'المثابر', description: 'أكمل 5 أيام متتالية من التعلم', icon: <BadgeIcon />, progress: 100, color: 'warning' },
-    { id: 2, title: 'الطموح', description: 'احصل على درجة A+ في أي مادة', icon: <StarIcon />, progress: 75, color: 'info' },
-    { id: 3, title: 'المجتهد', description: 'أكمل 10 واجبات', icon: <CheckCircleIcon />, progress: 30, color: 'success' },
-  ];
+      setStats(statsData);
+      setCourses(coursesData);
+      setAchievements(achievementsData);
+      setRecentActivity(activityData);
+      setUpcomingAssignments(assignmentsData);
+      setUpcomingMeetings(meetingsData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCourseContinue = (courseId) => {
+    navigate(`/courses/${courseId}/learn`);
+  };
+
+  const handleCourseView = (courseId) => {
+    navigate(`/courses/${courseId}`);
+  };
+
+  const formatGrade = (grade) => {
+    if (grade >= 90) return 'A+';
+    if (grade >= 85) return 'A';
+    if (grade >= 80) return 'B+';
+    if (grade >= 75) return 'B';
+    if (grade >= 70) return 'C+';
+    if (grade >= 65) return 'C';
+    if (grade >= 60) return 'D+';
+    return 'D';
+  };
+
+  const getGradeColor = (grade) => {
+    if (grade >= 80) return 'success';
+    if (grade >= 70) return 'info';
+    if (grade >= 60) return 'warning';
+    return 'error';
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <Grid container spacing={3}>
+          {[1, 2, 3, 4].map((item) => (
+            <Grid item xs={12} sm={6} lg={3} key={item}>
+              <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 4 }} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>
@@ -103,6 +149,7 @@ const StudentDashboard = () => {
         animate="show"
         variants={container}
       >
+        {/* Header Section */}
         <Box sx={{ mb: 4 }}>
           <motion.div variants={item}>
             <Typography 
@@ -144,367 +191,510 @@ const StudentDashboard = () => {
           </motion.div>
         </Box>
 
-      {/* Stats Cards */}
-      <DashboardSection 
-        title="نظرة عامة" 
-        subtitle="إحصائياتك الدراسية في لمحة"
-      >
-        <Grid item xs={12} sm={6} lg={3}>
-          <motion.div variants={item}>
-            <StatCard 
-              title="المقررات المسجلة" 
-              value={stats.courses} 
-              icon={<SchoolIcon />} 
-              color="primary"
-              trend="up"
-              trendValue={12}
-              trendLabel="من الشهر الماضي"
-            />
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <motion.div variants={item}>
-            <StatCard 
-              title="الواجبات المعلقة" 
-              value={stats.assignments} 
-              icon={<AssignmentIcon />} 
-              color="warning"
-              trend="down"
-              trendValue={25}
-              trendLabel="من الأسبوع الماضي"
-            />
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <motion.div variants={item}>
-            <StatCard 
-              title="المواعيد القادمة" 
-              value={stats.upcoming} 
-              icon={<EventIcon />} 
-              color="info"
-            />
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} sm={6} lg={3}>
-          <motion.div variants={item}>
-            <StatCard 
-              title="المعدل الحالي" 
-              value={stats.averageGrade} 
-              icon={<GradeIcon />} 
-              color="success"
-              trend="up"
-              trendValue={5}
-              trendLabel="من الترم الماضي"
-            />
-          </motion.div>
-        </Grid>
-      </DashboardSection>
+             {/* Stats Cards - نظرة عامة محسنة */}
+       <Box sx={{ mb: 4 }}>
+         <motion.div variants={item}>
+           <Box sx={{ 
+             display: 'flex', 
+             justifyContent: 'space-between', 
+             alignItems: 'center', 
+             mb: 3,
+             p: 3,
+             background: theme.palette.mode === 'dark'
+               ? 'linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05))'
+               : 'linear-gradient(135deg, rgba(25, 118, 210, 0.08), rgba(25, 118, 210, 0.03))',
+             borderRadius: 4,
+             border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+             position: 'relative',
+             overflow: 'hidden',
+             '&::before': {
+               content: '""',
+               position: 'absolute',
+               top: 0,
+               left: 0,
+               right: 0,
+               height: 3,
+               background: 'linear-gradient(90deg, #1976d2, #42a5f5, #90caf9)',
+             }
+           }}>
+             <Box>
+               <Typography 
+                 variant="h5" 
+                 fontWeight={700} 
+                 sx={{ 
+                   mb: 1,
+                   background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   display: 'inline-block'
+                 }}
+               >
+                 نظرة عامة
+               </Typography>
+               <Typography 
+                 variant="body1" 
+                 color="text.secondary"
+                 sx={{ 
+                   display: 'flex',
+                   alignItems: 'center',
+                   gap: 1,
+                   '&::before': {
+                     content: '""',
+                     display: 'block',
+                     width: 20,
+                     height: 2,
+                     background: theme.palette.primary.main,
+                     borderRadius: 1
+                   }
+                 }}
+               >
+                 إحصائياتك الدراسية في لمحة
+               </Typography>
+             </Box>
+             <Box sx={{ 
+               display: 'flex', 
+               alignItems: 'center', 
+               gap: 1,
+               p: 1.5,
+               borderRadius: 2,
+               background: alpha(theme.palette.primary.main, 0.1),
+               border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`
+             }}>
+               <SchoolIcon sx={{ color: theme.palette.primary.main, fontSize: '1.2rem' }} />
+               <Typography variant="caption" fontWeight={600} color="primary.main">
+                 لوحة الإحصائيات
+               </Typography>
+             </Box>
+           </Box>
+         </motion.div>
 
-      {/* Recent Courses */}
-      <DashboardSection 
-        title="مقرراتي النشطة" 
-        subtitle="تابع تقدمك في المقررات"
-        action={
-          <Button 
-            variant="outlined" 
-            size="small" 
-            endIcon={<TrendingUpIcon />}
-            sx={{ borderRadius: 3 }}
-          >
-            عرض الكل
-          </Button>
-        }
-      >
-        {recentCourses.map((course, index) => (
-          <Grid item xs={12} md={6} lg={4} key={course.id}>
-            <motion.div 
-              variants={item}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} lg={3}>
+            <motion.div variants={item}>
               <DashboardCard
                 sx={{
-                  '&::before': {
-                    background: `radial-gradient(circle, ${theme.palette[course.color || 'primary'].main} 0%, transparent 70%)`,
-                  },
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #2196f3, #64b5f6)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
                   '&:hover': {
-                    '& .course-icon': {
-                      transform: 'scale(1.1) rotate(5deg)'
-                    }
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
                   }
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
-                  <Box
-                    className="course-icon"
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: theme.palette.mode === 'dark'
-                        ? alpha(theme.palette[course.color || 'primary'].main, 0.2)
-                        : alpha(theme.palette[course.color || 'primary'].light, 0.3),
-                      color: theme.palette[course.color || 'primary'].main,
-                      transition: 'all 0.3s ease',
-                      mr: 2,
-                      '& svg': {
-                        fontSize: '1.8rem'
-                      }
-                    }}
-                  >
-                    {course.icon}
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-                        {course.name}
-                      </Typography>
-                      <Chip 
-                        label={`${course.progress}%`} 
-                        size="small" 
-                        color={course.progress > 80 ? 'success' : course.progress > 50 ? 'primary' : 'warning'}
-                        sx={{ fontWeight: 600, minWidth: 60 }}
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                      {course.teacher}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.enrolledCourses}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Chip 
-                        icon={<EventIcon fontSize="small" />} 
-                        label={`الجلسة القادمة: ${course.nextSession}`} 
-                        size="small"
-                        variant="outlined"
-                        sx={{ 
-                          borderRadius: 2,
-                          fontSize: '0.7rem',
-                          '& .MuiChip-icon': {
-                            marginLeft: 0,
-                            marginRight: '4px !important'
-                          }
-                        }}
-                      />
-                    </Box>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      المقررات المسجلة
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      مقررات نشطة
+                    </Typography>
                   </Box>
-                </Box>
-                
-                <Box sx={{ mb: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">التقدم</Typography>
-                    <Typography variant="caption" fontWeight={600}>{course.progress}%</Typography>
-                  </Box>
-                  <Box sx={{ 
-                    height: 6, 
-                    borderRadius: 3, 
-                    backgroundColor: theme.palette.mode === 'dark' 
-                      ? alpha(theme.palette.grey[700], 0.5) 
-                      : alpha(theme.palette.grey[300], 0.8),
-                    overflow: 'hidden'
-                  }}>
-                    <Box
-                      sx={{
-                        height: '100%',
-                        width: `${course.progress}%`,
-                        background: theme.palette.mode === 'dark'
-                          ? `linear-gradient(90deg, ${theme.palette[course.color || 'primary'].dark}, ${theme.palette[course.color || 'primary'].main})`
-                          : `linear-gradient(90deg, ${theme.palette[course.color || 'primary'].light}, ${theme.palette[course.color || 'primary'].main})`,
-                        borderRadius: 3,
-                        transition: 'width 0.6s ease, background 0.3s ease',
-                      }}
-                    />
-                  </Box>
-                </Box>
-                
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button 
-                    variant="contained" 
-                    size="small" 
-                    sx={{ 
-                      flex: 1, 
-                      borderRadius: 3,
-                      fontWeight: 600,
-                      background: theme.palette.mode === 'dark'
-                        ? `linear-gradient(45deg, ${theme.palette[course.color || 'primary'].dark}, ${theme.palette[course.color || 'primary'].main})`
-                        : `linear-gradient(45deg, ${theme.palette[course.color || 'primary'].main}, ${theme.palette[course.color || 'primary'].light})`,
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 4px 20px 0 ${alpha(theme.palette[course.color || 'primary'].main, 0.3)}`
-                      },
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    استمر في التعلم
-                  </Button>
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    sx={{ 
-                      borderRadius: 3,
-                      minWidth: 40,
-                      px: 2,
-                      '&:hover': {
-                        transform: 'translateY(-2px)'
-                      },
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <MenuBookIcon fontSize="small" />
-                  </Button>
-                </Box>
-              </DashboardCard>
-            </motion.div>
-          </Grid>
-        ))}
-      </DashboardSection>
-
-      {/* Achievements Section */}
-      <DashboardSection 
-        title="إنجازاتي" 
-        subtitle="احصل على المزيد من النقاط والإنجازات"
-      >
-        {achievements.map((achievement, index) => (
-          <Grid item xs={12} md={4} key={achievement.id}>
-            <motion.div 
-              variants={item}
-              whileHover={{ y: -5 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <DashboardCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 60,
+                      height: 60,
                       borderRadius: 2,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: theme.palette.mode === 'dark'
-                        ? alpha(theme.palette[achievement.color].main, 0.2)
-                        : alpha(theme.palette[achievement.color].light, 0.3),
-                      color: theme.palette[achievement.color].main,
-                      mr: 2,
+                      background: 'rgba(255, 255, 255, 0.2)',
                       '& svg': {
-                        fontSize: '1.5rem'
+                        fontSize: '2rem'
                       }
                     }}
                   >
-                    {achievement.icon}
-                  </Box>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 0.5 }}>
-                      {achievement.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {achievement.description}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box sx={{ mt: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      {achievement.progress}% مكتمل
-                    </Typography>
-                    <Typography variant="caption" fontWeight={600}>
-                      {achievement.progress}/100
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    height: 6, 
-                    borderRadius: 3, 
-                    backgroundColor: theme.palette.mode === 'dark' 
-                      ? alpha(theme.palette.grey[700], 0.5) 
-                      : alpha(theme.palette.grey[300], 0.8),
-                    overflow: 'hidden'
-                  }}>
-                    <Box
-                      sx={{
-                        height: '100%',
-                        width: `${achievement.progress}%`,
-                        background: theme.palette.mode === 'dark'
-                          ? `linear-gradient(90deg, ${theme.palette[achievement.color].dark}, ${theme.palette[achievement.color].main})`
-                          : `linear-gradient(90deg, ${theme.palette[achievement.color].light}, ${theme.palette[achievement.color].main})`,
-                        borderRadius: 3,
-                        transition: 'width 0.6s ease, background 0.3s ease',
-                      }}
-                    />
+                    <SchoolIcon />
                   </Box>
                 </Box>
               </DashboardCard>
             </motion.div>
           </Grid>
-        ))}
-      </DashboardSection>
-
-      {/* Upcoming Assignments */}
-      <DashboardSection 
-        title="المواعيد القادمة" 
-        subtitle="لا تنسى مواعيد تسليم الواجبات والاختبارات"
-        action={
-          <Button 
-            variant="text" 
-            size="small" 
-            endIcon={<EventIcon />}
-            sx={{ 
-              color: 'text.secondary',
-              '&:hover': {
-                color: 'primary.main',
-                backgroundColor: 'transparent'
-              }
-            }}
-          >
-            عرض التقويم
-          </Button>
-        }
-      >
-        {upcomingAssignments.map((item, index) => (
-          <Grid item xs={12} key={item.id}>
-            <motion.div 
-              variants={item}
-              whileHover={{ x: 5 }}
-              transition={{ type: 'spring', stiffness: 300 }}
-            >
-              <ActivityItem
-                key={item.id}
-                icon={item.type === 'quiz' ? <QuizIcon /> : <AssignmentIcon />}
-                title={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <span>{item.title}</span>
-                    <Chip 
-                      label={item.type === 'quiz' ? 'اختبار' : 'واجب'}
-                      size="small"
-                      color={item.type === 'quiz' ? 'warning' : 'primary'}
-                      sx={{ height: 20, fontSize: '0.65rem' }}
-                    />
-                    {item.priority === 'high' && (
-                      <Box 
-                        component="span" 
-                        sx={{ 
-                          width: 8, 
-                          height: 8, 
-                          borderRadius: '50%', 
-                          bgcolor: 'error.main',
-                          animation: `${pulse} 2s infinite`
-                        }} 
-                      />
-                    )}
+          
+          <Grid item xs={12} sm={6} lg={3}>
+            <motion.div variants={item}>
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #ff9800, #ffcc02)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.pendingAssignments}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      الواجبات المعلقة
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      واجبات تحتاج تسليم
+                    </Typography>
                   </Box>
-                }
-                description={`مقرر: ${item.course}`}
-                time={item.dueDate}
-                color={item.type === 'quiz' ? 'warning' : 'primary'}
-                unread={index === 0}
-              />
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <AssignmentIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
+            </motion.div>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} lg={3}>
+            <motion.div variants={item}>
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #4caf50, #81c784)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {formatGrade(stats.averageGrade)}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      المعدل الحالي
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      {stats.averageGrade}%
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <GradeIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
+            </motion.div>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} lg={3}>
+            <motion.div variants={item}>
+              <DashboardCard
+                sx={{
+                  height: 200,
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #673ab7, #9575cd)',
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: theme.shadows[8],
+                  },
+                  transition: 'all 0.3s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: -50,
+                    right: -50,
+                    width: 100,
+                    height: 100,
+                    borderRadius: '50%',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                  <Box>
+                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                      {stats.totalPoints.toLocaleString()}
+                    </Typography>
+                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                      النقاط المكتسبة
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      نقاط إجمالية
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      '& svg': {
+                        fontSize: '2rem'
+                      }
+                    }}
+                  >
+                    <StarIcon />
+                  </Box>
+                </Box>
+              </DashboardCard>
+            </motion.div>
+          </Grid>
+        </Grid>
+       </Box>
+
+             {/* Recent Courses - مقرراتي النشطة محسنة */}
+       <Box sx={{ mb: 4 }}>
+         <motion.div variants={item}>
+           <Box sx={{ 
+             display: 'flex', 
+             justifyContent: 'space-between', 
+             alignItems: 'center', 
+             mb: 3,
+             p: 3,
+             background: theme.palette.mode === 'dark'
+               ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(76, 175, 80, 0.05))'
+               : 'linear-gradient(135deg, rgba(232, 245, 233, 0.8), rgba(232, 245, 233, 0.4))',
+             borderRadius: 4,
+             border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+             position: 'relative',
+             overflow: 'hidden',
+             '&::before': {
+               content: '""',
+               position: 'absolute',
+               top: 0,
+               left: 0,
+               right: 0,
+               height: 3,
+               background: 'linear-gradient(90deg, #4caf50, #66bb6a, #81c784)',
+             }
+           }}>
+             <Box>
+               <Typography 
+                 variant="h5" 
+                 fontWeight={700} 
+                 sx={{ 
+                   mb: 1,
+                   background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   display: 'inline-block'
+                 }}
+               >
+                 مقرراتي النشطة
+               </Typography>
+               <Typography 
+                 variant="body1" 
+                 color="text.secondary"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                   gap: 1,
+                   '&::before': {
+                     content: '""',
+                     display: 'block',
+                     width: 20,
+                     height: 2,
+                     background: theme.palette.success.main,
+                     borderRadius: 1
+                   }
+                 }}
+               >
+                 تابع تقدمك في المقررات
+                    </Typography>
+                </Box>
+                  <Button 
+                    variant="contained" 
+                    size="small" 
+               endIcon={<TrendingUpIcon />}
+                    sx={{ 
+                      borderRadius: 3,
+                 background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                      '&:hover': {
+                   background: 'linear-gradient(45deg, #388e3c, #4caf50)',
+                 }
+                    }}
+               onClick={() => navigate('/student/courses')}
+                  >
+               عرض الكل
+                  </Button>
+                </Box>
+         </motion.div>
+
+         <Grid container spacing={3}>
+           {courses.map((course) => (
+             <Grid item xs={12} md={6} lg={4} key={course.id}>
+               <motion.div variants={item}>
+                 <EnhancedCourseCard
+                   course={course}
+                   variant="student"
+                   onContinue={() => handleCourseContinue(course.id)}
+                   onView={() => handleCourseView(course.id)}
+                 />
             </motion.div>
           </Grid>
         ))}
-      </DashboardSection>
+         </Grid>
+       </Box>
+
+             {/* Achievements Section - إنجازاتي محسنة */}
+       <Box sx={{ mb: 4 }}>
+         <motion.div variants={item}>
+           <Box sx={{ 
+             display: 'flex', 
+             justifyContent: 'space-between', 
+             alignItems: 'center', 
+             mb: 3,
+             p: 3,
+             background: theme.palette.mode === 'dark'
+               ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05))'
+               : 'linear-gradient(135deg, rgba(255, 248, 225, 0.8), rgba(255, 248, 225, 0.4))',
+             borderRadius: 4,
+             border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+             position: 'relative',
+             overflow: 'hidden',
+             '&::before': {
+               content: '""',
+               position: 'absolute',
+               top: 0,
+               left: 0,
+               right: 0,
+               height: 3,
+               background: 'linear-gradient(90deg, #ffc107, #ffca28, #ffd54f)',
+             }
+           }}>
+             <Box>
+               <Typography 
+                 variant="h5" 
+                 fontWeight={700} 
+                 sx={{ 
+                   mb: 1,
+                   background: 'linear-gradient(45deg, #ffc107, #ffca28)',
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   display: 'inline-block'
+                 }}
+               >
+                 إنجازاتي
+               </Typography>
+               <Typography 
+                 variant="body1" 
+                 color="text.secondary"
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                   gap: 1,
+                   '&::before': {
+                     content: '""',
+                     display: 'block',
+                     width: 20,
+                     height: 2,
+                     background: theme.palette.warning.main,
+                     borderRadius: 1
+                   }
+                 }}
+               >
+                 احصل على المزيد من النقاط والإنجازات
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+               display: 'flex', 
+               alignItems: 'center', 
+               gap: 1,
+               p: 1.5,
+               borderRadius: 2,
+               background: alpha(theme.palette.warning.main, 0.1),
+               border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
+             }}>
+               <BadgeIcon sx={{ color: theme.palette.warning.main, fontSize: '1.2rem' }} />
+               <Typography variant="caption" fontWeight={600} color="warning.main">
+                 نظام الإنجازات
+               </Typography>
+                  </Box>
+                </Box>
+            </motion.div>
+
+         <Grid container spacing={3}>
+           {achievements.map((achievement) => (
+             <Grid item xs={12} md={4} key={achievement.id}>
+               <motion.div variants={item}>
+                 <EnhancedAchievementCard achievement={achievement} />
+            </motion.div>
+          </Grid>
+        ))}
+         </Grid>
+       </Box>
       
-      {/* Stats Summary */}
-      <Grid container spacing={3} sx={{ mb: 5 }}>
+        {/* Quick Stats */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={4}>
           <motion.div variants={item}>
             <DashboardCard 
@@ -543,7 +733,7 @@ const StudentDashboard = () => {
                     أيام متتالية
                   </Typography>
                   <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
-                    {stats.streke}
+                      {stats.learningStreak}
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
                       يوم
                     </Typography>
@@ -551,7 +741,7 @@ const StudentDashboard = () => {
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                احرزت {stats.streke} أيام متتالية من التعلم! استمر في التقدم.
+                  احرزت {stats.learningStreak} أيام متتالية من التعلم! استمر في التقدم.
               </Typography>
             </DashboardCard>
           </motion.div>
@@ -587,22 +777,22 @@ const StudentDashboard = () => {
                     }
                   }}
                 >
-                  <GradeIcon />
+                    <MenuBookIcon />
                 </Box>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
-                    النقاط
+                      الدروس المكتملة
                   </Typography>
                   <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
-                    {stats.points.toLocaleString()}
+                      {stats.completedLessons}
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                      نقطة
-                    </Typography>
+                        درس
+                      </Typography>
                   </Typography>
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                أنت في المرتبة 12 من أصل 150 طالبًا في مستواك.
+                  أكملت {stats.completedLessons} درساً حتى الآن.
               </Typography>
             </DashboardCard>
           </motion.div>
@@ -638,27 +828,194 @@ const StudentDashboard = () => {
                     }
                   }}
                 >
-                  <CheckCircleIcon />
+                    <BadgeIcon />
                 </Box>
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
-                    معدل الإنجاز
+                      الشهادات
                   </Typography>
                   <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
-                    78%
+                      {stats.certificates}
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                      من هدفك
-                    </Typography>
+                        شهادة
+                      </Typography>
                   </Typography>
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                أنجزت 12 من أصل 15 مهمة لهذا الأسبوع.
+                  حصلت على {stats.certificates} شهادة من المقررات المكتملة.
               </Typography>
             </DashboardCard>
           </motion.div>
         </Grid>
       </Grid>
+
+                 {/* Recent Activity & Upcoming - محسن */}
+         <Box sx={{ mt: 4 }}>
+           <Grid container spacing={3}>
+             <Grid item xs={12} md={6}>
+               <Box sx={{ mb: 3 }}>
+                 <motion.div variants={item}>
+                   <Box sx={{ 
+                     display: 'flex', 
+                     justifyContent: 'space-between', 
+                     alignItems: 'center', 
+                     mb: 3,
+                     p: 3,
+                     background: theme.palette.mode === 'dark'
+                       ? 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(156, 39, 176, 0.05))'
+                       : 'linear-gradient(135deg, rgba(243, 229, 245, 0.8), rgba(243, 229, 245, 0.4))',
+                     borderRadius: 4,
+                     border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                     position: 'relative',
+                     overflow: 'hidden',
+                     '&::before': {
+                       content: '""',
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       right: 0,
+                       height: 3,
+                       background: 'linear-gradient(90deg, #9c27b0, #ba68c8, #ce93d8)',
+                     }
+                   }}>
+                     <Box>
+                       <Typography 
+                         variant="h5" 
+                         fontWeight={700} 
+                         sx={{ 
+                           mb: 1,
+                           background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
+                           WebkitBackgroundClip: 'text',
+                           WebkitTextFillColor: 'transparent',
+                           display: 'inline-block'
+                         }}
+                       >
+                         النشاطات الأخيرة
+                       </Typography>
+                       <Typography 
+                         variant="body1" 
+                         color="text.secondary"
+                         sx={{ 
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: 1,
+                           '&::before': {
+                             content: '""',
+                             display: 'block',
+                             width: 20,
+                             height: 2,
+                             background: theme.palette.secondary.main,
+                             borderRadius: 1
+                           }
+                         }}
+                       >
+                         آخر ما فعلته في المنصة
+                       </Typography>
+                     </Box>
+                   </Box>
+                 </motion.div>
+                 
+                 {recentActivity.map((activity) => (
+                   <motion.div key={activity.id} variants={item}>
+                     <EnhancedActivityItem activity={activity} />
+                   </motion.div>
+                 ))}
+               </Box>
+             </Grid>
+             
+             <Grid item xs={12} md={6}>
+               <Box sx={{ mb: 3 }}>
+                 <motion.div variants={item}>
+                   <Box sx={{ 
+                     display: 'flex', 
+                     justifyContent: 'space-between', 
+                     alignItems: 'center', 
+                     mb: 3,
+                     p: 3,
+                     background: theme.palette.mode === 'dark'
+                       ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.1), rgba(244, 67, 54, 0.05))'
+                       : 'linear-gradient(135deg, rgba(255, 235, 238, 0.8), rgba(255, 235, 238, 0.4))',
+                     borderRadius: 4,
+                     border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
+                     position: 'relative',
+                     overflow: 'hidden',
+                     '&::before': {
+                       content: '""',
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       right: 0,
+                       height: 3,
+                       background: 'linear-gradient(90deg, #f44336, #ef5350, #e57373)',
+                     }
+                   }}>
+                     <Box>
+                       <Typography 
+                         variant="h5" 
+                         fontWeight={700} 
+                         sx={{ 
+                           mb: 1,
+                           background: 'linear-gradient(45deg, #f44336, #ef5350)',
+                           WebkitBackgroundClip: 'text',
+                           WebkitTextFillColor: 'transparent',
+                           display: 'inline-block'
+                         }}
+                       >
+                         المواعيد القادمة
+                       </Typography>
+                       <Typography 
+                         variant="body1" 
+                         color="text.secondary"
+                         sx={{ 
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: 1,
+                           '&::before': {
+                             content: '""',
+                             display: 'block',
+                             width: 20,
+                             height: 2,
+                             background: theme.palette.error.main,
+                             borderRadius: 1
+                           }
+                         }}
+                       >
+                         لا تنسى مواعيد تسليم الواجبات والاختبارات
+                       </Typography>
+                     </Box>
+                     <Button 
+                       variant="contained" 
+                       size="small" 
+                       endIcon={<EventIcon />}
+                       sx={{ 
+                         borderRadius: 3,
+                         background: 'linear-gradient(45deg, #f44336, #ef5350)',
+                         '&:hover': {
+                           background: 'linear-gradient(45deg, #d32f2f, #f44336)',
+                         }
+                       }}
+                       onClick={() => navigate('/student/calendar')}
+                     >
+                       عرض التقويم
+                     </Button>
+                   </Box>
+                 </motion.div>
+                 
+                 {upcomingAssignments.map((item) => (
+                   <motion.div key={item.id} variants={item}>
+                     <EnhancedActivityItem activity={item} />
+                   </motion.div>
+                 ))}
+                 {upcomingMeetings.map((meeting) => (
+                   <motion.div key={meeting.id} variants={item}>
+                     <EnhancedActivityItem activity={meeting} />
+                   </motion.div>
+                 ))}
+               </Box>
+             </Grid>
+           </Grid>
+         </Box>
     </motion.div>
   </Box>
   );

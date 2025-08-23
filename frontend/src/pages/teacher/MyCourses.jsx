@@ -20,7 +20,11 @@ import {
   useMediaQuery,
   Tooltip,
   Alert,
-  Snackbar
+  Snackbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { 
   School as SchoolIcon, 
@@ -33,11 +37,13 @@ import {
   Edit as EditIcon,
   Visibility as VisibilityIcon,
   Delete as DeleteIcon,
-  LibraryBooks as LibraryBooksIcon
+  LibraryBooks as LibraryBooksIcon,
+  FilterList,
+  Clear
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/system';
-import { courseAPI } from '../../services/api.service';
+import { courseAPI } from '../../services/courseService';
 
 // Helper: truncate text to a fixed number of characters and append ellipsis
 const truncateText = (text, maxChars = 30) => {
@@ -114,10 +120,19 @@ const MyCourses = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [courses, setCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedLevel, setSelectedLevel] = useState('');
+  const [categories, setCategories] = useState([]);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
+
+  // Debug: log categories state
+  console.log('Categories state:', categories);
+  console.log('Categories length:', categories.length);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -130,7 +145,16 @@ const MyCourses = () => {
                            coursesData.results ? coursesData.results : 
                            coursesData.data ? coursesData.data : [];
         console.log('Processed courses array:', coursesArray);
+        
+        // Log sample course data to understand structure
+        if (coursesArray.length > 0) {
+          console.log('Sample course data:', coursesArray[0]);
+          console.log('Sample course category:', coursesArray[0].category);
+          console.log('Sample course category_id:', coursesArray[0].category_id);
+        }
+        
         setCourses(coursesArray);
+        setAllCourses(coursesArray);
       } catch (error) {
         console.error('Error fetching courses:', error);
         setSnackbar({
@@ -140,6 +164,7 @@ const MyCourses = () => {
         });
         // Set empty array as fallback
         setCourses([]);
+        setAllCourses([]);
       } finally {
         setLoading(false);
       }
@@ -148,17 +173,160 @@ const MyCourses = () => {
     fetchCourses();
   }, []);
 
+  // Fetch categories independently
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        console.log('Fetching categories...');
+        const categoriesData = await courseAPI.getCategories();
+        console.log('Categories API response:', categoriesData);
+        // Ensure categoriesData is an array
+        const categoriesArray = Array.isArray(categoriesData) ? categoriesData : 
+                              categoriesData.results ? categoriesData.results : 
+                              categoriesData.data ? categoriesData.data : [];
+        console.log('Processed categories array:', categoriesArray);
+        console.log('Categories length:', categoriesArray.length);
+        
+        // Log sample category data
+        if (categoriesArray.length > 0) {
+          console.log('Sample category data:', categoriesArray[0]);
+        }
+        
+        setCategories(categoriesArray);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        console.log('Trying fallback: extracting categories from courses...');
+        // Try to extract categories from courses as fallback
+        const uniqueCategories = [];
+        const categoryMap = new Map();
+        allCourses.forEach(course => {
+          console.log('Course category:', course.category);
+          console.log('Course category_id:', course.category_id);
+          console.log('Course category_name:', course.category_name);
+          
+          // Try different ways to get category info
+          let category = null;
+          if (course.category && course.category.id) {
+            category = course.category;
+          } else if (course.category_id && course.category_name) {
+            category = { id: course.category_id, name: course.category_name };
+          } else if (course.category && typeof course.category === 'object') {
+            category = course.category;
+          }
+          
+          if (category && category.id && !categoryMap.has(category.id)) {
+            categoryMap.set(category.id, category);
+            uniqueCategories.push(category);
+          }
+        });
+        console.log('Fallback categories:', uniqueCategories);
+        setCategories(uniqueCategories);
+      }
+    };
+
+    fetchCategories();
+  }, [allCourses]);
+
   // Handle search input
   const handleSearch = (event) => {
-    setSearchQuery(event.target.value);
+    const value = event.target.value;
+    console.log('Search input changed:', value);
+    setSearchQuery(value);
+  };
+
+  // Apply filters
+  useEffect(() => {
+    console.log('=== APPLYING FILTERS ===');
+    console.log('Search query:', searchQuery);
+    console.log('Selected category:', selectedCategory);
+    console.log('Selected status:', selectedStatus);
+    console.log('Selected level:', selectedLevel);
+    console.log('All courses count:', allCourses.length);
+    console.log('Available categories:', categories);
+    console.log('========================');
+    
+    let filtered = [...allCourses];
+
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(course => {
+        const titleMatch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
+        const descMatch = course.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        const categoryNameMatch = course.category_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const categoryMatch = course.category?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        return titleMatch || descMatch || categoryNameMatch || categoryMatch;
+      });
+      console.log('After search filter:', filtered.length);
+    }
+
+    // Category filter
+    if (selectedCategory) {
+      filtered = filtered.filter(course => {
+        // Try different ways to get category ID
+        const courseCategoryId = course.category?.id || 
+                                course.category_id || 
+                                course.category?.pk ||
+                                course.category;
+        
+        // Convert both to numbers for comparison
+        const courseId = parseInt(courseCategoryId);
+        const selectedId = parseInt(selectedCategory);
+        
+        const match = courseId === selectedId;
+        console.log(`Course ${course.id}: categoryId=${courseCategoryId} (${courseId}), selected=${selectedCategory} (${selectedId}), match=${match}`);
+        console.log('Course category object:', course.category);
+        console.log('Course category_id:', course.category_id);
+        console.log('Course category_name:', course.category_name);
+        return match;
+      });
+      console.log('After category filter:', filtered.length);
+    }
+
+    // Status filter
+    if (selectedStatus) {
+      filtered = filtered.filter(course => {
+        const match = course.status === selectedStatus;
+        console.log(`Course ${course.id}: status=${course.status}, selected=${selectedStatus}, match=${match}`);
+        return match;
+      });
+      console.log('After status filter:', filtered.length);
+    }
+
+    // Level filter
+    if (selectedLevel) {
+      filtered = filtered.filter(course => {
+        const match = course.level === selectedLevel;
+        console.log(`Course ${course.id}: level=${course.level}, selected=${selectedLevel}, match=${match}`);
+        return match;
+      });
+      console.log('After level filter:', filtered.length);
+    }
+
+    console.log('Final filtered count:', filtered.length);
+    setCourses(filtered);
+  }, [searchQuery, selectedCategory, selectedStatus, selectedLevel, allCourses]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // This will trigger the filter effect above
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // Clear all filters
+  const clearFilters = () => {
+    console.log('Clearing all filters...');
+    setSearchQuery('');
+    setSelectedCategory('');
+    setSelectedStatus('');
+    setSelectedLevel('');
   };
   
   // Filter courses based on search query
-  const filteredCourses = Array.isArray(courses) ? courses.filter(course => 
-    course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.category_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) : [];
+  const filteredCourses = courses;
 
   // Handle course click - navigate to course detail page
   const handleCourseClick = (courseId) => {
@@ -210,6 +378,11 @@ const MyCourses = () => {
           <SchoolIcon sx={{ color: '#3498db', fontSize: 28 }} />
           <Typography variant="h5" component="h1" fontWeight="bold" sx={{ color: '#2c3e50' }}>
             كورساتي
+            {courses.length !== allCourses.length && (
+              <Typography component="span" variant="h6" color="secondary.main" sx={{ ml: 1, fontSize: '0.9em', fontWeight: 'bold' }}>
+                ({courses.length} من {allCourses.length})
+              </Typography>
+            )}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -221,34 +394,6 @@ const MyCourses = () => {
       </Box>
       
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <TextField
-            variant="outlined"
-            placeholder="بحث في الكورسات..."
-            value={searchQuery}
-            onChange={handleSearch}
-            size="small"
-            sx={{
-              width: 300,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                bgcolor: '#f8f9fa',
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#3498db',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#3498db',
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          
           <Button 
             variant="contained" 
             startIcon={<AddIcon />}
@@ -339,7 +484,7 @@ const MyCourses = () => {
           {/* Category Chip */}
           <Box sx={{ position: 'absolute', top: 10, right: 10, zIndex: 2 }}>
                   <Chip 
-            label={course.category_name || 'غير محدد'} 
+            label={course.category?.name || course.category_name || 'غير محدد'} 
                   size="small" 
             sx={{ 
               fontWeight: 'bold',
@@ -408,7 +553,10 @@ const MyCourses = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <AccessTimeIcon color="action" fontSize="small" />
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                {course.level || 'غير محدد'}
+                {course.level === 'beginner' ? 'مبتدئ' : 
+                 course.level === 'intermediate' ? 'متوسط' : 
+                 course.level === 'advanced' ? 'متقدم' : 
+                 course.level || 'غير محدد'}
               </Typography>
             </Box>
             
@@ -429,7 +577,7 @@ const MyCourses = () => {
           
           {/* Status */}
           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', mb: 2, display: 'block' }}>
-            الحالة: {course.status === 'published' ? 'منشور' : course.status === 'draft' ? 'مسودة' : course.status}
+            الحالة: {course.status === 'published' ? 'منشور' : course.status === 'draft' ? 'مسودة' : course.status || 'غير محدد'}
           </Typography>
 
           {/* أيقونات actions أسفل البطاقة */}
@@ -532,6 +680,136 @@ const MyCourses = () => {
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Header */}
         <Header />
+        
+        {/* Filters Section */}
+        <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <FilterList sx={{ mr: 1, color: 'primary.main' }} />
+                <Typography variant="h6" fontWeight={600}>
+                  فلاتر البحث
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  النتائج:
+                </Typography>
+                <Chip 
+                  label={`${courses.length} من ${allCourses.length}`} 
+                  color={courses.length !== allCourses.length ? "secondary" : "primary"}
+                  size="small" 
+                  variant="outlined"
+                  sx={{ minWidth: 'fit-content' }}
+                />
+              </Box>
+            </Box>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'row', 
+              flexWrap: 'wrap', 
+              gap: 2, 
+              alignItems: 'flex-end',
+              '& > *': { flex: '0 0 auto' }
+            }}>
+              <TextField
+                label="البحث في الكورسات"
+                value={searchQuery}
+                onChange={handleSearch}
+                sx={{ minWidth: 280, flex: '1 1 280px' }}
+                size="small"
+                placeholder="ابحث في العنوان أو الوصف..."
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+                helperText={`${searchQuery ? 'جاري البحث...' : 'اكتب للبحث'}`}
+              />
+              
+              <FormControl sx={{ minWidth: 200 }} size="small">
+                <InputLabel>التصنيف</InputLabel>
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    console.log('Category changed:', e.target.value);
+                    console.log('Available categories:', categories);
+                    setSelectedCategory(e.target.value);
+                  }}
+                  label="التصنيف"
+                >
+                  <MenuItem value="">جميع التصنيفات</MenuItem>
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))
+                  ) : (
+                    <MenuItem disabled>جاري تحميل التصنيفات...</MenuItem>
+                  )}
+                </Select>
+              </FormControl>
+              
+              <FormControl sx={{ minWidth: 160 }} size="small">
+                <InputLabel>الحالة</InputLabel>
+                <Select
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    console.log('Status changed:', e.target.value);
+                    setSelectedStatus(e.target.value);
+                  }}
+                  label="الحالة"
+                >
+                  <MenuItem value="">جميع الحالات</MenuItem>
+                  <MenuItem value="published">منشور</MenuItem>
+                  <MenuItem value="draft">مسودة</MenuItem>
+                  <MenuItem value="archived">مؤرشف</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <FormControl sx={{ minWidth: 160 }} size="small">
+                <InputLabel>المستوى</InputLabel>
+                <Select
+                  value={selectedLevel}
+                  onChange={(e) => {
+                    console.log('Level changed:', e.target.value);
+                    setSelectedLevel(e.target.value);
+                  }}
+                  label="المستوى"
+                >
+                  <MenuItem value="">جميع المستويات</MenuItem>
+                  <MenuItem value="beginner">مبتدئ</MenuItem>
+                  <MenuItem value="intermediate">متوسط</MenuItem>
+                  <MenuItem value="advanced">متقدم</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <IconButton
+                onClick={clearFilters}
+                disabled={!searchQuery && !selectedCategory && !selectedStatus && !selectedLevel}
+                sx={{ 
+                  width: 40,
+                  height: 40,
+                  border: '1px solid',
+                  borderColor: 'grey.300',
+                  color: 'grey.700',
+                  '&:hover': {
+                    borderColor: 'grey.400',
+                    backgroundColor: 'grey.50',
+                    color: 'error.main'
+                  },
+                  '&:disabled': {
+                    opacity: 0.5,
+                    cursor: 'not-allowed'
+                  }
+                }}
+                title="مسح جميع الفلاتر"
+              >
+                <Clear />
+              </IconButton>
+            </Box>
+          </CardContent>
+        </Card>
         
         {/* Main Content */}
         <Grid container spacing={3}>

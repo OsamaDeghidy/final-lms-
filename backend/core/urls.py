@@ -22,6 +22,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 # Import our custom admin site
 from extras.admin import custom_admin_site
+from . import views
 
 if settings.DEBUG:
     try:
@@ -76,6 +77,18 @@ urlpatterns = [
     # Admin interface redirects
     # path('accounts/', include('allauth.urls')),
     # path('ckeditor/', include('ckeditor_uploader.urls')),  # Temporarily disabled
+    
+    # Dashboard API endpoints
+    path('api/dashboard/student-stats/', views.student_dashboard_stats, name='student_dashboard_stats'),
+    path('api/dashboard/teacher-stats/', views.teacher_dashboard_stats, name='teacher_dashboard_stats'),
+    path('api/dashboard/student-courses/', views.student_courses, name='student_courses'),
+    path('api/dashboard/teacher-courses/', views.teacher_courses, name='teacher_courses'),
+    path('api/dashboard/student-progress/', views.student_progress, name='student_progress'),
+    path('api/dashboard/recent-activity/', views.recent_activity, name='recent_activity'),
+    path('api/dashboard/upcoming-assignments/', views.upcoming_assignments, name='upcoming_assignments'),
+    path('api/dashboard/upcoming-meetings/', views.upcoming_meetings, name='upcoming_meetings'),
+    path('api/dashboard/achievements/', views.achievements, name='achievements'),
+    path('api/dashboard/recent-announcements/', views.recent_announcements, name='recent_announcements'),
 ]
 
 # Add debug toolbar in development

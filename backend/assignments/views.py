@@ -925,7 +925,7 @@ class ExamViewSet(ModelViewSet):
     """ViewSet for Exam model"""
     queryset = Exam.objects.select_related('course', 'module').prefetch_related('questions').all()
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['course', 'module', 'is_final', 'is_active']
     ordering_fields = ['created_at', 'title', 'start_date']
@@ -934,6 +934,8 @@ class ExamViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'create':
+            return ExamCreateSerializer
+        elif self.action in ['update', 'partial_update']:
             return ExamCreateSerializer
         elif self.action in ['retrieve', 'list']:
             return ExamDetailSerializer
@@ -1398,6 +1400,8 @@ class QuizViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return QuizCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return QuizUpdateSerializer
         elif self.action == 'retrieve':
             # Check if user is teacher/instructor to show correct answers
             user = self.request.user

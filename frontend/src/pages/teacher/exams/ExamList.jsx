@@ -1,21 +1,103 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, Tooltip, Chip, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { Add, Edit, Delete, Visibility, Assessment } from '@mui/icons-material';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  Paper, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  IconButton, 
+  Tooltip, 
+  Chip, 
+  CircularProgress, 
+  Alert, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
+  Card,
+  CardContent,
+  Divider
+} from '@mui/material';
+import { Add, Edit, Delete, Visibility, Assessment, FilterList, Clear } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { examAPI } from '../../../services/exam.service';
+import { courseAPI } from '../../../services/courseService';
+import api from '../../../services/api.service';
 
 const ExamList = () => {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
+  const [filteredExams, setFilteredExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [examToDelete, setExamToDelete] = useState(null);
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    search: '',
+    course: '',
+    module: '',
+    isFinal: '',
+    isActive: ''
+  });
+  
+  // Data for filters
+  const [courses, setCourses] = useState([]);
+  const [allModules, setAllModules] = useState([]);
+  const [filteredModules, setFilteredModules] = useState([]);
+  const [filtersLoading, setFiltersLoading] = useState(false);
 
   // Fetch exams on component mount
   useEffect(() => {
     fetchExams();
+    fetchCourses();
   }, []);
+  
+  // Apply filters when exams or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [exams, filters]);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      applyFilters();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [filters.search]);
+
+  // Filter modules when course changes
+  useEffect(() => {
+    if (filters.course) {
+      // Filter modules to show only those belonging to the selected course
+      const courseModules = allModules.filter(module => module.course === parseInt(filters.course));
+      setFilteredModules(courseModules);
+      
+      // Reset module filter if the selected module doesn't belong to the new course
+      if (filters.module) {
+        const moduleExists = courseModules.some(module => module.id === parseInt(filters.module));
+        if (!moduleExists) {
+          setFilters(prev => ({ ...prev, module: '' }));
+        }
+      }
+    } else {
+      // If no course selected, show all modules
+      setFilteredModules(allModules);
+    }
+  }, [filters.course, allModules]);
 
   const fetchExams = async () => {
     try {
@@ -31,10 +113,109 @@ const ExamList = () => {
     }
   };
 
+  const fetchCourses = async () => {
+    try {
+      setFiltersLoading(true);
+      // Use getMyCourses to get courses that the teacher has access to
+      const response = await courseAPI.getMyCourses();
+      const coursesData = response.results || response;
+      setCourses(coursesData);
+      
+      // Fetch modules from content API
+      await fetchModules();
+      
+      console.log('Fetched courses:', coursesData.length);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      // Fallback to public courses if my courses fails
+      try {
+        const publicResponse = await courseAPI.getCourses();
+        const publicCoursesData = publicResponse.results || publicResponse;
+        setCourses(publicCoursesData);
+        
+        // Fetch modules from content API
+        await fetchModules();
+        
+        console.log('Fetched public courses:', publicCoursesData.length);
+      } catch (fallbackErr) {
+        console.error('Error fetching public courses:', fallbackErr);
+      }
+    } finally {
+      setFiltersLoading(false);
+    }
+  };
+
+  const fetchModules = async () => {
+    try {
+      // Fetch modules from content API
+      const modulesResponse = await api.get('/content/modules/');
+      const modulesArray = modulesResponse.data.results || modulesResponse.data;
+      setAllModules(modulesArray);
+      setFilteredModules(modulesArray);
+      console.log('Fetched modules from content API:', modulesArray.length);
+    } catch (err) {
+      console.error('Error fetching modules:', err);
+      setAllModules([]);
+      setFilteredModules([]);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...exams];
+
+    // Search filter
+    if (filters.search) {
+      filtered = filtered.filter(exam =>
+        exam.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        exam.description?.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+
+    // Course filter
+    if (filters.course) {
+      filtered = filtered.filter(exam => exam.course?.id === parseInt(filters.course));
+    }
+
+    // Module filter
+    if (filters.module) {
+      filtered = filtered.filter(exam => exam.module?.id === parseInt(filters.module));
+    }
+
+    // Final exam filter
+    if (filters.isFinal !== '') {
+      filtered = filtered.filter(exam => exam.is_final === (filters.isFinal === 'true'));
+    }
+
+    // Active status filter
+    if (filters.isActive !== '') {
+      filtered = filtered.filter(exam => exam.is_active === (filters.isActive === 'true'));
+    }
+
+    setFilteredExams(filtered);
+  };
+
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      course: '',
+      module: '',
+      isFinal: '',
+      isActive: ''
+    });
+  };
+
   const handleDelete = async (examId) => {
     try {
       await examAPI.deleteExam(examId);
       setExams(exams.filter(exam => exam.id !== examId));
+      setFilteredExams(filteredExams.filter(exam => exam.id !== examId));
       setDeleteDialogOpen(false);
       setExamToDelete(null);
     } catch (err) {
@@ -65,7 +246,13 @@ const ExamList = () => {
     <Box sx={{ p: { xs: 1, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={700}>
-          <Assessment sx={{ mr: 1, color: 'primary.main' }} /> إدارة الامتحانات الشاملة
+          <Assessment sx={{ mr: 1, color: 'primary.main' }} /> 
+          إدارة الامتحانات الشاملة
+          {filteredExams.length !== exams.length && (
+            <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 1 }}>
+              ({filteredExams.length} من {exams.length})
+            </Typography>
+          )}
         </Typography>
         <Button
           variant="contained"
@@ -83,6 +270,141 @@ const ExamList = () => {
         </Alert>
       )}
 
+      {/* Filters Section */}
+      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FilterList sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight={600}>
+                فلاتر البحث
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                النتائج:
+              </Typography>
+              <Chip 
+                label={`${filteredExams.length} من ${exams.length}`} 
+                color="primary" 
+                size="small" 
+                variant="outlined"
+              />
+            </Box>
+          </Box>
+          
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'row', 
+            flexWrap: 'wrap', 
+            gap: 2, 
+            alignItems: 'flex-end',
+            '& > *': { flex: '0 0 auto' }
+          }}>
+            <TextField
+              label="البحث في العنوان والوصف"
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              sx={{ minWidth: 280, flex: '1 1 280px' }}
+              size="small"
+              placeholder="اكتب للبحث..."
+            />
+            
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>الدورة</InputLabel>
+              <Select
+                value={filters.course}
+                onChange={(e) => handleFilterChange('course', e.target.value)}
+                label="الدورة"
+                disabled={filtersLoading}
+              >
+                <MenuItem value="">جميع الدورات</MenuItem>
+                {courses.length > 0 ? (
+                  courses.map((course) => (
+                    <MenuItem key={course.id} value={course.id}>
+                      {course.title}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    {filtersLoading ? 'جاري التحميل...' : 'لا توجد دورات متاحة'}
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
+            
+            <FormControl sx={{ minWidth: 200 }} size="small">
+              <InputLabel>الوحدة</InputLabel>
+              <Select
+                value={filters.module}
+                onChange={(e) => handleFilterChange('module', e.target.value)}
+                label="الوحدة"
+                disabled={filtersLoading}
+              >
+                <MenuItem value="">جميع الوحدات</MenuItem>
+                {filteredModules.length > 0 ? (
+                  filteredModules.map((module) => (
+                    <MenuItem key={module.id} value={module.id}>
+                      {module.name || module.title}
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    {filtersLoading ? 'جاري التحميل...' : 
+                     filters.course ? 'لا توجد وحدات لهذه الدورة' : 'لا توجد وحدات متاحة'}
+                  </MenuItem>
+                )}
+              </Select>
+            </FormControl>
+            
+            <FormControl sx={{ minWidth: 160 }} size="small">
+              <InputLabel>نوع الامتحان</InputLabel>
+              <Select
+                value={filters.isFinal}
+                onChange={(e) => handleFilterChange('isFinal', e.target.value)}
+                label="نوع الامتحان"
+              >
+                <MenuItem value="">جميع الأنواع</MenuItem>
+                <MenuItem value="true">نهائي</MenuItem>
+                <MenuItem value="false">عادي</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <FormControl sx={{ minWidth: 160 }} size="small">
+              <InputLabel>الحالة</InputLabel>
+              <Select
+                value={filters.isActive}
+                onChange={(e) => handleFilterChange('isActive', e.target.value)}
+                label="الحالة"
+              >
+                <MenuItem value="">جميع الحالات</MenuItem>
+                <MenuItem value="true">نشط</MenuItem>
+                <MenuItem value="false">معطل</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <IconButton
+              onClick={clearFilters}
+              sx={{ 
+                width: 40,
+                height: 40,
+                border: '1px solid',
+                borderColor: 'grey.300',
+                color: 'grey.700',
+                '&:hover': {
+                  borderColor: 'grey.400',
+                  backgroundColor: 'grey.50',
+                  color: 'error.main'
+                }
+              }}
+              title="مسح جميع الفلاتر"
+            >
+              <Clear />
+            </IconButton>
+          </Box>
+        </CardContent>
+      </Card>
+
       <Paper elevation={2} sx={{ borderRadius: 3 }}>
         <TableContainer>
           <Table>
@@ -98,16 +420,16 @@ const ExamList = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {exams.length === 0 ? (
+              {filteredExams.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center">
                     <Typography variant="body1" color="text.secondary">
-                      لا توجد امتحانات متاحة
+                      {exams.length === 0 ? 'لا توجد امتحانات متاحة' : 'لا توجد نتائج تطابق الفلاتر المحددة'}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                exams.map((exam) => (
+                filteredExams.map((exam) => (
                   <TableRow key={exam.id} hover>
                     <TableCell>{exam.title}</TableCell>
                     <TableCell>{exam.course?.title || '---'}</TableCell>
