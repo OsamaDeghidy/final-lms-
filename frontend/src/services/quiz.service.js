@@ -159,6 +159,124 @@ export const quizAPI = {
       console.error('Error deleting quiz:', error);
       throw error;
     }
+  },
+
+  // Create quiz question
+  createQuizQuestion: async (questionData) => {
+    try {
+      // Ensure data types are correct
+      const cleanData = {
+        quiz: parseInt(questionData.quiz),
+        text: questionData.text.toString().trim(),
+        question_type: questionData.question_type.toString(),
+        points: parseInt(questionData.points) || 1,
+        explanation: questionData.explanation ? questionData.explanation.toString() : '',
+        order: Math.max(0, parseInt(questionData.order) || 0), // Ensure order is non-negative
+      };
+      
+      console.log('🚀 Creating quiz question with clean data:', JSON.stringify(cleanData, null, 2));
+      
+      // Set content type to JSON explicitly
+      const response = await api.post('/assignments/quiz-questions/', cleanData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log('✅ Quiz question created successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error creating quiz question:', error);
+      if (error.response && error.response.data) {
+        console.error('❌ Server error details:', error.response.data);
+      }
+      throw error;
+    }
+  },
+
+  // Update quiz question
+  updateQuizQuestion: async (questionId, questionData) => {
+    try {
+      // Ensure data types are correct
+      const cleanData = {
+        text: questionData.text.toString().trim(),
+        question_type: questionData.question_type.toString(),
+        points: parseInt(questionData.points) || 1,
+        explanation: questionData.explanation ? questionData.explanation.toString() : '',
+        order: Math.max(0, parseInt(questionData.order) || 0), // Ensure order is non-negative
+      };
+      
+      console.log('🔄 Updating quiz question with clean data:', JSON.stringify(cleanData, null, 2));
+      
+      // Set content type to JSON explicitly
+      const response = await api.patch(`/assignments/quiz-questions/${questionId}/`, cleanData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log('✅ Quiz question updated successfully:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating quiz question:', error);
+      if (error.response && error.response.data) {
+        console.error('❌ Server error details:', error.response.data);
+      }
+      throw error;
+    }
+  },
+
+  // Delete quiz question
+  deleteQuizQuestion: async (questionId) => {
+    try {
+      const response = await api.delete(`/assignments/quiz-questions/${questionId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting quiz question:', error);
+      throw error;
+    }
+  },
+
+  // Create quiz answer
+  createQuizAnswer: async (answerData) => {
+    try {
+      const response = await api.post('/assignments/quiz-answers/', answerData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating quiz answer:', error);
+      throw error;
+    }
+  },
+
+  // Update quiz answer
+  updateQuizAnswer: async (answerId, answerData) => {
+    try {
+      const response = await api.patch(`/assignments/quiz-answers/${answerId}/`, answerData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating quiz answer:', error);
+      throw error;
+    }
+  },
+
+  // Delete quiz answer
+  deleteQuizAnswer: async (answerId) => {
+    try {
+      const response = await api.delete(`/assignments/quiz-answers/${answerId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting quiz answer:', error);
+      throw error;
+    }
+  },
+
+  // Get question answers
+  getQuestionAnswers: async (questionId) => {
+    try {
+      const response = await api.get(`/assignments/quiz-answers/?question=${questionId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching question answers:', error);
+      throw error;
+    }
   }
 };
 

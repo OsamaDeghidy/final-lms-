@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Avg, Count, F, Sum, Max
 from django.utils import timezone
@@ -20,9 +20,9 @@ from .models import (
     Assignment, AssignmentQuestion, AssignmentAnswer, AssignmentSubmission, AssignmentQuestionResponse
 )
 from .serializers import (
-    QuizBasicSerializer, QuizDetailSerializer, QuizCreateSerializer, QuizUpdateSerializer,
-    QuizQuestionSerializer, QuizQuestionCreateSerializer, QuizQuestionUpdateSerializer,
-    QuizAnswerSerializer, QuizAnswerCreateSerializer, QuizAnswerUpdateSerializer,
+    QuizBasicSerializer, QuizDetailSerializer, QuizDetailForTeacherSerializer, QuizCreateSerializer, QuizUpdateSerializer,
+    QuizQuestionSerializer, QuizQuestionForTeacherSerializer, QuizQuestionCreateSerializer, QuizQuestionUpdateSerializer,
+    QuizAnswerSerializer, QuizAnswerForTeacherSerializer, QuizAnswerCreateSerializer, QuizAnswerUpdateSerializer,
     QuizAttemptSerializer, QuizAttemptCreateSerializer, QuizAttemptDetailSerializer,
     QuizUserAnswerSerializer, QuizUserAnswerCreateSerializer, QuizUserAnswerDetailSerializer,
     QuizQuestionWithAnswersSerializer, QuizAnswersSubmitSerializer,
@@ -1354,7 +1354,7 @@ class QuizViewSet(ModelViewSet):
     """ViewSet for Quiz model"""
     queryset = Quiz.objects.select_related('course', 'module').prefetch_related('questions').all()
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['course', 'module', 'is_active']
     ordering_fields = ['created_at', 'title', 'start_date']
@@ -1364,8 +1364,20 @@ class QuizViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return QuizCreateSerializer
-        elif self.action in ['retrieve', 'list']:
+        elif self.action == 'retrieve':
+            # Check if user is teacher/instructor to show correct answers
+            user = self.request.user
+            try:
+                profile = user.profile
+                if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                    return QuizDetailForTeacherSerializer
+            except AttributeError:
+                # Fallback to old method if no profile
+                if hasattr(user, 'instructor'):
+                    return QuizDetailForTeacherSerializer
             return QuizDetailSerializer
+        elif self.action == 'list':
+            return QuizBasicSerializer
         return QuizBasicSerializer
 
     def get_queryset(self):
@@ -1559,7 +1571,7 @@ class QuizQuestionViewSet(ModelViewSet):
     """ViewSet for Question model (Quiz questions)"""
     queryset = Question.objects.select_related('quiz').prefetch_related('answers').all()
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['quiz', 'question_type']
     ordering_fields = ['order', 'created_at']
@@ -1689,7 +1701,7 @@ class QuizAnswerViewSet(ModelViewSet):
     """ViewSet for Answer model (Quiz answers)"""
     queryset = Answer.objects.select_related('question').all()
     permission_classes = [permissions.IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['question', 'is_correct']
     ordering_fields = ['order', 'created_at']

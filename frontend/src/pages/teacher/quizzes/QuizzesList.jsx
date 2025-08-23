@@ -37,6 +37,52 @@ const QuizzesList = () => {
     fetchQuizzes();
   }, [searchTerm, selectedCourse, selectedModule]);
 
+  // Update modules when selected course changes
+  useEffect(() => {
+    const updateModulesForCourse = async () => {
+      if (selectedCourse) {
+        try {
+          console.log('Fetching modules for selected course:', selectedCourse);
+          const modulesData = await quizAPI.getModules(selectedCourse);
+          
+          // Handle different response formats
+          let modulesArray = [];
+          if (Array.isArray(modulesData)) {
+            modulesArray = modulesData;
+          } else if (modulesData && typeof modulesData === 'object') {
+            if (Array.isArray(modulesData.modules)) {
+              modulesArray = modulesData.modules;
+            } else if (Array.isArray(modulesData.results)) {
+              modulesArray = modulesData.results;
+            } else if (Array.isArray(modulesData.data)) {
+              modulesArray = modulesData.data;
+            }
+          }
+          
+          console.log('Updated modules for selected course:', modulesArray);
+          setModules(modulesArray);
+        } catch (err) {
+          console.error('Error fetching modules for selected course:', err);
+          setModules([]);
+        }
+      } else {
+        // If no course is selected, clear modules
+        setModules([]);
+      }
+      // Clear selected module when course changes
+      setSelectedModule('');
+    };
+
+    updateModulesForCourse();
+  }, [selectedCourse]);
+
+  // Debug effect to log current state
+  useEffect(() => {
+    console.log('Current modules state:', modules);
+    console.log('Current selected course:', selectedCourse);
+    console.log('Current selected module:', selectedModule);
+  }, [modules, selectedCourse, selectedModule]);
+
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
@@ -57,6 +103,17 @@ const QuizzesList = () => {
       console.log('Processed quiz data:', quizzesData); // للتأكد من البيانات
       console.log('Number of quizzes:', quizzesData.length);
       
+      // Log quiz details for debugging
+      quizzesData.forEach((quiz, index) => {
+        console.log(`Quiz ${index + 1}:`, {
+          id: quiz.id,
+          title: quiz.title,
+          course: quiz.course,
+          module: quiz.module,
+          quiz_type: quiz.quiz_type
+        });
+      });
+      
       setQuizzes(quizzesData);
       
       // Update modules from loaded quizzes if we don't have any modules yet
@@ -74,6 +131,28 @@ const QuizzesList = () => {
         if (uniqueModules.length > 0) {
           setModules(uniqueModules);
           console.log('Updated modules from quizzes:', uniqueModules);
+        }
+      }
+      
+      // If we have a selected course, fetch its modules
+      if (selectedCourse && modules.length === 0) {
+        try {
+          const modulesData = await quizAPI.getModules(selectedCourse);
+          let modulesArray = [];
+          if (Array.isArray(modulesData)) {
+            modulesArray = modulesData;
+          } else if (modulesData && typeof modulesData === 'object') {
+            if (Array.isArray(modulesData.modules)) {
+              modulesArray = modulesData.modules;
+            } else if (Array.isArray(modulesData.results)) {
+              modulesArray = modulesData.results;
+            } else if (Array.isArray(modulesData.data)) {
+              modulesArray = modulesData.data;
+            }
+          }
+          setModules(modulesArray);
+        } catch (err) {
+          console.error('Error fetching modules for selected course:', err);
         }
       }
     } catch (err) {
@@ -104,7 +183,21 @@ const QuizzesList = () => {
         try {
           console.log(`Fetching modules for course: ${course.title} (ID: ${course.id})`);
           const modulesData = await quizAPI.getModules(course.id);
-          const modulesArray = Array.isArray(modulesData) ? modulesData : (modulesData.results || modulesData.data || []);
+          
+          // Handle different response formats
+          let modulesArray = [];
+          if (Array.isArray(modulesData)) {
+            modulesArray = modulesData;
+          } else if (modulesData && typeof modulesData === 'object') {
+            if (Array.isArray(modulesData.modules)) {
+              modulesArray = modulesData.modules;
+            } else if (Array.isArray(modulesData.results)) {
+              modulesArray = modulesData.results;
+            } else if (Array.isArray(modulesData.data)) {
+              modulesArray = modulesData.data;
+            }
+          }
+          
           console.log(`Modules for course ${course.title}:`, modulesArray);
           
           modulesArray.forEach(module => {
@@ -259,7 +352,7 @@ const QuizzesList = () => {
                 <MenuItem value="">جميع الوحدات</MenuItem>
                 {modules.map((module) => (
                   <MenuItem key={module.id} value={module.id}>
-                    {module.name}
+                    {module.name || module.title}
                   </MenuItem>
                 ))}
               </Select>
@@ -466,7 +559,7 @@ const QuizzesList = () => {
                                 opacity: 0.8
                               }}
                             >
-                              {quiz.module.name}
+                              {quiz.module.name || quiz.module.title}
                             </Typography>
                           </Box>
                         )}

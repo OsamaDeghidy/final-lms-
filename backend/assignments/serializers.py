@@ -29,6 +29,8 @@ class QuizBasicSerializer(serializers.ModelSerializer):
 
 class QuizDetailSerializer(serializers.ModelSerializer):
     """Detailed quiz serializer with questions and answers"""
+    course = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
     questions = serializers.SerializerMethodField()
     
     class Meta:
@@ -39,10 +41,62 @@ class QuizDetailSerializer(serializers.ModelSerializer):
             'is_active', 'questions'
         ]
     
+    def get_course(self, obj):
+        if obj.course:
+            return {
+                'id': obj.course.id,
+                'title': obj.course.title
+            }
+        return None
+    
+    def get_module(self, obj):
+        if obj.module:
+            return {
+                'id': obj.module.id,
+                'name': obj.module.name
+            }
+        return None
+    
     def get_questions(self, obj):
         """Get questions with their answers"""
         questions = obj.questions.all().prefetch_related('answers')
         return QuizQuestionWithAnswersSerializer(questions, many=True).data
+
+
+class QuizDetailForTeacherSerializer(serializers.ModelSerializer):
+    """Detailed quiz serializer with questions and answers including correct answers for teachers"""
+    course = serializers.SerializerMethodField()
+    module = serializers.SerializerMethodField()
+    questions = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Quiz
+        fields = [
+            'id', 'title', 'description', 'module', 'course', 'quiz_type',
+            'start_time', 'time_limit', 'pass_mark', 'created_at', 'updated_at',
+            'is_active', 'questions'
+        ]
+    
+    def get_course(self, obj):
+        if obj.course:
+            return {
+                'id': obj.course.id,
+                'title': obj.course.title
+            }
+        return None
+    
+    def get_module(self, obj):
+        if obj.module:
+            return {
+                'id': obj.module.id,
+                'name': obj.module.name
+            }
+        return None
+    
+    def get_questions(self, obj):
+        """Get questions with their answers including correct answer info"""
+        questions = obj.questions.all().prefetch_related('answers')
+        return QuizQuestionForTeacherSerializer(questions, many=True).data
 
 
 class QuizQuestionWithAnswersSerializer(serializers.ModelSerializer):
@@ -66,6 +120,13 @@ class QuizAnswerSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'explanation', 'order']
 
 
+class QuizAnswerForTeacherSerializer(serializers.ModelSerializer):
+    """Answer serializer with correct answer info for teachers"""
+    class Meta:
+        model = Answer
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
+
+
 class QuizCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Quiz
@@ -86,6 +147,15 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order', 'answers']
 
 
+class QuizQuestionForTeacherSerializer(serializers.ModelSerializer):
+    """Question serializer with answers including correct answer info for teachers"""
+    answers = QuizAnswerForTeacherSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Question
+        fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order', 'answers']
+
+
 class QuizQuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
@@ -95,19 +165,35 @@ class QuizQuestionCreateSerializer(serializers.ModelSerializer):
 class QuizQuestionUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['text', 'question_type', 'points', 'explanation', 'image', 'order']
+        fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order']
 
 
 class QuizAnswerCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
         fields = ['question', 'text', 'is_correct', 'explanation', 'order']
+    
+    def validate(self, data):
+        """Custom validation for quiz answer"""
+        # Ensure text is not empty
+        if not data.get('text', '').strip():
+            raise serializers.ValidationError({
+                'text': 'نص الإجابة مطلوب'
+            })
+        
+        # Ensure question exists
+        if not data.get('question'):
+            raise serializers.ValidationError({
+                'question': 'السؤال مطلوب'
+            })
+        
+        return data
 
 
 class QuizAnswerUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = ['text', 'is_correct', 'explanation', 'order']
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
 
 
 class QuizAttemptSerializer(serializers.ModelSerializer):
