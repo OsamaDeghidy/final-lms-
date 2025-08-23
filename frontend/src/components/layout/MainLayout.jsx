@@ -50,6 +50,7 @@ const studentNavItems = [
   { text: 'كورساتي', icon: <ClassIcon />, path: '/student/my-courses' },
   { text: 'واجباتي', icon: <AssignmentIcon />, path: '/student/assignments' },
   { text: 'محاضراتي', icon: <VideoCallIcon />, path: '/student/meetings' },
+  { text: 'شهاداتي', icon: <SchoolIcon />, path: '/student/certificates' },
   { text: 'الإعدادات', icon: <SettingsIcon />, path: '/student/settings' },
 ];
 

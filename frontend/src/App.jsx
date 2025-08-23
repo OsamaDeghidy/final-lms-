@@ -73,6 +73,7 @@ import ExamDetail from './pages/teacher/exams/ExamDetail';
 import StudentDashboard from './components/dashboards/StudentDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import CourseTracking from './pages/student/CourseTracking';
+import MyCertificates from './pages/student/MyCertificates';
 import StudentAssignments from './pages/assignments/StudentAssignments';
 import TeacherAssignments from './pages/assignments/TeacherAssignments';
 import AssignmentSubmissions from './pages/assignments/AssignmentSubmissions';
@@ -305,6 +306,7 @@ const AppContent = () => {
                           <Route path="my-courses/:courseId/exam/result" element={<ExamResult />} />
                           <Route path="assignments" element={<StudentAssignments />} />
                           <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
+                          <Route path="certificates" element={<MyCertificates />} />
                           <Route path="meetings" element={<StudentMeetings />} />
                           <Route path="meetings/live/:meetingId" element={<StudentLiveMeeting />} />
                           <Route path="settings" element={<Profile />} />

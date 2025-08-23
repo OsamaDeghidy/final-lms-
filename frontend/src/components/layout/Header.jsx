@@ -16,7 +16,8 @@ import {
   Badge,
   Stack,
   alpha,
-  keyframes
+  keyframes,
+  CircularProgress
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
@@ -36,6 +37,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { styled } from '@mui/material/styles';
 import logo from '../../assets/images/logo.png';
+import { courseAPI } from '../../services/api.service';
 
 // Animation
 const fadeIn = keyframes`
@@ -222,6 +224,8 @@ const Header = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -230,7 +234,30 @@ const Header = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Navigation items with dropdowns
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const categoriesData = await courseAPI.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to default categories if API fails
+        setCategories([
+          { id: 1, name: 'الدورات', slug: 'courses', courses_count: 0 },
+          { id: 2, name: 'التدريب الإلكتروني', slug: 'e-learning', courses_count: 0 },
+          { id: 3, name: 'الدبلومات', slug: 'diplomas', courses_count: 0 },
+        ]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Navigation items with dynamic categories
   const navItems = [
     { 
       text: 'الرئيسية', 
@@ -241,13 +268,10 @@ const Header = () => {
       text: 'الأقسام', 
       path: '#',
       icon: <MenuBookIcon />,
-      dropdown: [
-        { text: 'تطوير الويب', path: '/courses?category=web-development' },
-        { text: 'تطبيقات الموبايل', path: '/courses?category=mobile-apps' },
-        { text: 'الذكاء الاصطناعي', path: '/courses?category=ai' },
-        { text: 'تحليل البيانات', path: '/courses?category=data-science' },
-        { text: 'التسويق الرقمي', path: '/courses?category=digital-marketing' },
-      ]
+      dropdown: categories.map(category => ({
+        text: category.courses_count ? `${category.name} (${category.courses_count})` : category.name,
+        path: `/courses?category=${category.slug}`,
+      }))
     },
     { 
       text: 'منصتنا', 
@@ -256,7 +280,6 @@ const Header = () => {
       dropdown: [
         { text: 'عن المنصة', path: '/about' },
         { text: 'المدونة', path: '/articles' },
-        { text: 'الأسئلة الشائعة', path: '/faq' },
         { text: 'اتصل بنا', path: '/contact' },
       ]
     },
@@ -633,27 +656,37 @@ const Header = () => {
                         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                       >
-                        {item.dropdown.map((subItem) => (
-                          <MenuItem 
-                            key={subItem.path}
-                            component={RouterLink}
-                            to={subItem.path}
-                            onClick={handleClose}
-                            sx={{
-                              color: '#E6E6E6',
-                              '&:hover': {
-                                backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                                color: '#0e5181',
-                              },
-                              '&.Mui-selected': {
-                                backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                                color: '#0e5181',
-                              },
-                            }}
-                          >
-                            {subItem.text}
+                        {loadingCategories ? (
+                          <Box display="flex" justifyContent="center" p={2}>
+                            <CircularProgress size={20} sx={{ color: '#0e5181' }} />
+                          </Box>
+                        ) : item.dropdown.length > 0 ? (
+                          item.dropdown.map((subItem) => (
+                            <MenuItem 
+                              key={subItem.path}
+                              component={RouterLink}
+                              to={subItem.path}
+                              onClick={handleClose}
+                              sx={{
+                                color: '#E6E6E6',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                                  color: '#0e5181',
+                                },
+                                '&.Mui-selected': {
+                                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                                  color: '#0e5181',
+                                },
+                              }}
+                            >
+                              {subItem.text}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          <MenuItem disabled sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                            لا توجد أقسام متاحة
                           </MenuItem>
-                        ))}
+                        )}
                       </Menu>
                     </div>
                   );
@@ -895,26 +928,67 @@ const Header = () => {
           <Box>
             {navItems.map((item) => (
               (!item.auth || isAuthenticated) && (
-                <Button
-                  key={item.path}
-                  component={RouterLink}
-                  to={item.path}
-                  fullWidth
-                  startIcon={item.icon}
-                  sx={{
-                    justifyContent: 'flex-start',
-                    color: location.pathname === item.path ? '#0e5181' : '#FFFFFF',
-                    mb: 1,
-                    borderRadius: '8px',
-                    padding: '10px 15px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                    },
-                  }}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.text}
-                </Button>
+                <div key={item.path}>
+                  <Button
+                    component={RouterLink}
+                    to={item.path}
+                    fullWidth
+                    startIcon={item.icon}
+                    sx={{
+                      justifyContent: 'flex-start',
+                      color: location.pathname === item.path ? '#0e5181' : '#FFFFFF',
+                      mb: 1,
+                      borderRadius: '8px',
+                      padding: '10px 15px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                      },
+                    }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.text}
+                  </Button>
+                  
+                  {/* Show dropdown items for categories in mobile menu */}
+                  {item.dropdown && item.text === 'الأقسام' && (
+                    <Box ml={2} mt={1}>
+                      {loadingCategories ? (
+                        <Box display="flex" justifyContent="center" p={1}>
+                          <CircularProgress size={16} sx={{ color: '#0e5181' }} />
+                        </Box>
+                      ) : item.dropdown.length > 0 ? (
+                        item.dropdown.map((subItem) => (
+                          <Button
+                            key={subItem.path}
+                            component={RouterLink}
+                            to={subItem.path}
+                            fullWidth
+                            size="small"
+                            sx={{
+                              justifyContent: 'flex-start',
+                              color: 'rgba(255, 255, 255, 0.8)',
+                              mb: 0.5,
+                              borderRadius: '6px',
+                              padding: '6px 12px',
+                              fontSize: '0.9rem',
+                              '&:hover': {
+                                backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                                color: '#0e5181',
+                              },
+                            }}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            {subItem.text}
+                          </Button>
+                        ))
+                      ) : (
+                        <Typography variant="body2" color="rgba(255, 255, 255, 0.5)" sx={{ px: 2, py: 1 }}>
+                          لا توجد أقسام متاحة
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </div>
               )
             ))}
             
