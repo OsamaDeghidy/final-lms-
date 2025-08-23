@@ -191,66 +191,150 @@ const MyCertificates = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box mb={4}>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold" color="primary">
-          شهاداتي
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          عرض جميع الشهادات التي حصلت عليها من الدورات المكتملة
-        </Typography>
+    <Box sx={{ p: { xs: 1, md: 3 } }}>
+      {/* Compact Header */}
+      <Box sx={{ 
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <SchoolIcon sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+              شهاداتي
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            عرض جميع الشهادات التي حصلت عليها من الدورات المكتملة
+          </Typography>
+        </Box>
       </Box>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <SchoolIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color="primary">
-              {certificates.length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              إجمالي الشهادات
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <VerifiedIcon color="success" sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color="success.main">
-              {certificates.filter(c => c.verification_status === 'verified').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              شهادات مؤكدة
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <ScheduleIcon color="warning" sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color="warning.main">
-              {certificates.filter(c => c.verification_status === 'pending').length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              في انتظار التحقق
-            </Typography>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-            <GradeIcon color="info" sx={{ fontSize: 40, mb: 1 }} />
-            <Typography variant="h4" fontWeight="bold" color="info.main">
-              {certificates.length > 0 ? 
-                Math.round(certificates.reduce((acc, c) => acc + (c.final_grade || 0), 0) / certificates.length) : 0
-              }%
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              متوسط الدرجات
-            </Typography>
-          </Paper>
-        </Grid>
-      </Grid>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Compact Statistics Row */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 4, 
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <SchoolIcon sx={{ color: '#ff9800', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="primary">
+                {certificates.length}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                إجمالي الشهادات
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <VerifiedIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="success.main">
+                {certificates.filter(c => c.verification_status === 'verified').length}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                شهادات مؤكدة
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <ScheduleIcon sx={{ color: '#f57c00', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="warning.main">
+                {certificates.filter(c => c.verification_status === 'pending').length}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                في انتظار التحقق
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <GradeIcon sx={{ color: '#7b1fa2', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="secondary.main">
+                {certificates.length > 0 ? 
+                  Math.round(certificates.reduce((acc, c) => acc + (c.final_grade || 0), 0) / certificates.length) : 0
+                }%
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                متوسط الدرجات
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
 
       {/* Filters and Search */}
       <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
@@ -540,7 +624,8 @@ const MyCertificates = () => {
           </>
         )}
       </Dialog>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

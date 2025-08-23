@@ -80,35 +80,6 @@ const slideIn = keyframes`
 `;
 
 // Styled components
-const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #1565c0 100%)`,
-  color: 'white',
-  padding: theme.spacing(4, 0, 3),
-  textAlign: 'center',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-    opacity: 0.3,
-  },
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: '200%',
-    height: '200%',
-    background: `radial-gradient(circle, ${alpha('#ffffff', 0.1)} 0%, transparent 70%)`,
-    transform: 'translate(-50%, -50%)',
-    animation: `${float} 6s ease-in-out infinite`,
-  }
-}));
 
 const ModernCard = styled(Card)(({ theme }) => ({
   height: '100%',
@@ -802,12 +773,49 @@ const ArticlesList = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <HeroSection>
-          <Container>
-            <Skeleton variant="text" width={400} height={60} sx={{ mx: 'auto', mb: 2 }} />
-            <Skeleton variant="text" width={600} height={40} sx={{ mx: 'auto' }} />
-          </Container>
-        </HeroSection>
+        {/* Compact Header Skeleton */}
+        <Box sx={{ 
+          mb: 4, 
+          p: 3, 
+          background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+          borderRadius: 3,
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <Box sx={{ 
+            position: 'absolute', 
+            top: -20, 
+            right: -20, 
+            width: 100, 
+            height: 100, 
+            borderRadius: '50%', 
+            background: 'rgba(255,255,255,0.1)',
+            zIndex: 1
+          }} />
+          <Box sx={{ 
+            position: 'absolute', 
+            bottom: -30, 
+            left: -30, 
+            width: 80, 
+            height: 80, 
+            borderRadius: '50%', 
+            background: 'rgba(255,255,255,0.08)',
+            zIndex: 1
+          }} />
+          
+          <Box sx={{ position: 'relative', zIndex: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <ArticleIcon sx={{ fontSize: 32, color: 'white' }} />
+              <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+                إدارة المقالات
+              </Typography>
+            </Box>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+              قم بإدارة مقالاتك وإنشاء محتوى جديد
+            </Typography>
+          </Box>
+        </Box>
         
         <Container sx={{ py: 4 }}>
           <Grid container spacing={3}>
@@ -827,198 +835,169 @@ const ArticlesList = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <HeroSection>
-        <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Typography variant="h3" component="h1" sx={{ 
-              fontWeight: 700, 
-              mb: 1,
-              fontSize: { xs: '1.8rem', md: '2.2rem' },
-              background: 'linear-gradient(45deg, #fff, #e3f2fd)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              display: 'inline-block',
-              textShadow: '0 4px 8px rgba(0,0,0,0.1)'
-            }}>
+      {/* Compact Header */}
+      <Box sx={{ 
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <ArticleIcon sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
               إدارة المقالات
             </Typography>
-            <Typography variant="body1" sx={{ opacity: 0.9, mb: 3, fontWeight: 300 }}>
-              قم بإدارة مقالاتك وإنشاء محتوى جديد
-            </Typography>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/teacher/articles/create')}
-                sx={{
-                  background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-                  borderRadius: '16px',
-                  px: 2.5,
-                  py: 1,
-                  fontWeight: 600,
-                  fontSize: '0.9rem',
-                  boxShadow: '0 6px 24px rgba(25, 118, 210, 0.3)',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.4)',
-                  },
-                }}
-              >
-                مقالة جديدة
-              </Button>
-            </motion.div>
-          </motion.div>
-        </Container>
-      </HeroSection>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            قم بإدارة مقالاتك وإنشاء محتوى جديد
+          </Typography>
+        </Box>
+      </Box>
 
       <Container sx={{ py: 3 }}>
-        {/* Stats Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <StatsCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                      {stats.total}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      إجمالي المقالات
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: alpha(theme.palette.primary.main, 0.15),
-                      color: theme.palette.primary.main,
-                    }}
-                  >
-                    <ArticleIcon />
-                  </Box>
-                </Box>
-              </StatsCard>
-            </motion.div>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StatsCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main' }}>
-                      {stats.published}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      منشور
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: alpha(theme.palette.success.main, 0.15),
-                      color: theme.palette.success.main,
-                    }}
-                  >
-                    <PublishedIcon />
-                  </Box>
-                </Box>
-              </StatsCard>
-            </motion.div>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <StatsCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main' }}>
-                      {stats.draft}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      مسودة
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: alpha(theme.palette.warning.main, 0.15),
-                      color: theme.palette.warning.main,
-                    }}
-                  >
-                    <DraftIcon />
-                  </Box>
-                </Box>
-              </StatsCard>
-            </motion.div>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <StatsCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main' }}>
-                      {stats.totalViews.toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      إجمالي المشاهدات
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: alpha(theme.palette.info.main, 0.15),
-                      color: theme.palette.info.main,
-                    }}
-                  >
-                    <VisibilityIcon />
-                  </Box>
-                </Box>
-              </StatsCard>
-            </motion.div>
-          </Grid>
-        </Grid>
+        {/* Create Article Button - Fixed */}
+        <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
+          <IconButton
+            onClick={() => navigate('/teacher/articles/create')}
+            sx={{
+              width: 56,
+              height: 56,
+              background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
+              boxShadow: '0 4px 20px rgba(25,118,210,0.3)',
+              color: 'white',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #1565c0 30%, #1976d2 90%)',
+                boxShadow: '0 6px 25px rgba(25,118,210,0.4)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <AddIcon sx={{ fontSize: 28 }} />
+          </IconButton>
+        </Box>
+        
+        {/* Compact Statistics Row */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 4, 
+          flexWrap: 'wrap',
+          justifyContent: 'center'
+        }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <ArticleIcon sx={{ color: '#1976d2', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="primary">
+                {stats.total}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                إجمالي المقالات
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <PublishedIcon sx={{ color: '#2e7d32', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="success.main">
+                {stats.published}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                منشور
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <DraftIcon sx={{ color: '#f57c00', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="warning.main">
+                {stats.draft}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                مسودة
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2, 
+            p: 2, 
+            backgroundColor: 'background.paper', 
+            borderRadius: 2, 
+            border: '1px solid #e0e0e0',
+            minWidth: 140,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <VisibilityIcon sx={{ color: '#7b1fa2', fontSize: 24 }} />
+            <Box>
+              <Typography variant="h5" fontWeight={700} color="secondary.main">
+                {stats.totalViews.toLocaleString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                إجمالي المشاهدات
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Filters and Search */}
         <HeaderContainer>

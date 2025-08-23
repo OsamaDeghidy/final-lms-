@@ -345,79 +345,46 @@ const MyCourses = () => {
   // Header Component
   const Header = () => (
     <Box sx={{ 
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      mb: 4,
-      p: 3,
-      bgcolor: 'white',
+      mb: 4, 
+      p: 3, 
+      background: 'linear-gradient(135deg, #3498db 0%, #2ecc71 100%)',
       borderRadius: 3,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+      color: 'white',
       position: 'relative',
-      overflow: 'hidden',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, #3498db, #2ecc71, #f39c12)',
-        zIndex: 1
-      }
+      overflow: 'hidden'
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 1,
-          p: 1.5,
-          bgcolor: '#f8f9fa',
-          borderRadius: 2
-        }}>
-          <SchoolIcon sx={{ color: '#3498db', fontSize: 28 }} />
-          <Typography variant="h5" component="h1" fontWeight="bold" sx={{ color: '#2c3e50' }}>
-            كورساتي
-            {courses.length !== allCourses.length && (
-              <Typography component="span" variant="h6" color="secondary.main" sx={{ ml: 1, fontSize: '0.9em', fontWeight: 'bold' }}>
-                ({courses.length} من {allCourses.length})
-              </Typography>
-            )}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TrendingUpIcon sx={{ color: '#27ae60', fontSize: 20 }} />
-          <Typography variant="body2" color="text.secondary">
-            {Array.isArray(courses) ? courses.length : 0} كورس نشط
-          </Typography>
-        </Box>
-      </Box>
+      <Box sx={{ 
+        position: 'absolute', 
+        top: -20, 
+        right: -20, 
+        width: 100, 
+        height: 100, 
+        borderRadius: '50%', 
+        background: 'rgba(255,255,255,0.1)',
+        zIndex: 1
+      }} />
+      <Box sx={{ 
+        position: 'absolute', 
+        bottom: -30, 
+        left: -30, 
+        width: 80, 
+        height: 80, 
+        borderRadius: '50%', 
+        background: 'rgba(255,255,255,0.08)',
+        zIndex: 1
+      }} />
       
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button 
-            variant="contained" 
-            startIcon={<AddIcon />}
-            onClick={handleCreateCourse}
-            sx={{
-              bgcolor: '#3498db',
-              color: 'white',
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-              fontWeight: 'bold',
-              textTransform: 'none',
-              boxShadow: '0 4px 14px rgba(52, 152, 219, 0.3)',
-              '&:hover': {
-                bgcolor: '#2980b9',
-                boxShadow: '0 6px 20px rgba(52, 152, 219, 0.4)',
-                transform: 'translateY(-1px)'
-              },
-              transition: 'all 0.3s ease'
-            }}
-          >
-            إنشاء كورس جديد
-          </Button>
+      <Box sx={{ position: 'relative', zIndex: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <SchoolIcon sx={{ fontSize: 32, color: 'white' }} />
+          <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+            كورساتي
+          </Typography>
         </Box>
+        <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+          إدارة الكورسات والمحتوى التعليمي
+        </Typography>
+      </Box>
     </Box>
   );
 
@@ -680,6 +647,28 @@ const MyCourses = () => {
       <Container maxWidth="xl" sx={{ py: 3 }}>
         {/* Header */}
         <Header />
+        
+        {/* Create Course Button - Fixed */}
+        <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
+          <IconButton
+            onClick={handleCreateCourse}
+            sx={{
+              width: 56,
+              height: 56,
+              background: 'linear-gradient(45deg, #3498db 30%, #2ecc71 90%)',
+              boxShadow: '0 4px 20px rgba(52,152,219,0.3)',
+              color: 'white',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #2980b9 30%, #27ae60 90%)',
+                boxShadow: '0 6px 25px rgba(52,152,219,0.4)',
+                transform: 'translateY(-2px)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <AddIcon sx={{ fontSize: 28 }} />
+          </IconButton>
+        </Box>
         
         {/* Filters Section */}
         <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>

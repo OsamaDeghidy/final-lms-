@@ -244,24 +244,167 @@ const ExamList = () => {
 
   return (
     <Box sx={{ p: { xs: 1, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" fontWeight={700}>
-          <Assessment sx={{ mr: 1, color: 'primary.main' }} /> 
-          إدارة الامتحانات الشاملة
-          {filteredExams.length !== exams.length && (
-            <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 1 }}>
-              ({filteredExams.length} من {exams.length})
+            {/* Compact Header */}
+      <Box sx={{ 
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Assessment sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+              إدارة الامتحانات الشاملة
             </Typography>
-          )}
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            إنشاء وإدارة الامتحانات الشاملة ومتابعة أداء الطلاب
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Compact Statistics Row */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 2, 
+        mb: 4, 
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Assessment sx={{ color: '#673ab7', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="secondary.main">
+              {exams.length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              إجمالي الامتحانات
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Assessment sx={{ color: '#2e7d32', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="success.main">
+              {exams.filter(exam => exam.is_active).length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              امتحانات نشطة
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Assessment sx={{ color: '#1976d2', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="primary.main">
+              {exams.filter(exam => exam.is_final).length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              امتحانات نهائية
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Assessment sx={{ color: '#7b1fa2', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="secondary.main">
+              {exams.filter(exam => !exam.is_final).length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              امتحانات عادية
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          sx={{ borderRadius: 2, fontWeight: 'bold', px: 3 }}
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Create Exam Button - Fixed */}
+      <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
+        <IconButton
           onClick={() => navigate('/teacher/exams/create')}
+          sx={{
+            width: 56,
+            height: 56,
+            background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
+            boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
+            color: 'white',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)',
+              boxShadow: '0 6px 25px rgba(103,58,183,0.4)',
+              transform: 'translateY(-2px)',
+            },
+            transition: 'all 0.3s ease',
+          }}
         >
-          إضافة امتحان جديد
-        </Button>
+          <Add sx={{ fontSize: 28 }} />
+        </IconButton>
       </Box>
 
       {error && (

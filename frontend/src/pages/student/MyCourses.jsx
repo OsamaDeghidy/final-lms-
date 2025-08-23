@@ -462,22 +462,49 @@ const MyCourses = () => {
         px: 0
       }}
     >
-    <Box sx={{ 
-        py: 7,
-        background: 'linear-gradient(90deg, #7c4dff 0%, #43a047 100%)',
-        color: '#fff',
-        textAlign: 'center',
-        mb: 5,
-        borderRadius: 0,
-        boxShadow: '0 4px 32px 0 rgba(124,77,255,0.10)'
+      {/* Compact Header */}
+      <Box sx={{ 
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #7c4dff 0%, #43a047 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
-        <Typography variant="h3" fontWeight={900} sx={{ mb: 1, letterSpacing: 1 }}>
-          مرحبًا بك في كورساتك
-        </Typography>
-        <Typography variant="h6" fontWeight={400} sx={{ opacity: 0.9 }}>
-          استكشف، تعلم، وحقق أهدافك التعليمية بسهولة واحترافية
-        </Typography>
-            </Box>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <SchoolIcon sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+              كورساتي
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            استكشف، تعلم، وحقق أهدافك التعليمية بسهولة واحترافية
+          </Typography>
+        </Box>
+      </Box>
       <Container maxWidth="xl">
         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
           <Button

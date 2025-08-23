@@ -4,7 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   FormControl, InputLabel, Select, MenuItem, Tabs, Tab, Paper,
   LinearProgress, Alert, Snackbar, Divider, List, ListItem, ListItemText,
-  ListItemIcon, Badge, Tooltip, Avatar, Fab, Table, TableBody, TableCell,
+  ListItemIcon, Badge, Tooltip, Avatar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TablePagination
 } from '@mui/material';
 import {
@@ -321,23 +321,24 @@ const TeacherAssignments = () => {
 
       {/* Create Assignment Button - Fixed (navigates to page) */}
       <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
-        <Fab
-          color="primary"
-          size="large"
+        <IconButton
           onClick={handleCreateAssignment}
           sx={{
-            background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
-            boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
+            width: 56,
+            height: 56,
+            background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
+            boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+            color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)',
-              boxShadow: '0 6px 25px rgba(103,58,183,0.4)',
+              background: 'linear-gradient(45deg, #ff5252 30%, #e64a19 90%)',
+              boxShadow: '0 6px 25px rgba(255,107,107,0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
           }}
         >
           <AddIcon sx={{ fontSize: 28 }} />
-        </Fab>
+        </IconButton>
       </Box>
 
       {/* Assignments Table */}

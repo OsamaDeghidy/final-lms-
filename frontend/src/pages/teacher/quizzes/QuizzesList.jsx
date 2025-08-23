@@ -29,7 +29,7 @@ import {
   TableContainer, 
   TableHead, 
   TableRow, 
-  TablePagination 
+  TablePagination
 } from '@mui/material';
 import { Add, Edit, Delete, Visibility, Quiz, Search, FilterList, Clear } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -311,23 +311,167 @@ const QuizzesList = () => {
       {console.log('Current modules state:', modules)}
       {console.log('Current courses state:', courses)}
       
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Typography variant="h4" fontWeight={700}>
-          إدارة الكويزات
-          {quizzes.length !== allQuizzes.length && (
-            <Typography component="span" variant="h6" color="text.secondary" sx={{ ml: 1 }}>
-              ({quizzes.length} من {allQuizzes.length})
+      {/* Compact Header */}
+      <Box sx={{ 
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Quiz sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+              إدارة الكويزات
             </Typography>
-          )}
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          sx={{ borderRadius: 2, fontWeight: 'bold', px: 3, py: 1.2 }}
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            إنشاء وإدارة الكويزات التفاعلية وتقييم أداء الطلاب
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Compact Statistics Row */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: 2, 
+        mb: 4, 
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+      }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Quiz sx={{ color: '#4caf50', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="success.main">
+              {quizzes.length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              إجمالي الكويزات
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Quiz sx={{ color: '#2e7d32', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="success.main">
+              {quizzes.filter(quiz => quiz.is_active).length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              كويزات نشطة
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Quiz sx={{ color: '#1976d2', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="primary.main">
+              {quizzes.filter(quiz => quiz.quiz_type === 'video').length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              كويزات فيديو
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          p: 2, 
+          backgroundColor: 'background.paper', 
+          borderRadius: 2, 
+          border: '1px solid #e0e0e0',
+          minWidth: 140,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Quiz sx={{ color: '#7b1fa2', fontSize: 24 }} />
+          <Box>
+            <Typography variant="h5" fontWeight={700} color="secondary.main">
+              {quizzes.filter(quiz => quiz.quiz_type === 'module').length}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              كويزات وحدة
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Create Quiz Button - Fixed */}
+      <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
+        <IconButton
           onClick={() => navigate('/teacher/quizzes/create')}
+          sx={{
+            width: 56,
+            height: 56,
+            background: 'linear-gradient(45deg, #4caf50 30%, #2e7d32 90%)',
+            boxShadow: '0 4px 20px rgba(76,175,80,0.3)',
+            color: 'white',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #43a047 30%, #2e7d32 90%)',
+              boxShadow: '0 6px 25px rgba(76,175,80,0.4)',
+              transform: 'translateY(-2px)',
+            },
+            transition: 'all 0.3s ease',
+          }}
         >
-          إضافة كويز جديد
-        </Button>
+          <Add sx={{ fontSize: 28 }} />
+        </IconButton>
       </Box>
 
       {error && (
@@ -442,6 +586,12 @@ const QuizzesList = () => {
             variant="contained"
             startIcon={<Add />}
             onClick={() => navigate('/teacher/quizzes/create')}
+            sx={{
+              background: 'linear-gradient(45deg, #4caf50 30%, #2e7d32 90%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #43a047 30%, #2e7d32 90%)',
+              },
+            }}
           >
             إنشاء أول كويز
           </Button>

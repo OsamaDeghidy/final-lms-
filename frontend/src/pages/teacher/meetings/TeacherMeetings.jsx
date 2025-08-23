@@ -540,44 +540,60 @@ const TeacherMeetings = () => {
         position: 'relative',
         overflow: 'hidden'
       }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
         <Box sx={{ position: 'relative', zIndex: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <VideoCallIcon sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
               إدارة الاجتماعات والمحاضرات
             </Typography>
-            <IconButton 
-              onClick={fetchMeetings}
-              disabled={loading}
-              sx={{ 
-                color: 'white', 
-                ml: 'auto',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
-              }}
-            >
-              <RefreshIcon />
-            </IconButton>
-            {/* Create Meeting Button */}
-            <IconButton
-              onClick={handleOpenCreateDialog}
-              sx={{
-                width: 56,
-                height: 56,
-                background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
-                boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
-                color: 'white',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)',
-                  boxShadow: '0 6px 25px rgba(103,58,183,0.4)',
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <AddIcon sx={{ fontSize: 28 }} />
-            </IconButton>
           </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+            إنشاء وإدارة الاجتماعات والمحاضرات المباشرة
+          </Typography>
         </Box>
+      </Box>
+
+      {/* Create Meeting Button - Fixed */}
+      <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
+        <IconButton
+          onClick={handleOpenCreateDialog}
+          sx={{
+            width: 56,
+            height: 56,
+            background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
+            boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+            color: 'white',
+            '&:hover': {
+              background: 'linear-gradient(45deg, #ff5252 30%, #e64a19 90%)',
+              boxShadow: '0 6px 25px rgba(255,107,107,0.4)',
+              transform: 'translateY(-2px)',
+            },
+            transition: 'all 0.3s ease',
+          }}
+        >
+          <AddIcon sx={{ fontSize: 28 }} />
+        </IconButton>
       </Box>
 
       {/* Tabs */}
