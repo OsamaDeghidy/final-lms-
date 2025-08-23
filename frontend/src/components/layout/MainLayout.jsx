@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { logout as logoutAction } from '../../store/slices/authSlice';
 import { useAuth } from '../../contexts/AuthContext';
+import profileImage from '../../assets/images/profile.jpg';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Divider, Badge, InputBase, Paper
@@ -79,7 +80,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
           ? `${user.first_name} ${user.last_name}` 
           : user.username || 'مستخدم',
         email: user.email || '',
-        avatar: user.profile_picture || '/profile.svg',
+        avatar: user.profile_picture || profileImage,
         role: getUserRole() === 'instructor' ? 'مدرس' : 'طالب',
         description: user.bio || (getUserRole() === 'instructor' ? 'مدرس في المنصة' : 'طالب في المنصة')
       };
@@ -87,7 +88,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
     return {
       name: 'مستخدم',
       email: '',
-      avatar: '/profile.svg',
+      avatar: profileImage,
       role: 'طالب',
       description: 'طالب في المنصة'
     };

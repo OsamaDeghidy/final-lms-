@@ -59,7 +59,6 @@ import LessonForm from './pages/courses/lessons/LessonForm';
 import Profile from './pages/profile/Profile';
 import TeacherMyCourses from './pages/teacher/MyCourses';
 import StudentMyCourses from './pages/student/MyCourses';
-import Settings from './pages/settings/Settings';
 import NotFound from './pages/NotFound';
 import Unauthorized from './pages/Unauthorized';
 import DashboardRedirect from './pages/DashboardRedirect';
@@ -308,7 +307,7 @@ const AppContent = () => {
                           <Route path="assignments/:assignmentId/submit" element={<SubmitAssignment />} />
                           <Route path="meetings" element={<StudentMeetings />} />
                           <Route path="meetings/live/:meetingId" element={<StudentLiveMeeting />} />
-                          <Route path="settings" element={<Settings />} />
+                          <Route path="settings" element={<Profile />} />
                         </Routes>
                       </MainLayout>
                     </ProtectedRoute>
@@ -348,7 +347,7 @@ const AppContent = () => {
                           <Route path="assignments/:assignmentId/submissions/:submissionId" element={<GradeSubmission />} />
                           <Route path="students" element={<div>الطلاب</div>} />
                           <Route path="reports" element={<div>التقارير</div>} />
-                          <Route path="settings" element={<Settings />} />
+                          <Route path="settings" element={<Profile />} />
                           {/* Quizzes routes */}
                           <Route path="quizzes" element={<QuizzesList />} />
                           <Route path="quizzes/create" element={<QuizForm />} />

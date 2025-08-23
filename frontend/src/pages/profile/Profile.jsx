@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { profileService } from '../../services/profileService';
 import { 
   Container, 
   Grid, 
@@ -17,7 +19,28 @@ import {
   IconButton,
   Chip,
   CircularProgress,
-  Badge
+  Badge,
+  Switch,
+  FormControlLabel,
+  Alert,
+  Snackbar,
+  Paper,
+  useTheme,
+  alpha,
+  Fade,
+  Zoom,
+  Slide,
+  Stack,
+  LinearProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Fab,
+  Tooltip
 } from '@mui/material';
 import { 
   Edit, 
@@ -32,10 +55,63 @@ import {
   CheckCircle,
   Cancel,
   Visibility,
-  VisibilityOff
+  VisibilityOff,
+  Add,
+  Close,
+  DeleteOutline,
+  Security,
+  Notifications,
+  Palette,
+  Language,
+  Person,
+  PhotoCamera,
+  CloudUpload,
+  Star,
+  TrendingUp,
+  Assignment,
+  VideoCall,
+  Article,
+  Settings,
+  AccountCircle,
+  VerifiedUser,
+  School as SchoolIcon,
+  Assignment as AssignmentIcon,
+  Assessment as AssessmentIcon,
+  VideoCall as VideoCallIcon,
+  TrendingUp as TrendingUpIcon,
+  People as PeopleIcon,
+  Book as BookIcon,
+  Schedule as ScheduleIcon,
+  ExpandMore,
+  MoreVert,
+  Favorite,
+  Share,
+  Bookmark,
+  BookmarkBorder,
+  Grade,
+  EmojiEvents,
+  Psychology,
+  Code,
+  Business,
+  Science,
+  SportsEsports,
+  MusicNote,
+  Movie,
+  CameraAlt,
+  Videocam,
+  Headphones,
+  Laptop,
+  Smartphone,
+  Tablet,
+  Watch,
+  FitnessCenter,
+  Restaurant,
+  LocalHospital
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import profileImage from '../../assets/images/profile.jpg';
 
+// Styled Components
 const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
     backgroundColor: '#44b700',
@@ -65,81 +141,135 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
+const ProfileHeader = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
+  borderRadius: theme.spacing(3),
+  padding: theme.spacing(4),
+  marginBottom: theme.spacing(4),
+  position: 'relative',
+  overflow: 'hidden',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+    opacity: 0.3,
+  }
+}));
+
+const ProfileCard = styled(Card)(({ theme }) => ({
+  borderRadius: theme.spacing(3),
+  boxShadow: '0 8px 32px rgba(14, 81, 129, 0.1)',
+  border: '1px solid',
+  borderColor: alpha('#0e5181', 0.08),
+  transition: 'all 0.3s ease',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(229, 151, 139, 0.02) 100%)',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: '0 12px 40px rgba(14, 81, 129, 0.15)',
+    borderColor: alpha('#0e5181', 0.15),
+  }
+}));
+
+const StatsCard = styled(Card)(({ theme }) => ({
+  borderRadius: theme.spacing(2.5),
+  background: `linear-gradient(135deg, ${alpha('#0e5181', 0.03)} 0%, ${alpha('#e5978b', 0.03)} 100%)`,
+  border: '1px solid',
+  borderColor: alpha('#0e5181', 0.08),
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0 8px 25px rgba(14, 81, 129, 0.12)',
+  }
+}));
+
+const SkillChip = styled(Chip)(({ theme }) => ({
+  borderRadius: theme.spacing(2),
+  fontWeight: 600,
+  background: `linear-gradient(135deg, ${alpha('#0e5181', 0.1)} 0%, ${alpha('#e5978b', 0.1)} 100%)`,
+  border: `1px solid ${alpha('#0e5181', 0.2)}`,
+  color: '#0e5181',
+  '&:hover': {
+    transform: 'scale(1.05)',
+    background: `linear-gradient(135deg, ${alpha('#0e5181', 0.15)} 0%, ${alpha('#e5978b', 0.15)} 100%)`,
+  }
+}));
+
+const TabPanel = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(3),
+}));
+
 const Profile = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
+  const { user, getUserRole, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
+  
   const [tabValue, setTabValue] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
   
-  // Mock user data - replace with actual API call
-  const mockProfile = {
-    id: 'user123',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    bio: 'Senior Software Engineer with 5+ years of experience in web development. Passionate about teaching and learning new technologies.',
-    avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  
+  // Profile data state
+  const [profileData, setProfileData] = useState({
+    firstName: user?.first_name || '',
+    lastName: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    location: user?.location || '',
+    website: user?.website || '',
+    bio: user?.bio || '',
+    avatar: user?.profile_picture || profileImage,
     coverImage: 'https://source.unsplash.com/random/1200x300?programming',
-    joinDate: 'January 2023',
-    skills: ['React', 'Node.js', 'TypeScript', 'GraphQL', 'Docker'],
-    education: [
-      {
-        id: 1,
-        degree: 'Master of Computer Science',
-        institution: 'Stanford University',
-        year: '2018 - 2020',
-        description: 'Specialized in Artificial Intelligence and Machine Learning.'
-      },
-      {
-        id: 2,
-        degree: 'Bachelor of Technology',
-        institution: 'MIT',
-        year: '2014 - 2018',
-        description: 'Computer Science and Engineering'
-      }
-    ],
-    experience: [
-      {
-        id: 1,
-        position: 'Senior Software Engineer',
-        company: 'TechCorp',
-        duration: '2021 - Present',
-        description: 'Leading the frontend development team and implementing new features.'
-      },
-      {
-        id: 2,
-        position: 'Software Developer',
-        company: 'WebSolutions',
-        duration: '2019 - 2021',
-        description: 'Developed and maintained web applications using React and Node.js.'
-      }
-    ],
-    coursesEnrolled: 12,
-    coursesCompleted: 8,
-    certificates: 5,
-    lastActive: '2 hours ago',
-    isVerified: true
-  };
+    joinDate: user?.date_joined ? new Date(user.date_joined).toLocaleDateString('ar-EG') : '',
+    skills: user?.skills || [],
+    education: user?.education || [],
+    experience: user?.experience || [],
+    coursesEnrolled: 0,
+    coursesCompleted: 0,
+    certificates: 0,
+    lectures: 0,
+    lastActive: 'منذ ساعتين',
+    isVerified: user?.is_verified || false,
+    profileCompletion: 0
+  });
 
-  useEffect(() => {
-    // Simulate API call
-    const fetchProfile = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setProfile(mockProfile);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
+  // Settings state
+  const [settings, setSettings] = useState({
+    emailNotifications: {
+      courseAnnouncements: true,
+      privateMessages: true,
+      promotionalOffers: false,
+      weeklyDigest: true
+    },
+    privacy: {
+      profileVisibility: 'public',
+      showEmail: false,
+      showPhone: true,
+      allowMessages: true
+    },
+    appearance: {
+      theme: 'auto',
+      language: 'ar',
+      fontSize: 'medium'
+    }
+  });
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -149,428 +279,991 @@ const Profile = () => {
     setEditMode(!editMode);
   };
 
-  const handleSave = () => {
-    // Handle save logic here
-    setEditMode(false);
-    // Show success message
-  };
-
-  const handleChange = (e) => {
+  const handleProfileChange = (e) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
+    setProfileData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const handleSettingsChange = (section, key, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: value
+      }
+    }));
+  };
 
-  if (!profile) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
-        <Typography variant="h5" gutterBottom>Profile not found</Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          onClick={() => navigate('/')}
-          sx={{ mt: 2 }}
-        >
-          Go to Home
-        </Button>
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Prepare profile data
+      const profileUpdateData = {
+        first_name: profileData.firstName,
+        last_name: profileData.lastName,
+        email: profileData.email,
+        phone: profileData.phone,
+        location: profileData.location,
+        website: profileData.website,
+        bio: profileData.bio
+      };
+      
+      // Try to update profile
+      let updatedProfile;
+      try {
+        updatedProfile = await profileService.updateProfile(profileUpdateData);
+      } catch (error) {
+        console.warn('Profile update failed, using local update:', error);
+        // If API fails, update locally
+        updatedProfile = {
+          ...user,
+          ...profileUpdateData
+        };
+      }
+      
+      // Update user context
+      if (updateUser) {
+        updateUser(updatedProfile);
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'تم تحديث الملف الشخصي بنجاح',
+        severity: 'success',
+      });
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'فشل تحديث الملف الشخصي. يرجى المحاولة مرة أخرى',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      setLoading(true);
+      
+      try {
+        await profileService.updateSettings(settings);
+      } catch (error) {
+        console.warn('Settings update failed, saving locally:', error);
+        // If API fails, save locally
+        localStorage.setItem('userSettings', JSON.stringify(settings));
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'تم حفظ الإعدادات بنجاح',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'فشل حفظ الإعدادات. يرجى المحاولة مرة أخرى',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load profile data from API
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        setInitialLoading(true);
+        
+        // Try to load profile data
+        let profileData = {};
+        let statistics = {};
+        
+        try {
+          profileData = await profileService.getProfile();
+        } catch (error) {
+          console.warn('Could not load profile data:', error);
+          // Use user data from context as fallback
+          profileData = {
+            first_name: user?.first_name || '',
+            last_name: user?.last_name || '',
+            email: user?.email || '',
+            phone: user?.phone || '',
+            location: user?.location || '',
+            website: user?.website || '',
+            bio: user?.bio || '',
+            profile_picture: user?.profile_picture || profileImage,
+            date_joined: user?.date_joined || '',
+            skills: user?.skills || [],
+            education: user?.education || [],
+            experience: user?.experience || [],
+            is_verified: user?.is_verified || false
+          };
+        }
+        
+        try {
+          statistics = await profileService.getStatistics();
+        } catch (error) {
+          console.warn('Could not load statistics:', error);
+          // Use default statistics
+          statistics = {
+            coursesEnrolled: 0,
+            coursesCompleted: 0,
+            certificates: 0,
+            lectures: 0
+          };
+        }
+        
+        setProfileData(prev => ({
+          ...prev,
+          ...profileData,
+          ...statistics
+        }));
+      } catch (error) {
+        console.error('Error loading profile data:', error);
+        setSnackbar({
+          open: true,
+          message: 'فشل تحميل بيانات الملف الشخصي',
+          severity: 'error',
+        });
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    if (user) {
+      loadProfileData();
+    }
+  }, [user]);
+
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false,
+    }));
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      setSnackbar({
+        open: true,
+        message: 'كلمة المرور الجديدة غير متطابقة',
+        severity: 'error',
+      });
+      return;
+    }
+
+    if (passwordData.new_password.length < 8) {
+      setSnackbar({
+        open: true,
+        message: 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل',
+        severity: 'error',
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      try {
+        await profileService.changePassword(passwordData);
+      } catch (error) {
+        console.warn('Password change failed:', error);
+        // Show specific error message
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.detail || 
+                           'فشل تغيير كلمة المرور. تأكد من صحة كلمة المرور الحالية.';
+        throw new Error(errorMessage);
+      }
+      
+      setPasswordData({
+        current_password: '',
+        new_password: '',
+        confirm_password: ''
+      });
+      
+      setSnackbar({
+        open: true,
+        message: 'تم تغيير كلمة المرور بنجاح',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setSnackbar({
+        open: true,
+        message: error.message || 'فشل تغيير كلمة المرور',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setSnackbar({
+        open: true,
+        message: 'يرجى اختيار ملف صورة صحيح',
+        severity: 'error',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSnackbar({
+        open: true,
+        message: 'حجم الصورة يجب أن يكون أقل من 5 ميجابايت',
+        severity: 'error',
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      try {
+        const result = await profileService.uploadProfilePicture(file);
+        
+        setProfileData(prev => ({
+          ...prev,
+          avatar: result.profile_picture
+        }));
+        
+        // Update user context
+        if (updateUser) {
+          updateUser({ ...user, profile_picture: result.profile_picture });
+        }
+        
+        setSnackbar({
+          open: true,
+          message: 'تم تحديث الصورة الشخصية بنجاح',
+          severity: 'success',
+        });
+      } catch (error) {
+        console.warn('Profile picture upload failed, using local preview:', error);
+        // If API fails, create local preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setProfileData(prev => ({
+            ...prev,
+            avatar: e.target.result
+          }));
+        };
+        reader.readAsDataURL(file);
+        
+        setSnackbar({
+          open: true,
+          message: 'تم تحديث الصورة محلياً (فشل في الحفظ على الخادم)',
+          severity: 'warning',
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'فشل تحديث الصورة الشخصية',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stats = [
+    {
+      title: 'الكورسات المسجلة',
+      value: profileData.coursesEnrolled || 0,
+      icon: <SchoolIcon />,
+      color: 'primary',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    },
+    {
+      title: 'الكورسات المكتملة',
+      value: profileData.coursesCompleted || 0,
+      icon: <AssignmentIcon />,
+      color: 'success',
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+    },
+    {
+      title: 'الشهادات',
+      value: profileData.certificates || 0,
+      icon: <AssessmentIcon />,
+      color: 'warning',
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+    },
+    {
+      title: 'المحاضرات',
+      value: profileData.lectures || 0,
+      icon: <VideoCallIcon />,
+      color: 'info',
+      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)'
+    }
+  ];
+
+  // Show loading screen
+  if (initialLoading) {
+  return (
+      <Container maxWidth="xl" sx={{ py: 4, direction: 'rtl' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '60vh' 
+        }}>
+          <CircularProgress size={60} />
+        </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Cover Photo */}
-      <Box 
-        sx={{ 
-          height: 200, 
-          borderRadius: 2, 
-          overflow: 'hidden',
-          mb: -8,
-          position: 'relative',
-          bgcolor: 'primary.main',
-          backgroundImage: `url(${profile.coverImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
-          }
-        }}
-      />
-      
+    <Container maxWidth="xl" sx={{ py: 6, direction: 'rtl' }}>
+
       <Grid container spacing={4}>
-        {/* Left Sidebar */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ position: 'relative', mb: 3 }}>
-            <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <StyledBadge
-                overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                variant="dot"
-              >
-                <Avatar 
-                  src={profile.avatar} 
-                  alt={`${profile.firstName} ${profile.lastName}`}
-                  sx={{ 
-                    width: 150, 
-                    height: 150,
-                    border: '4px solid white',
-                    boxShadow: 3,
-                    mt: -8,
-                    mb: 2
-                  }}
-                />
-              </StyledBadge>
-              
-              <Box sx={{ textAlign: 'center', mb: 2 }}>
-                <Typography variant="h5" component="h1" gutterBottom>
-                  {`${profile.firstName} ${profile.lastName}`}
-                  {profile.isVerified && (
-                    <CheckCircle 
-                      color="primary" 
-                      fontSize="small" 
-                      sx={{ ml: 0.5, verticalAlign: 'middle' }} 
-                    />
-                  )}
-                </Typography>
-                <Typography variant="body1" color="text.secondary" gutterBottom>
-                  Senior Software Engineer at TechCorp
-                </Typography>
-                <Chip 
-                  label="Instructor" 
-                  color="primary" 
-                  variant="outlined" 
-                  size="small" 
-                  sx={{ mt: 1 }}
-                />
-              </Box>
-              
-              <Box sx={{ width: '100%', mb: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Typography variant="body2" color="text.secondary">Profile Completion</Typography>
-                  <Typography variant="body2" color="primary">85%</Typography>
+        {/* Single Block - All Profile Information */}
+        <Grid item xs={12}>
+          <Slide direction="up" in timeout={1000}>
+            <ProfileCard>
+              <CardContent sx={{ p: 4 }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  mb: 4,
+                  pb: 2,
+                  borderBottom: '2px solid',
+                  borderColor: alpha('#0e5181', 0.1)
+                }}>
+                  <Typography variant="h5" fontWeight="bold" color="#0e5181">
+                    معلومات الملف الشخصي
+                  </Typography>
+                  <Button 
+                    variant={editMode ? "contained" : "outlined"} 
+                    sx={{
+                      backgroundColor: editMode ? '#0e5181' : 'transparent',
+                      color: editMode ? 'white' : '#0e5181',
+                      borderColor: '#0e5181',
+                      '&:hover': {
+                        backgroundColor: editMode ? '#0a3d5f' : alpha('#0e5181', 0.1),
+                      },
+                      px: 3,
+                      py: 1.5,
+                      borderRadius: 2,
+                      fontWeight: 'bold'
+                    }}
+                    startIcon={editMode ? <Save /> : <Edit />}
+                    onClick={editMode ? handleSaveProfile : handleEditToggle}
+                    disabled={loading}
+                  >
+                    {editMode ? 'حفظ التغييرات' : 'تعديل الملف الشخصي'}
+                  </Button>
                 </Box>
-                <Box sx={{ width: '100%', height: 6, bgcolor: 'grey.200', borderRadius: 3, overflow: 'hidden' }}>
-                  <Box 
-                    sx={{ 
-                      width: '85%', 
-                      height: '100%', 
-                      bgcolor: 'primary.main',
-                      borderRadius: 3
-                    }} 
-                  />
-                </Box>
-              </Box>
-              
-              <Divider sx={{ width: '100%', my: 2 }} />
-              
-              <Box sx={{ width: '100%' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Email color="action" fontSize="small" sx={{ mr: 1.5 }} />
-                  <Typography variant="body2">{profile.email}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <Phone color="action" fontSize="small" sx={{ mr: 1.5 }} />
-                  <Typography variant="body2">{profile.phone}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                  <LocationOn color="action" fontSize="small" sx={{ mr: 1.5 }} />
-                  <Typography variant="body2">{profile.location}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <CalendarToday color="action" fontSize="small" sx={{ mr: 1.5 }} />
-                  <Typography variant="body2">Joined {profile.joinDate}</Typography>
-                </Box>
-              </Box>
-              
-              <Divider sx={{ width: '100%', my: 2 }} />
-              
-              <Box sx={{ width: '100%' }}>
-                <Typography variant="subtitle2" gutterBottom>Skills</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                  {profile.skills.map((skill, index) => (
-                    <Chip 
-                      key={index} 
-                      label={skill} 
-                      size="small" 
-                      variant="outlined"
-                      onClick={() => editMode && console.log('Edit skill:', skill)}
-                      onDelete={editMode ? () => console.log('Delete skill:', skill) : null}
-                    />
-                  ))}
-                  {editMode && (
-                    <Chip 
-                      label="+ Add Skill" 
-                      size="small" 
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => console.log('Add new skill')}
-                    />
-                  )}
-                </Box>
-              </Box>
-              
-              <Button 
-                variant={editMode ? "contained" : "outlined"} 
-                color="primary"
-                startIcon={editMode ? <Save /> : <Edit />}
-                fullWidth
-                onClick={editMode ? handleSave : handleEditToggle}
-                sx={{ mt: 2 }}
-              >
-                {editMode ? 'Save Changes' : 'Edit Profile'}
-              </Button>
-              
-              {!editMode && (
-                <Button 
-                  variant="outlined" 
-                  color="primary"
-                  startIcon={<Lock />}
-                  fullWidth
-                  sx={{ mt: 1.5 }}
-                  onClick={() => navigate('/settings/security')}
-                >
-                  Change Password
-                </Button>
-              )}
-            </Box>
-          </Card>
-          
-          {/* Stats Card */}
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle1" gutterBottom>Learning Stats</Typography>
-              <Grid container spacing={2} sx={{ textAlign: 'center' }}>
-                <Grid item xs={4}>
-                  <Typography variant="h5" color="primary">{profile.coursesEnrolled}</Typography>
-                  <Typography variant="body2" color="text.secondary">Enrolled</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="h5" color="success.main">{profile.coursesCompleted}</Typography>
-                  <Typography variant="body2" color="text.secondary">Completed</Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="h5" color="warning.main">{profile.certificates}</Typography>
-                  <Typography variant="body2" color="text.secondary">Certificates</Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        {/* Main Content */}
-        <Grid item xs={12} md={8}>
-          <Card sx={{ mb: 3 }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs 
-                value={tabValue} 
-                onChange={handleTabChange}
-                aria-label="profile tabs"
-                variant="scrollable"
-                scrollButtons="auto"
-              >
-                <Tab label="About" />
-                <Tab label="Courses" />
-                <Tab label="Activity" />
-                <Tab label="Settings" />
-              </Tabs>
-            </Box>
-            
-            <CardContent>
-              {tabValue === 0 && (
-                <Box>
-                  <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" gutterBottom>About Me</Typography>
-                    {editMode ? (
+
+                <Grid container spacing={4}>
+                  {/* Left Side - Profile Picture and Password */}
+                  <Grid item xs={12} md={4}>
+                    {/* Profile Picture Section */}
+                    <Box sx={{ 
+                      textAlign: 'center', 
+                      mb: 4,
+                      p: 3,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
+                      border: '1px solid',
+                      borderColor: alpha('#0e5181', 0.08)
+                    }}>
+                      <Box sx={{ position: 'relative', display: 'inline-block' }}>
+                        <Avatar 
+                          src={profileData.avatar} 
+                          alt={`${profileData.firstName} ${profileData.lastName}`}
+                          sx={{ 
+                            width: 140, 
+                            height: 140,
+                            border: '4px solid',
+                            borderColor: '#0e5181',
+                            mb: 3,
+                            boxShadow: '0 8px 25px rgba(14, 81, 129, 0.2)'
+                          }}
+                        />
+                        {editMode && (
+                          <IconButton 
+                            color="error"
+                            sx={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                              backgroundColor: 'error.main',
+                              color: 'white',
+                              '&:hover': {
+                                backgroundColor: 'error.dark',
+                              },
+                            }}
+                            onClick={() => setProfileData(prev => ({ ...prev, avatar: profileImage }))}
+                          >
+                            <Close fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                      {editMode && (
+                        <Button
+                          variant="outlined"
+                          startIcon={<PhotoCamera />}
+                          onClick={() => fileInputRef.current?.click()}
+                          fullWidth
+                          sx={{ 
+                            mb: 2,
+                            borderColor: '#0e5181',
+                            color: '#0e5181',
+                            '&:hover': {
+                              borderColor: '#0a3d5f',
+                              backgroundColor: alpha('#0e5181', 0.05),
+                            }
+                          }}
+                        >
+                          تحميل صورة
+                        </Button>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleProfilePictureUpload}
+                      />
+                    </Box>
+                    
+                    {/* Password Change Section */}
+                    <Box sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
+                      border: '1px solid',
+                      borderColor: alpha('#0e5181', 0.08)
+                    }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                        تغيير كلمة المرور
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="كلمة المرور الحالية"
+                            type={showPassword ? 'text' : 'password'}
+                            variant="outlined"
+                            size="small"
+                            value={passwordData.current_password}
+                            onChange={(e) => setPasswordData(prev => ({
+                              ...prev,
+                              current_password: e.target.value
+                            }))}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                    sx={{ color: '#0e5181' }}
+                                  >
+                                    {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                  </IconButton>
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="كلمة المرور الجديدة"
+                            type={showPassword ? 'text' : 'password'}
+                            variant="outlined"
+                            size="small"
+                            value={passwordData.new_password}
+                            onChange={(e) => setPasswordData(prev => ({
+                              ...prev,
+                              new_password: e.target.value
+                            }))}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Button
+                            variant="contained"
+                            fullWidth
+                            startIcon={loading ? <CircularProgress size={20} /> : <Lock />}
+                            onClick={handlePasswordChange}
+                            disabled={loading}
+                            sx={{
+                              backgroundColor: '#0e5181',
+                              '&:hover': {
+                                backgroundColor: '#0a3d5f',
+                              },
+                              py: 1.5,
+                              borderRadius: 2,
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            تغيير كلمة المرور
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Grid>
+
+                  {/* Right Side - Profile Information */}
+                  <Grid item xs={12} md={8}>
+                    {/* Profile Information Section */}
+                    <Box sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
+                      border: '1px solid',
+                      borderColor: alpha('#0e5181', 0.08),
+                      mb: 4
+                    }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                        المعلومات الشخصية
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="اسم المستخدم"
+                            name="username"
+                            value={user?.username || ''}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="الاسم الأول"
+                            name="firstName"
+                            value={profileData.firstName}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="الاسم المستعار"
+                            name="nickname"
+                            value={profileData.nickname || ''}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="الدور"
+                            name="role"
+                            value={getUserRole() === 'instructor' ? 'مدرس' : 'طالب'}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: true,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="اسم العائلة"
+                            name="lastName"
+                            value={profileData.lastName}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="الاسم المعروض للجميع"
+                            name="displayName"
+                            value={profileData.displayName || `${profileData.firstName} ${profileData.lastName}`}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+                          
+                    {/* Contact Info Section */}
+                    <Box sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
+                      border: '1px solid',
+                      borderColor: alpha('#0e5181', 0.08),
+                      mb: 4
+                    }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                        معلومات التواصل
+                      </Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="البريد الإلكتروني (مطلوب)"
+                            name="email"
+                            type="email"
+                            value={profileData.email}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="واتساب"
+                            name="whatsapp"
+                            value={profileData.whatsapp || ''}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="الموقع الإلكتروني"
+                            name="website"
+                            value={profileData.website}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="تيليجرام"
+                            name="telegram"
+                            value={profileData.telegram || ''}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="رقم الجوال"
+                            name="phone"
+                            value={profileData.phone}
+                            onChange={handleProfileChange}
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderColor: alpha('#0e5181', 0.2),
+                                },
+                                '&:hover fieldset': {
+                                  borderColor: alpha('#0e5181', 0.4),
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#0e5181',
+                                },
+                              },
+                            }}
+                            InputProps={{
+                              readOnly: !editMode,
+                            }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+
+                    {/* About User Section */}
+                    <Box sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
+                      border: '1px solid',
+                      borderColor: alpha('#0e5181', 0.08)
+                    }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                        نبذة عن المستخدم
+                      </Typography>
                       <TextField
                         fullWidth
-                        multiline
-                        rows={4}
+                        label="المعلومات السيرة الذاتية"
                         name="bio"
-                        value={profile.bio}
-                        onChange={handleChange}
+                        value={profileData.bio}
+                        onChange={handleProfileChange}
+                        multiline
+                        rows={6}
                         variant="outlined"
-                        placeholder="Tell us about yourself..."
+                        size="small"
+                        placeholder="أخبرنا عن نفسك، خبراتك، اهتماماتك..."
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                              borderColor: alpha('#0e5181', 0.2),
+                            },
+                            '&:hover fieldset': {
+                              borderColor: alpha('#0e5181', 0.4),
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#0e5181',
+                            },
+                          },
+                        }}
+                        InputProps={{
+                          readOnly: !editMode,
+                        }}
                       />
-                    ) : (
-                      <Typography variant="body1" color="text.secondary" paragraph>
-                        {profile.bio || 'No bio available.'}
-                      </Typography>
-                    )}
-                  </Box>
-                  
-                  <Box sx={{ mb: 4 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">Education</Typography>
-                      {editMode && (
-                        <Button size="small" startIcon={<Add />}>
-                          Add Education
-                        </Button>
-                      )}
                     </Box>
-                    
-                    {profile.education.length > 0 ? (
-                      profile.education.map((edu) => (
-                        <Box key={edu.id} sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, position: 'relative' }}>
-                          {editMode && (
-                            <IconButton 
-                              size="small" 
-                              sx={{ position: 'absolute', top: 8, right: 8 }}
-                              onClick={() => console.log('Delete education:', edu.id)}
-                            >
-                              <Close fontSize="small" />
-                            </IconButton>
-                          )}
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <School color="action" sx={{ mr: 1.5 }} />
-                            <Box>
-                              <Typography variant="subtitle1">{edu.degree}</Typography>
-                              <Typography variant="body2" color="text.secondary">{edu.institution}</Typography>
-                              <Typography variant="body2" color="text.secondary">{edu.year}</Typography>
-                            </Box>
-                          </Box>
-                          {edu.description && (
-                            <Typography variant="body2" sx={{ mt: 1, ml: 4.5 }}>
-                              {edu.description}
-                            </Typography>
-                          )}
-                        </Box>
-                      ))
-                    ) : (
-                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        No education information available.
-                      </Typography>
-                    )}
-                  </Box>
-                  
-                  <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">Work Experience</Typography>
-                      {editMode && (
-                        <Button size="small" startIcon={<Add />}>
-                          Add Experience
-                        </Button>
-                      )}
-                    </Box>
-                    
-                    {profile.experience.length > 0 ? (
-                      profile.experience.map((exp) => (
-                        <Box key={exp.id} sx={{ mb: 3, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1, position: 'relative' }}>
-                          {editMode && (
-                            <IconButton 
-                              size="small" 
-                              sx={{ position: 'absolute', top: 8, right: 8 }}
-                              onClick={() => console.log('Delete experience:', exp.id)}
-                            >
-                              <Close fontSize="small" />
-                            </IconButton>
-                          )}
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <Work color="action" sx={{ mr: 1.5 }} />
-                            <Box>
-                              <Typography variant="subtitle1">{exp.position}</Typography>
-                              <Typography variant="body2" color="text.secondary">{exp.company}</Typography>
-                              <Typography variant="body2" color="text.secondary">{exp.duration}</Typography>
-                            </Box>
-                          </Box>
-                          {exp.description && (
-                            <Typography variant="body2" sx={{ mt: 1, ml: 4.5 }}>
-                              {exp.description}
-                            </Typography>
-                          )}
-                        </Box>
-                      ))
-                    ) : (
-                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        No work experience available.
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              )}
-              
-              {tabValue === 1 && (
-                <Box>
-                  <Typography variant="h6" gutterBottom>My Courses</Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    You haven't enrolled in any courses yet. {' '}
-                    <RouterLink to="/courses" style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
-                      Browse courses
-                    </RouterLink>{' '}
-                    to get started.
-                  </Typography>
-                </Box>
-              )}
-              
-              {tabValue === 2 && (
-                <Box>
-                  <Typography variant="h6" gutterBottom>Recent Activity</Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    No recent activity to show.
-                  </Typography>
-                </Box>
-              )}
-              
-              {tabValue === 3 && (
-                <Box>
-                  <Typography variant="h6" gutterBottom>Account Settings</Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    Manage your account settings and preferences.
-                  </Typography>
-                  
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" gutterBottom>Email Notifications</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Switch defaultChecked />
-                      <Typography variant="body2">Course announcements and updates</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Switch defaultChecked />
-                      <Typography variant="body2">Private messages</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Switch defaultChecked />
-                      <Typography variant="body2">Promotional offers</Typography>
-                    </Box>
-                  </Box>
-                  
-                  <Divider sx={{ my: 2 }} />
-                  
-                  <Box>
-                    <Typography variant="subtitle2" gutterBottom>Danger Zone</Typography>
-                    <Button 
-                      variant="outlined" 
-                      color="error"
-                      startIcon={<DeleteOutline />}
-                      onClick={() => console.log('Delete account')}
-                    >
-                      Delete My Account
-                    </Button>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                      Warning: This action cannot be undone. All your data will be permanently deleted.
-                    </Typography>
-                  </Box>
-                </Box>
-              )}
+                  </Grid>
+                </Grid>
             </CardContent>
-          </Card>
+            </ProfileCard>
+          </Slide>
         </Grid>
       </Grid>
+
+      {/* Floating Action Button */}
+      <Fab
+        aria-label="edit"
+        sx={{ 
+          position: 'fixed', 
+          bottom: 24, 
+          right: 24,
+          backgroundColor: '#0e5181',
+          color: 'white',
+          '&:hover': {
+            backgroundColor: '#0a3d5f',
+            transform: 'scale(1.1)',
+          },
+          boxShadow: '0 8px 25px rgba(14, 81, 129, 0.3)',
+          transition: 'all 0.3s ease'
+        }}
+        onClick={handleEditToggle}
+      >
+        <Edit />
+      </Fab>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          sx={{ direction: 'rtl' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

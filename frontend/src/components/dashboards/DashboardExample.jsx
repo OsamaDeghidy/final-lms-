@@ -9,6 +9,7 @@ import {
   AnnouncementCard,
   UserProfileCard 
 } from './DashboardLayout';
+import profileImage from '../../assets/images/profile.jpg';
 import {
   School as SchoolIcon,
   Assignment as AssignmentIcon,
@@ -123,7 +124,7 @@ const DashboardExample = () => {
       description: 'سيتم إغلاق المنصة للصيانة يوم الجمعة من الساعة 2 صباحاً حتى 6 صباحاً',
       time: 'منذ ساعة',
       author: 'إدارة المنصة',
-      avatar: '/profile.svg',
+      avatar: profileImage,
       attachments: [
         { name: 'جدول الصيانة.pdf', url: '#' }
       ]
@@ -133,7 +134,7 @@ const DashboardExample = () => {
       description: 'تم إضافة ميزات جديدة للمنصة تشمل تحسينات في واجهة المستخدم',
       time: 'منذ يوم',
       author: 'فريق التطوير',
-      avatar: '/profile.svg'
+      avatar: profileImage
     }
   ];
 

@@ -2,6 +2,7 @@ import { Box, Paper, Typography, Grid, useTheme, useMediaQuery, alpha, keyframes
 import DescriptionIcon from '@mui/icons-material/Description';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../contexts/AuthContext';
+import profileImage from '../../assets/images/profile.jpg';
 
 // Animation keyframes
 const float = keyframes`
@@ -66,7 +67,7 @@ const UserProfileCard = () => {
           ? `${user.first_name} ${user.last_name}` 
           : user.username || 'مستخدم',
         email: user.email || '',
-        avatar: user.profile_picture || '/profile.svg',
+        avatar: user.profile_picture || profileImage,
         role: getUserRole() === 'instructor' ? 'مدرس' : 'طالب',
         description: user.bio || (getUserRole() === 'instructor' ? 'مدرس في المنصة' : 'طالب في المنصة'),
         joinDate: user.date_joined ? new Date(user.date_joined).toLocaleDateString('ar-EG') : 'غير محدد'
@@ -75,7 +76,7 @@ const UserProfileCard = () => {
     return {
       name: 'مستخدم',
       email: '',
-      avatar: '/profile.svg',
+      avatar: profileImage,
       role: 'طالب',
       description: 'طالب في المنصة',
       joinDate: 'غير محدد'
