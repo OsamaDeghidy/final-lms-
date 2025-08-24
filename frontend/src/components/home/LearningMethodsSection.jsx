@@ -925,31 +925,7 @@ const LearningMethodsSection = () => {
           </Fade>
         </Box>
 
-        <Box mt={8} textAlign="center" data-aos="fade-up" data-aos-delay="400">
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            endIcon={theme.direction === 'rtl' ? <ChevronLeft /> : <ChevronRight />}
-            sx={{
-              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
-              borderRadius: '12px',
-              padding: '12px 32px',
-              fontSize: '1rem',
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: '0 10px 20px rgba(14, 81, 129, 0.2)',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: '0 15px 25px rgba(14, 81, 129, 0.3)',
-                background: 'linear-gradient(90deg, #0a3d5f 0%, #d18a7a 100%)',
-              },
-            }}
-          >
-            استكشف جميع الدورات
-          </Button>
-        </Box>
+
       </Container>
     </SectionContainer>
   );

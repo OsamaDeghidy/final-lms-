@@ -133,7 +133,7 @@ const HeroSection = styled('section')(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'center',
   textAlign: 'center',
-  background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+  background: 'linear-gradient(-45deg, #0e5181, #e5978b, #0e5181, #e5978b)',
   backgroundSize: '400% 400%',
   animation: `${gradientBG} 15s ease infinite`,
   '&:before': {
@@ -194,11 +194,11 @@ const HeroButton = styled(Button)(({ theme, variant }) => ({
   borderRadius: '12px',
   textTransform: 'none',
   background: variant === 'contained' 
-    ? 'linear-gradient(90deg, #4299E1 0%, #9F7AEA 100%)' 
+    ? 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)' 
     : 'transparent',
-  color: variant === 'contained' ? 'white' : '#4299E1',
-  border: variant === 'outlined' ? '2px solid #4299E1' : 'none',
-  boxShadow: variant === 'contained' ? '0 4px 15px rgba(66, 153, 225, 0.4)' : 'none',
+  color: variant === 'contained' ? 'white' : '#0e5181',
+  border: variant === 'outlined' ? '2px solid #0e5181' : 'none',
+  boxShadow: variant === 'contained' ? '0 4px 15px rgba(14, 81, 129, 0.4)' : 'none',
   position: 'relative',
   overflow: 'hidden',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -214,11 +214,11 @@ const HeroButton = styled(Button)(({ theme, variant }) => ({
   },
   '&:hover': {
     background: variant === 'contained'
-      ? 'linear-gradient(90deg, #3182CE 0%, #805AD5 100%)'
-      : 'rgba(66, 153, 225, 0.1)',
+      ? 'linear-gradient(90deg, #0a3d5f 0%, #d17a6f 100%)'
+      : 'rgba(14, 81, 129, 0.1)',
     boxShadow: variant === 'contained' 
-      ? '0 6px 20px rgba(66, 153, 225, 0.6)' 
-      : '0 4px 12px rgba(66, 153, 225, 0.2)',
+      ? '0 6px 20px rgba(14, 81, 129, 0.6)' 
+      : '0 4px 12px rgba(14, 81, 129, 0.2)',
     transform: 'translateY(-2px)',
     '&:before': {
       left: '100%',
@@ -238,7 +238,7 @@ const FeatureItem = styled('div')({
   alignItems: 'center',
   marginBottom: '1.5rem',
   padding: '1.5rem 2rem',
-  background: 'linear-gradient(90deg, rgba(66, 153, 225, 0.1) 0%, rgba(159, 122, 234, 0.05) 100%)',
+  background: 'linear-gradient(90deg, rgba(14, 81, 129, 0.1) 0%, rgba(229, 151, 139, 0.05) 100%)',
   borderRadius: '12px',
   border: '1px solid rgba(255, 255, 255, 0.05)',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -251,7 +251,7 @@ const FeatureItem = styled('div')({
     left: 0,
     width: '4px',
     height: '100%',
-    background: 'linear-gradient(to bottom, #4299E1, #9F7AEA)',
+    background: 'linear-gradient(to bottom, #0e5181, #e5978b)',
     transition: 'width 0.3s ease',
   },
   '&:hover': {
@@ -299,7 +299,7 @@ const ImageContainer = styled('div')({
     transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
     '&:hover': {
       transform: 'scale(1.03) rotate(1deg)',
-      filter: 'drop-shadow(0 15px 30px rgba(66, 153, 225, 0.3))',
+      filter: 'drop-shadow(0 15px 30px rgba(14, 81, 129, 0.3))',
     },
   },
   '&::before': {
@@ -307,7 +307,7 @@ const ImageContainer = styled('div')({
     position: 'absolute',
     width: '200px',
     height: '200px',
-    background: 'radial-gradient(circle, rgba(159, 122, 234, 0.15) 0%, transparent 70%)',
+    background: 'radial-gradient(circle, rgba(229, 151, 139, 0.15) 0%, transparent 70%)',
     borderRadius: '50%',
     filter: 'blur(20px)',
     zIndex: 0,
@@ -318,7 +318,7 @@ const ImageContainer = styled('div')({
     position: 'absolute',
     width: '300px',
     height: '300px',
-    background: 'radial-gradient(circle, rgba(66, 153, 225, 0.1) 0%, transparent 70%)',
+    background: 'radial-gradient(circle, rgba(14, 81, 129, 0.1) 0%, transparent 70%)',
     borderRadius: '50%',
     filter: 'blur(30px)',
     zIndex: 0,
@@ -336,18 +336,18 @@ const FloatingIcon = styled('div')(({ theme, top, left, size = 40, delay }) => (
   height: size,
   top: `${top}%`,
   left: `${left}%`,
-  background: 'rgba(66, 153, 225, 0.1)',
+  background: 'rgba(14, 81, 129, 0.1)',
   borderRadius: '50%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: 'rgba(66, 153, 225, 0.8)',
+  color: 'rgba(14, 81, 129, 0.8)',
   animation: `float 6s ease-in-out ${delay}s infinite`,
   backdropFilter: 'blur(2px)',
-  border: '1px solid rgba(66, 153, 225, 0.2)',
+  border: '1px solid rgba(14, 81, 129, 0.2)',
   zIndex: 1,
   '&:hover': {
-    background: 'rgba(159, 122, 234, 0.15)',
+    background: 'rgba(229, 151, 139, 0.15)',
     transform: 'scale(1.1)',
   },
 }));

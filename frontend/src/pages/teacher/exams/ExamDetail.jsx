@@ -271,87 +271,175 @@ const ExamDetail = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: { xs: 1, md: 3 } }}>
-      <Paper elevation={2} sx={{ borderRadius: 3, p: 4, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-          <Assessment sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" fontWeight={700}>{exam.title}</Typography>
-          {exam.is_final && <Chip label="نهائي" color="success" size="small" />}
-          <Chip label={getExamStatus().status} color={getExamStatus().color} size="small" />
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 2, md: 4 } }}>
+      {/* Header Section */}
+      <Paper elevation={3} sx={{ borderRadius: 4, p: 4, mb: 4, background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)', color: 'white' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Assessment sx={{ fontSize: 40, color: 'white' }} />
+            <Box>
+              <Typography variant="h4" fontWeight={700} sx={{ color: 'white', mb: 0.5 }}>
+                {exam.title}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                {exam.is_final && <Chip label="نهائي" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', fontWeight: 600 }} />}
+                <Chip 
+                  label={getExamStatus().status} 
+                  sx={{ 
+                    bgcolor: getExamStatus().color === 'success' ? 'rgba(76,175,80,0.2)' : 
+                           getExamStatus().color === 'warning' ? 'rgba(255,152,0,0.2)' :
+                           getExamStatus().color === 'error' ? 'rgba(244,67,54,0.2)' : 'rgba(255,255,255,0.2)',
+                    color: 'white', 
+                    fontWeight: 600 
+                  }} 
+                />
+              </Box>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate('/teacher/exams')}
+              sx={{ 
+                borderColor: 'rgba(255,255,255,0.5)', 
+                color: 'white',
+                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' }
+              }}
+            >
+              عودة للقائمة
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => navigate(`/teacher/exams/${examId}/edit`)}
+              startIcon={<Edit />}
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+              }}
+            >
+              تعديل الامتحان
+            </Button>
+          </Box>
         </Box>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-          <Typography variant="subtitle1" color="text.secondary">
-            <strong>الدورة:</strong> {exam.course?.title || 'غير محدد'}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+              الدورة:
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'white' }}>
+              {exam.course?.title || 'غير محدد'}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>
+              الوحدة:
         </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            <strong>الوحدة:</strong> {exam.module?.name || 'غير محدد'}
+            <Typography variant="body1" sx={{ color: 'white' }}>
+              {exam.module?.name || 'غير محدد'}
         </Typography>
+          </Box>
         </Box>
         
         {exam.description && (
-          <Typography variant="body1" mb={2} dangerouslySetInnerHTML={{ __html: exam.description }} />
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', lineHeight: 1.6 }}>
+            {exam.description}
+          </Typography>
         )}
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-          <Chip label={`الوقت: ${exam.time_limit || 'غير محدد'} دقيقة`} color="info" />
-          <Chip label={`درجة النجاح: ${exam.pass_mark}%`} color="success" />
-          <Chip label={`إجمالي النقاط: ${exam.total_points}`} color="warning" />
-          {exam.allow_multiple_attempts && (
-            <Chip label={`الحد الأقصى: ${exam.max_attempts} محاولة`} color="secondary" />
-          )}
-        </Box>
+      </Paper>
 
-        {/* Exam Schedule and Attempts */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            جدول الامتحان والمحاولات
+      {/* Main Content Grid */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4 }}>
+        
+        {/* Left Column - Exam Details */}
+        <Paper elevation={2} sx={{ borderRadius: 3, p: 4, height: 'fit-content' }}>
+          <Typography variant="h5" fontWeight={700} sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Assessment sx={{ color: 'primary.main' }} />
+            تفاصيل الامتحان
             </Typography>
           
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-            {exam.start_date && (
+          <Box sx={{ display: 'grid', gap: 3 }}>
+            {/* Basic Info */}
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: 'primary.main' }}>
+                المعلومات الأساسية
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>الوقت المحدد:</Typography>
+                  <Chip label={`${exam.time_limit || 'غير محدد'} دقيقة`} color="info" size="small" />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>درجة النجاح:</Typography>
+                  <Chip label={`${exam.pass_mark}%`} color="success" size="small" />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>إجمالي النقاط:</Typography>
+                  <Chip label={`${exam.total_points} نقطة`} color="warning" size="small" />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>عدد المحاولات:</Typography>
               <Chip 
-                label={`موعد البدء: ${formatDate(exam.start_date)}`} 
-                color="primary" 
-                variant="outlined"
-              />
+                    label={exam.allow_multiple_attempts ? `${exam.max_attempts} محاولة` : 'محاولة واحدة'} 
+                    color={exam.allow_multiple_attempts ? "secondary" : "default"} 
+                    size="small" 
+                  />
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Schedule */}
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: 'primary.main' }}>
+                جدول الامتحان
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                {exam.start_date && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                    <Typography variant="body1" fontWeight={600}>موعد البدء:</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(exam.start_date)}
+                    </Typography>
+                  </Box>
             )}
             {exam.end_date && (
-              <Chip 
-                label={`موعد الانتهاء: ${formatDate(exam.end_date)}`} 
-                color="error" 
-                variant="outlined"
-              />
-            )}
-            <Chip 
-              label={`المحاولات: ${exam.allow_multiple_attempts ? 'متعددة' : 'واحدة'}`} 
-              color={exam.allow_multiple_attempts ? "success" : "default"}
-            />
-            {exam.allow_multiple_attempts && exam.max_attempts && (
-              <Chip 
-                label={`عدد المحاولات: ${exam.max_attempts}`} 
-                color="info"
-              />
-            )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                    <Typography variant="body1" fontWeight={600}>موعد الانتهاء:</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatDate(exam.end_date)}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
           </Box>
 
-          {/* Additional Settings */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            {/* Settings */}
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 2, color: 'primary.main' }}>
+                إعدادات الامتحان
+              </Typography>
+              <Box sx={{ display: 'grid', gap: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>إظهار الإجابات:</Typography>
             <Chip 
-              label={`إظهار الإجابات: ${exam.show_answers_after ? 'نعم' : 'لا'}`} 
+                    label={exam.show_answers_after ? 'نعم' : 'لا'} 
               color={exam.show_answers_after ? "success" : "default"}
               size="small"
             />
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                  <Typography variant="body1" fontWeight={600}>ترتيب عشوائي:</Typography>
             <Chip 
-              label={`ترتيب عشوائي: ${exam.randomize_questions ? 'نعم' : 'لا'}`} 
+                    label={exam.randomize_questions ? 'نعم' : 'لا'} 
               color={exam.randomize_questions ? "warning" : "default"}
               size="small"
             />
+                </Box>
+              </Box>
           </Box>
 
-          {/* Time Remaining (if exam is active) */}
+            {/* Time Remaining */}
           {exam.is_active && exam.start_date && exam.end_date && (() => {
             const now = new Date();
             const startDate = new Date(exam.start_date);
@@ -364,9 +452,12 @@ const ExamDetail = () => {
               const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
               
               return (
-                <Box sx={{ mt: 2, p: 2, bgcolor: '#fff3cd', borderRadius: 1, border: '1px solid #ffeaa7' }}>
-                  <Typography variant="body2" color="warning.dark" fontWeight={600}>
-                    ⏰ الوقت المتبقي: {days > 0 ? `${days} يوم ` : ''}{hours > 0 ? `${hours} ساعة ` : ''}{minutes} دقيقة
+                  <Box sx={{ p: 3, bgcolor: '#fff3cd', borderRadius: 2, border: '1px solid #ffeaa7' }}>
+                    <Typography variant="h6" color="warning.dark" fontWeight={600} sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      ⏰ الوقت المتبقي
+                    </Typography>
+                    <Typography variant="body1" color="warning.dark" fontWeight={600}>
+                      {days > 0 ? `${days} يوم ` : ''}{hours > 0 ? `${hours} ساعة ` : ''}{minutes} دقيقة
             </Typography>
                 </Box>
               );
@@ -374,109 +465,182 @@ const ExamDetail = () => {
             return null;
           })()}
         </Box>
+        </Paper>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" fontWeight={700}>
-            <Quiz sx={{ mr: 1 }} /> الأسئلة ({questions.length})
+        {/* Right Column - Questions */}
+        <Paper elevation={2} sx={{ borderRadius: 3, p: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" fontWeight={700} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Quiz sx={{ color: 'primary.main' }} />
+              الأسئلة ({questions.length})
           </Typography>
           <Button 
             variant="contained" 
             startIcon={<Add />} 
-            sx={{ borderRadius: 2, fontWeight: 'bold' }}
+              sx={{ 
+                borderRadius: 2, 
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0a3d5f 0%, #d17a6f 100%)',
+                }
+              }}
             onClick={() => setAddQuestionDialogOpen(true)}
           >
             إضافة سؤال
           </Button>
         </Box>
         
-        <List>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+          
           {questions.length === 0 ? (
-            <ListItem>
-              <ListItemText
-                primary={
-                  <Typography variant="body1" color="text.secondary" align="center">
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <Quiz sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
                     لا توجد أسئلة لهذا الامتحان
                   </Typography>
-                }
-              />
-            </ListItem>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                ابدأ بإضافة أسئلة لإنشاء امتحان شامل
+              </Typography>
+              <Button 
+                variant="contained" 
+                startIcon={<Add />}
+                onClick={() => setAddQuestionDialogOpen(true)}
+                sx={{ 
+                  background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #0a3d5f 0%, #d17a6f 100%)',
+                  }
+                }}
+              >
+                إضافة أول سؤال
+              </Button>
+            </Box>
           ) : (
-            questions.map((question) => (
-              <ListItem key={question.id} divider>
-              <ListItemText
-                  primary={<Typography fontWeight={600}>{question.text}</Typography>}
-                  secondary={
-                    <Box sx={{ mt: 1 }}>
+            <Box sx={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              {questions.map((question, index) => (
+                <Paper 
+                  key={question.id} 
+                  elevation={1} 
+                  sx={{ 
+                    p: 3, 
+                    mb: 3, 
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'grey.200',
+                    '&:hover': {
+                      boxShadow: 3,
+                      borderColor: 'primary.main'
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+                        السؤال {index + 1}: {question.text}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
                       <Chip 
                         label={getQuestionTypeLabel(question.question_type)} 
                         size="small" 
-                        sx={{ mr: 1 }} 
+                          color="primary"
+                          variant="outlined"
                       />
                       <Chip 
-                        label={`نقاط: ${question.points}`} 
+                          label={`${question.points} نقطة`} 
                         size="small" 
                         color="info" 
                       />
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Tooltip title="تعديل">
+                        <IconButton 
+                          onClick={() => navigate(`/teacher/exams/${examId}/questions/${question.id}/edit`)}
+                          sx={{ 
+                            color: 'primary.main',
+                            '&:hover': { bgcolor: 'primary.light' }
+                          }}
+                        >
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="حذف">
+                        <IconButton 
+                          onClick={() => openDeleteDialog(question)}
+                          sx={{ 
+                            color: 'error.main',
+                            '&:hover': { bgcolor: 'error.light' }
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                  
                       {question.explanation && (
-                        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                    <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                      <Typography variant="body2" color="text.secondary">
                           <strong>الشرح:</strong> {question.explanation}
                         </Typography>
+                    </Box>
                       )}
+                  
                       {question.answers && question.answers.length > 0 && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>
+                    <Box>
+                      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
                             الإجابات:
                           </Typography>
-                          {question.answers.map((answer, index) => (
-                            <Chip
-                              key={index}
-                              label={`${index + 1}. ${answer.text}`}
-                              size="small"
-                              color={answer.is_correct ? "success" : "default"}
-                              variant={answer.is_correct ? "filled" : "outlined"}
-                              sx={{ mr: 0.5, mb: 0.5 }}
-                            />
+                      <Box sx={{ display: 'grid', gap: 1 }}>
+                        {question.answers.map((answer, answerIndex) => (
+                          <Box 
+                            key={answerIndex}
+                            sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 1,
+                              p: 1.5,
+                              bgcolor: answer.is_correct ? 'success.light' : 'grey.50',
+                              borderRadius: 1,
+                              border: answer.is_correct ? '2px solid' : '1px solid',
+                              borderColor: answer.is_correct ? 'success.main' : 'grey.300'
+                            }}
+                          >
+                            <Box sx={{ 
+                              width: 20, 
+                              height: 20, 
+                              borderRadius: '50%',
+                              bgcolor: answer.is_correct ? 'success.main' : 'grey.400',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold'
+                            }}>
+                              {answerIndex + 1}
+                            </Box>
+                            <Typography variant="body2" sx={{ flex: 1 }}>
+                              {answer.text}
+                            </Typography>
+                            {answer.is_correct && (
+                              <Chip label="إجابة صحيحة" size="small" color="success" />
+                            )}
+                          </Box>
                           ))}
                         </Box>
-                      )}
                     </Box>
-                  }
-              />
-              <ListItemSecondaryAction>
-                  <Tooltip title="تعديل">
-                    <IconButton onClick={() => navigate(`/teacher/exams/${examId}/questions/${question.id}/edit`)}>
-                      <Edit color="warning" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="حذف">
-                    <IconButton onClick={() => openDeleteDialog(question)}>
-                      <Delete color="error" />
-                    </IconButton>
-                  </Tooltip>
-              </ListItemSecondaryAction>
-            </ListItem>
-            ))
+                  )}
+                </Paper>
+              ))}
+            </Box>
           )}
-        </List>
       </Paper>
-      
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-      <Button variant="outlined" onClick={() => navigate('/teacher/exams')}>
-        عودة للقائمة
-      </Button>
-        <Button 
-          variant="contained" 
-          onClick={() => navigate(`/teacher/exams/${examId}/edit`)}
-          startIcon={<Edit />}
-        >
-          تعديل الامتحان
-        </Button>
       </Box>
 
       {/* Delete Question Confirmation Dialog */}

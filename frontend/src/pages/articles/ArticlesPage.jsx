@@ -65,9 +65,9 @@ const pulse = keyframes`
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #1565c0 100%)`,
+  background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
   color: 'white',
-  padding: theme.spacing(16, 0, 12),
+  padding: theme.spacing(8, 0, 6),
   textAlign: 'center',
   position: 'relative',
   overflow: 'hidden',
@@ -178,10 +178,10 @@ const SearchBox = styled(TextField)(({ theme }) => ({
     backdropFilter: 'blur(10px)',
     fontSize: '1.1rem',
     '&:hover fieldset': {
-      borderColor: '#1976d2',
+      borderColor: '#0e5181',
     },
     '&.Mui-focused fieldset': {
-      borderColor: '#1976d2',
+      borderColor: '#0e5181',
       borderWidth: 2,
     },
   },
@@ -734,12 +734,20 @@ const ArticlesPage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <Typography variant="h2" component="h1" sx={{ 
-                fontWeight: 800, 
-                mb: 2,
-                fontSize: { xs: '2rem', md: '3rem' },
-                textShadow: '0 4px 8px rgba(0,0,0,0.1)'
-              }}>
+              <Typography 
+                variant="h2" 
+                component="h1" 
+                sx={{ 
+                  fontWeight: 800, 
+                  mb: 3,
+                  background: 'linear-gradient(90deg, #fff, #e5978b)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
+                  lineHeight: 1.2,
+                  textShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                }}
+              >
                 المدونة
               </Typography>
               <Typography variant="h5" sx={{ 
@@ -762,7 +770,7 @@ const ArticlesPage = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#1976d2' }} />
+                        <SearchIcon sx={{ color: '#0e5181' }} />
                       </InputAdornment>
                     ),
                   }}

@@ -18,6 +18,13 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -64,6 +71,8 @@ const Lessons = () => {
   const [targetLesson, setTargetLesson] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -116,23 +125,98 @@ const Lessons = () => {
     }
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{
+        mb: 4,
+        p: 3,
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          position: 'absolute',
+          top: -20,
+          right: -20,
+          width: 100,
+          height: 100,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{
+          position: 'absolute',
+          bottom: -30,
+          left: -30,
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <IconButton onClick={() => navigate(`/teacher/courses/${courseId}/units`)}>
+              <IconButton 
+                onClick={() => navigate(`/teacher/courses/${courseId}/units`)}
+                sx={{ 
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                  },
+                }}
+              >
             <ArrowBackIcon />
           </IconButton>
           <Box>
-            <Typography variant="h5" fontWeight={700}>دروس الوحدة</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {module?.name || module?.title || ''}
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'white' }}>
+                  دروس الوحدة
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+                  {module?.name || module?.title || 'إدارة دروس الوحدة'}
             </Typography>
           </Box>
         </Box>
-        <Button variant="contained" startIcon={<AddCircle />} size="large" sx={{ mb: 2 }} onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/create`)}>
+            <Button 
+              variant="contained" 
+              startIcon={<AddCircle />} 
+              size="large" 
+              onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/create`)}
+              sx={{ 
+                background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
+                color: 'white',
+                borderRadius: '25px',
+                px: 3,
+                py: 1.5,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
+                border: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
+                  boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
+                  transform: 'translateY(-2px)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
           إضافة درس
         </Button>
+          </Box>
+        </Box>
       </Box>
 
       <StyledPaper>
@@ -147,50 +231,121 @@ const Lessons = () => {
 
         {!loading && !error && (
           lessons.length > 0 ? (
-            <Grid container spacing={2}>
-              {lessons.map((lesson) => (
-                <Grid item xs={12} md={6} key={lesson.id}>
-                  <LessonCard>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <>
+              <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>الدرس</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>النوع</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>المدة</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>الحالة</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 600 }}>الإجراءات</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {lessons
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((lesson) => (
+                      <TableRow key={lesson.id} hover>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              backgroundColor: 'primary.main',
+                              color: 'white'
+                            }}>
                         {getTypeIcon(lesson.lesson_type)}
-                        <Typography variant="subtitle1" fontWeight={600} dir="rtl">
+                            </Box>
+                            <Box>
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                           {lesson.title}
                         </Typography>
-                        {lesson.is_free && <Chip size="small" label="معاينة" color="primary" variant="outlined" />}
+                              <Typography variant="caption" color="textSecondary">
+                                معرف الدرس: {lesson.id}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={lesson.lesson_type || 'article'} 
+                            variant="outlined" 
+                            size="small"
+                            color={lesson.lesson_type === 'video' ? 'primary' : 'default'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2">
+                              {lesson.duration_minutes || 0} دقيقة
+                            </Typography>
                       </Box>
-                      <Box>
+                        </TableCell>
+                        <TableCell>
+                          {lesson.is_free && (
+                            <Chip 
+                              size="small" 
+                              label="معاينة" 
+                              color="primary" 
+                              variant="outlined" 
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
                         <Tooltip title="عرض">
-                          <IconButton size="small" onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/${lesson.id}`)}>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/${lesson.id}`)}
+                                sx={{ color: 'primary.main' }}
+                              >
                             <VisibilityIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="تعديل">
-                          <IconButton size="small" onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/${lesson.id}/edit`)}>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/${lesson.id}/edit`)}
+                                sx={{ color: 'warning.main' }}
+                              >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="حذف">
-                          <IconButton size="small" color="error" onClick={() => askDelete(lesson)}>
+                              <IconButton 
+                                size="small" 
+                                color="error" 
+                                onClick={() => askDelete(lesson)}
+                              >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Box>
-                    </Box>
-                    <Divider sx={{ my: 1.5 }} />
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTimeIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                        <Typography variant="caption" color="text.secondary">
-                          {lesson.duration_minutes || 0} دقيقة
-                        </Typography>
-                      </Box>
-                      <Chip size="small" label={lesson.lesson_type || 'article'} variant="outlined" />
-                    </Box>
-                  </LessonCard>
-                </Grid>
-              ))}
-            </Grid>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              <TablePagination
+                component="div"
+                count={lessons.length}
+                page={page}
+                onPageChange={handleChangePage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage="صفوف في الصفحة:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+              />
+            </>
           ) : (
             <Typography variant="body1" color="text.secondary">لا توجد دروس في هذه الوحدة حتى الآن.</Typography>
           )

@@ -196,7 +196,7 @@ const MyCertificates = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',

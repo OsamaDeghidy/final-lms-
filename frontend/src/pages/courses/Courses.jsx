@@ -306,7 +306,7 @@ const FloatingShape = styled('div')({
 });
 
 const HeroSection = styled('div')(({ theme }) => ({
-  background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+  background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
   color: 'white',
   padding: '50px 0 40px',
   margin: '0 0 30px 0',
@@ -320,7 +320,7 @@ const HeroSection = styled('div')(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'radial-gradient(circle at 20% 30%, rgba(233, 69, 96, 0.15) 0%, transparent 50%)',
+    background: 'radial-gradient(circle at 20% 30%, rgba(229, 151, 139, 0.15) 0%, transparent 50%)',
     zIndex: 1,
     animation: `${pulse} 15s ease-in-out infinite`,
   },
@@ -331,7 +331,7 @@ const HeroSection = styled('div')(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\' fill=\'%23e94560\' fill-opacity=\'0.08\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")',
+    background: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\' fill=\'%23e5978b\' fill-opacity=\'0.08\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")',
     opacity: 0.6,
     zIndex: 2,
     animation: `${rotate} 120s linear infinite`,
@@ -358,7 +358,7 @@ const SearchContainer = styled('div')(({ theme }) => ({
     },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
       border: 'none',
-      boxShadow: '0 0 0 2px rgba(30, 136, 229, 0.2)',
+      boxShadow: '0 0 0 2px rgba(229, 151, 139, 0.5)',
     },
   },
   '& .search-button': {
@@ -754,7 +754,7 @@ const Courses = () => {
                 sx={{ 
                   fontWeight: 800, 
                   mb: 3,
-                  background: 'linear-gradient(90deg, #fff, #e94560)',
+                  background: 'linear-gradient(90deg, #fff, #e5978b)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
@@ -809,7 +809,7 @@ const Courses = () => {
                       },
                       '&.Mui-focused fieldset': {
                         border: 'none',
-                        boxShadow: '0 0 0 2px rgba(233, 69, 96, 0.5)',
+                        boxShadow: '0 0 0 2px rgba(229, 151, 139, 0.5)',
                       },
                       paddingRight: '20px',
                     },

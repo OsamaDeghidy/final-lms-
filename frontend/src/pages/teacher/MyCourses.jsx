@@ -7,7 +7,7 @@ import {
   CardMedia, 
   Typography, 
   Box, 
-  Button, 
+  Button,
   Chip,
   CircularProgress,
   Paper,
@@ -136,8 +136,8 @@ const MyCourses = () => {
 
   useEffect(() => {
     const fetchCourses = async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
         const coursesData = await courseAPI.getCourses();
         console.log('Courses API response:', coursesData);
         // Ensure coursesData is an array
@@ -165,10 +165,10 @@ const MyCourses = () => {
         // Set empty array as fallback
         setCourses([]);
         setAllCourses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
     fetchCourses();
   }, []);
@@ -344,47 +344,47 @@ const MyCourses = () => {
 
   // Header Component
   const Header = () => (
-    <Box sx={{ 
-      mb: 4, 
-      p: 3, 
-      background: 'linear-gradient(135deg, #3498db 0%, #2ecc71 100%)',
-      borderRadius: 3,
-      color: 'white',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
       <Box sx={{ 
-        position: 'absolute', 
-        top: -20, 
-        right: -20, 
-        width: 100, 
-        height: 100, 
-        borderRadius: '50%', 
-        background: 'rgba(255,255,255,0.1)',
-        zIndex: 1
-      }} />
-      <Box sx={{ 
-        position: 'absolute', 
-        bottom: -30, 
-        left: -30, 
-        width: 80, 
-        height: 80, 
-        borderRadius: '50%', 
-        background: 'rgba(255,255,255,0.08)',
-        zIndex: 1
-      }} />
-      
-      <Box sx={{ position: 'relative', zIndex: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <SchoolIcon sx={{ fontSize: 32, color: 'white' }} />
-          <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
-            كورساتي
+        mb: 4, 
+        p: 3, 
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: -20, 
+          right: -20, 
+          width: 100, 
+          height: 100, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{ 
+          position: 'absolute', 
+          bottom: -30, 
+          left: -30, 
+          width: 80, 
+          height: 80, 
+          borderRadius: '50%', 
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <SchoolIcon sx={{ fontSize: 32, color: 'white' }} />
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
+              كورساتي
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+          إدارة الكورسات والمحتوى التعليمي
           </Typography>
         </Box>
-        <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
-          إدارة الكورسات والمحتوى التعليمي
-        </Typography>
-      </Box>
     </Box>
   );
 
@@ -468,7 +468,7 @@ const MyCourses = () => {
             gutterBottom 
             variant="h6" 
             component="h2" 
-            sx={{
+          sx={{ 
               fontWeight: 'bold',
               minHeight: '2.5em',
               display: '-webkit-box',
@@ -652,7 +652,7 @@ const MyCourses = () => {
         <Box sx={{ position: 'fixed', top: 100, left: 32, zIndex: 1200 }}>
           <IconButton
             onClick={handleCreateCourse}
-            sx={{
+                  sx={{ 
               width: 56,
               height: 56,
               background: 'linear-gradient(45deg, #3498db 30%, #2ecc71 90%)',
@@ -881,13 +881,13 @@ const MyCourses = () => {
             </Fade>
           ) : (
             filteredCourses.map((course, index) => (
-              <Grid item xs={12} sm={6} md={6} key={course.id}>
+                    <Grid item xs={12} sm={6} md={6} key={course.id}>
                 <CourseCard course={course} />
-              </Grid>
-            ))
+                    </Grid>
+                  ))
           )}
         </Grid>
-      </Container>
+    </Container>
 
       <Snackbar
         open={snackbar.open}

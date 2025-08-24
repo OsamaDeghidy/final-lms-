@@ -51,9 +51,9 @@ import { useAuth } from '../../contexts/AuthContext';
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #1565c0 100%)`,
+  background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
   color: 'white',
-  padding: theme.spacing(12, 0, 8),
+  padding: theme.spacing(8, 0, 6),
   position: 'relative',
   overflow: 'hidden',
   '&::before': {

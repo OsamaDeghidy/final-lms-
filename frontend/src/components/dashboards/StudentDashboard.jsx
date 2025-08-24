@@ -274,51 +274,46 @@ const StudentDashboard = () => {
               <DashboardCard
                 sx={{
                   height: 200,
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #2196f3, #64b5f6)',
-                  color: 'white',
+                  borderRadius: 4,
+                  background: 'white',
+                  color: 'text.primary',
                   position: 'relative',
                   overflow: 'hidden',
+                  border: '2px solid #0e5181',
+                  boxShadow: '0 4px 20px rgba(14, 81, 129, 0.08)',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8],
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 12px 30px rgba(14, 81, 129, 0.15)',
+                    border: '2px solid #0e5181',
                   },
-                  transition: 'all 0.3s ease',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: -50,
-                    right: -50,
-                    width: 100,
-                    height: 100,
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                  }
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                  <Box>
-                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#0e5181', lineHeight: 1 }}>
                       {stats.enrolledCourses}
                     </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
                       المقررات المسجلة
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
                       مقررات نشطة
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 2,
+                      width: 70,
+                      height: 70,
+                      borderRadius: 3,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      background: 'linear-gradient(135deg, #0e5181, #1a6ba8)',
+                      color: 'white',
+                      boxShadow: '0 6px 20px rgba(14, 81, 129, 0.3)',
                       '& svg': {
-                        fontSize: '2rem'
+                        fontSize: '2.2rem'
                       }
                     }}
                   >
@@ -334,51 +329,46 @@ const StudentDashboard = () => {
               <DashboardCard
                 sx={{
                   height: 200,
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #ff9800, #ffcc02)',
-                  color: 'white',
+                  borderRadius: 4,
+                  background: 'white',
+                  color: 'text.primary',
                   position: 'relative',
                   overflow: 'hidden',
+                  border: '2px solid #e5978b',
+                  boxShadow: '0 4px 20px rgba(229, 151, 139, 0.08)',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8],
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 12px 30px rgba(229, 151, 139, 0.15)',
+                    border: '2px solid #e5978b',
                   },
-                  transition: 'all 0.3s ease',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: -50,
-                    right: -50,
-                    width: 100,
-                    height: 100,
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                  }
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                  <Box>
-                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#e5978b', lineHeight: 1 }}>
                       {stats.pendingAssignments}
                     </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
                       الواجبات المعلقة
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
                       واجبات تحتاج تسليم
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 2,
+                      width: 70,
+                      height: 70,
+                      borderRadius: 3,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      background: 'linear-gradient(135deg, #e5978b, #f0a8a0)',
+                      color: 'white',
+                      boxShadow: '0 6px 20px rgba(229, 151, 139, 0.3)',
                       '& svg': {
-                        fontSize: '2rem'
+                        fontSize: '2.2rem'
                       }
                     }}
                   >
@@ -394,51 +384,46 @@ const StudentDashboard = () => {
               <DashboardCard
                 sx={{
                   height: 200,
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #4caf50, #81c784)',
-                  color: 'white',
+                  borderRadius: 4,
+                  background: 'white',
+                  color: 'text.primary',
                   position: 'relative',
                   overflow: 'hidden',
+                  border: '2px solid #0e5181',
+                  boxShadow: '0 4px 20px rgba(14, 81, 129, 0.08)',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8],
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 12px 30px rgba(14, 81, 129, 0.15)',
+                    border: '2px solid #0e5181',
                   },
-                  transition: 'all 0.3s ease',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: -50,
-                    right: -50,
-                    width: 100,
-                    height: 100,
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                  }
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                  <Box>
-                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#0e5181', lineHeight: 1 }}>
                       {formatGrade(stats.averageGrade)}
                     </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
                       المعدل الحالي
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
                       {stats.averageGrade}%
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 2,
+                      width: 70,
+                      height: 70,
+                      borderRadius: 3,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      background: 'linear-gradient(135deg, #0e5181, #1a6ba8)',
+                      color: 'white',
+                      boxShadow: '0 6px 20px rgba(14, 81, 129, 0.3)',
                       '& svg': {
-                        fontSize: '2rem'
+                        fontSize: '2.2rem'
                       }
                     }}
                   >
@@ -454,51 +439,46 @@ const StudentDashboard = () => {
               <DashboardCard
                 sx={{
                   height: 200,
-                  borderRadius: 3,
-                  background: 'linear-gradient(135deg, #673ab7, #9575cd)',
-                  color: 'white',
+                  borderRadius: 4,
+                  background: 'white',
+                  color: 'text.primary',
                   position: 'relative',
                   overflow: 'hidden',
+                  border: '2px solid #e5978b',
+                  boxShadow: '0 4px 20px rgba(229, 151, 139, 0.08)',
                   '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8],
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 12px 30px rgba(229, 151, 139, 0.15)',
+                    border: '2px solid #e5978b',
                   },
-                  transition: 'all 0.3s ease',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: -50,
-                    right: -50,
-                    width: 100,
-                    height: 100,
-                    borderRadius: '50%',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                  }
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-                  <Box>
-                    <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#e5978b', lineHeight: 1 }}>
                       {stats.totalPoints.toLocaleString()}
                     </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, opacity: 0.9 }}>
+                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
                       النقاط المكتسبة
                     </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
                       نقاط إجمالية
                     </Typography>
                   </Box>
                   <Box
                     sx={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 2,
+                      width: 70,
+                      height: 70,
+                      borderRadius: 3,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      background: 'linear-gradient(135deg, #e5978b, #f0a8a0)',
+                      color: 'white',
+                      boxShadow: '0 6px 20px rgba(229, 151, 139, 0.3)',
                       '& svg': {
-                        fontSize: '2rem'
+                        fontSize: '2.2rem'
                       }
                     }}
                   >

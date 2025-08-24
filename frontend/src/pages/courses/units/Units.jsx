@@ -33,6 +33,13 @@ import {
   Menu,
   ListItemIcon,
   ListItemText,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -123,6 +130,8 @@ const Units = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // يتم الجلب من API بدلاً من البيانات الوهمية
 
@@ -272,53 +281,128 @@ const Units = () => {
     return <ArticleIcon />;
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      <Box sx={{
+        mb: 4,
+        p: 3,
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        borderRadius: 3,
+        color: 'white',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{
+          position: 'absolute',
+          top: -20,
+          right: -20,
+          width: 100,
+          height: 100,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)',
+          zIndex: 1
+        }} />
+        <Box sx={{
+          position: 'absolute',
+          bottom: -30,
+          left: -30,
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.08)',
+          zIndex: 1
+        }} />
+        <Box sx={{ position: 'relative', zIndex: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton 
             onClick={() => navigate(`/teacher/my-courses`)} 
             sx={{ 
-              mr: 2,
-              backgroundColor: theme.palette.background.paper,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
               '&:hover': {
-                backgroundColor: theme.palette.action.hover,
+                    backgroundColor: 'rgba(255,255,255,0.3)',
               },
             }}
           >
             <ArrowBackIcon />
           </IconButton>
           <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+                <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: 'white' }}>
               وحدات الدورة
             </Typography>
-            <Typography variant="body1" color="textSecondary">
+                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
               إدارة وحدات الدورة التدريبية
             </Typography>
           </Box>
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <StyledButton
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
             variant="contained"
-            color="primary"
             startIcon={<AddCircle />}
             onClick={handleCreateUnit}
-            sx={{ borderRadius: '12px' }}
+                sx={{ 
+                  background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
+                  color: 'white',
+                  borderRadius: '25px',
+                  px: 3,
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
+                  border: 'none',
+                  '&:hover': {
+                    background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
+                    boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
           >
             إضافة وحدة جديدة
-          </StyledButton>
+              </Button>
           {selectedUnit && (
-            <StyledButton
+                <Button
               variant="outlined"
               startIcon={<LibraryBooksIcon />}
               onClick={() => handleOpenLessons(selectedUnit)}
+                  sx={{ 
+                    borderColor: 'rgba(255,255,255,0.4)',
+                    color: 'white',
+                    borderRadius: '25px',
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '0.95rem',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    backdropFilter: 'blur(10px)',
+                    '&:hover': {
+                      borderColor: 'white',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 4px 15px rgba(255,255,255,0.2)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
             >
               الدروس
-            </StyledButton>
+                </Button>
           )}
+            </Box>
+          </Box>
         </Box>
       </Box>
 
@@ -365,7 +449,7 @@ const Units = () => {
           </FormControl>
         </Box>
 
-        {/* Units Grid */}
+        {/* Units Table */}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <LinearProgress sx={{ width: '100%' }} />
@@ -383,22 +467,69 @@ const Units = () => {
             </Typography>
           </Box>
         ) : (
-          <Grid container spacing={3}>
-              {sortedUnits.map((unit) => (
-              <Grid item xs={12} sm={6} md={3} lg={2} key={unit.id}>
-                <StyledCard>
-                  <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+          <>
+            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الوحدة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الوصف</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>المدة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>عدد الدروس</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الحالة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>التقدم</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الإجراءات</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedUnits
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((unit) => (
+                    <TableRow key={unit.id} hover>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <Avatar
                         sx={{
                           bgcolor: theme.palette.primary.main,
-                          width: 48,
-                          height: 48,
+                              width: 40,
+                              height: 40,
                         }}
                       >
                         {getUnitIcon(unit)}
                       </Avatar>
+                          <Box>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                              {unit.title}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              الترتيب: {unit.order}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {unit.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {unit.duration} دقيقة
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <ArticleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="body2">
+                            {unit.lessonsCount} درس
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
                         <Chip
                           label={getStatusText(unit.status)}
                           color={getStatusColor(unit.status)}
@@ -413,78 +544,76 @@ const Units = () => {
                             variant="outlined"
                           />
                         )}
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleMenuOpen(e, unit)}
-                        >
-                          <MoreVertIcon />
-                        </IconButton>
                       </Box>
-                    </Box>
-                    
-                    <Typography variant="h6" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
-                      {unit.title}
-                    </Typography>
-                    
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2, lineHeight: 1.5 }}>
-                      {unit.description}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTimeIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                        <Typography variant="caption" color="textSecondary">
-                          {unit.duration} دقيقة
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <ArticleIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                        <Typography variant="caption" color="textSecondary">
-                          {unit.lessonsCount} درس
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ width: 100 }}>
                     <LinearProgress
                       variant="determinate"
                       value={unit.lessonsCount ? (unit.completedLessons / unit.lessonsCount) * 100 : 0}
                       sx={{ height: 6, borderRadius: 3, mb: 1 }}
                     />
                     <Typography variant="caption" color="textSecondary">
-                      {unit.completedLessons} من {unit.lessonsCount} درس مكتمل
+                            {unit.completedLessons} من {unit.lessonsCount}
                     </Typography>
-                  </CardContent>
-                  
-                  <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button
-                      size="large"
-                      startIcon={<VisibilityIcon />}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Tooltip title="عرض الوحدة">
+                            <IconButton
+                              size="small"
                       onClick={() => handleViewUnit(unit)}
-                      sx={{ flex: 1 }}
-                    >
-                     
-                    </Button>
-                    <Button
-                      size="large"
-                      startIcon={<EditIcon />}
+                              sx={{ color: 'primary.main' }}
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="الدروس">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenLessons(unit)}
+                              sx={{ color: 'success.main' }}
+                            >
+                              <LibraryBooksIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="تعديل">
+                            <IconButton
+                              size="small"
                       onClick={() => handleEditUnit(unit)}
-                      sx={{ flex: 1 }}
-                    >
-                      
-                    </Button>
-                      <Button
-                        size="large"
-                        startIcon={<AddCircleOutline />}
-                        onClick={() => handleOpenLessons(unit)}
-                        sx={{ flex: 1 }}
-                      >
-                       
-                      </Button>
-                  </CardActions>
-                </StyledCard>
-              </Grid>
-            ))}
-          </Grid>
+                              sx={{ color: 'warning.main' }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="المزيد">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, unit)}
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <TablePagination
+              component="div"
+              count={sortedUnits.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              labelRowsPerPage="صفوف في الصفحة:"
+              labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+            />
+          </>
         )}
       </StyledPaper>
 

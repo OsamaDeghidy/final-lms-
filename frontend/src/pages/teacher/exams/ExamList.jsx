@@ -248,7 +248,7 @@ const ExamList = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -279,7 +279,7 @@ const ExamList = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <Assessment sx={{ fontSize: 32, color: 'white' }} />
             <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
-              إدارة الامتحانات الشاملة
+          إدارة الامتحانات الشاملة
             </Typography>
           </Box>
           <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>

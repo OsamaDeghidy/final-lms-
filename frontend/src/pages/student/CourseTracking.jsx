@@ -319,7 +319,9 @@ const getModuleIcon = (moduleId) => {
     <InsertChart color="info" />,
     <EmojiEvents color="error" />
   ];
-  return icons[moduleId.charCodeAt(1) % icons.length];
+  // Convert moduleId to string and ensure it's valid before using charCodeAt
+  const moduleIdStr = String(moduleId || 0);
+  return icons[moduleIdStr.charCodeAt(1) % icons.length];
 };
 
 // Get lesson icon based on lesson type

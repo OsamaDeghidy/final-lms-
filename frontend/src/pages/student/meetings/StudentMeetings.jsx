@@ -564,7 +564,7 @@ const StudentMeetings = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
