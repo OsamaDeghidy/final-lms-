@@ -605,7 +605,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'right',
                   py: 2
@@ -615,7 +615,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'right',
                   py: 2
@@ -625,7 +625,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'center',
                   py: 2
@@ -635,7 +635,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'center',
                   py: 2
@@ -645,7 +645,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'right',
                   py: 2
@@ -655,7 +655,7 @@ const QuizzesList = () => {
                 <TableCell sx={{ 
                   fontWeight: 800, 
                   color: '#2c3e50', 
-                  borderBottom: '3px solid #673ab7',
+                  borderBottom: '3px solid #0e5181',
                   fontSize: '0.95rem',
                   textAlign: 'center',
                   py: 2
@@ -689,7 +689,7 @@ const QuizzesList = () => {
                             height: 32, 
                             borderRadius: '50%',
                             backgroundColor: '#f3e5f5',
-                            color: '#673ab7'
+                            color: '#0e5181'
                           }}>
                             <Quiz sx={{ fontSize: 18 }} />
                           </Box>
@@ -738,7 +738,7 @@ const QuizzesList = () => {
                               width: 8, 
                               height: 8, 
                               borderRadius: '50%',
-                              backgroundColor: '#673ab7'
+                              backgroundColor: '#0e5181'
                             }} />
                             <Typography 
                               variant="body2" 
@@ -788,7 +788,7 @@ const QuizzesList = () => {
                             height: 24,
                             borderRadius: 12,
                             backgroundColor: '#f3e5f5',
-                            color: '#673ab7',
+                            color: '#0e5181',
                             border: '1px solid #e1bee7'
                           }}
                         />

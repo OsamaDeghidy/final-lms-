@@ -65,7 +65,7 @@
 }
 
 .fab-button {
-  background: linear-gradient(45deg, #673ab7 30%, #9c27b0 90%);
+  background: linear-gradient(45deg, #0e5181 30%, #9c27b0 90%);
   box-shadow: 0 3px 15px rgba(103, 58, 183, 0.3);
   transition: all 0.3s ease;
 }
@@ -136,7 +136,7 @@
 }
 
 .tab-container .Mui-selected {
-  color: #673ab7;
+  color: #0e5181;
 }
 
 .meeting-info-grid {

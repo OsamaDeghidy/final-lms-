@@ -49,7 +49,7 @@ const ChatMessage = styled(Box)(({ theme, isOwn }) => ({
     maxWidth: '70%',
     padding: theme.spacing(1, 2),
     borderRadius: 16,
-    background: isOwn ? '#673ab7' : '#f5f5f5',
+    background: isOwn ? '#0e5181' : '#f5f5f5',
     color: isOwn ? '#fff' : '#333',
     margin: theme.spacing(0, 1),
   },
@@ -276,7 +276,7 @@ const LiveMeeting = () => {
         color: 'white'
       }}>
         <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} sx={{ color: '#673ab7', mb: 2 }} />
+          <CircularProgress size={60} sx={{ color: '#0e5181', mb: 2 }} />
           <Typography variant="h6">جاري تحميل الاجتماع...</Typography>
         </Box>
       </Box>
@@ -301,7 +301,7 @@ const LiveMeeting = () => {
           <Button 
             variant="contained" 
             onClick={() => navigate('/teacher/meetings')}
-            sx={{ bgcolor: '#673ab7' }}
+            sx={{ bgcolor: '#0e5181' }}
           >
             العودة لصفحة الاجتماعات
           </Button>
@@ -742,7 +742,7 @@ const LiveMeeting = () => {
                 <IconButton
                   size="small"
                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}/student/meetings/live/${meetingInfo?.id}`)}
-                  sx={{ color: '#673ab7' }}
+                  sx={{ color: '#0e5181' }}
                 >
                   <FileCopyIcon />
                 </IconButton>

@@ -48,7 +48,7 @@ const ChatMessage = styled(Box)(({ theme, isOwn }) => ({
     maxWidth: '70%',
     padding: theme.spacing(1, 2),
     borderRadius: 16,
-    background: isOwn ? '#673ab7' : '#f5f5f5',
+    background: isOwn ? '#0e5181' : '#f5f5f5',
     color: isOwn ? '#fff' : '#333',
     margin: theme.spacing(0, 1),
   },
@@ -297,7 +297,7 @@ const StudentLiveMeeting = () => {
         color: 'white'
       }}>
         <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} sx={{ color: '#673ab7', mb: 2 }} />
+          <CircularProgress size={60} sx={{ color: '#0e5181', mb: 2 }} />
           <Typography variant="h6">جاري تحميل الاجتماع...</Typography>
         </Box>
       </Box>
@@ -322,7 +322,7 @@ const StudentLiveMeeting = () => {
           <Button 
             variant="contained" 
             onClick={() => navigate('/student/meetings')}
-            sx={{ bgcolor: '#673ab7' }}
+            sx={{ bgcolor: '#0e5181' }}
           >
             العودة لصفحة الاجتماعات
           </Button>
@@ -578,7 +578,7 @@ const StudentLiveMeeting = () => {
                 {meetingInfo?.materials ? (
                   <ListItem sx={{ py: 1 }}>
                     <ListItemAvatar>
-                      <Avatar sx={{ width: 40, height: 40, bgcolor: '#673ab7' }}>
+                      <Avatar sx={{ width: 40, height: 40, bgcolor: '#0e5181' }}>
                         <BookIcon />
                       </Avatar>
                     </ListItemAvatar>
@@ -595,7 +595,7 @@ const StudentLiveMeeting = () => {
                     <IconButton
                       size="small"
                       onClick={() => window.open(meetingInfo.materials, '_blank')}
-                      sx={{ color: '#673ab7' }}
+                      sx={{ color: '#0e5181' }}
                     >
                       <DownloadIcon />
                     </IconButton>
@@ -730,7 +730,7 @@ const StudentLiveMeeting = () => {
                 <IconButton
                   size="small"
                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}/student/meetings/live/${meetingInfo?.id || meetingId}`)}
-                  sx={{ color: '#673ab7' }}
+                  sx={{ color: '#0e5181' }}
                 >
                   <FileCopyIcon />
                 </IconButton>

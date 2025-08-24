@@ -68,12 +68,12 @@
 }
 
 .assignments-tabs .MuiTab-root.Mui-selected {
-  color: #673ab7;
+  color: #0e5181;
   font-weight: 700;
 }
 
 .assignments-tabs .MuiTabs-indicator {
-  background: linear-gradient(90deg, #673ab7 0%, #9c27b0 100%);
+  background: linear-gradient(90deg, #0e5181 0%, #9c27b0 100%);
   height: 4px;
   border-radius: 2px;
 }
@@ -134,7 +134,7 @@
 }
 
 .assignments-table .MuiTablePagination-actions {
-  color: #673ab7 !important;
+  color: #0e5181 !important;
 }
 
 .assignments-table .MuiTablePagination-actions .MuiIconButton-root:hover {
@@ -232,7 +232,7 @@
 
 /* Creative Submit Button */
 .creative-submit-btn {
-  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  background: linear-gradient(135deg, #0e5181 0%, #9c27b0 100%) !important;
   color: white !important;
   font-weight: 600 !important;
   border-radius: 12px !important;
@@ -340,7 +340,7 @@
 
 /* Buttons */
 .gradient-button {
-  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  background: linear-gradient(135deg, #0e5181 0%, #9c27b0 100%) !important;
   color: white !important;
   font-weight: 600 !important;
   border-radius: 12px !important;
@@ -358,8 +358,8 @@
 }
 
 .outline-button {
-  border: 2px solid #673ab7 !important;
-  color: #673ab7 !important;
+  border: 2px solid #0e5181 !important;
+  color: #0e5181 !important;
   font-weight: 600 !important;
   border-radius: 12px !important;
   padding: 10px 22px !important;
@@ -378,7 +378,7 @@
 
 /* Icons */
 .icon-primary {
-  color: #673ab7 !important;
+  color: #0e5181 !important;
 }
 
 .icon-success {
@@ -432,7 +432,7 @@
 }
 
 .custom-dialog .MuiDialogTitle-root {
-  background: linear-gradient(135deg, #673ab7 0%, #9c27b0 100%) !important;
+  background: linear-gradient(135deg, #0e5181 0%, #9c27b0 100%) !important;
   color: white !important;
   padding: 24px 32px !important;
 }
@@ -460,7 +460,7 @@
 }
 
 .custom-stepper .MuiStepLabel-root.Mui-active {
-  color: #673ab7 !important;
+  color: #0e5181 !important;
 }
 
 .custom-stepper .MuiStepLabel-root.Mui-completed {
@@ -590,7 +590,7 @@
 }
 
 .loading-spinner {
-  color: #673ab7 !important;
+  color: #0e5181 !important;
 }
 
 /* Focus States */

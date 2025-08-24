@@ -485,7 +485,7 @@ const TeacherAssignments = () => {
                         size="small"
                         onClick={() => handleEditAssignment(assignment.id)}
                         sx={{ 
-                          color: '#673ab7',
+                          color: '#0e5181',
                           '&:hover': { backgroundColor: 'rgba(103, 58, 183, 0.1)' }
                         }}
                       >

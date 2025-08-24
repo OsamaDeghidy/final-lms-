@@ -618,7 +618,7 @@ const AssignmentSubmissions = () => {
                           return (
                             <ListItem key={question.id} sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, width: '100%' }}>
-                                <QuizIcon sx={{ color: '#673ab7' }} />
+                                <QuizIcon sx={{ color: '#0e5181' }} />
                                 <Typography variant="subtitle2" fontWeight={600} color="primary">
                                   السؤال {index + 1}: {question.text}
                                 </Typography>

@@ -161,7 +161,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #673ab7;
+  background: #0e5181;
   color: white;
 }
 
@@ -229,7 +229,7 @@
 }
 
 .tab-container .Mui-selected {
-  color: #673ab7;
+  color: #0e5181;
 }
 
 .meeting-info-grid {

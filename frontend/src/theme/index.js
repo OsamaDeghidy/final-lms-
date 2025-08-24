@@ -10,7 +10,7 @@ const theme = createTheme({
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#6C63FF',
+      main: '#0e5181',
       light: '#968FFF',
       dark: '#4D44B5',
       contrastText: '#ffffff',
@@ -172,7 +172,7 @@ const theme = createTheme({
         contained: {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
           '&.MuiButton-containedPrimary': {
-            background: 'linear-gradient(90deg, #4A6CF7 0%, #6C63FF 100%)',
+            background: 'linear-gradient(90deg, #4A6CF7 0%, #0e5181 100%)',
           },
         },
       },
@@ -238,7 +238,7 @@ const theme = createTheme({
         },
         colorSecondary: {
           backgroundColor: 'rgba(108, 99, 255, 0.1)',
-          color: '#6C63FF',
+          color: '#0e5181',
         },
       },
     },
@@ -260,7 +260,7 @@ const globalStyles = {
     whiteSpace: 'nowrap',
   },
   '.text-gradient': {
-    background: 'linear-gradient(90deg, #4A6CF7 0%, #6C63FF 100%)',
+    background: 'linear-gradient(90deg, #4A6CF7 0%, #0e5181 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',

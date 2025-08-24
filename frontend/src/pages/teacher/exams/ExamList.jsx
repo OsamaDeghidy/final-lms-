@@ -307,7 +307,7 @@ const ExamList = () => {
           minWidth: 140,
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          <Assessment sx={{ color: '#673ab7', fontSize: 24 }} />
+          <Assessment sx={{ color: '#0e5181', fontSize: 24 }} />
           <Box>
             <Typography variant="h5" fontWeight={700} color="secondary.main">
               {exams.length}
@@ -392,7 +392,7 @@ const ExamList = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
+            background: 'linear-gradient(45deg, #0e5181 30%, #9c27b0 90%)',
             boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
             color: 'white',
             '&:hover': {

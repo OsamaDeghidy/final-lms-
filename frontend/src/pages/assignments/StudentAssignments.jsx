@@ -253,7 +253,7 @@ const StudentAssignments = () => {
           minWidth: 140,
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          <AssignmentIcon sx={{ color: '#673ab7', fontSize: 24 }} />
+          <AssignmentIcon sx={{ color: '#0e5181', fontSize: 24 }} />
           <Box>
             <Typography variant="h5" fontWeight={700} color="primary">
               {assignmentStats.totalAssignments}
@@ -408,7 +408,7 @@ const StudentAssignments = () => {
                               size="small"
                               icon={<QuizIcon />}
                               variant="outlined"
-                              sx={{ borderColor: '#673ab7', color: '#673ab7', fontSize: '0.7rem' }}
+                              sx={{ borderColor: '#0e5181', color: '#0e5181', fontSize: '0.7rem' }}
                             />
                           )}
                           {assignment.has_file_upload && (
@@ -425,7 +425,7 @@ const StudentAssignments = () => {
                     </TableCell>
                     <TableCell>
                       <Box className="table-cell-meta">
-                        <SchoolIcon sx={{ color: '#673ab7', fontSize: 18 }} />
+                        <SchoolIcon sx={{ color: '#0e5181', fontSize: 18 }} />
                         <Typography variant="body2" fontWeight={500}>
                           {assignment.course_title || assignment.course?.title}
                         </Typography>
@@ -493,7 +493,7 @@ const StudentAssignments = () => {
                             size="small"
                             onClick={() => handleAssignmentDetails(assignment)}
                             sx={{ 
-                              color: '#673ab7',
+                              color: '#0e5181',
                               '&:hover': { backgroundColor: 'rgba(103, 58, 183, 0.1)' }
                             }}
                           >
@@ -613,7 +613,7 @@ const StudentAssignments = () => {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <SchoolIcon sx={{ color: '#673ab7' }} />
+                      <SchoolIcon sx={{ color: '#0e5181' }} />
                       <Typography variant="body1" fontWeight={500}>
                         المقرر: {selectedAssignment.course_title || selectedAssignment.course?.title}
                       </Typography>
@@ -709,7 +709,7 @@ const StudentAssignments = () => {
                     px: 4, 
                     py: 1.5, 
                     fontWeight: 700, 
-                    background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
+                    background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
                     '&:hover': { 
                       background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)' 
                     } 
@@ -758,7 +758,7 @@ const StudentAssignments = () => {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Assignment Info */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'white', borderRadius: 2 }}>
-                  <AssignmentIcon sx={{ color: '#673ab7', fontSize: 32 }} />
+                  <AssignmentIcon sx={{ color: '#0e5181', fontSize: 32 }} />
                   <Box>
                     <Typography variant="h6" fontWeight={600}>
                       {selectedGrade.assignment.title}

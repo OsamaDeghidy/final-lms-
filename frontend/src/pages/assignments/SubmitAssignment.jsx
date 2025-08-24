@@ -372,7 +372,7 @@ const SubmitAssignment = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
+        background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -407,7 +407,7 @@ const SubmitAssignment = () => {
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <SchoolIcon sx={{ color: '#673ab7' }} />
+              <SchoolIcon sx={{ color: '#0e5181' }} />
               <Typography variant="h6" fontWeight={600}>
                 {assignment.course_title || assignment.course?.title}
               </Typography>
@@ -668,7 +668,7 @@ const SubmitAssignment = () => {
               disabled={isSubmitting || !canSubmit || error}
               startIcon={isSubmitting ? <CircularProgress size={20} /> : <SendIcon />}
               sx={{
-                background: 'linear-gradient(135deg, #673ab7 0%, #9c27b0 100%)',
+                background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
                 '&:hover': {
                   background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)',
                 }

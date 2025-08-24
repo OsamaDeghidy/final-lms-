@@ -669,7 +669,7 @@ const TeacherMeetings = () => {
             onClick={handleOpenCreateDialog}
             startIcon={<AddIcon />}
             sx={{
-              background: 'linear-gradient(45deg, #673ab7 30%, #9c27b0 90%)',
+              background: 'linear-gradient(45deg, #0e5181 30%, #9c27b0 90%)',
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
