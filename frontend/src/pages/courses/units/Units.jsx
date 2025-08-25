@@ -468,103 +468,131 @@ const Units = () => {
           </Box>
         ) : (
           <>
-            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+            <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
               <Table>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الوحدة</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الوصف</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>المدة</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>عدد الدروس</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الحالة</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>التقدم</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>الإجراءات</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>الوحدة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>الوصف</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>المدة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>عدد الدروس</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>الحالة</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>التقدم</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600, py: 2, px: 3, textAlign: 'center' }}>الإجراءات</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {sortedUnits
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((unit) => (
-                    <TableRow key={unit.id} hover>
-                      <TableCell>
+                    <TableRow key={unit.id} hover sx={{ '&:hover': { backgroundColor: 'action.hover' } }}>
+                      <TableCell sx={{ py: 2, px: 3 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar
-                        sx={{
-                          bgcolor: theme.palette.primary.main,
-                              width: 40,
-                              height: 40,
-                        }}
-                      >
-                        {getUnitIcon(unit)}
-                      </Avatar>
-                          <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          <Avatar
+                            sx={{
+                              bgcolor: theme.palette.primary.main,
+                              width: 48,
+                              height: 48,
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            {getUnitIcon(unit)}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.2 }}>
                               {unit.title}
                             </Typography>
-                            <Typography variant="caption" color="textSecondary">
+                            <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem' }}>
                               الترتيب: {unit.order}
                             </Typography>
                           </Box>
                         </Box>
                       </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {unit.description}
+                      <TableCell sx={{ py: 2, px: 3 }}>
+                        <Typography 
+                          variant="body2" 
+                          sx={{ 
+                            maxWidth: 200, 
+                            overflow: 'hidden', 
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            lineHeight: 1.4
+                          }}
+                        >
+                          {unit.description || 'لا يوجد وصف'}
                         </Typography>
                       </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2">
+                      <TableCell sx={{ py: 2, px: 3, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <AccessTimeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {unit.duration} دقيقة
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <ArticleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                          <Typography variant="body2">
+                      <TableCell sx={{ py: 2, px: 3, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                          <ArticleIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {unit.lessonsCount} درس
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Chip
-                          label={getStatusText(unit.status)}
-                          color={getStatusColor(unit.status)}
-                          size="small"
-                          variant="outlined"
-                        />
-                        {unit.isPreview && (
+                      <TableCell sx={{ py: 2, px: 3, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                           <Chip
-                            label="معاينة"
-                            color="primary"
+                            label={getStatusText(unit.status)}
+                            color={getStatusColor(unit.status)}
                             size="small"
                             variant="outlined"
+                            sx={{ fontWeight: 600, minWidth: 70 }}
                           />
-                        )}
-                      </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ width: 100 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      value={unit.lessonsCount ? (unit.completedLessons / unit.lessonsCount) * 100 : 0}
-                      sx={{ height: 6, borderRadius: 3, mb: 1 }}
-                    />
-                    <Typography variant="caption" color="textSecondary">
-                            {unit.completedLessons} من {unit.lessonsCount}
-                    </Typography>
+                          {unit.isPreview && (
+                            <Chip
+                              label="معاينة"
+                              color="primary"
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontWeight: 600, minWidth: 70 }}
+                            />
+                          )}
                         </Box>
                       </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                      <TableCell sx={{ py: 2, px: 3, textAlign: 'center' }}>
+                        <Box sx={{ width: 120, mx: 'auto' }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={unit.lessonsCount ? (unit.completedLessons / unit.lessonsCount) * 100 : 0}
+                            sx={{ 
+                              height: 8, 
+                              borderRadius: 4, 
+                              mb: 1,
+                              backgroundColor: 'grey.200',
+                              '& .MuiLinearProgress-bar': {
+                                borderRadius: 4,
+                              }
+                            }}
+                          />
+                          <Typography variant="caption" color="textSecondary" sx={{ fontSize: '0.75rem' }}>
+                            {unit.completedLessons} من {unit.lessonsCount}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 2, px: 3, textAlign: 'center' }}>
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                           <Tooltip title="عرض الوحدة">
                             <IconButton
                               size="small"
-                      onClick={() => handleViewUnit(unit)}
-                              sx={{ color: 'primary.main' }}
+                              onClick={() => handleViewUnit(unit)}
+                              sx={{ 
+                                color: 'primary.main',
+                                backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s ease'
+                              }}
                             >
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
@@ -573,7 +601,15 @@ const Units = () => {
                             <IconButton
                               size="small"
                               onClick={() => handleOpenLessons(unit)}
-                              sx={{ color: 'success.main' }}
+                              sx={{ 
+                                color: 'success.main',
+                                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s ease'
+                              }}
                             >
                               <LibraryBooksIcon fontSize="small" />
                             </IconButton>
@@ -581,8 +617,16 @@ const Units = () => {
                           <Tooltip title="تعديل">
                             <IconButton
                               size="small"
-                      onClick={() => handleEditUnit(unit)}
-                              sx={{ color: 'warning.main' }}
+                              onClick={() => handleEditUnit(unit)}
+                              sx={{ 
+                                color: 'warning.main',
+                                backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(255, 152, 0, 0.2)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s ease'
+                              }}
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
@@ -591,6 +635,14 @@ const Units = () => {
                             <IconButton
                               size="small"
                               onClick={(e) => handleMenuOpen(e, unit)}
+                              sx={{ 
+                                backgroundColor: 'rgba(158, 158, 158, 0.1)',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(158, 158, 158, 0.2)',
+                                  transform: 'scale(1.1)'
+                                },
+                                transition: 'all 0.2s ease'
+                              }}
                             >
                               <MoreVertIcon fontSize="small" />
                             </IconButton>

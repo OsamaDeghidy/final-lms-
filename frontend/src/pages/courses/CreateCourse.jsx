@@ -163,7 +163,7 @@ const CreateCourse = () => {
     discount_price: null,
     
     // Status
-    status: 'draft',
+    status: 'published',
     is_featured: false,
     is_certified: false,
     

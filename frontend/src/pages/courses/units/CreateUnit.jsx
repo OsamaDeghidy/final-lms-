@@ -252,11 +252,17 @@ const CreateUnit = () => {
         description: unitData.description,
         durationMinutes: unitData.duration ? Number(unitData.duration) : 0,
         isActive: true,
-        status: 'draft',
-        videoFile: unitData.videoFile,
-        pdfFile: unitData.pdfFile,
+        status: 'published',
         order: unitData.order,
       };
+      
+      // Only add files if they exist
+      if (unitData.videoFile) {
+        payload.videoFile = unitData.videoFile;
+      }
+      if (unitData.pdfFile) {
+        payload.pdfFile = unitData.pdfFile;
+      }
       const created = await contentAPI.createModule(payload);
       console.log('Module created:', created);
       alert('تم حفظ الوحدة بنجاح!');

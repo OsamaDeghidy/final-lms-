@@ -83,6 +83,36 @@ const SubmitAssignment = () => {
   const isOverdue = assignment ? new Date() > new Date(assignment.due_date) : false;
   const canSubmit = assignment ? assignment.is_active && (!isOverdue || assignment.allow_late_submissions) : false;
 
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
   const steps = [
     {
       label: 'مراجعة الواجب',
@@ -447,8 +477,8 @@ const SubmitAssignment = () => {
               <Button
                 variant="outlined"
                 startIcon={<DownloadIcon />}
-                onClick={() => console.log('Download file:', assignment.assignment_file)}
-                sx={{ mt: 1 }}
+                onClick={() => handleDownloadFile('assignment_file', assignment.assignment_file)}
+                sx={{ mt: 1, color: '#1976d2', borderColor: '#1976d2' }}
               >
                 تحميل ملف الواجب
               </Button>

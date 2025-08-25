@@ -180,8 +180,34 @@ const AssignmentSubmissions = () => {
     }
   };
 
-  const handleDownloadFile = (fileName) => {
-    console.log('Downloading file:', fileName);
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
   };
 
   const filteredSubmissions = submissions.filter(submission => {
@@ -235,7 +261,7 @@ const AssignmentSubmissions = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -286,6 +312,20 @@ const AssignmentSubmissions = () => {
             <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6 }}>
               {assignment.description}
             </Typography>
+            {assignment.assignment_file && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                <FileUploadIcon sx={{ color: '#1976d2' }} />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => handleDownloadFile('assignment_file', assignment.assignment_file)}
+                  sx={{ color: '#1976d2', borderColor: '#1976d2' }}
+                >
+                  تحميل ملف الواجب
+                </Button>
+              </Box>
+            )}
           </Grid>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -520,6 +560,25 @@ const AssignmentSubmissions = () => {
                         </IconButton>
                       </Tooltip>
                     )}
+                    {submission.answers && Object.keys(submission.answers).length > 0 && (
+                      <Tooltip title="تحميل ملفات الواجب">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            // Find file answers in the submission
+                            const fileAnswers = Object.values(submission.answers).filter(answer => 
+                              typeof answer === 'string' && answer.includes('http')
+                            );
+                            if (fileAnswers.length > 0) {
+                              handleDownloadFile('assignment_files.zip', fileAnswers[0]);
+                            }
+                          }}
+                          sx={{ color: '#1976d2' }}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -636,14 +695,37 @@ const AssignmentSubmissions = () => {
                                   <strong>إجابة الطالب:</strong>
                                 </Typography>
                                 {response ? (
-                                  <Typography variant="body2" sx={{ 
-                                    p: 1, 
-                                    backgroundColor: '#f5f5f5', 
-                                    borderRadius: 1,
-                                    border: '1px solid #e0e0e0'
-                                  }}>
-                                    {response}
-                                  </Typography>
+                                  <Box>
+                                    {typeof response === 'string' && response.includes('http') ? (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography variant="body2" sx={{ 
+                                          p: 1, 
+                                          backgroundColor: '#f5f5f5', 
+                                          borderRadius: 1,
+                                          border: '1px solid #e0e0e0',
+                                          flex: 1
+                                        }}>
+                                          ملف مرفوع
+                                        </Typography>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleDownloadFile(`question_${index + 1}_file`, response)}
+                                          sx={{ color: '#1976d2' }}
+                                        >
+                                          <DownloadIcon />
+                                        </IconButton>
+                                      </Box>
+                                    ) : (
+                                      <Typography variant="body2" sx={{ 
+                                        p: 1, 
+                                        backgroundColor: '#f5f5f5', 
+                                        borderRadius: 1,
+                                        border: '1px solid #e0e0e0'
+                                      }}>
+                                        {response}
+                                      </Typography>
+                                    )}
+                                  </Box>
                                 ) : (
                                   <Typography variant="body2" color="error">
                                     لم يتم الإجابة
@@ -746,9 +828,9 @@ const AssignmentSubmissions = () => {
                   px: 4, 
                   py: 1.5, 
                   fontWeight: 700, 
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': { 
-                    background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)' 
+                    background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)' 
                   } 
                 }}
               >

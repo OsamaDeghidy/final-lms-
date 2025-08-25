@@ -66,10 +66,12 @@ export const contentAPI = {
     const seconds = typeof videoDurationSeconds === 'number' ? videoDurationSeconds : (typeof durationMinutes === 'number' ? Math.round(durationMinutes * 60) : 0);
     if (seconds) formData.append('video_duration', String(seconds));
     if (note) formData.append('note', note);
-    if (videoFile instanceof File) formData.append('video', videoFile);
-    if (pdfFile instanceof File) formData.append('pdf', pdfFile);
+    if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
+    if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-    const response = await api.post('/content/modules/', formData);
+    const response = await api.post('/content/modules/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
@@ -83,10 +85,12 @@ export const contentAPI = {
     const seconds = typeof videoDurationSeconds === 'number' ? videoDurationSeconds : (typeof durationMinutes === 'number' ? Math.round(durationMinutes * 60) : undefined);
     if (typeof seconds !== 'undefined') formData.append('video_duration', String(seconds));
     if (note) formData.append('note', note);
-    if (videoFile instanceof File) formData.append('video', videoFile);
-    if (pdfFile instanceof File) formData.append('pdf', pdfFile);
+    if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
+    if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-    const response = await api.patch(`/content/modules/${moduleId}/`, formData);
+    const response = await api.patch(`/content/modules/${moduleId}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 

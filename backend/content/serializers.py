@@ -51,6 +51,9 @@ class ModuleProgressSerializer(serializers.ModelSerializer):
 
 class ModuleCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new module"""
+    video = serializers.FileField(required=False, allow_null=True)
+    pdf = serializers.FileField(required=False, allow_null=True)
+    
     class Meta:
         model = Module
         fields = [
