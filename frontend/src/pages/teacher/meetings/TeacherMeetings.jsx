@@ -24,7 +24,7 @@ const StyledCard = styled(Card)(({ theme, status }) => ({
   borderRadius: 16,
   boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
   transition: 'all 0.3s ease',
-  border: status === 'ongoing' ? '2px solid #4caf50' : '1px solid #e0e0e0',
+  border: status === 'ongoing' ? '2px solid #e5978b' : '1px solid #e0e0e0',
   '&:hover': {
     transform: 'translateY(-4px)',
     boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
@@ -534,7 +534,7 @@ const TeacherMeetings = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -581,12 +581,12 @@ const TeacherMeetings = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
-            boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #ff5252 30%, #e64a19 90%)',
-              boxShadow: '0 6px 25px rgba(255,107,107,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
@@ -669,7 +669,7 @@ const TeacherMeetings = () => {
             onClick={handleOpenCreateDialog}
             startIcon={<AddIcon />}
             sx={{
-              background: 'linear-gradient(45deg, #0e5181 30%, #9c27b0 90%)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
@@ -929,7 +929,7 @@ const TeacherMeetings = () => {
         fullWidth
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+          background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)', 
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -1029,9 +1029,9 @@ const TeacherMeetings = () => {
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
               }
             }}
           >

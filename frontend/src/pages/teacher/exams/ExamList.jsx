@@ -248,7 +248,7 @@ const ExamList = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -392,12 +392,12 @@ const ExamList = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #0e5181 30%, #9c27b0 90%)',
-            boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)',
-              boxShadow: '0 6px 25px rgba(103,58,183,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',

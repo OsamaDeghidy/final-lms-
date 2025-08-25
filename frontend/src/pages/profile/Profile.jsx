@@ -590,7 +590,7 @@ const Profile = () => {
       value: profileData.coursesEnrolled || 0,
       icon: <SchoolIcon />,
       color: 'primary',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      gradient: 'linear-gradient(135deg, #667eea 0%, #0e5181 100%)'
     },
     {
       title: 'الكورسات المكتملة',

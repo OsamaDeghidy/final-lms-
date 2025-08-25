@@ -57,7 +57,7 @@
 /* Dashboard Container */
 .dashboard-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   background-size: 400% 400%;
   animation: gradientShift 15s ease infinite;
 }
@@ -111,7 +111,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #667eea, #0e5181);
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
@@ -256,7 +256,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #667eea, #0e5181);
   color: white;
   border: none;
   box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
@@ -350,7 +350,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, #667eea, #764ba2);
+  background: linear-gradient(to bottom, #667eea, #0e5181);
 }
 
 .timeline-item {

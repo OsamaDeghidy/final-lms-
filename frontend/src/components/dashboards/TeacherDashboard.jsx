@@ -496,7 +496,7 @@ const TeacherDashboard = () => {
               left: 0,
               right: 0,
               height: 3,
-              background: 'linear-gradient(90deg, #4caf50, #66bb6a, #81c784)',
+              background: 'linear-gradient(90deg, #e5978b, #66bb6a, #81c784)',
             }
           }}>
             <Box>
@@ -505,7 +505,7 @@ const TeacherDashboard = () => {
                 fontWeight={700} 
                 sx={{ 
                   mb: 1,
-                  background: 'linear-gradient(45deg, #4caf50, #66bb6a)',
+                  background: 'linear-gradient(45deg, #e5978b, #66bb6a)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   display: 'inline-block'
@@ -841,7 +841,7 @@ const TeacherDashboard = () => {
               left: 0,
               right: 0,
               height: 3,
-              background: 'linear-gradient(90deg, #9c27b0, #ba68c8, #ce93d8)',
+              background: 'linear-gradient(90deg, #1976d2, #ba68c8, #ce93d8)',
             }
                     }}>
                       <Box>
@@ -850,7 +850,7 @@ const TeacherDashboard = () => {
                 fontWeight={700} 
                         sx={{ 
                   mb: 1,
-                  background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
+                  background: 'linear-gradient(45deg, #1976d2, #ba68c8)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   display: 'inline-block'
@@ -979,7 +979,7 @@ const TeacherDashboard = () => {
                       left: 0,
                       right: 0,
                       height: 3,
-                      background: 'linear-gradient(90deg, #9c27b0, #ba68c8, #ce93d8)',
+                      background: 'linear-gradient(90deg, #1976d2, #ba68c8, #ce93d8)',
                     }
                   }}>
                     <Box>
@@ -988,7 +988,7 @@ const TeacherDashboard = () => {
                         fontWeight={700} 
                         sx={{ 
                           mb: 1,
-                          background: 'linear-gradient(45deg, #9c27b0, #ba68c8)',
+                          background: 'linear-gradient(45deg, #1976d2, #ba68c8)',
                           WebkitBackgroundClip: 'text',
                           WebkitTextFillColor: 'transparent',
                           display: 'inline-block'

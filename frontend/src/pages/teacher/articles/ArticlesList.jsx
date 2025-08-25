@@ -243,7 +243,7 @@ const ActionButton = styled(IconButton)(({ theme, variant }) => ({
     }
   }),
   ...(variant === 'view' && {
-    backgroundColor: '#4caf50',
+    backgroundColor: '#e5978b',
     color: 'white',
     '&:hover': {
       backgroundColor: '#388e3c',
@@ -511,7 +511,7 @@ const ArticlesList = () => {
                 onClick={(e) => { e.stopPropagation(); handleViewDetails(article); }}
                 size="small"
                 sx={{
-                  backgroundColor: '#4caf50',
+                  backgroundColor: '#e5978b',
                   color: 'white',
                   '&:hover': {
                     backgroundColor: '#388e3c',
@@ -620,7 +620,7 @@ const ArticlesList = () => {
                   width: 28,
                   height: 28,
                   backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                  color: '#4caf50',
+                  color: '#e5978b',
                   '&:hover': {
                     backgroundColor: 'rgba(76, 175, 80, 0.2)',
                     transform: 'scale(1.1)',
@@ -688,7 +688,7 @@ const ArticlesList = () => {
                   borderRadius: '12px',
                   fontSize: '0.7rem',
                   fontWeight: 600,
-                  backgroundColor: '#4caf50',
+                  backgroundColor: '#e5978b',
                   color: 'white',
                   boxShadow: '0 2px 8px rgba(76, 175, 80, 0.3)',
                   '&:hover': {
@@ -839,7 +839,7 @@ const ArticlesList = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -887,12 +887,12 @@ const ArticlesList = () => {
             sx={{
               width: 56,
               height: 56,
-              background: 'linear-gradient(45deg, #1976d2 30%, #42a5f5 90%)',
-              boxShadow: '0 4px 20px rgba(25,118,210,0.3)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+              boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
               color: 'white',
               '&:hover': {
-                background: 'linear-gradient(45deg, #1565c0 30%, #1976d2 90%)',
-                boxShadow: '0 6px 25px rgba(25,118,210,0.4)',
+                background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+                boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
                 transform: 'translateY(-2px)',
               },
               transition: 'all 0.3s ease',
@@ -1098,10 +1098,16 @@ const ArticlesList = () => {
                 لا توجد مقالات {searchQuery && `مطابقة لـ "${searchQuery}"`}
               </Typography>
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => navigate('/teacher/articles/create')}
-                sx={{ borderRadius: 2 }}
+                sx={{ 
+                  borderRadius: 2,
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+                  },
+                }}
               >
                 إنشاء مقالة جديدة
               </Button>

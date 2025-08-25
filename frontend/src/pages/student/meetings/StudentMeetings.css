@@ -12,7 +12,7 @@
 }
 
 .meeting-card.ongoing {
-  border: 2px solid #4caf50;
+  border: 2px solid #e5978b;
   background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
 }
 
@@ -113,7 +113,7 @@
 .progress-bar {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+  background: linear-gradient(90deg, #e5978b 0%, #66bb6a 100%);
 }
 
 .attendance-info {
@@ -209,7 +209,7 @@
 }
 
 .join-button.ongoing {
-  background: linear-gradient(45deg, #4caf50 30%, #66bb6a 90%);
+  background: linear-gradient(45deg, #e5978b 30%, #66bb6a 90%);
 }
 
 .join-button.ongoing:hover {

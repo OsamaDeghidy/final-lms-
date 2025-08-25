@@ -204,7 +204,7 @@ const CourseBadge = styled(Box)(({ theme, variant = 'primary' }) => ({
     color: '#fff',
   }),
   ...(variant === 'new' && {
-    background: 'linear-gradient(90deg, #4caf50 0%, #45a049 100%)',
+    background: 'linear-gradient(90deg, #e5978b 0%, #45a049 100%)',
     color: '#fff',
   }),
 }));
@@ -659,7 +659,7 @@ const LearningMethodsSection = () => {
                       {course.total_enrollments && (
                         <Box sx={{
                           bgcolor: 'rgba(76, 175, 80, 0.1)',
-                          color: '#4caf50',
+                          color: '#e5978b',
                           px: 1.5,
                           py: 0.5,
                           borderRadius: '6px',
@@ -725,10 +725,10 @@ const LearningMethodsSection = () => {
                         transition: 'all 0.3s ease',
                         '&:hover': {
                           transform: 'scale(1.05)',
-                          color: '#4caf50',
+                          color: '#e5978b',
                         }
                       }}>
-                        <Code sx={{ fontSize: '1rem', color: '#4caf50' }} />
+                        <Code sx={{ fontSize: '1rem', color: '#e5978b' }} />
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                           {course.duration || 'غير محدد'}
                         </Typography>

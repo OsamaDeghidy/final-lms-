@@ -315,7 +315,7 @@ const QuizzesList = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -374,7 +374,7 @@ const QuizzesList = () => {
           minWidth: 140,
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          <Quiz sx={{ color: '#4caf50', fontSize: 24 }} />
+          <Quiz sx={{ color: '#e5978b', fontSize: 24 }} />
           <Box>
             <Typography variant="h5" fontWeight={700} color="success.main">
               {quizzes.length}
@@ -459,12 +459,12 @@ const QuizzesList = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #4caf50 30%, #2e7d32 90%)',
-            boxShadow: '0 4px 20px rgba(76,175,80,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #43a047 30%, #2e7d32 90%)',
-              boxShadow: '0 6px 25px rgba(76,175,80,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
@@ -587,9 +587,9 @@ const QuizzesList = () => {
             startIcon={<Add />}
             onClick={() => navigate('/teacher/quizzes/create')}
             sx={{
-              background: 'linear-gradient(45deg, #4caf50 30%, #2e7d32 90%)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
               '&:hover': {
-                background: 'linear-gradient(45deg, #43a047 30%, #2e7d32 90%)',
+                background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
               },
             }}
           >
@@ -909,7 +909,7 @@ const QuizzesList = () => {
                             size="small"
                             onClick={() => navigate(`/teacher/quizzes/${quiz.id}/edit`)}
                             sx={{ 
-                              color: '#9c27b0',
+                              color: '#1976d2',
                               backgroundColor: '#f3e5f5',
                               width: 32,
                               height: 32,

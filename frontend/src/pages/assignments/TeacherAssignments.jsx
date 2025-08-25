@@ -169,7 +169,7 @@ const TeacherAssignments = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -326,12 +326,12 @@ const TeacherAssignments = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
-            boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #ff5252 30%, #e64a19 90%)',
-              boxShadow: '0 6px 25px rgba(255,107,107,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
@@ -509,7 +509,7 @@ const TeacherAssignments = () => {
                           size="small"
                           onClick={() => handleManageQuestions(assignment.id)}
                           sx={{
-                            color: '#4caf50',
+                            color: '#e5978b',
                               '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' }
                             }}
                           >
@@ -701,9 +701,9 @@ const TeacherAssignments = () => {
                   px: 4, 
                   py: 1.5, 
                   fontWeight: 700, 
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': { 
-                    background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)' 
+                    background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)' 
                   } 
                 }}
               >

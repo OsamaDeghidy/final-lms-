@@ -347,7 +347,7 @@ const MyCourses = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -655,12 +655,12 @@ const MyCourses = () => {
                   sx={{ 
               width: 56,
               height: 56,
-              background: 'linear-gradient(45deg, #3498db 30%, #2ecc71 90%)',
-              boxShadow: '0 4px 20px rgba(52,152,219,0.3)',
+              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+              boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
               color: 'white',
               '&:hover': {
-                background: 'linear-gradient(45deg, #2980b9 30%, #27ae60 90%)',
-                boxShadow: '0 6px 25px rgba(52,152,219,0.4)',
+                background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+                boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
                 transform: 'translateY(-2px)',
               },
               transition: 'all 0.3s ease',
@@ -859,17 +859,17 @@ const MyCourses = () => {
                   startIcon={<AddIcon />}
                   onClick={handleCreateCourse}
                   sx={{
-                    bgcolor: '#3498db',
+                    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                     color: 'white',
                     borderRadius: 2,
                     px: 4,
                     py: 1,
                     fontWeight: 'bold',
                     textTransform: 'none',
-                    boxShadow: '0 4px 14px rgba(52, 152, 219, 0.3)',
+                    boxShadow: '0 4px 14px rgba(14, 81, 129, 0.3)',
                     '&:hover': {
-                      bgcolor: '#2980b9',
-                      boxShadow: '0 6px 20px rgba(52, 152, 219, 0.4)',
+                      background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+                      boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
                       transform: 'translateY(-1px)'
                     },
                     transition: 'all 0.3s ease'

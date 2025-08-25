@@ -472,7 +472,7 @@ const StudentAssignments = () => {
                               backgroundColor: '#e0e0e0',
                               '& .MuiLinearProgress-bar': {
                                 borderRadius: 3,
-                                background: 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)'
+                                background: 'linear-gradient(90deg, #e5978b 0%, #66bb6a 100%)'
                               }
                             }}
                           />
@@ -709,7 +709,7 @@ const StudentAssignments = () => {
                     px: 4, 
                     py: 1.5, 
                     fontWeight: 700, 
-                    background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
+                    background: 'linear-gradient(135deg, #0e5181 0%, #1976d2 100%)',
                     '&:hover': { 
                       background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)' 
                     } 

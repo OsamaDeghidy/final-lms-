@@ -4,9 +4,9 @@ const theme = createTheme({
   direction: 'rtl',
   palette: {
     primary: {
-      main: '#4A6CF7',
+      main: '#0288d1',
       light: '#7D9AFC',
-      dark: '#2D4BBD',
+      dark: '#0288d1',
       contrastText: '#ffffff',
     },
     secondary: {
@@ -172,7 +172,7 @@ const theme = createTheme({
         contained: {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
           '&.MuiButton-containedPrimary': {
-            background: 'linear-gradient(90deg, #4A6CF7 0%, #0e5181 100%)',
+            background: 'linear-gradient(90deg, #0288d1 0%, #0e5181 100%)',
           },
         },
       },
@@ -219,7 +219,7 @@ const theme = createTheme({
               borderColor: '#BDBDBD',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#4A6CF7',
+              borderColor: '#0288d1',
               boxShadow: '0 0 0 3px rgba(74, 108, 247, 0.1)',
             },
           },
@@ -234,7 +234,7 @@ const theme = createTheme({
         },
         colorPrimary: {
           backgroundColor: 'rgba(74, 108, 247, 0.1)',
-          color: '#4A6CF7',
+          color: '#0288d1',
         },
         colorSecondary: {
           backgroundColor: 'rgba(108, 99, 255, 0.1)',
@@ -260,7 +260,7 @@ const globalStyles = {
     whiteSpace: 'nowrap',
   },
   '.text-gradient': {
-    background: 'linear-gradient(90deg, #4A6CF7 0%, #0e5181 100%)',
+    background: 'linear-gradient(90deg, #0288d1 0%, #0e5181 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     backgroundClip: 'text',

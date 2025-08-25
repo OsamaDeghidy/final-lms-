@@ -676,7 +676,7 @@ const EditArticle = () => {
                     onClick={handlePublish}
                     disabled={saving}
                     sx={{
-                      background: 'linear-gradient(45deg, #4A6CF7 30%, #0e5181 90%)',
+                      background: 'linear-gradient(45deg, #0288d1 30%, #0e5181 90%)',
                       borderRadius: 2,
                       py: 1.5,
                       fontWeight: 600,

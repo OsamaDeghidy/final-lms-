@@ -251,7 +251,7 @@ const PaymentPage = () => {
               display: 'flex', 
               alignItems: 'center', 
               gap: 2,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #0e5181 100%)',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -437,7 +437,7 @@ const PaymentPage = () => {
                       justifyContent: 'space-between',
                       p: 3,
                       borderRadius: 3,
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: 'linear-gradient(135deg, #667eea 0%, #0e5181 100%)',
                       color: 'white'
                     }}>
                     <Typography variant="h6" fontWeight={700}>المجموع الكلي:</Typography>
@@ -479,7 +479,7 @@ const PaymentPage = () => {
                     mt: 4, 
                     p: 3, 
                     borderRadius: 3,
-                    background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)',
+                    background: 'linear-gradient(135deg, #e5978b 0%, #45a049 100%)',
                     color: 'white',
                     position: 'relative',
                     overflow: 'hidden',
