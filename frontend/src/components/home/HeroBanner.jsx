@@ -27,11 +27,6 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
-const moveBubbles = keyframes`
-  0% { transform: translateY(0) rotate(0deg); }
-  100% { transform: translateY(-1000px) rotate(720deg); }
-`;
-
 // 3D Image Container
 const Image3DContainer = styled(Box)(({ theme }) => ({
   position: 'absolute',
@@ -88,40 +83,7 @@ const Image3D = styled(Box)(({ theme, src }) => ({
   animation: 'float 6s ease-in-out infinite',
 }));
 
-// Animated bubbles for background
-const Bubbles = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  width: '100%',
-  height: '100%',
-  overflow: 'hidden',
-  top: 0,
-  left: 0,
-  zIndex: 0,
-  '&:after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
-    zIndex: 1,
-  },
-  '& span': {
-    position: 'absolute',
-    bottom: '-100px',
-    background: 'rgba(255,255,255,0.2)',
-    borderRadius: '50%',
-    animation: `${moveBubbles} 15s linear infinite`,
-    '&:nth-child(1)': { width: '40px', height: '40px', left: '10%', animationDuration: '15s' },
-    '&:nth-child(2)': { width: '60px', height: '60px', left: '20%', animationDuration: '20s', animationDelay: '2s' },
-    '&:nth-child(3)': { width: '30px', height: '30px', left: '35%', animationDuration: '25s', animationDelay: '4s' },
-    '&:nth-child(4)': { width: '50px', height: '50px', left: '50%', animationDuration: '18s', animationDelay: '0s' },
-    '&:nth-child(5)': { width: '35px', height: '35px', left: '65%', animationDuration: '22s', animationDelay: '6s' },
-    '&:nth-child(6)': { width: '45px', height: '45px', left: '80%', animationDuration: '17s', animationDelay: '3s' },
-    '&:nth-child(7)': { width: '25px', height: '25px', left: '90%', animationDuration: '19s', animationDelay: '7s' },
-  }
-}));
+
 
 const HeroSection = styled('section')(({ theme }) => ({
   position: 'relative',
@@ -491,11 +453,6 @@ const HeroBanner = () => {
       onMouseMove={handleMouseMove}
       ref={containerRef}
     >
-      <Bubbles>
-        {[...Array(7)].map((_, i) => (
-          <span key={i} style={{ left: `${Math.random() * 100}%` }} />
-        ))}
-      </Bubbles>
       {/* Removed 3D image container */}
       <HeroContent maxWidth="md">
         <Box sx={{ 

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Course, Category, Tag, Enrollment
 from users.models import Instructor
 from django.db.models import Count
+from django.utils.text import slugify
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -227,6 +228,16 @@ class CourseCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Instructor profile not found")
         
         try:
+            # Generate slug if not provided
+            if not validated_data.get('slug') and validated_data.get('title'):
+                base_slug = slugify(validated_data['title'])
+                slug = base_slug
+                counter = 1
+                while Course.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                validated_data['slug'] = slug
+            
             # Create the course
             course = Course.objects.create(**validated_data)
             
@@ -277,6 +288,16 @@ class CourseUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         try:
             tags_data = validated_data.pop('tags', None)
+            
+            # Check if title changed and update slug accordingly
+            if 'title' in validated_data and validated_data['title'] != instance.title:
+                base_slug = slugify(validated_data['title'])
+                slug = base_slug
+                counter = 1
+                while Course.objects.filter(slug=slug).exclude(pk=instance.pk).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                validated_data['slug'] = slug
             
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)

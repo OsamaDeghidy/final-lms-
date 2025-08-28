@@ -946,6 +946,15 @@ const CourseDetail = () => {
     if (lesson?.type === 'file') {
       return <DownloadIcon htmlColor="#e5978b" />;
     }
+    if (lesson?.type === 'project') {
+      return <CodeIcon htmlColor="#0e5181" />;
+    }
+    if (lesson?.type === 'exercise') {
+      return <AssignmentTurnedInIcon htmlColor="#e5978b" />;
+    }
+    if (lesson?.type === 'case-study') {
+      return <InfoIcon htmlColor="#0e5181" />;
+    }
     if (lesson?.isPreview) {
       return <PlayCircleOutline htmlColor="#0e5181" />;
     }
@@ -1382,8 +1391,15 @@ const CourseDetail = () => {
       modulesData = [];
     }
     
-    if (modulesData.length === 0) {
-      // Return default modules if no modules data
+    // Check if modulesData is empty or has no lessons
+    const hasValidModules = modulesData.length > 0 && modulesData.some(module => {
+      const lessons = module.lessons || module.content || module.lectures || [];
+      return Array.isArray(lessons) && lessons.length > 0;
+    });
+    
+    if (!hasValidModules) {
+      console.log('No valid modules with lessons found, using default modules');
+      // Return default modules if no modules data with assignments, quizzes, and exams
       return [
         {
           id: 1,
@@ -1396,6 +1412,8 @@ const CourseDetail = () => {
             { id: 3, title: 'نظرة عامة على مزايا React 18+', duration: '18:20', isPreview: false, completed: false, type: 'video' },
             { id: 4, title: 'إعداد المشروع والتهيئة', duration: '22:10', isPreview: false, completed: false, type: 'video' },
             { id: 5, title: 'موارد الدورة والأدوات', duration: '08:30', isPreview: true, completed: false, type: 'article' },
+            { id: 6, title: 'واجب الوحدة الأولى: إنشاء مشروع React بسيط', duration: '45:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 7, title: 'كويز المفاهيم الأساسية', duration: '20:00', isPreview: false, completed: false, type: 'quiz' },
           ],
         },
         {
@@ -1404,12 +1422,45 @@ const CourseDetail = () => {
           description: 'إتقان أنماط React المتقدمة وأفضل الممارسات',
           duration: '4h 15m',
           lessons: [
-            { id: 6, title: 'نمط Render Props', duration: '22:10', isPreview: true, completed: false, type: 'video' },
-            { id: 7, title: 'المكوّنات عالية الترتيب (HOCs)', duration: '18:30', isPreview: true, completed: false, type: 'video' },
-            { id: 8, title: 'التعمق في Context API', duration: '20:15', isPreview: false, completed: false, type: 'video' },
-            { id: 9, title: 'نمط المكونات المركبة', duration: '25:40', isPreview: false, completed: false, type: 'video' },
-            { id: 10, title: 'سلاسل React Hooks المخصصة', duration: '28:20', isPreview: false, completed: false, type: 'video' },
-            { id: 11, title: 'تمرين عملي: بناء مكوّن نافذة منبثقة', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
+            { id: 8, title: 'نمط Render Props', duration: '22:10', isPreview: true, completed: false, type: 'video' },
+            { id: 9, title: 'المكوّنات عالية الترتيب (HOCs)', duration: '18:30', isPreview: true, completed: false, type: 'video' },
+            { id: 10, title: 'التعمق في Context API', duration: '20:15', isPreview: false, completed: false, type: 'video' },
+            { id: 11, title: 'نمط المكونات المركبة', duration: '25:40', isPreview: false, completed: false, type: 'video' },
+            { id: 12, title: 'سلاسل React Hooks المخصصة', duration: '28:20', isPreview: false, completed: false, type: 'video' },
+            { id: 13, title: 'تمرين عملي: بناء مكوّن نافذة منبثقة', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
+            { id: 14, title: 'واجب الوحدة الثانية: تطبيق أنماط React المتقدمة', duration: '60:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 15, title: 'كويز الأنماط المتقدمة', duration: '25:00', isPreview: false, completed: false, type: 'quiz' },
+          ],
+        },
+        {
+          id: 3,
+          title: 'إدارة الحالة مع Redux',
+          description: 'إتقان إدارة الحالة مع Redux و Redux Toolkit',
+          duration: '5h 30m',
+          lessons: [
+            { id: 16, title: 'أساسيات Redux', duration: '25:20', isPreview: true, completed: false, type: 'video' },
+            { id: 17, title: 'Redux Middleware والمنطق غير المتزامن', duration: '19:45', isPreview: false, completed: false, type: 'video' },
+            { id: 18, title: 'أساسيات Redux Toolkit', duration: '21:30', isPreview: true, completed: false, type: 'video' },
+            { id: 19, title: 'RTK Query لجلب البيانات', duration: '28:15', isPreview: false, completed: false, type: 'video' },
+            { id: 20, title: 'تطبيع الحالة', duration: '17:50', isPreview: false, completed: false, type: 'video' },
+            { id: 21, title: 'مشروع: بناء عربة تسوق', duration: '45:00', isPreview: false, completed: false, type: 'project' },
+            { id: 22, title: 'واجب الوحدة الثالثة: تطبيق Redux في مشروع حقيقي', duration: '90:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 23, title: 'امتحان منتصف الدورة', duration: '60:00', isPreview: false, completed: false, type: 'exam' },
+          ],
+        },
+        {
+          id: 4,
+          title: 'تحسين الأداء',
+          description: 'تعلم كيفية تحسين تطبيقات React لأقصى أداء',
+          duration: '3h 45m',
+          lessons: [
+            { id: 24, title: 'React.memo و useMemo', duration: '20:10', isPreview: true, completed: false, type: 'video' },
+            { id: 25, title: 'useCallback و useRef', duration: '18:30', isPreview: false, completed: false, type: 'video' },
+            { id: 26, title: 'تقسيم الكود والتحميل الكسول', duration: '25:45', isPreview: false, completed: false, type: 'video' },
+            { id: 27, title: 'React Profiler وأدوات الأداء', duration: '22:15', isPreview: false, completed: false, type: 'video' },
+            { id: 28, title: 'دراسة حالة تحسين الأداء', duration: '30:00', isPreview: false, completed: false, type: 'case-study' },
+            { id: 29, title: 'واجب الوحدة الرابعة: تحسين أداء التطبيق', duration: '75:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 30, title: 'كويز تحسين الأداء', duration: '30:00', isPreview: false, completed: false, type: 'quiz' },
           ],
         },
       ];
@@ -1424,16 +1475,25 @@ const CourseDetail = () => {
           // Determine lesson type based on content or type field
           let lessonType = lesson.type || 'video';
           
-          if (lesson.title?.toLowerCase().includes('واجب') || lesson.title?.toLowerCase().includes('assignment')) {
+          // Enhanced type detection for Arabic and English content
+          const title = lesson.title?.toLowerCase() || lesson.name?.toLowerCase() || '';
+          
+          if (title.includes('واجب') || title.includes('assignment') || title.includes('homework')) {
             lessonType = 'assignment';
-          } else if (lesson.title?.toLowerCase().includes('كويز') || lesson.title?.toLowerCase().includes('quiz')) {
+          } else if (title.includes('كويز') || title.includes('quiz') || title.includes('test')) {
             lessonType = 'quiz';
-          } else if (lesson.title?.toLowerCase().includes('امتحان') || lesson.title?.toLowerCase().includes('exam')) {
+          } else if (title.includes('امتحان') || title.includes('exam') || title.includes('final')) {
             lessonType = 'exam';
-          } else if (lesson.title?.toLowerCase().includes('مقال') || lesson.title?.toLowerCase().includes('article')) {
+          } else if (title.includes('مقال') || title.includes('article') || title.includes('text')) {
             lessonType = 'article';
-          } else if (lesson.title?.toLowerCase().includes('ملف') || lesson.title?.toLowerCase().includes('file')) {
+          } else if (title.includes('ملف') || title.includes('file') || title.includes('document')) {
             lessonType = 'file';
+          } else if (title.includes('مشروع') || title.includes('project')) {
+            lessonType = 'project';
+          } else if (title.includes('تمرين') || title.includes('exercise') || title.includes('practice')) {
+            lessonType = 'exercise';
+          } else if (title.includes('دراسة') || title.includes('case') || title.includes('study')) {
+            lessonType = 'case-study';
           }
           
           return {
@@ -1451,13 +1511,27 @@ const CourseDetail = () => {
         });
       };
 
-      return {
-        id: module.id || index + 1,
-        title: module.name || module.title || `الوحدة ${index + 1}`,
-        description: module.description || '',
-        duration: module.duration || '1h 00m',
-        lessons: transformLessons(module.lessons || module.content || module.lectures || [])
-      };
+              // Get lessons from various possible field names
+        const lessons = module.lessons || module.content || module.lectures || [];
+        const transformedLessons = transformLessons(lessons);
+        
+        // If no lessons found, add some default lessons
+        if (transformedLessons.length === 0) {
+          console.log(`No lessons found for module ${module.id || index + 1}, adding default lessons`);
+          transformedLessons.push(
+            { id: 1, title: 'مقدمة إلى الوحدة', duration: '15:00', isPreview: true, completed: false, type: 'video' },
+            { id: 2, title: 'واجب الوحدة', duration: '45:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 3, title: 'كويز الوحدة', duration: '20:00', isPreview: false, completed: false, type: 'quiz' }
+          );
+        }
+
+        return {
+          id: module.id || index + 1,
+          title: module.name || module.title || `الوحدة ${index + 1}`,
+          description: module.description || '',
+          duration: module.duration || '1h 00m',
+          lessons: transformedLessons
+        };
     });
     
     console.log('transformModulesData result:', result);

@@ -307,10 +307,6 @@ class Course(models.Model):
         if self.status == 'published' and not self.published_at:
             self.published_at = timezone.now()
         
-        # Generate slug if not provided
-        if not self.slug and self.title:
-            self.slug = slugify(self.title)
-        
         # Ensure free courses have price 0
         if self.is_free:
             self.price = 0
@@ -362,12 +358,12 @@ class Course(models.Model):
             status__in=['active', 'completed']
         ).count()
         
-        # Save only the fields that exist in the model
-        self.save(update_fields=[
-            'average_rating',
-            'total_enrollments',
-            'updated_at'
-        ])
+        # Update directly in database to avoid triggering signals
+        Course.objects.filter(pk=self.pk).update(
+            average_rating=self.average_rating,
+            total_enrollments=self.total_enrollments,
+            updated_at=timezone.now()
+        )
     
     def is_enrolled(self, user):
         """Check if a user is enrolled in this course"""
@@ -482,7 +478,7 @@ class Enrollment(models.Model):
         
         super().save(*args, **kwargs)
         
-        # Update course statistics
+        # Update course statistics (this now uses direct database update)
         self.course.update_statistics()
     
     def update_progress(self, new_progress):
@@ -497,14 +493,26 @@ class Enrollment(models.Model):
             self.completion_date = timezone.now()
         
         self.progress = min(100, max(0, new_progress))  # Ensure between 0-100
-        self.save()
+        # Use direct database update to avoid triggering signals
+        Enrollment.objects.filter(pk=self.pk).update(
+            progress=self.progress,
+            status=self.status,
+            completion_date=self.completion_date,
+            last_accessed=timezone.now()
+        )
     
     def mark_complete(self):
         """Mark the enrollment as completed"""
         self.status = 'completed'
         self.progress = 100
         self.completion_date = timezone.now()
-        self.save()
+        # Use direct database update to avoid triggering signals
+        Enrollment.objects.filter(pk=self.pk).update(
+            status=self.status,
+            progress=self.progress,
+            completion_date=self.completion_date,
+            last_accessed=timezone.now()
+        )
     
     def is_active_enrollment(self):
         """Check if this is an active enrollment"""
@@ -522,23 +530,34 @@ class Enrollment(models.Model):
 @receiver(post_save, sender=Enrollment)
 def update_enrollment_stats(sender, instance, created, **kwargs):
     """Update course statistics when enrollment is created or updated"""
-    if created:
+    if created and instance.course:
         course = instance.course
         course.total_enrollments = course.enrollments.count()
-        course.save()
+        # Update directly in database to avoid triggering signals
+        Course.objects.filter(pk=course.pk).update(total_enrollments=course.total_enrollments)
 
 @receiver(post_save, sender=Course)
 def update_course_slug(sender, instance, created, **kwargs):
     """Ensure course has a unique slug"""
-    if not instance.slug:
+    # Skip if instance is being deleted or if no title
+    if not instance.title or not instance.title.strip():
+        return
+        
+    # Generate slug if not provided or if title changed
+    if not instance.slug or (instance.title and slugify(instance.title) != instance.slug):
         base_slug = slugify(instance.title)
         slug = base_slug
         counter = 1
+        
+        # Check for existing slugs and generate unique one
         while Course.objects.filter(slug=slug).exclude(pk=instance.pk).exists():
             slug = f"{base_slug}-{counter}"
             counter += 1
+        
+        # Update the slug directly in the database without triggering signals
+        Course.objects.filter(pk=instance.pk).update(slug=slug)
+        # Update the instance in memory
         instance.slug = slug
-        instance.save(update_fields=['slug'])
 
 @receiver(post_save, sender=Category)
 def ensure_default_categories(sender, instance, created, **kwargs):
