@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db.models import Avg, Count
 from courses.models import Course
 from users.models import User
-from .models import CourseReview, ReviewReply, Comment, CommentLike
+from .models import CourseReview, ReviewReply, Comment, CommentLike, ReviewLike
 
 
 class ReviewReplySerializer(serializers.ModelSerializer):
@@ -22,17 +22,20 @@ class ReviewReplySerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Basic serializer for course reviews"""
-    user_name = serializers.CharField(source='user.profile.name', read_only=True)
-    user_image = serializers.ImageField(source='user.profile.image_profile', read_only=True)
+    user_name = serializers.SerializerMethodField()
+    user_image = serializers.SerializerMethodField()
     replies = ReviewReplySerializer(many=True, read_only=True)
     replies_count = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
+    like_count = serializers.SerializerMethodField()
+    is_liked_by_user = serializers.SerializerMethodField()
     
     class Meta:
         model = CourseReview
         fields = [
             'id', 'user', 'user_name', 'user_image', 'course', 'rating', 'review_text',
-            'created_at', 'updated_at', 'replies', 'replies_count', 'is_owner'
+            'created_at', 'updated_at', 'replies', 'replies_count', 'is_owner',
+            'like_count', 'is_liked_by_user'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'user']
     
@@ -42,6 +45,82 @@ class ReviewSerializer(serializers.ModelSerializer):
     def get_is_owner(self, obj):
         request = self.context.get('request')
         return request and request.user == obj.user
+    
+    def get_like_count(self, obj):
+        return obj.like_count
+    
+    def get_is_liked_by_user(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            return obj.is_liked_by_user(request.user)
+        return False
+    
+    def get_user_name(self, obj):
+        """Get user name from profile or fallback to username"""
+        try:
+            print(f"=== GET_USER_NAME DEBUG ===")
+            print(f"User object: {obj.user}")
+            print(f"User ID: {obj.user.id if obj.user else 'NO USER'}")
+            print(f"Has profile: {hasattr(obj.user, 'profile')}")
+            
+            if hasattr(obj.user, 'profile'):
+                print(f"Profile object: {obj.user.profile}")
+                if obj.user.profile:
+                    print(f"Profile name: {obj.user.profile.name}")
+                    print(f"Profile name type: {type(obj.user.profile.name)}")
+                    if obj.user.profile.name:
+                        print(f"Returning profile name: {obj.user.profile.name}")
+                        return obj.user.profile.name
+                    else:
+                        print("Profile name is empty, checking first_name/last_name")
+                else:
+                    print("Profile is None")
+            
+            print(f"First name: {obj.user.first_name}")
+            print(f"Last name: {obj.user.last_name}")
+            if obj.user.first_name and obj.user.last_name:
+                full_name = f"{obj.user.first_name} {obj.user.last_name}"
+                print(f"Returning full name: {full_name}")
+                return full_name
+            else:
+                print(f"Returning username: {obj.user.username}")
+                return obj.user.username
+                
+        except Exception as e:
+            print(f"Error getting user name: {e}")
+            print(f"Exception type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            return obj.user.username if obj.user else 'مستخدم'
+    
+    def get_user_image(self, obj):
+        """Get user image from profile"""
+        try:
+            if hasattr(obj.user, 'profile') and obj.user.profile and obj.user.profile.image_profile:
+                request = self.context.get('request')
+                if request and obj.user.profile.image_profile:
+                    return request.build_absolute_uri(obj.user.profile.image_profile.url)
+            return None
+        except Exception as e:
+            print(f"Error getting user image: {e}")
+            return None
+    
+    def to_representation(self, instance):
+        """Custom representation to add debugging info"""
+        data = super().to_representation(instance)
+        
+        # Debug user name
+        print(f"=== REVIEW SERIALIZER DEBUG ===")
+        print(f"Review ID: {instance.id}")
+        print(f"User: {instance.user}")
+        print(f"User name from profile: {getattr(instance.user.profile, 'name', 'NO PROFILE NAME') if hasattr(instance.user, 'profile') else 'NO PROFILE'}")
+        print(f"User first_name: {instance.user.first_name}")
+        print(f"User last_name: {instance.user.last_name}")
+        print(f"User username: {instance.user.username}")
+        print(f"Final user_name in data: {data.get('user_name', 'NOT FOUND')}")
+        print(f"=================================")
+        
+        return data
 
 
 class ReviewCreateSerializer(serializers.ModelSerializer):
@@ -56,6 +135,14 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         return value
     
     def validate(self, data):
+        print(f"=== SERIALIZER VALIDATION DEBUG ===")
+        print(f"Input data: {data}")
+        print(f"Data keys: {list(data.keys())}")
+        print(f"review_text in data: {'review_text' in data}")
+        if 'review_text' in data:
+            print(f"review_text value: '{data['review_text']}'")
+        print(f"===================================")
+        
         user = self.context['request'].user
         course = data['course']
         
@@ -70,12 +157,14 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
+        print(f"Creating review with validated_data: {validated_data}")
         review = CourseReview.objects.create(
             user=self.context['request'].user,
             **validated_data
         )
-        # Update course average rating
-        review.course.update_average_rating()
+        print(f"Review created: ID={review.id}, Rating={review.rating}, Text='{review.review_text}'")
+        # Update course statistics
+        review.course.update_statistics()
         return review
 
 
@@ -96,8 +185,8 @@ class ReviewUpdateSerializer(serializers.ModelSerializer):
         instance.updated_at = timezone.now()
         instance.save()
         
-        # Update course average rating
-        instance.course.update_average_rating()
+        # Update course statistics
+        instance.course.update_statistics()
         
         return instance
 
@@ -215,6 +304,13 @@ class CommentLikeSerializer(LikeSerializer):
     class Meta(LikeSerializer.Meta):
         model = CommentLike
         related_field = 'comment'
+
+
+class ReviewLikeSerializer(LikeSerializer):
+    """Serializer for liking a review"""
+    class Meta(LikeSerializer.Meta):
+        model = ReviewLike
+        related_field = 'review'
 
 
 # Removed SubCommentLikeSerializer as we're using CommentLike for all comment likes

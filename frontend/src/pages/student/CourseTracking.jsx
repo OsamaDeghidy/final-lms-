@@ -42,7 +42,8 @@ import {
   Grow,
   Modal,
   Backdrop,
-  Alert
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { 
   PlayCircleOutline, 
@@ -588,6 +589,9 @@ const CourseTracking = () => {
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [examStep, setExamStep] = useState('start');
   const [openFinalExam, setOpenFinalExam] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('info');
   
   // Fetch course data on component mount
   useEffect(() => {
@@ -748,6 +752,154 @@ const CourseTracking = () => {
     setVideoDuration(duration);
   };
 
+  // Handle video end
+  const handleVideoEnd = () => {
+    setIsPlaying(false);
+    setVideoProgress(0);
+  };
+
+  // Mark lesson as completed
+  const markLessonAsCompleted = async () => {
+    if (!currentLesson || !courseId) return;
+    
+    try {
+      await courseAPI.markLessonCompleted(courseId, currentLesson.id);
+      
+      // Update local state
+      setCourseData(prevData => {
+        const updatedModules = prevData.modules.map(module => {
+          if (module.id === currentLesson.moduleId) {
+            const updatedLessons = module.lessons.map(lesson => {
+              if (lesson.id === currentLesson.id) {
+                return { ...lesson, completed: true };
+              }
+              return lesson;
+            });
+            return {
+              ...module,
+              lessons: updatedLessons,
+              completedLessons: updatedLessons.filter(l => l.completed).length
+            };
+          }
+          return module;
+        });
+        
+        return {
+          ...prevData,
+          modules: updatedModules
+        };
+      });
+      
+      showSnackbar('تم إكمال الدرس بنجاح!', 'success');
+      
+      // Auto-advance to next lesson if available
+      setTimeout(() => {
+        navigateToNextLesson();
+      }, 2000);
+      
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error);
+      showSnackbar('حدث خطأ أثناء إكمال الدرس', 'error');
+    }
+  };
+
+  // Navigate to next lesson
+  const navigateToNextLesson = () => {
+    if (!currentLesson || !courseData) return;
+    
+    const currentModuleIndex = courseData.modules.findIndex(m => m.id === currentLesson.moduleId);
+    if (currentModuleIndex >= 0) {
+      const currentModule = courseData.modules[currentModuleIndex];
+      const currentLessonIndex = currentModule.lessons.findIndex(l => l.id === currentLesson.id);
+      
+      if (currentLessonIndex < currentModule.lessons.length - 1) {
+        // Next lesson in same module
+        const nextLesson = currentModule.lessons[currentLessonIndex + 1];
+        handleLessonClick(currentModule.id, nextLesson.id);
+      } else if (currentModuleIndex < courseData.modules.length - 1) {
+        // First lesson of next module
+        const nextModule = courseData.modules[currentModuleIndex + 1];
+        if (nextModule.lessons.length > 0) {
+          const nextLesson = nextModule.lessons[0];
+          handleLessonClick(nextModule.id, nextLesson.id);
+        }
+      }
+    }
+  };
+
+  // Navigate to previous lesson
+  const navigateToPreviousLesson = () => {
+    if (!currentLesson || !courseData) return;
+    
+    const currentModuleIndex = courseData.modules.findIndex(m => m.id === currentLesson.moduleId);
+    if (currentModuleIndex >= 0) {
+      const currentModule = courseData.modules[currentModuleIndex];
+      const currentLessonIndex = currentModule.lessons.findIndex(l => l.id === currentLesson.id);
+      
+      if (currentLessonIndex > 0) {
+        // Previous lesson in same module
+        const prevLesson = currentModule.lessons[currentLessonIndex - 1];
+        handleLessonClick(currentModule.id, prevLesson.id);
+      } else if (currentModuleIndex > 0) {
+        // Last lesson of previous module
+        const prevModule = courseData.modules[currentModuleIndex - 1];
+        if (prevModule.lessons.length > 0) {
+          const prevLesson = prevModule.lessons[prevModule.lessons.length - 1];
+          handleLessonClick(prevModule.id, prevLesson.id);
+        }
+      }
+    }
+  };
+
+  // Download resource
+  const downloadResource = async (resource) => {
+    try {
+      if (resource.file_url) {
+        // Direct download for file resources
+        const link = document.createElement('a');
+        link.href = resource.file_url;
+        link.download = resource.title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showSnackbar('تم بدء تحميل الملف', 'success');
+      } else if (resource.url) {
+        // Open external link
+        window.open(resource.url, '_blank');
+        showSnackbar('تم فتح الرابط في نافذة جديدة', 'info');
+      }
+    } catch (error) {
+      console.error('Error downloading resource:', error);
+      showSnackbar('حدث خطأ أثناء تحميل الملف', 'error');
+    }
+  };
+
+  // Track video progress
+  const trackVideoProgress = async (progress) => {
+    if (!currentLesson || !courseId) return;
+    
+    try {
+      await courseAPI.trackLessonProgress(courseId, currentLesson.id, {
+        content_type: 'video',
+        progress_percentage: progress.played * 100,
+        current_time: progress.playedSeconds,
+        duration: videoDuration
+      });
+    } catch (error) {
+      console.error('Error tracking video progress:', error);
+    }
+  };
+
+  // Handle video progress with throttling
+  const handleProgressWithTracking = (state) => {
+    setVideoProgress(state.playedSeconds);
+    
+    // Track progress every 10 seconds or when video ends
+    if (state.playedSeconds % 10 < 1 || state.played >= 0.95) {
+      trackVideoProgress(state);
+    }
+  };
+
   // Toggle sidebar on mobile
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
@@ -755,6 +907,20 @@ const CourseTracking = () => {
 
   const toggleSidebarExpand = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
+  };
+
+  // Snackbar handlers
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  const showSnackbar = (message, severity = 'info') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
   };
 
   // Instructor Info Component
@@ -1250,10 +1416,11 @@ const CourseTracking = () => {
                       width="100%"
                       height="100%"
                       playing={isPlaying}
-                      onPlay={() => setIsPlaying(true)}
-                      onPause={() => setIsPlaying(false)}
-                      onProgress={handleProgress}
-                      onDuration={handleDuration}
+                                              onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onProgress={handleProgressWithTracking}
+                        onDuration={handleDuration}
+                        onEnded={handleVideoEnd}
                       style={{
                         position: 'absolute',
                         top: 0,
@@ -1319,41 +1486,18 @@ const CourseTracking = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                     <Button 
                       variant="outlined" 
-                      startIcon={<ArrowBack />}
-                      disabled={!currentLesson}
-                      onClick={() => {
-                        // Navigate to previous lesson
-                        const currentModuleIndex = (courseData.modules || []).findIndex(m => m.id === currentLesson?.moduleId);
-                        if (currentModuleIndex >= 0) {
-                          const currentModule = courseData.modules[currentModuleIndex];
-                          const currentLessonIndex = (currentModule.lessons || []).findIndex(l => l.id === currentLesson?.id);
-                          
-                                                      if (currentLessonIndex > 0) {
-                              // Previous lesson in same module
-                              const prevLesson = (currentModule.lessons || [])[currentLessonIndex - 1];
-                              handleLessonClick(currentModule.id, prevLesson.id);
-                            } else if (currentModuleIndex > 0) {
-                              // Last lesson of previous module
-                              const prevModule = courseData.modules[currentModuleIndex - 1];
-                              if ((prevModule.lessons || []).length > 0) {
-                                const prevLesson = prevModule.lessons[prevModule.lessons.length - 1];
-                                handleLessonClick(prevModule.id, prevLesson.id);
-                              }
-                            }
-                        }
-                      }}
+                                              startIcon={<ArrowBack />}
+                        disabled={!currentLesson}
+                        onClick={navigateToPreviousLesson}
                     >
                       السابق
                     </Button>
                     
                     <Button 
                       variant="contained" 
-                      endIcon={<CheckCircle />}
-                      disabled={!currentLesson}
-                      onClick={() => {
-                        // Mark as completed
-                        console.log(`Marking lesson ${currentLesson?.id} as completed`);
-                      }}
+                                              endIcon={<CheckCircle />}
+                        disabled={!currentLesson}
+                        onClick={markLessonAsCompleted}
                       sx={{
                         background: 'linear-gradient(45deg, #4facfe 0%, #00f2fe 100%)',
                         boxShadow: '0 4px 15px rgba(0, 242, 254, 0.3)',
@@ -1367,29 +1511,9 @@ const CourseTracking = () => {
                     
                     <Button 
                       variant="outlined" 
-                      endIcon={<ArrowBack sx={{ transform: 'scaleX(-1)' }} />}
-                      disabled={!currentLesson}
-                                              onClick={() => {
-                          // Navigate to next lesson
-                          const currentModuleIndex = (courseData.modules || []).findIndex(m => m.id === currentLesson?.moduleId);
-                          if (currentModuleIndex >= 0) {
-                            const currentModule = courseData.modules[currentModuleIndex];
-                            const currentLessonIndex = (currentModule.lessons || []).findIndex(l => l.id === currentLesson?.id);
-                          
-                                                      if (currentLessonIndex < (currentModule.lessons || []).length - 1) {
-                              // Next lesson in same module
-                              const nextLesson = (currentModule.lessons || [])[currentLessonIndex + 1];
-                              handleLessonClick(currentModule.id, nextLesson.id);
-                            } else if (currentModuleIndex < (courseData.modules || []).length - 1) {
-                              // First lesson of next module
-                              const nextModule = courseData.modules[currentModuleIndex + 1];
-                              if ((nextModule.lessons || []).length > 0) {
-                                const nextLesson = nextModule.lessons[0];
-                                handleLessonClick(nextModule.id, nextLesson.id);
-                              }
-                            }
-                        }
-                      }}
+                                              endIcon={<ArrowBack sx={{ transform: 'scaleX(-1)' }} />}
+                        disabled={!currentLesson}
+                        onClick={navigateToNextLesson}
                     >
                       التالي
                     </Button>
@@ -1486,7 +1610,7 @@ const CourseTracking = () => {
                                 {resource.resource_type}
                               </Typography>
                             </Box>
-                            <IconButton size="small" sx={{ ml: 1 }}>
+                            <IconButton size="small" sx={{ ml: 1 }} onClick={() => downloadResource(resource)}>
                               <Download />
                             </IconButton>
                           </Paper>
@@ -1582,6 +1706,18 @@ const CourseTracking = () => {
           </Box>
         </Fade>
       </Modal>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

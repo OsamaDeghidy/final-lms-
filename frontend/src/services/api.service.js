@@ -11,6 +11,15 @@ api.interceptors.request.use(
     console.log('Request URL:', config.url);
     console.log('Request method:', config.method);
     
+    // Log request data for review creation
+    if (config.url && config.url.includes('/reviews/create/') && config.method === 'post') {
+      console.log('=== REQUEST INTERCEPTOR DEBUG ===');
+      console.log('Review creation request detected');
+      console.log('Request data:', config.data);
+      console.log('Request headers:', config.headers);
+      console.log('==================================');
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log('Authorization header added');
@@ -320,6 +329,68 @@ export const courseAPI = {
       return response.data;
     } catch (error) {
       console.error('Error submitting quiz attempt:', error);
+      throw error;
+    }
+  },
+
+  // Mark lesson as completed
+  markLessonCompleted: async (courseId, lessonId) => {
+    try {
+      const response = await api.post(`/content/progress/course/${courseId}/complete/`, {
+        lesson_id: lessonId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error);
+      throw error;
+    }
+  },
+
+  // Track lesson progress
+  trackLessonProgress: async (courseId, lessonId, progressData) => {
+    try {
+      const response = await api.post(`/content/progress/course/${courseId}/track/`, {
+        lesson_id: lessonId,
+        ...progressData
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking lesson progress:', error);
+      throw error;
+    }
+  },
+
+  // Update module progress
+  updateModuleProgress: async (moduleId, progressData) => {
+    try {
+      const response = await api.post(`/content/modules/${moduleId}/mark_progress/`, progressData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating module progress:', error);
+      throw error;
+    }
+  },
+
+  // Get lesson details
+  getLessonDetails: async (lessonId) => {
+    try {
+      const response = await api.get(`/content/lessons/${lessonId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lesson details:', error);
+      throw error;
+    }
+  },
+
+  // Download resource
+  downloadResource: async (resourceId) => {
+    try {
+      const response = await api.get(`/content/resources/${resourceId}/download/`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading resource:', error);
       throw error;
     }
   },

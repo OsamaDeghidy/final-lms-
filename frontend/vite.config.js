@@ -22,6 +22,7 @@ export default defineConfig({
     open: true,
     host: true,
     strictPort: true,
+    historyApiFallback: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -39,10 +40,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/courses': {
+      '/api/courses': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/assignments': {
         target: 'http://localhost:8000',

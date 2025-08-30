@@ -25,6 +25,7 @@ class CourseReview(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_approved = models.BooleanField(default=True)
+    likes = models.ManyToManyField(User, through='ReviewLike', related_name='liked_reviews')
     
     class Meta:
         unique_together = ('course', 'user')
@@ -34,17 +35,32 @@ class CourseReview(models.Model):
         return f"{self.user.username}'s review for {self.course.title}"
     
     def save(self, *args, **kwargs):
+        print(f"=== MODEL SAVE DEBUG ===")
+        print(f"Review ID: {getattr(self, 'id', 'NEW')}")
+        print(f"Rating: {self.rating}")
+        print(f"Review Text: '{self.review_text}'")
+        print(f"User: {self.user}")
+        print(f"Course: {self.course}")
+        print(f"=========================")
+        
         # Update course rating when review is saved
         super().save(*args, **kwargs)
         self.update_course_rating()
     
     def update_course_rating(self):
         """Update the course's average rating"""
-        reviews = CourseReview.objects.filter(course=self.course, is_approved=True)
-        if reviews.exists():
-            avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating']
-            self.course.average_rating = round(avg_rating, 1)
-            self.course.save(update_fields=['average_rating'])
+        self.course.update_statistics()
+    
+    @property
+    def like_count(self):
+        """Get the number of likes for this review"""
+        return self.likes.count()
+    
+    def is_liked_by_user(self, user=None):
+        """Check if this review is liked by a specific user"""
+        if not user:
+            return False
+        return self.likes.filter(user=user).exists()
 
 
 class ReviewReply(models.Model):
@@ -105,11 +121,24 @@ class CommentLike(models.Model):
         return f"{self.user.username} likes {self.comment}"
 
 
+class ReviewLike(models.Model):
+    """Like system for reviews"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    review = models.ForeignKey(CourseReview, on_delete=models.CASCADE, related_name='review_likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'review')
+    
+    def __str__(self):
+        return f"{self.user.username} likes {self.review}"
+
+
 # Signals
 @receiver(post_save, sender=CourseReview)
 def update_course_rating_on_save(sender, instance, **kwargs):
     """Update course rating when a review is saved"""
-    instance.update_course_rating()
+    instance.course.update_statistics()
 
 @receiver(post_save, sender=ReviewReply)
 def send_reply_notification(sender, instance, created, **kwargs):
