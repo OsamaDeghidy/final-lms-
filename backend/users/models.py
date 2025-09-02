@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 import uuid
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.utils import timezone
@@ -27,7 +27,8 @@ class Profile(models.Model):
     status = models.CharField(max_length=2000, choices=status_choices, blank=True, null=True, default='Student')
     image_profile = models.ImageField(null=True, blank=True, default='blank.png', upload_to='user_profile/')
     shortBio = models.CharField(max_length=2000, blank=True, null=True)
-    detail = RichTextField(null=True, blank=True)
+    detail = CKEditor5Field(null=True, blank=True)
+    
     github = models.URLField(null=True, blank=True)
     youtube = models.URLField(null=True, blank=True)
     twitter = models.URLField(null=True, blank=True)
@@ -73,7 +74,7 @@ class Profile(models.Model):
 
 class Organization(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True)
-    description = RichTextField(blank=True, null=True)
+    description = CKEditor5Field(blank=True, null=True)
     location = models.CharField(max_length=2000, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
     founded_year = models.DateField(blank=True, null=True)
@@ -85,9 +86,9 @@ class Instructor(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
     department = models.CharField(max_length=2000, blank=True, null=True)
     qualification = models.CharField(max_length=2000, blank=True, null=True)
-    bio = RichTextField(blank=True, null=True)    
+    bio = CKEditor5Field(blank=True, null=True)    
     date_of_birth = models.DateField(blank=True, null=True)
-    research_interests = RichTextField(blank=True, null=True)
+    research_interests = CKEditor5Field(blank=True, null=True)
     
     class Meta:
         verbose_name = 'Instructor'

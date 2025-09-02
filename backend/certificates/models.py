@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from django.db import models
 from django.contrib.auth.models import User
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings

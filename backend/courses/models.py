@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
@@ -153,7 +153,7 @@ class Course(models.Model):
     )
     slug = models.SlugField(max_length=200, unique=True, blank=True, null=True, verbose_name=_('Slug'))
     subtitle = models.CharField(max_length=255, blank=True, null=True, verbose_name=_('Subtitle'))
-    description = RichTextField(verbose_name=_('Description'))
+    description = CKEditor5Field(verbose_name=_('Description'))
     short_description = models.TextField(blank=True, null=True, verbose_name=_('Short Description'))
     
     # Relationships

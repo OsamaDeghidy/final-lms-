@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'ckeditor',
+    # 'ckeditor',  # Replaced with django-ckeditor-5 due to security issues
+    'django_ckeditor_5',
     # 'ckeditor_uploader',  # Temporarily disabled
     'django_filters',
     # 'drf_spectacular',  # Temporarily disabled
@@ -205,7 +206,77 @@ STATICFILES_DIRS = [
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Added for production
 
-# CKEDITOR_UPLOAD_PATH = 'uploads/'
+# CKEDITOR_UPLOAD_PATH = 'uploads/'  # Old CKEditor 4 setting
+
+# CKEditor 5 Configuration
+customColorPalette = [
+    {"color": "000000", "label": "Black"},
+    {"color": "4D4D4D", "label": "Gray"},
+    {"color": "999999", "label": "Light Gray"},
+    {"color": "E6E6E6", "label": "White"},
+    {"color": "4A90E2", "label": "Blue"},
+    {"color": "50E3C2", "label": "Green"},
+    {"color": "B8E986", "label": "Light Green"},
+    {"color": "F5A623", "label": "Orange"},
+    {"color": "D0021B", "label": "Red"},
+    {"color": "9013FE", "label": "Purple"},
+    {"color": "8B572A", "label": "Brown"},
+    {"color": "FFFFFF", "label": "White"},
+]
+
+CKEDITOR_5_CONFIGS = {
+    'default': {
+        'toolbar': ['heading', '|', 'bold', 'italic', 'link',
+                   'bulletedList', 'numberedList', 'blockQuote', 'imageUpload', ],
+
+    },
+    'extends': {
+        'blockToolbar': [
+            'paragraph', 'heading1', 'heading2', 'heading3',
+            '|',
+            'bulletedList', 'numberedList',
+            '|',
+            'blockQuote',
+        ],
+        'toolbar': ['heading', '|', 'outdent', 'indent', '|', 'bold', 'italic', 'backColor', 'underline',
+                   'strikethrough', 'code', 'subscript', 'superscript', 'removeFormat',
+                   '|', 'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
+                   'link', 'image', 'video', 'table', '|', 'alignment', '|', 'horizontalLine',
+                   '|', 'pageBreak', '|', 'textPartLanguage', '|', 'sourceEditing'],
+        'image': {
+            'toolbar': ['imageTextAlternative', '|', 'imageStyle:alignLeft',
+                       'imageStyle:alignRight', 'imageStyle:alignCenter', 'imageStyle:side', '|'],
+            'styles': [
+                'full',
+                'side',
+                'alignLeft',
+                'alignRight',
+                'alignCenter',
+            ]
+
+        },
+        'table': {
+            'contentToolbar': ['tableColumn', 'tableRow', 'mergeTableCells',
+                              'tableProperties', 'tableCellProperties'],
+            'tableProperties': {
+                'borderColors': customColorPalette,
+                'backgroundColors': customColorPalette
+            },
+            'tableCellProperties': {
+                'borderColors': customColorPalette,
+                'backgroundColors': customColorPalette
+            }
+        },
+        'heading': {
+            'options': [
+                {'model': 'paragraph', 'title': 'Paragraph', 'class': 'ck-heading_paragraph'},
+                {'model': 'heading1', 'view': 'h1', 'title': 'Heading 1', 'class': 'ck-heading_heading1'},
+                {'model': 'heading2', 'view': 'h2', 'title': 'Heading 2', 'class': 'ck-heading_heading2'},
+                {'model': 'heading3', 'view': 'h3', 'title': 'Heading 3', 'class': 'ck-heading_heading3'}
+            ]
+        }
+    }
+}
 
 
 
