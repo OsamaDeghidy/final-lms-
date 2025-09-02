@@ -934,8 +934,6 @@ const EditCourse = () => {
                         fontWeight: 600,
                         transition: 'all 0.3s ease',
                         border: `2px solid ${activeStep >= index ? theme.palette.primary.main : theme.palette.grey[300]}`,
-                        backgroundColor: '#fff',
-                        color: activeStep >= index ? theme.palette.primary.main : theme.palette.text.secondary,
                       }}
                     >
                       {index + 1}

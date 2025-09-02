@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { 
   ThemeProvider as MuiThemeProvider, 
   StyledEngineProvider, 
@@ -179,7 +179,6 @@ const PublicRoute = ({ children }) => {
 
 // Main App component
 const AppContent = () => {
-  const location = useLocation();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 

@@ -1027,7 +1027,7 @@ const CourseDetail = () => {
     resources: 45,
     students: 1542,
     rating: 4.8,
-    reviews: 243,
+    reviewCount: 243,
     price: 99.99,
     originalPrice: 199.99,
     discount: 50,
@@ -1551,7 +1551,7 @@ const CourseDetail = () => {
       resources: apiCourse.resources_count || apiCourse.materials_count || 45,
       students: apiCourse.total_enrollments || apiCourse.students_count || apiCourse.enrollments_count || 0,
       rating: courseRating,
-      reviews: transformedReviews,
+      courseReviews: transformedReviews,
       price: price,
       originalPrice: discountPrice > 0 ? price : price,
       discount: discount,
@@ -1579,7 +1579,6 @@ const CourseDetail = () => {
         { title: 'إدارة الحالة مع Redux', duration: '5h 30m', lectures: 6, completed: 0 },
         { title: 'تحسين الأداء', duration: '3h 45m', lectures: 5, completed: 0 },
       ],
-      reviews: transformedReviews,
       faqs: apiCourse.faqs || [
         {
           question: 'كيف يمكنني الوصول إلى دورتي بعد الشراء؟',
@@ -1954,8 +1953,8 @@ const CourseDetail = () => {
       const response = await reviewsAPI.likeReview(reviewId);
       console.log('Like response:', response);
       
-      // Update the specific review's like status without reloading
-      setCourseData(prevData => ({
+              // Update the specific review's like status without reloading
+        setCourse(prevData => ({
         ...prevData,
         reviews: prevData.reviews.map(review => 
           review.id === reviewId 

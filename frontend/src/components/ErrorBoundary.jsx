@@ -4,7 +4,7 @@ import { Box, Typography, Button } from '@mui/material';
 class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -44,7 +44,7 @@ class ErrorBoundary extends Component {
           <Typography variant="body1" paragraph>
             We're sorry for the inconvenience. An error has occurred.
           </Typography>
-          {process.env.NODE_ENV === 'development' && (
+          {import.meta.env.DEV && (
             <Box 
               sx={{ 
                 mt: 3, 
@@ -62,7 +62,6 @@ class ErrorBoundary extends Component {
                 Error Details:
               </Typography>
               <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
-                {this.state.error && this.state.error.toString()}
                 {this.state.errorInfo && this.state.errorInfo.componentStack}
               </Typography>
             </Box>

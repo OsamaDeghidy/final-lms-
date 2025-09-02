@@ -1313,7 +1313,6 @@ const CourseTracking = () => {
             >
               <Box sx={{ 
                 p: { xs: 2, md: 2 }, 
-                position: 'relative', 
                 height: 'auto',
                 minHeight: 'calc(100%)',
                 display: 'flex',
@@ -1380,7 +1379,6 @@ const CourseTracking = () => {
                   borderTop: '1px solid',
                   borderColor: 'divider',
                   bgcolor: 'background.paper',
-                  position: 'relative',
                   zIndex: 1
                 }}>
                   <InstructorInfo 
