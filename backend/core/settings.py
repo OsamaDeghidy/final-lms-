@@ -224,6 +224,11 @@ customColorPalette = [
     {"color": "FFFFFF", "label": "White"},
 ]
 
+# CKEditor 5 File Upload Settings
+CKEDITOR_5_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+CKEDITOR_5_UPLOAD_PATH = "uploads/ckeditor5/"
+CKEDITOR_5_CUSTOM_CSS = None
+
 CKEDITOR_5_CONFIGS = {
     'default': {
         'toolbar': ['heading', '|', 'bold', 'italic', 'link',

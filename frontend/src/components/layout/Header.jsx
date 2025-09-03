@@ -49,13 +49,13 @@ const fadeIn = keyframes`
 const StyledAppBar = styled(AppBar, {
   shouldForwardProp: (prop) => prop !== 'scrolled',
 })(({ theme, scrolled }) => ({
-  backgroundColor: scrolled ? 'rgba(26, 26, 46, 0.95)' : 'rgba(26, 26, 46, 0.98)',
+  backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.98)',
   backdropFilter: 'blur(10px)',
   WebkitBackdropFilter: 'blur(10px)',
   boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
   transition: 'all 0.3s ease-in-out',
   padding: '8px 0',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+  borderBottom: '1px solid rgba(14, 81, 129, 0.1)',
   animation: `${fadeIn} 0.5s ease-out`,
   '&.MuiAppBar-root': {
     zIndex: theme.zIndex.drawer + 1,
@@ -80,9 +80,9 @@ const GradientButton = styled(Button)(({ theme }) => ({
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
   borderRadius: '25px',
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  backgroundColor: 'rgba(14, 81, 129, 0.1)',
   '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(14, 81, 129, 0.15)',
   },
   marginRight: theme.spacing(2),
   marginLeft: theme.spacing(2),
@@ -108,20 +108,20 @@ const SearchIconWrapper = styled('div')(({ theme }) => ({
 }));
 
 const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: '#FFFFFF',
+  color: '#0e5181',
   width: '100%',
   '& .MuiInputBase-input': {
     padding: '12px 20px 12px 50px',
     width: '100%',
     '&::placeholder': {
-      color: 'rgba(255, 255, 255, 0.7)',
+      color: 'rgba(14, 81, 129, 0.7)',
       opacity: 1,
     },
   },
 }));
 
 const NavButton = styled(Button)(({ theme }) => ({
-  color: '#FFFFFF',
+  color: '#0e5181',
   margin: theme.spacing(0, 0.5),
   fontWeight: '500',
   fontSize: '1rem',
@@ -131,11 +131,11 @@ const NavButton = styled(Button)(({ theme }) => ({
   borderRadius: '8px',
   transition: 'all 0.3s ease',
   '&:hover': {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(14, 81, 129, 0.1)',
     transform: 'translateY(-2px)',
   },
   '&.active': {
-    color: '#0e5181',
+    color: '#e5978b',
     fontWeight: '600',
   },
   '& .MuiButton-endIcon': {
@@ -168,10 +168,10 @@ const LogoContainer = styled(Box)(({ theme }) => ({
 }));
 
 const LogoImage = styled('img')({
-  height: '42px',
+  height: '52px',
   transition: 'transform 0.3s ease',
   '@media (max-width: 600px)': {
-    height: '36px',
+    height: '44px',
   },
 });
 
@@ -233,6 +233,7 @@ const Header = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dropdownAnchors, setDropdownAnchors] = useState({});
 
   // Fetch categories from API
   useEffect(() => {
@@ -278,9 +279,9 @@ const Header = () => {
       path: '#',
       icon: <SchoolIcon />,
       dropdown: [
-        { text: 'عن المنصة', path: '/about' },
-        { text: 'المدونة', path: '/articles' },
-        { text: 'اتصل بنا', path: '/contact' },
+        { text: 'عن المنصة', path: '/about', icon: '🏢' },
+        { text: 'المدونة', path: '/articles', icon: '📝' },
+        { text: 'اتصل بنا', path: '/contact', icon: '📞' },
       ]
     },
     { 
@@ -316,6 +317,20 @@ const Header = () => {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleDropdownClick = (event, itemText) => {
+    setDropdownAnchors(prev => ({
+      ...prev,
+      [itemText]: event.currentTarget
+    }));
+  };
+
+  const handleDropdownClose = (itemText) => {
+    setDropdownAnchors(prev => ({
+      ...prev,
+      [itemText]: null
+    }));
   };
 
   const handleLogout = () => {
@@ -612,16 +627,7 @@ const Header = () => {
                 if (item.auth && !isAuthenticated) return null;
                 
                 if (item.dropdown) {
-                  const [anchorEl, setAnchorEl] = useState(null);
-                  const open = Boolean(anchorEl);
-                  
-                  const handleClick = (event) => {
-                    setAnchorEl(event.currentTarget);
-                  };
-                  
-                  const handleClose = () => {
-                    setAnchorEl(null);
-                  };
+                  const open = Boolean(dropdownAnchors[item.text]);
                   
                   return (
                     <div key={item.text}>
@@ -629,7 +635,7 @@ const Header = () => {
                         aria-controls={open ? item.text : undefined}
                         aria-haspopup="true"
                         aria-expanded={open ? 'true' : undefined}
-                        onClick={handleClick}
+                        onClick={(event) => handleDropdownClick(event, item.text)}
                         endIcon={<KeyboardArrowDown />}
                         className={location.pathname.startsWith(item.path) ? 'active' : ''}
                       >
@@ -637,20 +643,21 @@ const Header = () => {
                       </NavButton>
                       <Menu
                         id={item.text}
-                        anchorEl={anchorEl}
+                        anchorEl={dropdownAnchors[item.text]}
                         open={open}
-                        onClose={handleClose}
+                        onClose={() => handleDropdownClose(item.text)}
                         MenuListProps={{
                           'aria-labelledby': item.text,
                         }}
                         PaperProps={{
                           style: {
-                            backgroundColor: '#1A1A2E',
-                            color: '#FFFFFF',
+                            backgroundColor: '#FFFFFF',
+                            color: '#333333',
                             marginTop: '10px',
-                            minWidth: '200px',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+                            minWidth: '300px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            border: '1px solid rgba(14, 81, 129, 0.1)',
                           },
                         }}
                         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -661,29 +668,109 @@ const Header = () => {
                             <CircularProgress size={20} sx={{ color: '#0e5181' }} />
                           </Box>
                         ) : item.dropdown.length > 0 ? (
-                          item.dropdown.map((subItem) => (
-                            <MenuItem 
-                              key={subItem.path}
-                              component={RouterLink}
-                              to={subItem.path}
-                              onClick={handleClose}
-                              sx={{
-                                color: '#E6E6E6',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                                  color: '#0e5181',
-                                },
-                                '&.Mui-selected': {
-                                  backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                                  color: '#0e5181',
-                                },
-                              }}
-                            >
-                              {subItem.text}
-                            </MenuItem>
-                          ))
+                          <Box sx={{ p: 2.5 }}>
+                            {item.dropdown.map((subItem, index) => {
+                              const colors = [
+                                { bg: '#FFF5F5', icon: '#e5978b' }, // Light pink with coral icon
+                                { bg: '#F0F8FF', icon: '#0e5181' }, // Light blue with dark blue icon
+                                { bg: '#FFF8F0', icon: '#e5978b' }, // Light peach with coral icon
+                                { bg: '#F0F0FF', icon: '#0e5181' }, // Light lavender with dark blue icon
+                                { bg: '#FFFFF0', icon: '#e5978b' }, // Light cream with coral icon
+                                { bg: '#F5F0FF', icon: '#0e5181' }, // Light purple with dark blue icon
+                                { bg: '#F0FFF0', icon: '#e5978b' }, // Light mint with coral icon
+                                { bg: '#FFF0F5', icon: '#0e5181' }, // Light pink with dark blue icon
+                                { bg: '#F0FFFF', icon: '#e5978b' }  // Light cyan with coral icon
+                              ];
+                              const colorIndex = index % colors.length;
+                              return (
+                                <Box
+                                  key={subItem.path}
+                                  component={RouterLink}
+                                  to={subItem.path}
+                                  onClick={() => handleDropdownClose(item.text)}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    p: 2,
+                                    mb: 1,
+                                    borderRadius: '12px',
+                                    backgroundColor: colors[colorIndex].bg,
+                                    textDecoration: 'none',
+                                    transition: 'all 0.3s ease',
+                                    cursor: 'pointer',
+                                    border: '2px solid transparent',
+                                    '&:hover': {
+                                      backgroundColor: `${colors[colorIndex].bg}DD`,
+                                      borderColor: colors[colorIndex].icon,
+                                      transform: 'translateX(6px)',
+                                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                                    },
+                                    '&:last-child': {
+                                      mb: 0,
+                                    },
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      width: '28px',
+                                      height: '28px',
+                                      borderRadius: '8px',
+                                      backgroundColor: colors[colorIndex].icon,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      mr: 2,
+                                      color: 'white',
+                                      flexShrink: 0,
+                                      position: 'relative',
+                                      overflow: 'hidden',
+                                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                                    }}
+                                  >
+                                    <Box
+                                      component="svg"
+                                      viewBox="0 0 24 24"
+                                      sx={{
+                                        width: '18px',
+                                        height: '18px',
+                                        fill: 'none',
+                                        stroke: 'white',
+                                        strokeWidth: '2.5',
+                                        strokeLinecap: 'round',
+                                        strokeLinejoin: 'round',
+                                      }}
+                                    >
+                                      {/* Creative Pencil with zigzag */}
+                                      <path d="M3 21L21 3" />
+                                      <path d="M9 3L21 15" />
+                                      <path d="M15 9L21 15" />
+                                      <path d="M3 21L9 15" />
+                                      <path d="M9 15L15 9" />
+                                      <path d="M15 9L21 3" />
+                                      {/* Pencil tip */}
+                                      <path d="M21 3L24 6L21 9" />
+                                      {/* Line below */}
+                                      <path d="M3 21L6 24" />
+                                    </Box>
+                                  </Box>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      color: '#333333',
+                                      fontWeight: 600,
+                                      fontSize: '0.95rem',
+                                      flexGrow: 1,
+                                      lineHeight: 1.4,
+                                    }}
+                                  >
+                                    {subItem.text}
+                                  </Typography>
+                                </Box>
+                              );
+                            })}
+                          </Box>
                         ) : (
-                          <MenuItem disabled sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                          <MenuItem disabled sx={{ color: 'rgba(14, 81, 129, 0.5)' }}>
                             لا توجد أقسام متاحة
                           </MenuItem>
                         )}
@@ -743,10 +830,12 @@ const Header = () => {
                     component={RouterLink}
                     to="/cart"
                     sx={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
                       marginLeft: 1,
+                      color: '#0e5181',
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(14, 81, 129, 0.2)',
+                        color: '#e5978b',
                       },
                     }}
                   >
@@ -760,10 +849,12 @@ const Header = () => {
                     aria-label="show notifications"
                     color="inherit"
                     sx={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
                       marginLeft: 1,
+                      color: '#0e5181',
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(14, 81, 129, 0.2)',
+                        color: '#e5978b',
                       },
                     }}
                   >
@@ -810,25 +901,28 @@ const Header = () => {
                     }}
                   >
                     <Box px={2} py={1}>
-                      <Typography variant="subtitle1" fontWeight={600}>
+                      <Typography variant="subtitle1" fontWeight={600} sx={{ color: '#0e5181' }}>
                         {user?.name || 'المستخدم'}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: '#666666' }}>
                         {user?.email || 'user@example.com'}
                       </Typography>
                     </Box>
                     <Divider />
-                    <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}>
-                      <AccountCircleIcon sx={{ ml: 1 }} />
+                    <MenuItem onClick={() => { navigate('/profile'); handleMenuClose(); }}
+                      sx={{ color: '#0e5181', '&:hover': { backgroundColor: 'rgba(14, 81, 129, 0.1)' } }}>
+                      <AccountCircleIcon sx={{ ml: 1, color: '#0e5181' }} />
                       الملف الشخصي
                     </MenuItem>
-                    <MenuItem onClick={() => { navigate('/dashboard'); handleMenuClose(); }}>
-                      <DashboardIcon sx={{ ml: 1 }} />
+                    <MenuItem onClick={() => { navigate('/dashboard'); handleMenuClose(); }}
+                      sx={{ color: '#0e5181', '&:hover': { backgroundColor: 'rgba(14, 81, 129, 0.1)' } }}>
+                      <DashboardIcon sx={{ ml: 1, color: '#0e5181' }} />
                       لوحة التحكم
                     </MenuItem>
                     <Divider />
-                    <MenuItem onClick={handleLogout}>
-                      <ExitToAppIcon sx={{ ml: 1 }} />
+                    <MenuItem onClick={handleLogout}
+                      sx={{ color: '#0e5181', '&:hover': { backgroundColor: 'rgba(14, 81, 129, 0.1)' } }}>
+                      <ExitToAppIcon sx={{ ml: 1, color: '#0e5181' }} />
                       تسجيل الخروج
                     </MenuItem>
                   </Menu>
@@ -841,8 +935,10 @@ const Header = () => {
                     color="inherit"
                     sx={{ 
                       fontWeight: 500,
+                      color: '#0e5181',
                       '&:hover': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: 'rgba(14, 81, 129, 0.1)',
+                        color: '#e5978b',
                       },
                     }}
                   >

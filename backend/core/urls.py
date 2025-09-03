@@ -36,6 +36,9 @@ urlpatterns = [
     path('admin/', custom_admin_site.urls),  # Use our custom admin site
     path('django-admin/', admin.site.urls),  # Keep default admin as fallback
     
+    # CKEditor 5 URLs for file uploads
+    path('ckeditor5/', include('django_ckeditor_5.urls'), name='ck_editor_5_upload_file'),
+    
     # API Documentation
     # path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

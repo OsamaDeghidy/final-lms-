@@ -5,7 +5,7 @@ export const courseAPI = {
   // Get all courses with filtering and pagination
   getCourses: async (params = {}) => {
     try {
-      const response = await api.get('/courses/public/', { params });
+      const response = await api.get('/api/courses/public/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -16,7 +16,7 @@ export const courseAPI = {
   // Get a specific course by ID
   getCourseById: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course by ID:', error);
@@ -27,7 +27,7 @@ export const courseAPI = {
   // Get a specific course by ID (alias for getCourseById)
   getCourse: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course:', error);
@@ -38,7 +38,7 @@ export const courseAPI = {
   // Search courses
   searchCourses: async (query, params = {}) => {
     try {
-      const response = await api.get('/courses/search/', { 
+      const response = await api.get('/api/courses/search/', { 
         params: { query, ...params } 
       });
       return response.data;
@@ -51,7 +51,7 @@ export const courseAPI = {
   // Get featured courses
   getFeaturedCourses: async () => {
     try {
-      const response = await api.get('/courses/featured/');
+      const response = await api.get('/api/courses/featured/');
       return response.data;
     } catch (error) {
       console.error('Error fetching featured courses:', error);
@@ -62,7 +62,7 @@ export const courseAPI = {
   // Get popular courses
   getPopularCourses: async () => {
     try {
-      const response = await api.get('/courses/popular/');
+      const response = await api.get('/api/courses/popular/');
       return response.data;
     } catch (error) {
       console.error('Error fetching popular courses:', error);
@@ -73,7 +73,7 @@ export const courseAPI = {
   // Get recent courses
   getRecentCourses: async () => {
     try {
-      const response = await api.get('/courses/recent/');
+      const response = await api.get('/api/courses/recent/');
       return response.data;
     } catch (error) {
       console.error('Error fetching recent courses:', error);
@@ -84,7 +84,7 @@ export const courseAPI = {
   // Get categories
   getCategories: async () => {
     try {
-      const response = await api.get('/courses/categories/');
+      const response = await api.get('/api/courses/categories/');
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -95,7 +95,7 @@ export const courseAPI = {
   // Get tags
   getTags: async () => {
     try {
-      const response = await api.get('/courses/tags/');
+      const response = await api.get('/api/courses/tags/');
       return response.data;
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -128,7 +128,7 @@ export const courseAPI = {
   // Get course modules
   getCourseModules: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/modules/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/modules/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course modules:', error);
@@ -139,7 +139,7 @@ export const courseAPI = {
   // Get my courses (enrolled courses)
   getMyCourses: async () => {
     try {
-      const response = await api.get('/courses/courses/my_courses/');
+      const response = await api.get('/api/courses/courses/my_courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching my courses:', error);
@@ -150,7 +150,7 @@ export const courseAPI = {
   // Get dashboard stats
   getDashboardStats: async () => {
     try {
-      const response = await api.get('/courses/dashboard/stats/');
+      const response = await api.get('/api/courses/dashboard/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -161,7 +161,7 @@ export const courseAPI = {
   // Get general stats
   getGeneralStats: async () => {
     try {
-      const response = await api.get('/courses/general/stats/');
+      const response = await api.get('/api/courses/general/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching general stats:', error);
@@ -172,7 +172,7 @@ export const courseAPI = {
   // Get related courses
   getRelatedCourses: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/related/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/related/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching related courses:', error);
@@ -183,7 +183,7 @@ export const courseAPI = {
   // Get course collections with courses
   getCourseCollections: async () => {
     try {
-      const response = await api.get('/extras/collections/with_courses/');
+      const response = await api.get('/api/extras/collections/with_courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching course collections:', error);
@@ -194,7 +194,7 @@ export const courseAPI = {
   // Get course reviews
   getCourseReviews: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/reviews/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/reviews/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course reviews:', error);
@@ -205,7 +205,7 @@ export const courseAPI = {
   // Add course review
   addCourseReview: async (courseId, reviewData) => {
     try {
-      const response = await api.post(`/courses/courses/${courseId}/reviews/`, reviewData);
+      const response = await api.post(`/api/courses/courses/${courseId}/reviews/`, reviewData);
       return response.data;
     } catch (error) {
       console.error('Error adding course review:', error);
@@ -216,7 +216,7 @@ export const courseAPI = {
   // Get course progress
   getCourseProgress: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/progress/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/progress/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course progress:', error);
@@ -230,7 +230,7 @@ export const cartAPI = {
   // Get cart items
   getCart: async () => {
     try {
-      const response = await api.get('/store/cart/');
+      const response = await api.get('/api/store/cart/');
       return response.data;
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -241,7 +241,7 @@ export const cartAPI = {
   // Add course to cart
   addToCart: async (courseId) => {
     try {
-      const response = await api.post('/store/cart/items/', { course_id: courseId });
+      const response = await api.post('/api/store/cart/items/', { course_id: courseId });
       return response.data;
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -252,7 +252,7 @@ export const cartAPI = {
   // Remove course from cart
   removeFromCart: async (itemId) => {
     try {
-      const response = await api.delete(`/store/cart/items/${itemId}/`);
+      const response = await api.delete(`/api/store/cart/items/${itemId}/`);
       return response.data;
     } catch (error) {
       console.error('Error removing from cart:', error);
@@ -263,7 +263,7 @@ export const cartAPI = {
   // Update cart item quantity
   updateCartItem: async (itemId, quantity) => {
     try {
-      const response = await api.patch(`/store/cart/items/${itemId}/`, { quantity });
+      const response = await api.patch(`/api/store/cart/items/${itemId}/`, { quantity });
       return response.data;
     } catch (error) {
       console.error('Error updating cart item:', error);
@@ -274,7 +274,7 @@ export const cartAPI = {
   // Clear cart
   clearCart: async () => {
     try {
-      const response = await api.delete('/store/cart/');
+      const response = await api.delete('/api/store/cart/');
       return response.data;
     } catch (error) {
       console.error('Error clearing cart:', error);

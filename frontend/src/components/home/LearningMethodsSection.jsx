@@ -17,7 +17,8 @@ import {
   Fade,
   Grow,
   CircularProgress,
-  Alert
+  Alert,
+  IconButton
 } from '@mui/material';
 import { 
   Code, 
@@ -38,19 +39,49 @@ const floatAnimation = keyframes`
 
 const SectionContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(6, 0),
-  background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%)',
+  background: '#ffffff',
   position: 'relative',
   overflow: 'hidden',
   '&:before': {
     content: '""',
     position: 'absolute',
-    width: '500px',
-    height: '500px',
+    width: '400px',
+    height: '400px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.07) 0%, rgba(229, 151, 139, 0.07) 100%)',
-    top: '-250px',
-    right: '-250px',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.03) 0%, rgba(229, 151, 139, 0.03) 100%)',
+    top: '-200px',
+    right: '-200px',
     zIndex: 0,
+  },
+  '&:after': {
+    content: '""',
+    position: 'absolute',
+    width: '300px',
+    height: '300px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, rgba(229, 151, 139, 0.02) 0%, rgba(14, 81, 129, 0.02) 100%)',
+    bottom: '-150px',
+    left: '-150px',
+    zIndex: 0,
+  },
+  '& .creative-pattern': {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.03,
+    zIndex: 0,
+    backgroundImage: `
+      radial-gradient(circle at 20% 30%, #0e5181 1px, transparent 1px),
+      radial-gradient(circle at 80% 70%, #e5978b 1px, transparent 1px),
+      radial-gradient(circle at 40% 80%, #0e5181 1px, transparent 1px),
+      radial-gradient(circle at 90% 20%, #e5978b 1px, transparent 1px),
+      linear-gradient(45deg, transparent 49.5%, rgba(14, 81, 129, 0.08) 50%, transparent 50.5%),
+      linear-gradient(-45deg, transparent 49.5%, rgba(229, 151, 139, 0.08) 50%, transparent 50.5%)
+    `,
+    backgroundSize: '120px 120px, 120px 120px, 120px 120px, 120px 120px, 200px 200px, 200px 200px',
+    backgroundPosition: '0 0, 60px 60px, 30px 90px, 90px 30px, 0 0, 0 0',
   },
   [theme.breakpoints.down('md')]: {
     padding: theme.spacing(8, 0),
@@ -65,6 +96,18 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   fontSize: '2.5rem',
+  position: 'relative',
+  '&:after': {
+    content: '""',
+    position: 'absolute',
+    bottom: -12,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '80px',
+    height: '4px',
+    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+    borderRadius: '2px',
+  },
   [theme.breakpoints.down('sm')]: {
     fontSize: '2rem',
   },
@@ -370,6 +413,98 @@ const TabPanel = (props) => {
   );
 };
 
+const SliderContainer = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  width: '100%',
+  overflow: 'hidden',
+  padding: theme.spacing(0, 1),
+  direction: 'rtl', // RTL direction for Arabic
+  '& .slider-track': {
+    display: 'flex',
+    transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    gap: theme.spacing(3),
+    flexDirection: 'row-reverse', // Reverse flex direction for RTL
+    [theme.breakpoints.down('sm')]: {
+      gap: theme.spacing(2),
+    },
+  },
+  '& .slider-item': {
+    flex: '0 0 300px',
+    width: '300px',
+    direction: 'ltr', // Keep content LTR for proper text display
+    [theme.breakpoints.down('md')]: {
+      flex: '0 0 280px',
+      width: '280px',
+    },
+    [theme.breakpoints.down('sm')]: {
+      flex: '0 0 100%',
+      width: '100%',
+    },
+  },
+}));
+
+const NavigationButton = styled(IconButton)(({ theme, direction }) => ({
+  position: 'absolute',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  zIndex: 10,
+  background: 'rgba(255, 255, 255, 0.9)',
+  backdropFilter: 'blur(10px)',
+  borderRadius: '50%',
+  width: '48px',
+  height: '48px',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+  border: '1px solid rgba(14, 81, 129, 0.1)',
+  color: '#0e5181',
+  '&:hover': {
+    background: '#0e5181',
+    color: '#fff',
+    transform: 'translateY(-50%) scale(1.1)',
+    boxShadow: '0 6px 25px rgba(14, 81, 129, 0.3)',
+  },
+  // RTL positioning - left button becomes right, right button becomes left
+  ...(direction === 'left' && {
+    right: theme.spacing(2), // RTL: left button goes to right
+  }),
+  ...(direction === 'right' && {
+    left: theme.spacing(2), // RTL: right button goes to left
+  }),
+  [theme.breakpoints.down('md')]: {
+    width: '40px',
+    height: '40px',
+    ...(direction === 'left' && {
+      right: theme.spacing(1), // RTL: left button goes to right
+    }),
+    ...(direction === 'right' && {
+      left: theme.spacing(1), // RTL: right button goes to left
+    }),
+  },
+}));
+
+const SliderIndicator = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  marginTop: theme.spacing(3),
+  direction: 'rtl', // RTL direction for indicators
+  '& .indicator-dot': {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(14, 81, 129, 0.3)',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    '&.active': {
+      backgroundColor: '#0e5181',
+      transform: 'scale(1.2)',
+    },
+    '&:hover': {
+      backgroundColor: 'rgba(14, 81, 129, 0.6)',
+    },
+  },
+}));
+
 const LearningMethodsSection = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -382,6 +517,7 @@ const LearningMethodsSection = () => {
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
+    setCurrentSlide(0); // Reset slider when changing tabs
     if (categories[newValue]) {
       loadCoursesByCategory(categories[newValue].id);
     }
@@ -434,6 +570,38 @@ const LearningMethodsSection = () => {
 
   const handleCourseClick = (courseId) => {
     navigate(`/courses/${courseId}`);
+  };
+
+  const [slidesPerView, setSlidesPerView] = useState(3);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Update slides per view based on screen size
+  useEffect(() => {
+    const updateSlidesPerView = () => {
+      if (window.innerWidth < 768) {
+        setSlidesPerView(1);
+      } else if (window.innerWidth < 1024) {
+        setSlidesPerView(2);
+      } else {
+        setSlidesPerView(3);
+      }
+    };
+
+    updateSlidesPerView();
+    window.addEventListener('resize', updateSlidesPerView);
+    return () => window.removeEventListener('resize', updateSlidesPerView);
+  }, []);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => Math.min(prev + 1, Math.max(0, courses.length - slidesPerView)));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => Math.max(0, prev - 1));
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
   };
 
   const renderCourses = () => {
@@ -521,23 +689,40 @@ const LearningMethodsSection = () => {
   );
     }
 
+    // Calculate slider values
+    const maxSlides = Math.max(0, courses.length - slidesPerView);
+    const canGoNext = currentSlide < maxSlides;
+    const canGoPrev = currentSlide > 0;
+    const totalSlides = Math.ceil(courses.length / slidesPerView);
+
     return (
-    <Box sx={{
-      display: 'grid',
-        gridTemplateColumns: { 
-          xs: '1fr', 
-          sm: 'repeat(2, 1fr)', 
-          md: 'repeat(2, 1fr)',
-          lg: 'repeat(3, 1fr)' 
-        },
-        gap: { xs: 2, sm: 3 },
-      width: '100%',
-      maxWidth: '1400px',
-      mx: 'auto',
-        px: { xs: 2, sm: 3 }
-    }}>
+      <SliderContainer>
+        {/* Navigation Buttons - RTL Layout */}
+        {canGoPrev && (
+          <NavigationButton direction="left" onClick={prevSlide}>
+            <ChevronRight /> {/* RTL: show right arrow for previous */}
+          </NavigationButton>
+        )}
+        
+        {canGoNext && (
+          <NavigationButton direction="right" onClick={nextSlide}>
+            <ChevronLeft /> {/* RTL: show left arrow for next */}
+          </NavigationButton>
+        )}
+
+        {/* Slider Track */}
+        <Box 
+          className="slider-track"
+          sx={{
+            // RTL: Use positive translateX for right-to-left movement
+            transform: `translateX(${currentSlide * (slidesPerView === 1 ? 100 : slidesPerView === 2 ? 280 + 24 : 300 + 24)}px)`,
+            [theme.breakpoints.down('sm')]: {
+              transform: `translateX(${currentSlide * 100}%)`,
+            },
+          }}
+        >
         {courses.map((course, index) => (
-          <Box key={course.id} sx={{ width: '100%' }}>
+            <Box key={course.id} className="slider-item">
             <Grow in={true} timeout={index * 200}>
               <Box>
                 <MethodCard 
@@ -577,19 +762,20 @@ const LearningMethodsSection = () => {
                       {course.title}
                     </Typography>
                     
-                    <Typography variant="body2">
-                      {course.short_description || course.description?.substring(0, 120) + '...' || 'لا يوجد وصف متاح'}
-                    </Typography>
-                    
                     {course.instructors && course.instructors.length > 0 && (
                       <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 
-                        gap: 1, 
+                          justifyContent: 'space-between',
                         mt: 1.5,
                         p: 1,
                         bgcolor: 'rgba(14, 81, 129, 0.05)',
                         borderRadius: '8px'
+                        }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 1 
                       }}>
                         <Box sx={{
                           width: '24px',
@@ -609,224 +795,35 @@ const LearningMethodsSection = () => {
                           {course.instructors[0]?.name || 'مدرب غير محدد'}
                         </Typography>
                       </Box>
-                    )}
-                    
-                    <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
-                      {course.level && (
-                      <Box sx={{
-                        bgcolor: 'rgba(14, 81, 129, 0.1)',
-                        color: '#0e5181',
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                      }}>
-                          {course.level === 'beginner' ? 'مبتدئ' : 
-                           course.level === 'intermediate' ? 'متوسط' : 
-                           course.level === 'advanced' ? 'متقدم' : course.level}
-                      </Box>
-                      )}
-                      {course.price && !course.is_free && (
-                      <Box sx={{
-                          bgcolor: 'rgba(14, 81, 129, 0.1)',
-                          color: '#0e5181',
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                      }}>
-                          {course.price} ريال
-                      </Box>
-                      )}
-                      {course.average_rating && (
-                      <Box sx={{
-                          bgcolor: 'rgba(255, 193, 7, 0.1)',
-                          color: '#ffc107',
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5
-                      }}>
-                          ⭐ {course.average_rating.toFixed(1)}
-                      </Box>
-                      )}
-                      {course.total_enrollments && (
-                        <Box sx={{
-                          bgcolor: 'rgba(76, 175, 80, 0.1)',
-                          color: '#e5978b',
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5
-                        }}>
-                          👥 {course.total_enrollments}
-                    </Box>
-      )}
-    </Box>
-                    
-                    {/* Course Stats */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                      justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                      mt: 2,
-                      pt: 2,
-                      borderTop: '1px solid rgba(0, 0, 0, 0.05)',
-                      opacity: 0.8,
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        opacity: 1,
-                      }
-                    }} className="course-stats">
-                      <Box sx={{ 
-                          display: 'flex',
-                          alignItems: 'center',
-                        gap: 0.5,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          color: '#0e5181',
-                        }
-                      }}>
-                        <School sx={{ fontSize: '1rem', color: '#0e5181' }} />
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {course.modules?.length || 0} وحدة
-                        </Typography>
-                        </Box>
-                        <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 0.5,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          color: '#e5978b',
-                        }
-                      }}>
-                        <MenuBook sx={{ fontSize: '1rem', color: '#e5978b' }} />
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {course.lessons?.length || 0} درس
-                        </Typography>
-                        </Box>
-                      <Box sx={{ 
-                          display: 'flex',
-                          alignItems: 'center',
-                        gap: 0.5,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          color: '#e5978b',
-                        }
-                      }}>
-                        <Code sx={{ fontSize: '1rem', color: '#e5978b' }} />
-                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                          {course.duration || 'غير محدد'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    {/* Course Tags */}
-                    {course.tags && course.tags.length > 0 && (
-                      <Box sx={{ 
-                        display: 'flex', 
-                        gap: 0.5, 
-                        mt: 1.5,
-                        flexWrap: 'wrap'
-                      }}>
-                        {course.tags.slice(0, 3).map((tag, index) => (
-                          <Box
-                            key={index}
-                            sx={{
-                              bgcolor: 'rgba(14, 81, 129, 0.08)',
-                              color: '#0e5181',
-                              px: 1,
-                              py: 0.3,
-                              borderRadius: '12px',
-                              fontSize: '0.65rem',
-                              fontWeight: 500,
-                              border: '1px solid rgba(14, 81, 129, 0.1)',
-                            }}
-                          >
-                            {tag.name}
-                          </Box>
-                        ))}
-                        {course.tags.length > 3 && (
-                          <Box
-                            sx={{
-                              bgcolor: 'rgba(229, 151, 139, 0.08)',
-                              color: '#e5978b',
-                              px: 1,
-                              py: 0.3,
-                              borderRadius: '12px',
-                              fontSize: '0.65rem',
-                              fontWeight: 500,
-                              border: '1px solid rgba(229, 151, 139, 0.1)',
-                            }}
-                          >
-                            +{course.tags.length - 3}
-                      </Box>
-                        )}
-                    </Box>
-                    )}
-                  </MethodContent>
-                  
-                  <MethodFooter>
-                    <Button
-                      variant="outlined"
+                          
+                          {/* Open button with icon */}
+                          <IconButton
                       size="small"
-                      fullWidth
-                      disableRipple
-                      disableTouchRipple
-                      endIcon={<ArrowForward />}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleCourseClick(course.id);
                       }}
                       sx={{
-                        background: 'linear-gradient(90deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
-                        border: '1.5px solid #0e5181',
+                              width: '28px',
+                              height: '28px',
+                              bgcolor: 'rgba(14, 81, 129, 0.1)',
                         color: '#0e5181',
-                        fontWeight: 600,
-                        borderRadius: '12px',
-                        padding: '10px 20px',
-                        transition: 'all 0.3s ease',
                         '&:hover': {
-                          background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+                                bgcolor: '#0e5181',
                           color: '#fff',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 6px 12px rgba(14, 81, 129, 0.2)',
-                          borderColor: 'transparent',
-                        },
-                        '&:active': {
-                          transform: 'translateY(0)',
-                          boxShadow: '0 2px 4px rgba(14, 81, 129, 0.1)',
-                        },
-                        '& .MuiTouchRipple-root': {
-                          display: 'none !important'
-                        },
-                        '&:focus': {
-                          transform: 'scale(1) !important',
-                        },
-                        '& .MuiButton-endIcon': {
-                          transition: 'transform 0.3s ease',
-                        },
-                        '&:hover .MuiButton-endIcon': {
-                          transform: 'translateX(4px)',
-                        },
-                      }}
-                    >
-                      عرض الدورة
-                    </Button>
+                                transform: 'scale(1.1)',
+                              },
+                              transition: 'all 0.3s ease',
+                            }}
+                          >
+                            <ArrowForward sx={{ fontSize: '1rem' }} />
+                          </IconButton>
+                        </Box>
+                      )}
+                    </MethodContent>
+                    
+                    <MethodFooter>
+                      {/* Empty footer - removed course button */}
                   </MethodFooter>
                 </MethodCard>
               </Box>
@@ -834,11 +831,28 @@ const LearningMethodsSection = () => {
           </Box>
         ))}
     </Box>
+
+        {/* Slider Indicators */}
+        {courses.length > slidesPerView && (
+          <SliderIndicator>
+            {Array.from({ length: totalSlides }, (_, index) => (
+              <Box
+                key={index}
+                className={`indicator-dot ${currentSlide === index ? 'active' : ''}`}
+                onClick={() => goToSlide(index)}
+              />
+            ))}
+          </SliderIndicator>
+        )}
+      </SliderContainer>
   );
   };
 
   return (
     <SectionContainer>
+      {/* Creative Pattern Background */}
+      <Box className="creative-pattern" />
+      
       <Container maxWidth="lg">
         <Box sx={{ position: 'relative', zIndex: 1, mb: 8 }}>
           <SectionTitle 
@@ -852,6 +866,7 @@ const LearningMethodsSection = () => {
           <SectionSubtitle 
             data-aos="fade-up"
             data-aos-delay="200"
+            sx={{ mt: 4 }}
           >
             اكتشف طرق تعلم جديدة ومبتكرة تناسب احتياجاتك وتواكب متطلبات سوق العمل
           </SectionSubtitle>

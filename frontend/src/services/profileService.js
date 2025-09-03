@@ -61,7 +61,7 @@ export const profileService = {
   // Get user statistics
   getStatistics: async () => {
     try {
-      const response = await api.get('/courses/dashboard/stats/');
+      const response = await api.get('/api/courses/dashboard/stats/');
       return response.data;
     } catch (error) {
       throw error;
@@ -71,7 +71,7 @@ export const profileService = {
   // Get user education
   getEducation: async () => {
     try {
-      const response = await api.get('/auth/profile/education/');
+      const response = await api.get('/api/auth/profile/education/');
       return response.data;
     } catch (error) {
       throw error;
@@ -81,7 +81,7 @@ export const profileService = {
   // Add education
   addEducation: async (educationData) => {
     try {
-      const response = await api.post('/auth/profile/education/', educationData);
+      const response = await api.post('/api/auth/profile/education/', educationData);
       return response.data;
     } catch (error) {
       throw error;
@@ -91,7 +91,7 @@ export const profileService = {
   // Update education
   updateEducation: async (id, educationData) => {
     try {
-      const response = await api.put(`/auth/profile/education/${id}/`, educationData);
+      const response = await api.put(`/api/auth/profile/education/${id}/`, educationData);
       return response.data;
     } catch (error) {
       throw error;
@@ -101,7 +101,7 @@ export const profileService = {
   // Delete education
   deleteEducation: async (id) => {
     try {
-      const response = await api.delete(`/auth/profile/education/${id}/`);
+      const response = await api.delete(`/api/auth/profile/education/${id}/`);
       return response.data;
     } catch (error) {
       throw error;
@@ -111,7 +111,7 @@ export const profileService = {
   // Get user experience
   getExperience: async () => {
     try {
-      const response = await api.get('/auth/profile/experience/');
+      const response = await api.get('/api/auth/profile/experience/');
       return response.data;
     } catch (error) {
       throw error;
@@ -121,7 +121,7 @@ export const profileService = {
   // Add experience
   addExperience: async (experienceData) => {
     try {
-      const response = await api.post('/auth/profile/experience/', experienceData);
+      const response = await api.post('/api/auth/profile/experience/', experienceData);
       return response.data;
     } catch (error) {
       throw error;
@@ -131,7 +131,7 @@ export const profileService = {
   // Update experience
   updateExperience: async (id, experienceData) => {
     try {
-      const response = await api.put(`/auth/profile/experience/${id}/`, experienceData);
+      const response = await api.put(`/api/auth/profile/experience/${id}/`, experienceData);
       return response.data;
     } catch (error) {
       throw error;
@@ -141,7 +141,7 @@ export const profileService = {
   // Delete experience
   deleteExperience: async (id) => {
     try {
-      const response = await api.delete(`/auth/profile/experience/${id}/`);
+      const response = await api.delete(`/api/auth/profile/experience/${id}/`);
       return response.data;
     } catch (error) {
       throw error;
@@ -151,7 +151,7 @@ export const profileService = {
   // Update skills
   updateSkills: async (skills) => {
     try {
-      const response = await api.put('/auth/profile/skills/', { skills });
+      const response = await api.put('/api/auth/profile/skills/', { skills });
       return response.data;
     } catch (error) {
       throw error;

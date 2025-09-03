@@ -59,43 +59,43 @@ api.interceptors.response.use(
 export const authAPI = {
   // Login
   login: async (credentials) => {
-    const response = await api.post('/auth/login/', credentials);
+    const response = await api.post('/api/auth/login/', credentials);
     return response.data;
   },
 
   // Register
   register: async (userData) => {
-    const response = await api.post('/auth/register/', userData);
+    const response = await api.post('/api/auth/register/', userData);
     return response.data;
   },
 
   // Logout
   logout: async () => {
-    const response = await api.post('/auth/logout/');
+    const response = await api.post('/api/auth/logout/');
     return response.data;
   },
 
   // Get user profile
   getProfile: async () => {
-    const response = await api.get('/auth/profile/');
+    const response = await api.get('/api/auth/profile/');
     return response.data;
   },
 
   // Update profile
   updateProfile: async (profileData) => {
-    const response = await api.put('/auth/profile/update/', profileData);
+    const response = await api.put('/api/auth/profile/update/', profileData);
     return response.data;
   },
 
   // Change password
   changePassword: async (passwordData) => {
-    const response = await api.post('/auth/change-password/', passwordData);
+    const response = await api.post('/api/auth/change-password/', passwordData);
     return response.data;
   },
 
   // Check email exists
   checkEmail: async (email) => {
-    const response = await api.get(`/auth/check-email/?email=${email}`);
+    const response = await api.get(`/api/auth/check-email/?email=${email}`);
     return response.data;
   },
 };
@@ -104,14 +104,14 @@ export const authAPI = {
 export const courseAPI = {
   // Get all courses
   getCourses: async (params = {}) => {
-    const response = await api.get('/courses/courses/', { params });
+    const response = await api.get('/api/courses/courses/', { params });
     return response.data;
   },
 
   // Get public courses (no authentication required)
   getPublicCourses: async (params = {}) => {
     try {
-      const response = await api.get('/courses/public/', { params });
+      const response = await api.get('/api/courses/public/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching public courses:', error);
@@ -122,7 +122,7 @@ export const courseAPI = {
   // Get course by ID
   getCourse: async (id) => {
     try {
-      const response = await api.get(`/courses/courses/${id}/`);
+      const response = await api.get(`/api/courses/courses/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course:', error);
@@ -150,7 +150,7 @@ export const courseAPI = {
     });
 
     try {
-      const response = await api.post('/courses/courses/', formData, {
+      const response = await api.post('/api/courses/courses/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -162,7 +162,7 @@ export const courseAPI = {
       if (error.response?.status === 500) {
         // Check if the course was actually created by making a GET request
         try {
-          const coursesResponse = await api.get('/courses/courses/');
+          const coursesResponse = await api.get('/api/courses/courses/');
           const coursesData = coursesResponse.data;
           const coursesArray = Array.isArray(coursesData) ? coursesData : 
                              coursesData.results ? coursesData.results : 
@@ -206,7 +206,7 @@ export const courseAPI = {
     });
 
     try {
-      const response = await api.patch(`/courses/courses/${id}/`, formData, {
+      const response = await api.patch(`/api/courses/courses/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -220,14 +220,14 @@ export const courseAPI = {
 
   // Delete course
   deleteCourse: async (id) => {
-    const response = await api.delete(`/courses/courses/${id}/`);
+    const response = await api.delete(`/api/courses/courses/${id}/`);
     return response.data;
   },
 
   // Get categories
   getCategories: async () => {
     try {
-      const response = await api.get('/courses/categories/');
+      const response = await api.get('/api/courses/categories/');
       // Ensure we return an array
       const data = response.data;
       return Array.isArray(data) ? data : 
@@ -241,56 +241,56 @@ export const courseAPI = {
 
   // Get tags
   getTags: async () => {
-    const response = await api.get('/courses/tags/');
+    const response = await api.get('/api/courses/tags/');
     return response.data;
   },
 
   // Search courses
   searchCourses: async (params = {}) => {
-    const response = await api.get('/courses/search/', { params });
+    const response = await api.get('/api/courses/search/', { params });
     return response.data;
   },
 
   // Get featured courses
   getFeaturedCourses: async () => {
-    const response = await api.get('/courses/featured/');
+    const response = await api.get('/api/courses/featured/');
     return response.data;
   },
 
   // Get popular courses
   getPopularCourses: async () => {
-    const response = await api.get('/courses/popular/');
+    const response = await api.get('/api/courses/popular/');
     return response.data;
   },
 
   // Get recent courses
   getRecentCourses: async () => {
-    const response = await api.get('/courses/recent/');
+    const response = await api.get('/api/courses/recent/');
     return response.data;
   },
 
   // Enroll in course
   enrollInCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/enroll/`);
+    const response = await api.post(`/api/courses/courses/${courseId}/enroll/`);
     return response.data;
   },
 
   // Unenroll from course
   unenrollFromCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/unenroll/`);
+    const response = await api.post(`/api/courses/courses/${courseId}/unenroll/`);
     return response.data;
   },
 
   // Get dashboard stats
   getDashboardStats: async () => {
-    const response = await api.get('/courses/dashboard/stats/');
+    const response = await api.get('/api/courses/dashboard/stats/');
     return response.data;
   },
 
   // Get my enrolled courses
   getMyEnrolledCourses: async () => {
     try {
-      const response = await api.get('/courses/my-enrolled-courses/');
+      const response = await api.get('/api/courses/my-enrolled-courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching enrolled courses:', error);
@@ -301,7 +301,7 @@ export const courseAPI = {
   // Get course tracking data
   getCourseTrackingData: async (courseId) => {
     try {
-      const response = await api.get(`/courses/course-tracking/${courseId}/`);
+      const response = await api.get(`/api/courses/course-tracking/${courseId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course tracking data:', error);
@@ -312,7 +312,7 @@ export const courseAPI = {
   // Get quiz data
   getQuizData: async (quizId) => {
     try {
-      const response = await api.get(`/assignments/quiz/${quizId}/`);
+      const response = await api.get(`/api/assignments/quiz/${quizId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz data:', error);
@@ -323,7 +323,7 @@ export const courseAPI = {
   // Submit quiz attempt
   submitQuizAttempt: async (quizId, answers) => {
     try {
-      const response = await api.post(`/assignments/quiz/${quizId}/submit/`, {
+      const response = await api.post(`/api/assignments/quiz/${quizId}/submit/`, {
         answers: answers
       });
       return response.data;
@@ -336,7 +336,7 @@ export const courseAPI = {
   // Mark lesson as completed
   markLessonCompleted: async (courseId, lessonId) => {
     try {
-      const response = await api.post(`/content/progress/course/${courseId}/complete/`, {
+      const response = await api.post(`/api/content/progress/course/${courseId}/complete/`, {
         lesson_id: lessonId
       });
       return response.data;
