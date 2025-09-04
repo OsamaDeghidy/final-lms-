@@ -49,13 +49,13 @@ const fadeIn = keyframes`
 const StyledAppBar = styled(AppBar, {
   shouldForwardProp: (prop) => prop !== 'scrolled',
 })(({ theme, scrolled }) => ({
-  backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.98)',
-  backdropFilter: 'blur(10px)',
-  WebkitBackdropFilter: 'blur(10px)',
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+  backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.98)',
+  backdropFilter: scrolled ? 'blur(5px)' : 'blur(10px)',
+  WebkitBackdropFilter: scrolled ? 'blur(5px)' : 'blur(10px)',
+  boxShadow: scrolled ? '0 1px 5px rgba(0, 0, 0, 0.05)' : '0 2px 10px rgba(0, 0, 0, 0.1)',
   transition: 'all 0.3s ease-in-out',
   padding: '8px 0',
-  borderBottom: '1px solid rgba(14, 81, 129, 0.1)',
+  borderBottom: scrolled ? '1px solid rgba(14, 81, 129, 0.4)' : '1px solid rgba(14, 81, 129, 0.3)',
   animation: `${fadeIn} 0.5s ease-out`,
   '&.MuiAppBar-root': {
     zIndex: theme.zIndex.drawer + 1,

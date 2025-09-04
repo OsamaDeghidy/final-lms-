@@ -191,6 +191,17 @@ export const courseAPI = {
     }
   },
 
+  // Get promotional banners
+  getPromotionalBanners: async () => {
+    try {
+      const response = await api.get('/api/extras/banners/promotional/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching promotional banners:', error);
+      throw error;
+    }
+  },
+
   // Get course reviews
   getCourseReviews: async (courseId) => {
     try {

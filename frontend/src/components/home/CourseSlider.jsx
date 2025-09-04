@@ -1,16 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Card, CardContent, CardMedia, Container, IconButton, Rating, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { KeyboardArrowLeft, KeyboardArrowRight, PlayCircleOutline } from '@mui/icons-material';
+import { KeyboardArrowLeft, KeyboardArrowRight, PlayCircleOutline, BookmarkBorder, Bookmark } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { courseAPI } from '../../services/courseService';
 
 const SliderContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
-  padding: theme.spacing(4, 0),
+  padding: theme.spacing(12, 0),
   overflow: 'hidden',
   direction: 'rtl',
   background: '#ffffff',
+  [theme.breakpoints.down('md')]: {
+    padding: theme.spacing(8, 0),
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(6, 0),
+  },
 }));
 
 const CreativeBanner = styled(Box)(({ theme, position = 'top' }) => ({
@@ -68,7 +74,7 @@ const CreativeBanner = styled(Box)(({ theme, position = 'top' }) => ({
   },
 }));
 
-const BannerContent = styled(Box)(({ theme }) => ({
+const CreativeBannerContent = styled(Box)(({ theme }) => ({
   position: 'relative',
   zIndex: 2,
   textAlign: 'center',
@@ -156,7 +162,8 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  fontSize: '2.5rem',
+  fontSize: '2rem',
+  marginBottom: theme.spacing(1),
   '&:after': {
     content: '""',
     position: 'absolute',
@@ -169,7 +176,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
     borderRadius: '2px',
   },
   [theme.breakpoints.down('sm')]: {
-    fontSize: '2rem',
+    fontSize: '1.6rem',
   },
 }));
 
@@ -420,12 +427,176 @@ const SliderIndicator = styled(Box)(({ theme }) => ({
   },
 }));
 
+const PromotionalBanner = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  width: '100vw',
+  height: '200px',
+  margin: theme.spacing(8, 0),
+  marginLeft: 'calc(-50vw + 50%)',
+  marginRight: 'calc(-50vw + 50%)',
+  borderRadius: 0,
+  overflow: 'hidden',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-4px)',
+    boxShadow: theme.shadows[8],
+  },
+  '&:before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.8) 0%, rgba(229, 151, 139, 0.8) 100%)',
+    zIndex: 1,
+  },
+  '&:after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: `
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 2px, transparent 2px),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 2px, transparent 2px),
+      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 2px, transparent 2px)
+    `,
+    backgroundSize: '40px 40px, 40px 40px, 40px 40px',
+    backgroundPosition: '0 0, 20px 20px, 10px 30px',
+    animation: 'float 8s ease-in-out infinite',
+    zIndex: 2,
+  },
+  '@keyframes float': {
+    '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+    '50%': { transform: 'translateY(-5px) rotate(0.5deg)' },
+  },
+  [theme.breakpoints.down('md')]: {
+    height: '160px',
+    margin: theme.spacing(6, 0),
+    marginLeft: 'calc(-50vw + 50%)',
+    marginRight: 'calc(-50vw + 50%)',
+  },
+  [theme.breakpoints.down('sm')]: {
+    height: '140px',
+    margin: theme.spacing(5, 0),
+    marginLeft: 'calc(-50vw + 50%)',
+    marginRight: 'calc(-50vw + 50%)',
+  },
+}));
+
+const BannerImage = styled('img')({
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  zIndex: 0,
+});
+
+const BannerContent = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  zIndex: 3,
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  textAlign: 'center',
+  color: '#fff',
+  padding: theme.spacing(3),
+  '& .banner-title': {
+    fontSize: '1.8rem',
+    fontWeight: 700,
+    marginBottom: theme.spacing(1),
+    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+    [theme.breakpoints.down('md')]: {
+      fontSize: '1.5rem',
+    },
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '1.3rem',
+    },
+  },
+  '& .banner-description': {
+    fontSize: '1rem',
+    fontWeight: 500,
+    opacity: 0.9,
+    textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+    [theme.breakpoints.down('md')]: {
+      fontSize: '0.9rem',
+    },
+    [theme.breakpoints.down('sm')]: {
+      fontSize: '0.8rem',
+    },
+  },
+}));
+
+const FloatingElements = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 2,
+  '& .floating-element': {
+    position: 'absolute',
+    width: '30px',
+    height: '30px',
+    borderRadius: '50%',
+    background: 'rgba(255, 255, 255, 0.15)',
+    backdropFilter: 'blur(10px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontSize: '1rem',
+    animation: 'floatElement 6s ease-in-out infinite',
+    '&:nth-child(1)': {
+      top: '15%',
+      left: '10%',
+      animationDelay: '0s',
+    },
+    '&:nth-child(2)': {
+      top: '25%',
+      right: '15%',
+      animationDelay: '2s',
+    },
+    '&:nth-child(3)': {
+      bottom: '20%',
+      left: '20%',
+      animationDelay: '4s',
+    },
+    '@keyframes floatElement': {
+      '0%, 100%': { transform: 'translateY(0px) scale(1)' },
+      '50%': { transform: 'translateY(-10px) scale(1.1)' },
+    },
+  },
+  [theme.breakpoints.down('md')]: {
+    '& .floating-element': {
+      width: '24px',
+      height: '24px',
+      fontSize: '0.8rem',
+    },
+  },
+  [theme.breakpoints.down('sm')]: {
+    '& .floating-element': {
+      width: '20px',
+      height: '20px',
+      fontSize: '0.7rem',
+    },
+  },
+}));
+
 const CourseCollections = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'lg'));
   
   const [collections, setCollections] = useState([]);
+  const [promotionalBanners, setPromotionalBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentSlides, setCurrentSlides] = useState({});
@@ -461,22 +632,26 @@ const CourseCollections = () => {
     }
   }, [collections]);
   
-  // Fetch collections from API
+  // Fetch collections and promotional banners from API
   useEffect(() => {
-    const fetchCollections = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await courseAPI.getCourseCollections();
-        setCollections(data);
+        const [collectionsData, bannersData] = await Promise.all([
+          courseAPI.getCourseCollections(),
+          courseAPI.getPromotionalBanners()
+        ]);
+        setCollections(collectionsData);
+        setPromotionalBanners(bannersData);
       } catch (err) {
-        console.error('Error fetching collections:', err);
-        setError('حدث خطأ في تحميل المجموعات');
+        console.error('Error fetching data:', err);
+        setError('حدث خطأ في تحميل البيانات');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCollections();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -587,6 +762,47 @@ const CourseCollections = () => {
     }));
   };
 
+  // Function to render promotional banner
+  const renderPromotionalBanner = (banner, index) => {
+    if (!banner || !banner.is_active) return null;
+
+    return (
+      <PromotionalBanner 
+        key={`banner-${banner.id}-${index}`}
+        onClick={() => {
+          if (banner.url) {
+            window.open(banner.url, '_blank');
+          }
+        }}
+      >
+        {banner.image_url && (
+          <BannerImage 
+            src={banner.image_url} 
+            alt={banner.title}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        )}
+        <BannerContent>
+          <Typography variant="h4" className="banner-title">
+            {banner.title}
+          </Typography>
+          {banner.description && (
+            <Typography variant="body1" className="banner-description">
+              {banner.description}
+            </Typography>
+          )}
+        </BannerContent>
+        <FloatingElements>
+          <Box className="floating-element">🎯</Box>
+          <Box className="floating-element">✨</Box>
+          <Box className="floating-element">🚀</Box>
+        </FloatingElements>
+      </PromotionalBanner>
+    );
+  };
+
   if (!collections || collections.length === 0) {
     return (
       <SliderContainer>
@@ -622,29 +838,29 @@ const CourseCollections = () => {
 
   return (
     <SliderContainer>
-      <CreativeBanner position="top">
-        <BannerContent>
-          <Typography variant="h4" className="banner-title">
-            أفضل الدورات التعليمية
-          </Typography>
-          <Typography variant="body1" className="banner-subtitle">
-            اكتشف أفضل الدورات التعليمية والمهارات المتقدمة لتحسين مهاراتك
-          </Typography>
-        </BannerContent>
-        <FloatingIcon position="top">1</FloatingIcon>
-        <FloatingIcon position="top">2</FloatingIcon>
-        <FloatingIcon position="top">3</FloatingIcon>
-      </CreativeBanner>
       <Container maxWidth="lg">
         {collections.map((collection, collectionIndex) => (
-          <Box key={collection.id} sx={{ mb: 6 }}>
+          <Box key={collection.id}>
+            {/* Show promotional banner before each collection except the first one */}
+            {collectionIndex > 0 && promotionalBanners.length > 0 && (
+              renderPromotionalBanner(
+                promotionalBanners[(collectionIndex - 1) % promotionalBanners.length], 
+                collectionIndex - 1
+              )
+            )}
+            
+            <Box sx={{ mb: 10 }}>
                          <SliderHeader>
                <Box>
                  <SectionTitle variant="h4" component="h2">
                    {collection.name}
                  </SectionTitle>
                  {collection.description && (
-                   <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                   <Typography variant="body1" color="text.secondary" sx={{ 
+                     mt: 2,
+                     fontSize: '0.9rem',
+                     lineHeight: 1.6
+                   }}>
                      {collection.description}
                    </Typography>
                  )}
@@ -759,17 +975,14 @@ const CourseCollections = () => {
                            </DiscountBadge>
                          )}
                       </Box>
-                      <CourseCardContent>
+                      <CourseCardContent sx={{ p: 1.5 }}>
                           {/* Category */}
                           <CourseCategory sx={{ 
-                            mb: 1.5,
-                            p: 0.5,
-                            bgcolor: 'rgba(14, 81, 129, 0.08)',
-                            borderRadius: '6px',
-                            display: 'inline-block',
-                            fontSize: '0.75rem',
+                            mb: 0.8,
+                            fontSize: '0.7rem',
                             fontWeight: 600,
-                            color: '#0e5181'
+                            color: '#0e5181',
+                            opacity: 0.8
                           }}>
                             {course.category_name || 'بدون تصنيف'}
                           </CourseCategory>
@@ -778,142 +991,117 @@ const CourseCollections = () => {
                           <CourseTitle variant="subtitle1" component="h3" sx={{ 
                             color: '#0e5181',
                             fontWeight: 700,
-                            fontSize: '1.1rem',
-                            mb: 2,
-                            lineHeight: 1.3,
-                            minHeight: '2.8em'
+                            fontSize: '0.95rem',
+                            mb: 1,
+                            lineHeight: 1.2,
+                            minHeight: '2.2em'
                           }}>
                           {course.title}
                         </CourseTitle>
 
-                          {/* Instructor */}
+                          {/* Instructor & Rating */}
                           <Box sx={{ 
                             display: 'flex', 
                             alignItems: 'center', 
-                            gap: 1.5,
-                            mb: 2,
-                            p: 1,
-                            bgcolor: 'rgba(14, 81, 129, 0.05)',
-                            borderRadius: '8px'
+                            justifyContent: 'space-between',
+                            mb: 1.2
                           }}>
-                            <Box sx={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#fff',
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              boxShadow: '0 2px 8px rgba(14, 81, 129, 0.3)'
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 0.8
                             }}>
-                              {course.instructors && course.instructors.length > 0 
-                                ? course.instructors[0].name?.charAt(0) || 'م'
-                                : 'م'
-                              }
+                              <Box sx={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontSize: '0.7rem',
+                                fontWeight: 700
+                              }}>
+                                {course.instructors && course.instructors.length > 0 
+                                  ? course.instructors[0].name?.charAt(0) || 'م'
+                                  : 'م'
+                                }
+                              </Box>
+                              <Typography variant="caption" sx={{ 
+                                color: 'text.secondary', 
+                                fontWeight: 500,
+                                fontSize: '0.75rem'
+                              }}>
+                                {course.instructors && course.instructors.length > 0 
+                                  ? course.instructors[0].name 
+                                  : 'مدرب غير محدد'
+                                }
+                              </Typography>
                             </Box>
-                            <Typography variant="caption" sx={{ 
-                              color: 'text.secondary', 
-                              fontWeight: 600,
-                              fontSize: '0.85rem'
-                            }}>
-                          {course.instructors && course.instructors.length > 0 
-                            ? course.instructors[0].name 
-                            : 'مدرب غير محدد'
-                          }
-                            </Typography>
-                          </Box>
 
-                          {/* Rating */}
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1, 
-                            mb: 2,
-                            p: 1,
-                            bgcolor: 'rgba(255, 193, 7, 0.08)',
-                            borderRadius: '8px'
-                          }}>
-                            <Rating 
-                              value={course.rating || 0} 
-                              precision={0.1} 
-                              readOnly 
-                              size="small"
-                              sx={{
-                                '& .MuiRating-iconFilled': {
-                                  color: '#ffc107',
-                                },
-                                '& .MuiRating-iconHover': {
-                                  color: '#ffc107',
-                                },
-                              }}
-                            />
-                            <Typography variant="caption" sx={{ 
-                              color: '#ffc107',
-                              fontWeight: 600,
-                              fontSize: '0.8rem'
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 0.5
                             }}>
-                            ({course.rating || 0})
-                          </Typography>
-                        </Box>
+                              <Rating 
+                                value={course.rating || 0} 
+                                precision={0.1} 
+                                readOnly 
+                                size="small"
+                                sx={{
+                                  '& .MuiRating-icon': {
+                                    fontSize: '0.8rem'
+                                  },
+                                  '& .MuiRating-iconFilled': {
+                                    color: '#ffc107',
+                                  },
+                                }}
+                              />
+                              <Typography variant="caption" sx={{ 
+                                color: '#ffc107',
+                                fontWeight: 600,
+                                fontSize: '0.7rem'
+                              }}>
+                                ({course.rating || 0})
+                              </Typography>
+                            </Box>
+                          </Box>
 
                           {/* Course Stats */}
                           <Box sx={{ 
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'space-between',
-                            mb: 2.5,
-                            pb: 2,
-                            borderBottom: '1px dashed rgba(14, 81, 129, 0.2)'
+                            mb: 1.2,
+                            pb: 1,
+                            borderBottom: '1px solid rgba(14, 81, 129, 0.1)'
                           }}>
-                            {/* Lessons */}
-                            <Box sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 0.5,
-                              p: 0.5,
-                              bgcolor: 'rgba(14, 81, 129, 0.08)',
-                              borderRadius: '6px'
+                            <Typography variant="caption" sx={{ 
+                              color: '#0e5181', 
+                              fontSize: '0.7rem',
+                              fontWeight: 600
                             }}>
-                              <Typography variant="caption" sx={{ 
-                                color: '#0e5181', 
-                                fontSize: '0.75rem',
-                                fontWeight: 600
-                              }}>
-                                درس: {course.lessons_count || 0}
-                              </Typography>
-                            </Box>
-
-                            {/* Students */}
-                            <Box sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 0.5,
-                              p: 0.5,
-                              bgcolor: 'rgba(229, 151, 139, 0.08)',
-                              borderRadius: '6px'
+                              {course.lessons_count || 0} درس
+                            </Typography>
+                            
+                            <Typography variant="caption" sx={{ 
+                              color: '#e5978b', 
+                              fontSize: '0.7rem',
+                              fontWeight: 600
                             }}>
-                              <Typography variant="caption" sx={{ 
-                                color: '#e5978b', 
-                                fontSize: '0.75rem',
-                                fontWeight: 600
-                              }}>
-                                طلاب: {course.enrolled_count || 0}+
-                              </Typography>
-                            </Box>
+                              {course.enrolled_count || 0} طالب
+                            </Typography>
 
-                            {/* Difficulty */}
                             <Typography variant="caption" sx={{ 
                               color: '#0e5181', 
                               fontWeight: 600, 
-                              fontSize: '0.75rem',
-                              bgcolor: 'rgba(14, 81, 129, 0.1)',
-                              px: 1.5,
-                              py: 0.8,
-                              borderRadius: '12px',
-                              border: '1px solid rgba(14, 81, 129, 0.2)'
+                              fontSize: '0.7rem',
+                              bgcolor: 'rgba(14, 81, 129, 0.08)',
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: '8px'
                             }}>
                               {course.level === 'beginner' ? 'مبتدئ' : 
                                course.level === 'intermediate' ? 'متوسط' : 
@@ -921,32 +1109,39 @@ const CourseCollections = () => {
                             </Typography>
                           </Box>
 
-                          {/* Price and Students Count */}
+                          {/* Price */}
                           <Box sx={{ 
                             display: 'flex', 
                             justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            mt: 'auto'
+                            alignItems: 'center'
                           }}>
                            <PriceContainer>
                               <CurrentPrice sx={{
                                 color: '#e5978b',
-                                fontWeight: 800,
-                                fontSize: '1.1rem'
+                                fontWeight: 700,
+                                fontSize: '1rem'
                               }}>
                                {course.is_free ? 'مجاني' : `${course.discount_price || course.price} ر.س`}
                              </CurrentPrice>
                              {course.discount_price && course.price && course.discount_price !== course.price && (
-                               <OriginalPrice>{`${course.price} ر.س`}</OriginalPrice>
+                               <OriginalPrice sx={{ fontSize: '0.75rem' }}>{`${course.price} ر.س`}</OriginalPrice>
                              )}
                            </PriceContainer>
-                            <StudentsCount sx={{
-                              color: '#0e5181',
-                              fontWeight: 600,
-                              fontSize: '0.8rem'
-                            }}>
-                             <span>•</span> {course.enrolled_count || 0} طالب
-                           </StudentsCount>
+                           
+                           {/* Save Icon */}
+                           <IconButton 
+                             size="small"
+                             sx={{
+                               color: '#0e5181',
+                               '&:hover': {
+                                 color: '#e5978b',
+                                 backgroundColor: 'rgba(14, 81, 129, 0.08)',
+                               },
+                               transition: 'all 0.3s ease',
+                             }}
+                           >
+                             <BookmarkBorder fontSize="small" />
+                           </IconButton>
                          </Box>
                       </CourseCardContent>
                     </CourseCard>
@@ -989,22 +1184,18 @@ const CourseCollections = () => {
                  </Typography>
                </Box>
              )}
+            </Box>
           </Box>
         ))}
+        
+        {/* Show a promotional banner after the last collection if there are banners */}
+        {collections.length > 0 && promotionalBanners.length > 0 && (
+          renderPromotionalBanner(
+            promotionalBanners[collections.length % promotionalBanners.length], 
+            collections.length
+          )
+        )}
       </Container>
-      <CreativeBanner position="bottom">
-        <BannerContent>
-          <Typography variant="h4" className="banner-title">
-            أفضل الدورات التعليمية
-          </Typography>
-          <Typography variant="body1" className="banner-subtitle">
-            اكتشف أفضل الدورات التعليمية والمهارات المتقدمة لتحسين مهاراتك
-          </Typography>
-        </BannerContent>
-        <FloatingIcon position="bottom">1</FloatingIcon>
-        <FloatingIcon position="bottom">2</FloatingIcon>
-        <FloatingIcon position="bottom">3</FloatingIcon>
-      </CreativeBanner>
     </SliderContainer>
   );
 };

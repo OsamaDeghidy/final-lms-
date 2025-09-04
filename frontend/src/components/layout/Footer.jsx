@@ -17,10 +17,36 @@ import logo from '../../assets/images/logo.png';
 const FooterContainer = styled(Box)(({ theme }) => ({
   backgroundColor: '#FFFFFF',
   color: '#0e5181',
-  padding: theme.spacing(8, 0, 4),
+  padding: theme.spacing(8, 0, 0),
   position: 'relative',
   overflow: 'hidden',
   borderTop: '2px solid rgba(14, 81, 129, 0.1)',
+  '&:before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.02) 0%, rgba(229, 151, 139, 0.02) 100%)',
+    zIndex: 0,
+  },
+  '&:after': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: `
+      radial-gradient(circle at 20% 20%, rgba(14, 81, 129, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 80% 80%, rgba(229, 151, 139, 0.03) 1px, transparent 1px),
+      radial-gradient(circle at 40% 60%, rgba(14, 81, 129, 0.02) 1px, transparent 1px)
+    `,
+    backgroundSize: '50px 50px, 50px 50px, 50px 50px',
+    backgroundPosition: '0 0, 25px 25px, 12px 30px',
+    zIndex: 0,
+  },
 }));
 
 const FooterTitle = styled(Typography)(({ theme }) => ({
@@ -181,127 +207,154 @@ const Footer = () => {
       </Box>
 
       <FooterContainer component="footer">
-      <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-        {/* Contact Bar - Top Row */}
-        <Box 
-          sx={{ 
-            backgroundColor: 'rgba(14, 81, 129, 0.08)',
-            borderRadius: 2,
-            p: 3,
-            mb: 4,
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 2,
-            border: '1px solid rgba(14, 81, 129, 0.15)',
-          }}
-        >
-          <Typography variant="subtitle2" sx={{ color: '#0e5181', fontWeight: 600 }}>
-            تواصل معنا
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-            {contactInfo.map((item, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ color: '#0e5181' }}>{item.icon}</Box>
-                <Typography variant="body2" sx={{ color: '#333333', fontSize: '0.85rem', fontWeight: '500' }}>
-                  {item.text}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-        
-        <Grid container spacing={isMobile ? 4 : 6}>
-          {/* Logo and Description */}
-          <Grid item xs={12} md={4}>
-            <Box mb={2}>
-              <Box display="flex" alignItems="center" mb={3}>
-                <img 
-                  src={logo} 
-                  alt="شعار المعهد" 
-                  style={{ height: 50 }} 
-                />
-                <Typography variant="h6" sx={{ color: '#0e5181', fontWeight: 700, mr: 1 }}>
-                معهد التطوير المهني العالي للتدريب
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ color: '#333333', lineHeight: 1.8, mb: 3, fontWeight: '500' }}>
-              معنا تحقق أهدافك التدريبية باحترافية وجودة، حيث يعد التطوير المهني اليوم ميزة أساسية لاختيار وترقية الموظفين.
-              <br />
-              أوقات العمل 8 ص - 12 ص
-              </Typography>
-              <Box mt={2}>
-                {socialLinks.map((social, index) => (
-                  <SocialIcon 
-                    key={index} 
-                    component="a" 
-                    href={social.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    {social.icon}
-                  </SocialIcon>
-                ))}
-              </Box>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          {/* Contact Bar - Top Row */}
+          <Box 
+            sx={{ 
+              backgroundColor: 'rgba(14, 81, 129, 0.08)',
+              borderRadius: 2,
+              p: 3,
+              mb: 4,
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 2,
+              border: '1px solid rgba(14, 81, 129, 0.15)',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ color: '#0e5181', fontWeight: 600 }}>
+              تواصل معنا
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+              {contactInfo.map((item, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ color: '#0e5181' }}>{item.icon}</Box>
+                  <Typography variant="body2" sx={{ color: '#333333', fontSize: '0.85rem', fontWeight: '500' }}>
+                    {item.text}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
-          </Grid>
+          </Box>
+          
+          <Grid container spacing={isMobile ? 4 : 6}>
+            {/* Logo and Description */}
+            <Grid item xs={12} md={4}>
+              <Box mb={2}>
+                <Box display="flex" alignItems="center" mb={3}>
+                  <img 
+                    src={logo} 
+                    alt="شعار المعهد" 
+                    style={{ height: 50 }} 
+                  />
+                  <Typography variant="h6" sx={{ color: '#0e5181', fontWeight: 700, mr: 1 }}>
+                  معهد التطوير المهني العالي للتدريب
+                  </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: '#333333', lineHeight: 1.8, mb: 3, fontWeight: '500' }}>
+                معنا تحقق أهدافك التدريبية باحترافية وجودة، حيث يعد التطوير المهني اليوم ميزة أساسية لاختيار وترقية الموظفين.
+                <br />
+                أوقات العمل 8 ص - 12 ص
+                </Typography>
+                <Box mt={2}>
+                  {socialLinks.map((social, index) => (
+                    <SocialIcon 
+                      key={index} 
+                      component="a" 
+                      href={social.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      {social.icon}
+                    </SocialIcon>
+                  ))}
+                </Box>
+              </Box>
+            </Grid>
 
-          {/* Important Links */}
-          <Grid item xs={12} sm={8} md={4}>
-            <FooterTitle>روابط مهمة</FooterTitle>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                {importantLinks.slice(0, Math.ceil(importantLinks.length / 2)).map((link, index) => (
-                  <Box key={index} mb={1.5}>
-                    <FooterLink 
-                      component={RouterLink} 
-                      to={link.to}
-                      underline="none"
-                    >
-                      <ArrowIcon className="arrow-icon" />
-                      {link.text}
-                    </FooterLink>
-                  </Box>
-                ))}
-              </Grid>
-              <Grid item xs={6}>
-                {importantLinks.slice(Math.ceil(importantLinks.length / 2)).map((link, index) => (
-                  <Box key={index} mb={1.5}>
-                    <FooterLink 
-                      component={RouterLink} 
-                      to={link.to}
-                      underline="none"
-                    >
-                      <ArrowIcon className="arrow-icon" />
-                      {link.text}
-                    </FooterLink>
-                  </Box>
-                ))}
+            {/* Important Links */}
+            <Grid item xs={12} sm={8} md={4}>
+              <FooterTitle>روابط مهمة</FooterTitle>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  {importantLinks.slice(0, Math.ceil(importantLinks.length / 2)).map((link, index) => (
+                    <Box key={index} mb={1.5}>
+                      <FooterLink 
+                        component={RouterLink} 
+                        to={link.to}
+                        underline="none"
+                      >
+                        <ArrowIcon className="arrow-icon" />
+                        {link.text}
+                      </FooterLink>
+                    </Box>
+                  ))}
+                </Grid>
+                <Grid item xs={6}>
+                  {importantLinks.slice(Math.ceil(importantLinks.length / 2)).map((link, index) => (
+                    <Box key={index} mb={1.5}>
+                      <FooterLink 
+                        component={RouterLink} 
+                        to={link.to}
+                        underline="none"
+                      >
+                        <ArrowIcon className="arrow-icon" />
+                        {link.text}
+                      </FooterLink>
+                    </Box>
+                  ))}
+                </Grid>
               </Grid>
             </Grid>
           </Grid>
-        </Grid>
 
-        {/* Copyright Section */}
-                <Box 
-          sx={{ 
-            mt: 6, 
-            pt: 3, 
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 2
-          }}
-        >
-          <Typography variant="body2" sx={{ color: '#0e5181', textAlign: 'center', fontWeight: '500' }}>
-            © {currentYear} جميع الحقوق محفوظة لأكاديمية التطوير
-          </Typography>
-          
-        </Box>
+          {/* Copyright Section */}
+          <Box 
+            sx={{ 
+              mt: 2, 
+              pt: 1.5, 
+              pb: 1.5,
+              borderTop: '1px solid rgba(14, 81, 129, 0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              position: 'relative',
+              '&:before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100vw',
+                height: '100%',
+                background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.03) 0%, rgba(229, 151, 139, 0.03) 100%)',
+                zIndex: -1,
+              },
+              '&:after': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100vw',
+                height: '100%',
+                background: `
+                  radial-gradient(circle at 20% 20%, rgba(14, 81, 129, 0.02) 1px, transparent 1px),
+                  radial-gradient(circle at 80% 80%, rgba(229, 151, 139, 0.02) 1px, transparent 1px)
+                `,
+                backgroundSize: '40px 40px, 40px 40px',
+                backgroundPosition: '0 0, 20px 20px',
+                zIndex: -1,
+              },
+            }}
+          >
+            <Typography variant="body2" sx={{ color: '#0e5181', textAlign: 'center', fontWeight: '500', fontSize: '0.85rem' }}>
+              © {currentYear} جميع الحقوق محفوظة لأكاديمية التطوير
+            </Typography>
+          </Box>
       </Container>
     </FooterContainer>
     </>

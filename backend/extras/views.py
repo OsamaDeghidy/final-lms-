@@ -36,7 +36,7 @@ class BannerViewSet(viewsets.ModelViewSet):
         """
         Instantiates and returns the list of permissions that this view requires.
         """
-        if self.action in ['list', 'retrieve', 'active']:
+        if self.action in ['list', 'retrieve', 'active', 'promotional']:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAdminUser]
@@ -83,6 +83,24 @@ class BannerViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
             
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def promotional(self, request, *args, **kwargs):
+        """
+        Get all active promotional banners for displaying between course collections.
+        """
+        now = timezone.now()
+        queryset = self.get_queryset().filter(
+            is_active=True,
+            banner_type='promo',
+            start_date__lte=now,
+        ).filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
+        
+        # Order by display_order and then by creation date
+        queryset = queryset.order_by('display_order', '-created_at')
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

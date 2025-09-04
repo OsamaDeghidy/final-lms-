@@ -58,12 +58,15 @@ const floatAnimation = keyframes`
 `;
 
 const SectionContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(10, 0),
+  padding: theme.spacing(0, 0, 4, 0),
   position: 'relative',
   overflow: 'hidden',
   background: '#ffffff',
   [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(6, 0),
+    padding: theme.spacing(0, 0, 3, 0),
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(0, 0, 2, 0),
   },
   '&:before': {
     content: '""',
@@ -91,11 +94,11 @@ const SectionContainer = styled(Box)(({ theme }) => ({
 
 const SectionHeader = styled(Box)(({ theme }) => ({
   textAlign: 'center',
-  marginBottom: theme.spacing(5),
+  marginBottom: theme.spacing(2),
   position: 'relative',
   zIndex: 1,
   [theme.breakpoints.down('sm')]: {
-    marginBottom: theme.spacing(4),
+    marginBottom: theme.spacing(1),
   },
 }));
 
@@ -381,7 +384,7 @@ const TestimonialsSection = () => {
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
         <SectionHeader>
           <SectionTitle variant="h2" component="h2">
-            آراء عملائنا
+            آراء طلابنا
           </SectionTitle>
           <SectionSubtitle>
             اكتشف ما يقوله طلابنا عن تجربتهم مع منصتنا التعليمية
@@ -465,7 +468,7 @@ const TestimonialsSection = () => {
                       day: 'numeric' 
                     })}
                   </Typography>
-                </Box>
+                    </Box>
               </TestimonialCard>
             ))}
           </Box>
@@ -482,14 +485,14 @@ const TestimonialsSection = () => {
               <Box
                 key={index}
                 onClick={() => scrollToTestimonial(index)}
-                sx={{
+            sx={{
                   width: '12px',
                   height: '12px',
                   borderRadius: '50%',
                   backgroundColor: index === activeIndex ? '#0e5181' : 'rgba(14, 81, 129, 0.3)',
                   cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
+              transition: 'all 0.3s ease',
+              '&:hover': {
                     backgroundColor: index === activeIndex ? '#0e5181' : 'rgba(14, 81, 129, 0.6)',
                     transform: 'scale(1.2)',
                   },

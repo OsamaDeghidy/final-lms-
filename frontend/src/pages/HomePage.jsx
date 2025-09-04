@@ -6,6 +6,7 @@ import HeroBanner from '../components/home/HeroBanner';
 import CourseCollections from '../components/home/CourseSlider';
 import TestimonialsSection from '../components/home/TestimonialsSection';
 import LearningMethodsSection from '../components/home/LearningMethodsSection';
+import MotionSeparator from '../components/home/MotionSeparator';
 
 
 const HomePage = () => {
@@ -32,6 +33,11 @@ const HomePage = () => {
         {/* Learning Methods Section */}
         <Box component="section" id="learning-methods">
           <LearningMethodsSection />
+        </Box>
+
+        {/* Motion Separator - Stats & Partners */}
+        <Box component="section" id="stats-separator">
+          <MotionSeparator />
         </Box>
  
         {/* Course Collections Section */}
