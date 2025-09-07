@@ -51,9 +51,9 @@ import { useAuth } from '../../contexts/AuthContext';
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
+  background: `linear-gradient(135deg, #0e5181 0%, #0a3d5f 50%, #0e5181 100%)`,
   color: 'white',
-  padding: theme.spacing(8, 0, 6),
+  padding: theme.spacing(4, 0, 3),
   position: 'relative',
   overflow: 'hidden',
   '&::before': {
@@ -63,9 +63,8 @@ const HeroSection = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-    opacity: 0.3,
-    animation: 'patternMove 20s linear infinite',
+    background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.15"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+    opacity: 0.4,
   },
   '&::after': {
     content: '""',
@@ -74,20 +73,8 @@ const HeroSection = styled(Box)(({ theme }) => ({
     left: '50%',
     width: '200%',
     height: '200%',
-    background: `radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)`,
+    background: `radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)`,
     transform: 'translate(-50%, -50%)',
-    animation: 'float 6s ease-in-out infinite',
-  },
-  '@keyframes float': {
-    '0%, 100%': { transform: 'translate(-50%, -50%) translateY(0px)' },
-    '50%': { transform: 'translate(-50%, -50%) translateY(-20px)' },
-  },
-  '@keyframes patternMove': {
-    '0%': { transform: 'translateX(0) translateY(0)' },
-    '25%': { transform: 'translateX(-10px) translateY(-10px)' },
-    '50%': { transform: 'translateX(-20px) translateY(0)' },
-    '75%': { transform: 'translateX(-10px) translateY(10px)' },
-    '100%': { transform: 'translateX(0) translateY(0)' },
   },
   '& .animated-bg': {
     position: 'absolute',
@@ -95,14 +82,9 @@ const HeroSection = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+    background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)',
     backgroundSize: '200% 200%',
-    animation: 'shimmer 3s ease-in-out infinite',
     zIndex: 1,
-  },
-  '@keyframes shimmer': {
-    '0%': { backgroundPosition: '-200% -200%' },
-    '100%': { backgroundPosition: '200% 200%' },
   },
   '& .content': {
     position: 'relative',
@@ -112,16 +94,16 @@ const HeroSection = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     gap: 0.5,
-    padding: '8px 12px',
-    borderRadius: '20px',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: '6px 10px',
+    borderRadius: '16px',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
     transition: 'all 0.3s ease',
     '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: 'rgba(255, 255, 255, 0.25)',
       transform: 'translateY(-2px)',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
     }
   },
 }));
@@ -758,44 +740,45 @@ const ArticleDetail = () => {
                 <Typography color="inherit">{article.title}</Typography>
               </Breadcrumbs>
               
-              <Typography variant="h2" component="h1" sx={{ fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
+              <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
                 {article.title}
               </Typography>
               
-              <Typography variant="h6" sx={{ opacity: 0.9, mb: 4, lineHeight: 1.5 }}>
+              <Typography variant="body1" sx={{ opacity: 0.9, mb: 3, lineHeight: 1.5, fontSize: '1.1rem' }}>
                 {article.summary}
               </Typography>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
                 <Box className="stats-item" sx={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  padding: '12px 16px',
-                  borderRadius: '25px',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  padding: '8px 12px',
+                  borderRadius: '20px',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                    border: '2px solid rgba(255, 255, 255, 0.5)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
                   }
                 }}>
                   <Avatar src={article.author.avatar} sx={{ 
-                    width: 48, 
-                    height: 48,
-                    border: '2px solid rgba(255, 255, 255, 0.5)',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                    width: 36, 
+                    height: 36,
+                    border: '1px solid rgba(255, 255, 255, 0.5)',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
                   }}>
                     {(article.author.name || 'م').charAt(0)}
                   </Avatar>
                   <Box sx={{ ml: 1 }}>
-                    <Typography variant="body1" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.95rem' }}>
                       {article.author.name || 'مؤلف غير معروف'}
                     </Typography>
                     <Typography variant="caption" sx={{ 
                       opacity: 0.9, 
                       fontWeight: 500,
                       backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      display: 'inline-block'
+                      padding: '1px 6px',
+                      borderRadius: '8px',
+                      display: 'inline-block',
+                      fontSize: '0.75rem'
                     }}>
                       {formatDate(article.published_at)}
                     </Typography>
@@ -803,29 +786,29 @@ const ArticleDetail = () => {
                 </Box>
                 
                 <Box className="stats-item">
-                  <VisibilityIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <VisibilityIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                     {article.views_count.toLocaleString()} مشاهدة
                   </Typography>
                 </Box>
                 
                 <Box className="stats-item">
-                  <ScheduleIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <ScheduleIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                     {article.reading_time} دقيقة قراءة
                   </Typography>
                 </Box>
 
                 <Box className="stats-item">
-                  <FavoriteIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <FavoriteIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                     {article.likes_count.toLocaleString()} إعجاب
                   </Typography>
                 </Box>
 
                 <Box className="stats-item">
-                  <CommentIcon sx={{ fontSize: 20 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <CommentIcon sx={{ fontSize: 16 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                     {article.comments_count.toLocaleString()} تعليق
                   </Typography>
                 </Box>

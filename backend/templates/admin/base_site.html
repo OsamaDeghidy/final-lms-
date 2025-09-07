@@ -640,6 +640,12 @@
             </a>
         </li>
         <li>
+            <a href="{% url 'admin:meetings_meeting_changelist' %}" class="{% if '/admin/meetings/meeting/' in request.path %}active{% endif %}">
+                <i class="fas fa-video"></i>
+                <span>المحاضرات</span>
+            </a>
+        </li>
+        <li>
             <a href="{% url 'admin:assignments_assignment_changelist' %}" class="{% if '/admin/assignments/assignment/' in request.path %}active{% endif %}">
                 <i class="fas fa-tasks"></i>
                 <span>الواجبات</span>
