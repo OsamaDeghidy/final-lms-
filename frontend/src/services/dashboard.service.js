@@ -74,6 +74,17 @@ class DashboardService {
     }
   }
 
+  // النشاطات الأخيرة للمعلم
+  async getTeacherRecentActivity() {
+    try {
+      const response = await apiService.get('/api/courses/teacher/recent-activity/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching teacher recent activity:', error);
+      return [];
+    }
+  }
+
   // الواجبات القادمة للطالب
   async getUpcomingAssignments() {
     try {

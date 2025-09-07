@@ -398,6 +398,18 @@ export const EnhancedCourseCard = ({
 export const EnhancedAchievementCard = ({ achievement }) => {
   const theme = useTheme();
 
+  // إضافة قيم افتراضية للبيانات المفقودة
+  const safeAchievement = {
+    id: achievement?.id || 0,
+    title: achievement?.title || 'إنجاز جديد',
+    description: achievement?.description || 'وصف الإنجاز',
+    color: achievement?.color || 'primary',
+    icon: achievement?.icon || <Star />,
+    progress: achievement?.progress || 0,
+    reward: achievement?.reward || null,
+    ...achievement
+  };
+
   return (
     <motion.div
       whileHover={{ y: -4, scale: 1.02 }}
@@ -409,9 +421,9 @@ export const EnhancedAchievementCard = ({ achievement }) => {
           position: 'relative',
           overflow: 'hidden',
           background: theme.palette.mode === 'dark'
-            ? `linear-gradient(135deg, ${alpha(theme.palette[achievement.color].main, 0.1)}, ${alpha(theme.palette[achievement.color].main, 0.05)})`
-            : `linear-gradient(135deg, ${alpha(theme.palette[achievement.color].light, 0.2)}, ${alpha(theme.palette[achievement.color].light, 0.1)})`,
-          border: `1px solid ${alpha(theme.palette[achievement.color].main, 0.2)}`,
+            ? `linear-gradient(135deg, ${alpha(theme.palette[safeAchievement.color]?.main || theme.palette.primary.main, 0.1)}, ${alpha(theme.palette[safeAchievement.color]?.main || theme.palette.primary.main, 0.05)})`
+            : `linear-gradient(135deg, ${alpha(theme.palette[safeAchievement.color]?.light || theme.palette.primary.light, 0.2)}, ${alpha(theme.palette[safeAchievement.color]?.light || theme.palette.primary.light, 0.1)})`,
+          border: `1px solid ${alpha(theme.palette[safeAchievement.color]?.main || theme.palette.primary.main, 0.2)}`,
           '&:hover': {
             boxShadow: theme.shadows[8],
             '& .achievement-icon': {
@@ -432,27 +444,27 @@ export const EnhancedAchievementCard = ({ achievement }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: alpha(theme.palette[achievement.color].main, 0.15),
-                color: theme.palette[achievement.color].main,
+                background: alpha(theme.palette[safeAchievement.color]?.main || theme.palette.primary.main, 0.15),
+                color: theme.palette[safeAchievement.color]?.main || theme.palette.primary.main,
                 transition: 'all 0.3s ease',
                 '& svg': {
                   fontSize: '1.8rem'
                 }
               }}
             >
-              {achievement.icon}
+              {safeAchievement.icon}
             </Box>
             
             <Box sx={{ flexGrow: 1 }}>
               <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-                {achievement.title}
+                {safeAchievement.title}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {achievement.description}
+                {safeAchievement.description}
               </Typography>
             </Box>
             
-            {achievement.progress === 100 && (
+            {safeAchievement.progress === 100 && (
               <Badge
                 badgeContent="✓"
                 color="success"
@@ -474,13 +486,13 @@ export const EnhancedAchievementCard = ({ achievement }) => {
                 التقدم
               </Typography>
               <Typography variant="body2" fontWeight={600}>
-                {achievement.progress}%
+                {safeAchievement.progress}%
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={achievement.progress}
-              color={achievement.color}
+              value={safeAchievement.progress}
+              color={safeAchievement.color}
               sx={{
                 height: 8,
                 borderRadius: 4,
@@ -492,7 +504,7 @@ export const EnhancedAchievementCard = ({ achievement }) => {
             />
           </Box>
 
-          {achievement.reward && (
+          {safeAchievement.reward && (
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -504,7 +516,7 @@ export const EnhancedAchievementCard = ({ achievement }) => {
             }}>
               <Star sx={{ color: 'warning.main', fontSize: '1.2rem' }} />
               <Typography variant="body2" fontWeight={600} color="warning.main">
-                مكافأة: {achievement.reward}
+                مكافأة: {safeAchievement.reward}
               </Typography>
             </Box>
           )}
@@ -517,6 +529,17 @@ export const EnhancedAchievementCard = ({ achievement }) => {
 // مكون النشاط الأخير المحسن
 export const EnhancedActivityItem = ({ activity }) => {
   const theme = useTheme();
+
+  // إضافة قيم افتراضية للبيانات المفقودة
+  const safeActivity = {
+    id: activity?.id || 0,
+    title: activity?.title || 'نشاط جديد',
+    description: activity?.description || 'وصف النشاط',
+    time: activity?.time || 'الآن',
+    type: activity?.type || 'default',
+    course: activity?.course || null,
+    ...activity
+  };
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -578,30 +601,30 @@ export const EnhancedActivityItem = ({ activity }) => {
               sx={{
                 width: 40,
                 height: 40,
-                bgcolor: alpha(theme.palette[getActivityColor(activity.type)].main, 0.1),
-                color: theme.palette[getActivityColor(activity.type)].main,
+                bgcolor: alpha(theme.palette[getActivityColor(safeActivity.type)]?.main || theme.palette.primary.main, 0.1),
+                color: theme.palette[getActivityColor(safeActivity.type)]?.main || theme.palette.primary.main,
               }}
             >
-              {getActivityIcon(activity.type)}
+              {getActivityIcon(safeActivity.type)}
             </Avatar>
             
             <Box sx={{ flexGrow: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {activity.title}
+                  {safeActivity.title}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {activity.time}
+                  {safeActivity.time}
                 </Typography>
               </Box>
               
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {activity.description}
+                {safeActivity.description}
               </Typography>
               
-              {activity.course && (
+              {safeActivity.course && (
                 <Chip
-                  label={activity.course}
+                  label={safeActivity.course}
                   size="small"
                   variant="outlined"
                   sx={{ 
@@ -623,6 +646,17 @@ export const EnhancedActivityItem = ({ activity }) => {
 export const EnhancedAnnouncementCard = ({ announcement }) => {
   const theme = useTheme();
 
+  // إضافة قيم افتراضية للبيانات المفقودة
+  const safeAnnouncement = {
+    id: announcement?.id || 0,
+    title: announcement?.title || 'إعلان جديد',
+    content: announcement?.content || 'محتوى الإعلان',
+    date: announcement?.date || new Date().toLocaleDateString('ar-SA'),
+    read: announcement?.read || false,
+    course: announcement?.course || null,
+    ...announcement
+  };
+
   return (
     <motion.div
       whileHover={{ y: -2 }}
@@ -643,7 +677,7 @@ export const EnhancedAnnouncementCard = ({ announcement }) => {
           transition: 'all 0.3s ease',
         }}
       >
-        {!announcement.read && (
+        {!safeAnnouncement.read && (
           <Box
             sx={{
               position: 'absolute',
@@ -674,20 +708,20 @@ export const EnhancedAnnouncementCard = ({ announcement }) => {
             <Box sx={{ flexGrow: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {announcement.title}
+                  {safeAnnouncement.title}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {announcement.date}
+                  {safeAnnouncement.date}
                 </Typography>
               </Box>
               
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {announcement.content}
+                {safeAnnouncement.content}
               </Typography>
               
-              {announcement.course && (
+              {safeAnnouncement.course && (
                 <Chip
-                  label={announcement.course}
+                  label={safeAnnouncement.course}
                   size="small"
                   variant="outlined"
                   sx={{ 

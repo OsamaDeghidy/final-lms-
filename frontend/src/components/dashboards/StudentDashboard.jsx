@@ -123,7 +123,39 @@ const StudentDashboard = () => {
       ];
       
       setCourses(mockCourses);
-      setAchievements(achievementsData);
+      
+      // إضافة بيانات وهمية للإنجازات إذا لم تكن موجودة
+      const mockAchievements = achievementsData.length > 0 ? achievementsData : [
+        {
+          id: 1,
+          title: 'أول درس',
+          description: 'أكمل أول درس في المقرر',
+          color: 'primary',
+          icon: <MenuBookIcon />,
+          progress: 100,
+          reward: '10 نقاط'
+        },
+        {
+          id: 2,
+          title: 'الطالب المثابر',
+          description: 'أكمل 5 دروس متتالية',
+          color: 'success',
+          icon: <CheckCircleIcon />,
+          progress: 60,
+          reward: '25 نقطة'
+        },
+        {
+          id: 3,
+          title: 'متفوق في الاختبارات',
+          description: 'احصل على 90% في الاختبار',
+          color: 'warning',
+          icon: <QuizIcon />,
+          progress: 0,
+          reward: '50 نقطة'
+        }
+      ];
+      
+      setAchievements(mockAchievements);
       setRecentActivity(activityData);
       setUpcomingAssignments(assignmentsData);
       setUpcomingMeetings(meetingsData);
@@ -649,47 +681,89 @@ const StudentDashboard = () => {
                  }}
                >
                  <CardContent sx={{ p: 3 }}>
-                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                     {/* Left side - Course number and info */}
+                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flex: 1 }}>
+                       {/* Course number */}
                        <Box
                          sx={{
-                           width: 32,
-                           height: 32,
-                           borderRadius: '50%',
+                           width: 40,
+                           height: 40,
+                           borderRadius: 2,
                            background: '#f5f5f5',
                            display: 'flex',
                            alignItems: 'center',
-                           justifyContent: 'center'
+                           justifyContent: 'center',
+                           fontSize: '1.2rem',
+                           fontWeight: 700,
+                           color: '#666',
+                           flexShrink: 0
                          }}
                        >
-                         <SchoolIcon sx={{ color: '#666', fontSize: '1.2rem' }} />
+                         {index + 1}
                        </Box>
-                       <Box>
-                         <Typography variant="h6" fontWeight={600}>
+                       
+                       {/* Course details */}
+                       <Box sx={{ flex: 1 }}>
+                         <Typography variant="h6" fontWeight={600} sx={{ mb: 1.5, color: '#333' }}>
                            {course.title}
                          </Typography>
-                         <Typography variant="body2" color="text.secondary">
-                           {course.instructor}
-                         </Typography>
+                         
+                         {/* Progress bar */}
+                         <Box sx={{ mb: 1.5 }}>
+                           <LinearProgress 
+                             variant="determinate" 
+                             value={course.progress || 0} 
+                             sx={{ 
+                               height: 8, 
+                               borderRadius: 4,
+                               backgroundColor: '#f0f0f0',
+                               '& .MuiLinearProgress-bar': {
+                                 background: 'linear-gradient(45deg, #0e5181, #1a6ba8)',
+                                 borderRadius: 4
+                               }
+                             }} 
+                           />
+                         </Box>
+                         
+                         {/* Course info */}
+                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                           <Typography variant="body2" color="text.secondary">
+                             {course.completed_lessons || 0} من {course.total_lessons || 20} درس مكتمل
+                           </Typography>
+                           <Typography variant="body2" color="text.secondary">
+                             {course.duration || '1س 34د 44ث'} مدة التشغيل
+                           </Typography>
+                         </Box>
                        </Box>
                      </Box>
-                     <Box sx={{ textAlign: 'right' }}>
-                       <Typography variant="body2" color="text.secondary">
-                         التقدم: {course.progress}%
-                       </Typography>
-                       <LinearProgress 
-                         variant="determinate" 
-                         value={course.progress} 
-                         sx={{ 
-                           width: 100, 
-                           height: 6, 
+                     
+                     {/* Right side - Start button */}
+                     <Box sx={{ ml: 2, flexShrink: 0 }}>
+                       <Button
+                         variant="contained"
+                         size="large"
+                         sx={{
+                           minWidth: 100,
+                           height: 48,
                            borderRadius: 3,
-                           mt: 1,
-                           '& .MuiLinearProgress-bar': {
-                             background: 'linear-gradient(45deg, #0e5181, #1a6ba8)'
-                           }
-                         }} 
-                       />
+                           background: 'linear-gradient(45deg, #0e5181, #1a6ba8)',
+                           color: 'white',
+                           fontWeight: 600,
+                           fontSize: '1rem',
+                           textTransform: 'none',
+                           boxShadow: '0 4px 12px rgba(14, 81, 129, 0.3)',
+                           '&:hover': {
+                             background: 'linear-gradient(45deg, #1a6ba8, #0e5181)',
+                             boxShadow: '0 6px 16px rgba(14, 81, 129, 0.4)',
+                             transform: 'translateY(-1px)',
+                           },
+                           transition: 'all 0.3s ease'
+                         }}
+                         onClick={() => handleCourseContinue(course.id)}
+                       >
+                         ابدأ
+                       </Button>
                      </Box>
                    </Box>
                  </CardContent>
@@ -698,17 +772,6 @@ const StudentDashboard = () => {
            ))}
          </Box>
 
-         <Box sx={{ mt: 3 }}>
-           <Grid container spacing={3}>
-             {achievements.map((achievement) => (
-               <Grid item xs={12} md={4} key={achievement.id}>
-                 <motion.div variants={item}>
-                   <EnhancedAchievementCard achievement={achievement} />
-                 </motion.div>
-               </Grid>
-             ))}
-           </Grid>
-         </Box>
         </Box>
               )}
 
