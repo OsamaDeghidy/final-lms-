@@ -344,236 +344,204 @@ const StudentDashboard = () => {
 
         {/* Stats Cards - مطابقة لشكل المعلم */}
         <Box sx={{ mb: 5, px: 1 }}>
-          <Grid container spacing={1}>
-            <Grid item xs={12} sm={6} md={3}>
-         <motion.div variants={item}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <motion.div variants={item}>
                 <Card
-                 sx={{ 
+                  sx={{ 
                     height: 100,
                     borderRadius: 3,
-                  background: 'white',
+                    background: 'white',
                     border: 'none',
                     boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
+                    '&:hover': {
                       transform: 'translateY(-2px)',
                       boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
                     },
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                          width: 40,
-                          height: 40,
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
                           borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           background: '#9c27b0',
-                      color: 'white',
-                      '& svg': {
-                            fontSize: '1.3rem'
-                      }
-                    }}
-                  >
-                    <SchoolIcon />
-                  </Box>
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <SchoolIcon />
+                      </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.3 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
                           المقررات المسجلة
                         </Typography>
                         <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                      {stats.enrolledCourses || 0}
-                    </Typography>
-                </Box>
-                  </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#9c27b0',
-                        borderRadius: 2
-                      }}
-                    />
+                          {stats.enrolledCourses || 0}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-            </motion.div>
-          </Grid>
-          
-            <Grid item xs={12} sm={6} md={3}>
-            <motion.div variants={item}>
+              </motion.div>
+            </Grid>
+            
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <motion.div variants={item}>
                 <Card
-                sx={{
+                  sx={{ 
                     height: 100,
                     borderRadius: 3,
-                  background: 'white',
+                    background: 'white',
                     border: 'none',
                     boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
+                    '&:hover': {
                       transform: 'translateY(-2px)',
                       boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
                     },
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                          width: 40,
-                          height: 40,
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
                           borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                          background: '#2196f3',
-                      color: 'white',
-                      '& svg': {
-                            fontSize: '1.3rem'
-                      }
-                    }}
-                  >
-                    <AssignmentIcon />
-                  </Box>
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#0e5181',
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <AssignmentIcon />
+                      </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.3 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
                           الواجبات المعلقة
                         </Typography>
                         <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                      {stats.pendingAssignments || 0}
-                    </Typography>
-                </Box>
-                  </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#2196f3',
-                        borderRadius: 2
-                      }}
-                    />
+                          {stats.pendingAssignments || 0}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-            </motion.div>
-          </Grid>
-          
-            <Grid item xs={12} sm={6} md={3}>
-            <motion.div variants={item}>
+              </motion.div>
+            </Grid>
+            
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <motion.div variants={item}>
                 <Card
-                sx={{
+                  sx={{ 
                     height: 100,
                     borderRadius: 3,
-                  background: 'white',
+                    background: 'white',
                     border: 'none',
                     boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
+                    '&:hover': {
                       transform: 'translateY(-2px)',
                       boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
                     },
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                          width: 40,
-                          height: 40,
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
                           borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           background: '#ff9800',
-                      color: 'white',
-                      '& svg': {
-                            fontSize: '1.3rem'
-                      }
-                    }}
-                  >
-                    <GradeIcon />
-                  </Box>
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <GradeIcon />
+                      </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.3 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
                           المعدل الحالي
                         </Typography>
                         <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                      {formatGrade(stats.averageGrade || 0)}
-                    </Typography>
-                </Box>
-                  </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#ff9800',
-                        borderRadius: 2
-                      }}
-                    />
+                          {formatGrade(stats.averageGrade || 0)}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-            </motion.div>
-          </Grid>
-          
-            <Grid item xs={12} sm={6} md={3}>
-            <motion.div variants={item}>
+              </motion.div>
+            </Grid>
+            
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <motion.div variants={item}>
                 <Card
-                sx={{
+                  sx={{ 
                     height: 100,
                     borderRadius: 3,
-                  background: 'white',
+                    background: 'white',
                     border: 'none',
                     boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
+                    '&:hover': {
                       transform: 'translateY(-2px)',
                       boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
                     },
                     transition: 'all 0.3s ease',
                   }}
                 >
-                  <CardContent sx={{ p: 1.5, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Box
-                    sx={{
-                          width: 40,
-                          height: 40,
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
                           borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           background: '#4caf50',
-                      color: 'white',
-                      '& svg': {
-                            fontSize: '1.3rem'
-                      }
-                    }}
-                  >
-                    <StarIcon />
-                  </Box>
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <StarIcon />
+                      </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.3 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
                           النقاط المكتسبة
                         </Typography>
                         <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                      {(stats.totalPoints || 0).toLocaleString()}
-                    </Typography>
-                </Box>
-                  </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#4caf50',
-                        borderRadius: 2
-                      }}
-                    />
+                          {(stats.totalPoints || 0).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
-            </motion.div>
+              </motion.div>
+            </Grid>
           </Grid>
-        </Grid>
-       </Box>
+        </Box>
 
         {/* Main Content with Tabs */}
          <motion.div variants={item}>
