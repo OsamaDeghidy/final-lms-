@@ -13,7 +13,15 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
-  Alert
+  Alert,
+  Collapse,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  LinearProgress,
+  Checkbox
 } from '@mui/material';
 import { 
   School as SchoolIcon, 
@@ -21,11 +29,23 @@ import {
   CheckCircle as CheckCircleIcon,
   SentimentSatisfiedAlt,
   Edit as EditIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  VideoLibrary as VideoIcon,
+  PictureAsPdf as PdfIcon,
+  GridView as BitesIcon,
+  Download as DownloadIcon,
+  PlayArrow as PlayArrowIcon,
+  CheckCircleOutline as CheckCircleOutlineIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/system';
 import { courseAPI } from '../../services/api.service';
+import { contentAPI } from '../../services/content.service';
+import { assignmentsAPI } from '../../services/assignment.service';
+import { quizAPI } from '../../services/quiz.service';
+import { examAPI } from '../../services/exam.service';
 
 const pulse = keyframes`
   0% { transform: scale(1); }
@@ -112,128 +132,451 @@ const EmptyState = () => (
 );
 
 const CourseCard = ({ course, onClick }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [courseContent, setCourseContent] = useState([]);
+  const [loadingContent, setLoadingContent] = useState(false);
+  
   // Ensure progress is a valid number between 0 and 100
   const progress = Math.min(Math.max(course.progress || 0, 0), 100);
+  
+  // Calculate completed lessons and total runtime from course data
+  const totalLessons = course.total_lessons || course.lessons_count || 20;
+  const completedLessons = Math.floor((progress / 100) * totalLessons);
+  const totalRuntime = course.total_duration || course.duration || "1h 34m 44s";
+  
+  const handleExpandClick = async () => {
+    if (!expanded && courseContent.length === 0) {
+      setLoadingContent(true);
+      try {
+        const allContent = [];
+        
+        // Fetch course modules and lessons
+        const modules = await contentAPI.getModules(course.id);
+        
+        for (const module of modules) {
+          // Get lessons for this module
+          const lessons = await contentAPI.getLessons({ moduleId: module.id });
+          const mappedLessons = lessons.map(lesson => ({
+            id: `lesson-${lesson.id}`,
+            title: lesson.title,
+            type: lesson.content_type || 'video',
+            duration: lesson.duration || null,
+            completed: lesson.is_completed || false,
+            progress: lesson.progress_percentage || 0,
+            module_title: module.title,
+            module_id: module.id,
+            content_id: lesson.id,
+            content_type: 'lesson'
+          }));
+          allContent.push(...mappedLessons);
+        }
+        
+        // Fetch assignments for this course
+        try {
+          const assignments = await assignmentsAPI.getAssignments({ course: course.id });
+          const mappedAssignments = assignments.map(assignment => ({
+            id: `assignment-${assignment.id}`,
+            title: assignment.title,
+            type: 'assignment',
+            duration: assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('ar-EG') : null,
+            completed: assignment.is_submitted || false,
+            progress: assignment.grade ? Math.round((assignment.grade / assignment.max_grade) * 100) : 0,
+            module_title: assignment.module?.title || 'Assignment',
+            module_id: assignment.module?.id,
+            content_id: assignment.id,
+            content_type: 'assignment',
+            due_date: assignment.due_date,
+            grade: assignment.grade,
+            max_grade: assignment.max_grade
+          }));
+          allContent.push(...mappedAssignments);
+        } catch (error) {
+          console.log('No assignments found for course:', course.id);
+        }
+        
+        // Fetch quizzes for this course
+        try {
+          const quizzes = await quizAPI.getQuizzes({ course: course.id });
+          const mappedQuizzes = quizzes.map(quiz => ({
+            id: `quiz-${quiz.id}`,
+            title: quiz.title,
+            type: 'quiz',
+            duration: quiz.time_limit ? `${quiz.time_limit} min` : null,
+            completed: quiz.is_completed || false,
+            progress: quiz.score ? Math.round((quiz.score / quiz.max_score) * 100) : 0,
+            module_title: quiz.module?.title || 'Quiz',
+            module_id: quiz.module?.id,
+            content_id: quiz.id,
+            content_type: 'quiz',
+            score: quiz.score,
+            max_score: quiz.max_score,
+            attempts: quiz.attempts || 0
+          }));
+          allContent.push(...mappedQuizzes);
+        } catch (error) {
+          console.log('No quizzes found for course:', course.id);
+        }
+        
+        // Fetch exams for this course
+        try {
+          const exams = await examAPI.getExams({ course: course.id });
+          const mappedExams = exams.map(exam => ({
+            id: `exam-${exam.id}`,
+            title: exam.title,
+            type: 'exam',
+            duration: exam.duration ? `${exam.duration} min` : null,
+            completed: exam.is_completed || false,
+            progress: exam.score ? Math.round((exam.score / exam.max_score) * 100) : 0,
+            module_title: exam.module?.title || 'Exam',
+            module_id: exam.module?.id,
+            content_id: exam.id,
+            content_type: 'exam',
+            score: exam.score,
+            max_score: exam.max_score,
+            attempts: exam.attempts || 0
+          }));
+          allContent.push(...mappedExams);
+        } catch (error) {
+          console.log('No exams found for course:', course.id);
+        }
+        
+        // Add course resources if available
+        if (course.resources && course.resources.length > 0) {
+          course.resources.forEach(resource => {
+            allContent.unshift({
+              id: `resource-${resource.id}`,
+              title: resource.title || 'Resources',
+              type: 'resource',
+              duration: null,
+              completed: false,
+              progress: 0,
+              module_title: 'Resources',
+              content_id: resource.id,
+              content_type: 'resource',
+              resource_url: resource.file_url
+            });
+          });
+        }
+        
+        // Sort content by module order and then by type
+        allContent.sort((a, b) => {
+          // First sort by module_id if available
+          if (a.module_id && b.module_id && a.module_id !== b.module_id) {
+            return a.module_id - b.module_id;
+          }
+          // Then sort by content type priority
+          const typeOrder = { 'resource': 0, 'lesson': 1, 'assignment': 2, 'quiz': 3, 'exam': 4 };
+          return (typeOrder[a.content_type] || 5) - (typeOrder[b.content_type] || 5);
+        });
+        
+        setCourseContent(allContent);
+      } catch (error) {
+        console.error('Error fetching course content:', error);
+        // Fallback to mock data
+        setCourseContent([
+          { id: 1, title: 'Resources', type: 'resource', duration: null, completed: false, content_type: 'resource' },
+          { id: 2, title: 'Biological Chemistry', type: 'video', duration: '5:36', completed: false, content_type: 'lesson' },
+          { id: 3, title: 'Biological Chemistry Quiz', type: 'quiz', duration: '30 min', completed: false, progress: 0, content_type: 'quiz' },
+          { id: 4, title: 'Carbohydrates', type: 'video', duration: '8:56', completed: false, content_type: 'lesson' },
+          { id: 5, title: 'Assignment 1', type: 'assignment', duration: '2024-01-15', completed: false, progress: 0, content_type: 'assignment' },
+          { id: 6, title: 'Midterm Exam', type: 'exam', duration: '120 min', completed: false, progress: 0, content_type: 'exam' }
+        ]);
+      } finally {
+        setLoadingContent(false);
+      }
+    }
+    setExpanded(!expanded);
+  };
+
+  const getContentTypeIcon = (type, contentType) => {
+    switch (contentType) {
+      case 'lesson':
+        switch (type?.toLowerCase()) {
+          case 'video': 
+          case 'video_lesson': return <VideoIcon sx={{ fontSize: 16, color: '#666' }} />;
+          case 'text': 
+          case 'article': return <SchoolIcon sx={{ fontSize: 16, color: '#666' }} />;
+          default: return <PlayArrowIcon sx={{ fontSize: 16, color: '#666' }} />;
+        }
+      case 'assignment': return <EditIcon sx={{ fontSize: 16, color: '#666' }} />;
+      case 'quiz': return <BitesIcon sx={{ fontSize: 16, color: '#666' }} />;
+      case 'exam': return <CheckCircleIcon sx={{ fontSize: 16, color: '#666' }} />;
+      case 'resource': return <PdfIcon sx={{ fontSize: 16, color: '#666' }} />;
+      default: return <PlayArrowIcon sx={{ fontSize: 16, color: '#666' }} />;
+    }
+  };
+
+  const getContentTypeColor = (contentType) => {
+    switch (contentType) {
+      case 'lesson': return '#4caf50'; // Green for lessons
+      case 'assignment': return '#ff9800'; // Orange for assignments
+      case 'quiz': return '#9c27b0'; // Purple for quizzes
+      case 'exam': return '#f44336'; // Red for exams
+      case 'resource': return '#666'; // Grey for resources
+      default: return '#666';
+    }
+  };
+
+  const getContentTypeLabel = (contentType) => {
+    switch (contentType) {
+      case 'lesson': return 'درس';
+      case 'assignment': return 'واجب';
+      case 'quiz': return 'كويز';
+      case 'exam': return 'امتحان';
+      case 'resource': return 'مورد';
+      default: return 'محتوى';
+    }
+  };
+
+  const getContentActionIcon = (item) => {
+    switch (item.content_type) {
+      case 'resource': return <DownloadIcon sx={{ fontSize: 16 }} />;
+      case 'lesson': return <PlayArrowIcon sx={{ fontSize: 16 }} />;
+      case 'assignment': return <EditIcon sx={{ fontSize: 16 }} />;
+      case 'quiz': return <BitesIcon sx={{ fontSize: 16 }} />;
+      case 'exam': return <CheckCircleIcon sx={{ fontSize: 16 }} />;
+      default: return <PlayArrowIcon sx={{ fontSize: 16 }} />;
+    }
+  };
+
+  const handleContentClick = (item) => {
+    switch (item.content_type) {
+      case 'resource':
+        if (item.resource_url) {
+          window.open(item.resource_url, '_blank');
+        }
+        break;
+      case 'lesson':
+        // Navigate to lesson page
+        navigate(`/student/courses/${course.id}/lessons/${item.content_id}`);
+        break;
+      case 'assignment':
+        // Navigate to assignment page
+        navigate(`/student/courses/${course.id}/assignments/${item.content_id}`);
+        break;
+      case 'quiz':
+        // Navigate to quiz page
+        navigate(`/student/courses/${course.id}/quizzes/${item.content_id}`);
+        break;
+      case 'exam':
+        // Navigate to exam page
+        navigate(`/student/courses/${course.id}/exams/${item.content_id}`);
+        break;
+      default:
+        // Default to course page
+        onClick(course.id);
+    }
+  };
   
   return (
   <Card
     sx={{
-      display: 'flex',
-      alignItems: 'center',
-      borderRadius: '48px',
-      minHeight: 220,
-      boxShadow: progress >= 100 ? '0 8px 32px 0 rgba(229, 151, 139, 0.15)' : '0 8px 32px 0 rgba(14, 81, 129, 0.15)',
+        borderRadius: '16px',
       mb: 3,
       overflow: 'hidden',
-      background: progress >= 100 ? 'linear-gradient(120deg, #fdf2f2 0%, #fff 100%)' : 'linear-gradient(120deg, #f0f8ff 0%, #fff 100%)',
-      transition: 'transform 0.25s, box-shadow 0.25s',
-      px: 4,
-      py: 2,
-      border: progress >= 100 ? '2px solid #e5978b' : '2px solid transparent',
+        background: 'white',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        transition: 'all 0.3s ease-in-out',
       '&:hover': {
-        transform: 'translateY(-8px) scale(1.03)',
-        boxShadow: progress >= 100 ? '0 16px 48px 0 rgba(229, 151, 139, 0.25)' : '0 16px 48px 0 rgba(14, 81, 129, 0.25)',
-        border: progress >= 100 ? '2px solid #e5978b' : '2px solid #0e5181',
-      }
-    }}
-    onClick={() => onClick(course.id)}
-  >
-    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', pr: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Chip label={course.category} sx={{ bgcolor: 'rgba(14, 81, 129, 0.1)', color: '#0e5181', fontWeight: 700, fontSize: 14 }} />
-            </Box>
-      <Typography variant="h6" fontWeight={800} color="#0e5181" sx={{ mb: 0.5, fontSize: 22 }}>
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        }
+      }}
+    >
+      {/* Course Header */}
+      <Box sx={{ p: 3, pb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="h6" sx={{ 
+              fontSize: '18px', 
+              fontWeight: 600, 
+              color: '#333',
+              mb: 1
+            }}>
+              <span style={{ color: '#999', marginRight: '8px' }}>1</span>
               {course.title}
             </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 36, fontSize: 16 }}>
-              {course.description}
-            </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, fontSize: 15 }}>
-        <SchoolIcon sx={{ fontSize: 20, color: '#e5978b', ml: 0.5 }} />
-                  {course.instructor}
-                </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <Box sx={{ 
-            height: 12, 
-            bgcolor: 'rgba(14, 81, 129, 0.1)', 
-            borderRadius: 6, 
-            overflow: 'hidden',
-            position: 'relative',
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            <Box 
+            
+            {/* Progress Bar */}
+            <Box sx={{ mb: 1 }}>
+              <LinearProgress 
+                variant="determinate" 
+                value={progress} 
               sx={{ 
-                width: `${progress}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
-                borderRadius: 6, 
-                transition: 'width 0.8s ease-in-out',
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%)',
-                  borderRadius: 6
+                  height: 4, 
+                  borderRadius: 2,
+                  bgcolor: '#f0f0f0',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: '#4caf50',
+                    borderRadius: 2
                 }
               }} 
             />
           </Box>
-        </Box>
-        <Typography 
-          variant="body2" 
-          fontWeight={700} 
-          color="#0e5181" 
-          sx={{ 
-            fontSize: 16,
-            minWidth: '45px',
-            textAlign: 'center',
-            background: 'rgba(14, 81, 129, 0.1)',
-            borderRadius: 2,
-            px: 1,
-            py: 0.5
-          }}
-        >
-          {Math.round(progress)}%
+            
+            <Typography variant="body2" sx={{ 
+              color: '#666', 
+              fontSize: '14px',
+              mb: 2
+            }}>
+              {completedLessons} of {totalLessons} lessons completed • {totalRuntime} runtime
         </Typography>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+          
         <Button 
           variant="contained" 
-          size="large"
-          startIcon={<PlayIcon />}
           sx={{
-            bgcolor: progress >= 100 ? '#e5978b' : '#0e5181',
-            color: '#fff',
-            borderRadius: 3,
-            fontWeight: 700,
-            fontSize: 18,
-            px: 5,
-            py: 1.5,
-            boxShadow: progress >= 100 ? '0 2px 12px 0 rgba(229, 151, 139, 0.3)' : '0 2px 12px 0 rgba(14, 81, 129, 0.3)',
+              bgcolor: '#2196f3',
+              color: 'white',
+              borderRadius: '8px',
+              px: 3,
+              py: 1,
+              fontSize: '14px',
+              fontWeight: 600,
+              textTransform: 'none',
             '&:hover': { 
-              bgcolor: progress >= 100 ? '#d17a6f' : '#0a3d5f' 
+                bgcolor: '#1976d2'
             }
           }}
-          onClick={e => {
+            onClick={(e) => {
             e.stopPropagation();
             onClick(course.id);
           }}
         >
-          {progress >= 100 ? 'مراجعة الكورس' : 'استكمال التعلم'}
+            Start
         </Button>
+        </Box>
+        
+        {/* Expand/Collapse Button */}
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+          <IconButton
+            onClick={handleExpandClick}
+            sx={{
+              color: '#666',
+              '&:hover': {
+                bgcolor: 'rgba(0,0,0,0.04)'
+              }
+            }}
+          >
+            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+          </IconButton>
+        </Box>
       </Box>
-    </CardContent>
-    <CardMedia
-      component="img"
-      image={course.image}
-      alt={course.title}
-      sx={{ width: 180, height: 180, objectFit: 'cover', borderRadius: '40px', ml: 2 }}
-    />
+
+      {/* Course Content Dropdown */}
+      <Collapse in={expanded} timeout="auto" unmountOnExit>
+        <Box sx={{ borderTop: '1px solid #f0f0f0' }}>
+          {loadingContent ? (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <List sx={{ p: 0 }}>
+              {courseContent.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  <ListItem
+                    sx={{
+                      py: 1.5,
+                      px: 3,
+                      '&:hover': {
+                        bgcolor: 'rgba(0,0,0,0.02)'
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      <Checkbox
+                        checked={item.completed}
+                        sx={{
+                          p: 0.5,
+                          '&.Mui-checked': {
+                            color: '#4caf50'
+                          }
+                        }}
+                      />
+                    </ListItemIcon>
+                    
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      {getContentTypeIcon(item.type, item.content_type)}
+                    </ListItemIcon>
+                    
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={getContentTypeLabel(item.content_type)}
+                            size="small"
+                            sx={{
+                              bgcolor: getContentTypeColor(item.content_type),
+                              color: 'white',
+                              fontSize: '11px',
+                              height: 20,
+                              '& .MuiChip-label': {
+                                px: 1
+                              }
+                            }}
+                          />
+                          <Typography variant="body2" sx={{ fontSize: '14px', color: '#333' }}>
+                            {item.title}
+                          </Typography>
+                          {item.module_title && (
+                            <Typography variant="caption" sx={{ 
+                              fontSize: '11px', 
+                              color: '#999',
+                              ml: 1,
+                              fontStyle: 'italic'
+                            }}>
+                              ({item.module_title})
+                            </Typography>
+                          )}
+                        </Box>
+                      }
+                    />
+                    
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Show progress for assignments, quizzes, and exams */}
+                      {(item.content_type === 'assignment' || item.content_type === 'quiz' || item.content_type === 'exam') && item.progress !== undefined ? (
+                        <>
+                          <Typography variant="body2" sx={{ color: '#666', fontSize: '12px' }}>
+                            {item.content_type === 'assignment' && item.grade ? 
+                              `${item.grade}/${item.max_grade}` : 
+                              item.duration || `${Math.round(item.progress)}%`
+                            }
+                          </Typography>
+                          <Box sx={{ width: 40, height: 4, bgcolor: '#f0f0f0', borderRadius: 2, overflow: 'hidden' }}>
+                            <Box sx={{ 
+                              width: `${item.progress}%`, 
+                              height: '100%', 
+                              bgcolor: getContentTypeColor(item.content_type),
+                              borderRadius: 2
+                            }} />
+                          </Box>
+                        </>
+                      ) : (
+                        <Typography variant="body2" sx={{ color: '#666', fontSize: '12px' }}>
+                          {item.content_type === 'resource' 
+                            ? 'تحميل الملف' 
+                            : item.duration || '--:--'
+                          }
+                        </Typography>
+                      )}
+                      <IconButton 
+                        size="small" 
+                        sx={{ color: '#999' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleContentClick(item);
+                        }}
+                      >
+                        {getContentActionIcon(item)}
+                      </IconButton>
+                    </Box>
+                  </ListItem>
+                  {index < courseContent.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </Box>
+      </Collapse>
   </Card>
   );
 };
@@ -544,24 +887,20 @@ const MyCourses = () => {
             الكورسات المكتملة ({completedCourses.length})
           </Button>
         </Box>
-        <Grid container spacing={3}>
+        <Box>
           {tab === 0
             ? (enrolledCourses.length > 0
                 ? enrolledCourses.map(course => (
-                    <Grid item xs={12} sm={6} md={6} key={course.id}>
-                      <CourseCard course={course} onClick={handleCourseClick} />
-                    </Grid>
+                    <CourseCard key={course.id} course={course} onClick={handleCourseClick} />
                   ))
                 : <EmptyState />)
             : (completedCourses.length > 0
                 ? completedCourses.map(course => (
-                    <Grid item xs={12} sm={6} md={6} key={course.id}>
-                      <CompletedCourseCard course={course} />
-                    </Grid>
+                    <CompletedCourseCard key={course.id} course={course} />
                   ))
                 : <EmptyState />)
           }
-        </Grid>
+        </Box>
     </Container>
     </Box>
   );

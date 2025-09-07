@@ -108,16 +108,20 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
-    sourcemap: true,
+    sourcemap: false,
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           mui: ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+          antd: ['antd', '@ant-design/icons'],
+          utils: ['axios', 'dayjs', 'date-fns', 'yup', 'formik'],
         },
       },
     },
     chunkSizeWarningLimit: 1000,
+    target: 'es2015',
   },
   define: {
     'process.env': {}
