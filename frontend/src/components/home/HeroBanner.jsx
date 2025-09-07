@@ -373,8 +373,6 @@ const HeroBanner = () => {
     fetchBanners();
   }, []);
 
-
-
   // Get the first banner or use default content
   const currentBanner = slides.length > 0 ? {
     ...slides[0],
@@ -396,47 +394,25 @@ const HeroBanner = () => {
             <Typography
               variant="h1"
               sx={{
-<<<<<<< HEAD
-                fontSize: { xs: '2rem', md: '2.5rem', lg: '2.8rem' },
-                fontWeight: 800,
-                textAlign: 'right',
-                lineHeight: 1.2,
-                mb: 5,
-=======
                 fontSize: { xs: '2.5rem', md: '3.2rem', lg: '3.8rem' },
                 fontWeight: 800,
                 color: '#0e5181',
                 textAlign: 'right',
                 lineHeight: 1.1,
                 mb: 2,
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                 position: 'relative',
                 '&::after': {
                   content: '""',
                   position: 'absolute',
-<<<<<<< HEAD
-                  bottom: '-20px',
-                  right: 0,
-                  width: '80px',
-=======
                   bottom: '-8px',
                   right: 0,
                   width: '60px',
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                   height: '4px',
                   background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   borderRadius: '2px',
                 },
               }}
             >
-<<<<<<< HEAD
-              <Box component="span" sx={{ color: '#0e5181' }}>
-                معهد التطوير المهني{' '}
-              </Box>
-              <Box component="span" sx={{ color: '#e5978b', fontSize: '0.85em' }}>
-                العالي للتدريب
-              </Box>
-=======
               معهد التطوير المهني
             </Typography>
             
@@ -453,7 +429,6 @@ const HeroBanner = () => {
               }}
             >
               العالي للتدريب
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
             </Typography>
             
             {/* Creative Badge */}
@@ -639,7 +614,7 @@ const HeroBanner = () => {
           </Box>
         </RightSection>
 
-                {/* Left Section - Student Character Only */}
+        {/* Left Section - Student Character Only */}
         <LeftSection>
           {/* Student Character with Image */}
           <StudentContainer>

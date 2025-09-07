@@ -58,26 +58,15 @@ const floatAnimation = keyframes`
 `;
 
 const SectionContainer = styled(Box)(({ theme }) => ({
-<<<<<<< HEAD
-  padding: theme.spacing(2, 0, 4, 0),
-=======
   padding: theme.spacing(0, 0, 4, 0),
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
   position: 'relative',
   overflow: 'hidden',
   background: '#ffffff',
   [theme.breakpoints.down('md')]: {
-<<<<<<< HEAD
-    padding: theme.spacing(1, 0, 3, 0),
-  },
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(1, 0, 2, 0),
-=======
     padding: theme.spacing(0, 0, 3, 0),
   },
   [theme.breakpoints.down('sm')]: {
     padding: theme.spacing(0, 0, 2, 0),
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
   },
   '&:before': {
     content: '""',

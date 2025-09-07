@@ -265,15 +265,15 @@ const TeacherDashboard = () => {
         <Box sx={{ mb: 5, px: 1 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6} md={3}>
-        <motion.div variants={item}>
+              <motion.div variants={item}>
                 <Card
-                sx={{ 
+                  sx={{ 
                     height: 100,
                     borderRadius: 3,
-                  background: 'white',
+                    background: 'white',
                     border: 'none',
                     boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
+                    '&:hover': {
                       transform: 'translateY(-2px)',
                       boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
                     },
@@ -282,203 +282,185 @@ const TeacherDashboard = () => {
                 >
                   <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
+                      <Box
+                        sx={{
                           width: 45,
                           height: 45,
                           borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           background: '#9c27b0',
-                      color: 'white',
-                      '& svg': {
+                          color: 'white',
+                          '& svg': {
                             fontSize: '1.5rem'
-                      }
-                    }}
-                  >
+                          }
+                        }}
+                      >
                         <GroupIcon />
-                  </Box>
-<<<<<<< HEAD
+                      </Box>
                       <Box>
                         <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
                           عدد الطلاب
-                    </Typography>
+                        </Typography>
                         <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                      {stats.totalStudents || 0}
-                    </Typography>
-=======
-                </Box>
-              </DashboardCard>
-            </motion.div>
+                          {stats.totalStudents || 0}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <motion.div variants={item}>
+                <Card
+                  sx={{ 
+                    height: 100,
+                    borderRadius: 3,
+                    background: 'white',
+                    border: 'none',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#0e5181',
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <SchoolIcon />
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                          المقررات
+                        </Typography>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                          {stats.totalCourses || 0}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <motion.div variants={item}>
+                <Card
+                  sx={{ 
+                    height: 100,
+                    borderRadius: 3,
+                    background: 'white',
+                    border: 'none',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#ff9800',
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <AssignmentIcon />
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                          الواجبات المعلقة
+                        </Typography>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                          {stats.pendingAssignments || 0}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <motion.div variants={item}>
+                <Card
+                  sx={{ 
+                    height: 100,
+                    borderRadius: 3,
+                    background: 'white',
+                    border: 'none',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 45,
+                          height: 45,
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#4caf50',
+                          color: 'white',
+                          '& svg': {
+                            fontSize: '1.5rem'
+                          }
+                        }}
+                      >
+                        <StarIcon />
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                          متوسط التقييم
+                        </Typography>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                          {stats.averageRating.toFixed(1)}★
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
           </Grid>
-          
-          <Grid item xs={12} sm={6} lg={3}>
-            <motion.div variants={item}>
-              <DashboardCard
-                sx={{
-                  height: 200,
-                  borderRadius: 4,
-                  background: 'white',
-                  color: 'text.primary',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: '2px solid #e5978b',
-                  boxShadow: '0 4px 20px rgba(229, 151, 139, 0.08)',
-                  '&:hover': {
-                    transform: 'translateY(-6px)',
-                    boxShadow: '0 12px 30px rgba(229, 151, 139, 0.15)',
-                    border: '2px solid #e5978b',
-                  },
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#e5978b', lineHeight: 1 }}>
-                      {stats.totalStudents}
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
-                      الطلاب
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
-                      طلاب مسجلين
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #e5978b, #f0a8a0)',
-                      color: 'white',
-                      boxShadow: '0 6px 20px rgba(229, 151, 139, 0.3)',
-                      '& svg': {
-                        fontSize: '2.2rem'
-                      }
-                    }}
-                  >
-                    <GroupIcon />
-                  </Box>
-                </Box>
-              </DashboardCard>
-            </motion.div>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} lg={3}>
-            <motion.div variants={item}>
-              <DashboardCard
-                sx={{
-                  height: 200,
-                  borderRadius: 4,
-                  background: 'white',
-                  color: 'text.primary',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: '2px solid #0e5181',
-                  boxShadow: '0 4px 20px rgba(14, 81, 129, 0.08)',
-                  '&:hover': {
-                    transform: 'translateY(-6px)',
-                    boxShadow: '0 12px 30px rgba(14, 81, 129, 0.15)',
-                    border: '2px solid #0e5181',
-                  },
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#0e5181', lineHeight: 1 }}>
-                      {formatCurrency(stats.totalRevenue)}
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
-                      الإيرادات
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
-                      إجمالي الأرباح
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #0e5181, #1a6ba8)',
-                      color: 'white',
-                      boxShadow: '0 6px 20px rgba(14, 81, 129, 0.3)',
-                      '& svg': {
-                        fontSize: '2.2rem'
-                      }
-                    }}
-                  >
-                    <MoneyIcon />
-                  </Box>
-                </Box>
-              </DashboardCard>
-            </motion.div>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} lg={3}>
-            <motion.div variants={item}>
-              <DashboardCard
-                sx={{
-                  height: 200,
-                  borderRadius: 4,
-                  background: 'white',
-                  color: 'text.primary',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: '2px solid #e5978b',
-                  boxShadow: '0 4px 20px rgba(229, 151, 139, 0.08)',
-                  '&:hover': {
-                    transform: 'translateY(-6px)',
-                    boxShadow: '0 12px 30px rgba(229, 151, 139, 0.15)',
-                    border: '2px solid #e5978b',
-                  },
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%', p: 3 }}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h3" fontWeight={800} sx={{ mb: 1, color: '#e5978b', lineHeight: 1 }}>
-                      {stats.averageRating.toFixed(1)}★
-                    </Typography>
-                    <Typography variant="h6" sx={{ mb: 0.5, color: 'text.primary', fontWeight: 600 }}>
-                      متوسط التقييم
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', opacity: 0.8 }}>
-                      من 5 نجوم
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 3,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #e5978b, #f0a8a0)',
-                      color: 'white',
-                      boxShadow: '0 6px 20px rgba(229, 151, 139, 0.3)',
-                      '& svg': {
-                        fontSize: '2.2rem'
-                      }
-                    }}
-                  >
-                    <StarIcon />
-                  </Box>
-                </Box>
-              </DashboardCard>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Box>
+        </Box>
 
       {/* Quick Actions - إجراءات سريعة محسنة */}
       <Box sx={{ mb: 4 }}>
@@ -907,113 +889,60 @@ const TeacherDashboard = () => {
             <Grid item xs={12} sm={6} md={6} lg={3} key={student.id}>
               <motion.div variants={item}>
                 <DashboardCard>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar 
-                    sx={{ 
-                      bgcolor: 'primary.main',
-                      width: 48,
-                      height: 48,
-                      fontSize: '1rem',
-                      fontWeight: 600
-                    }}
-                  >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar 
+                      sx={{ 
+                        bgcolor: 'primary.main',
+                        width: 48,
+                        height: 48,
+                        fontSize: '1rem',
+                        fontWeight: 600
+                      }}
+                    >
                       {student.name.charAt(0)}
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="subtitle2" fontWeight={600}>
+                    </Avatar>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle2" fontWeight={600}>
                           {student.name}
-                      </Typography>
-                      <Chip 
+                        </Typography>
+                        <Chip 
                           label={student.grade}
-                        size="small"
+                          size="small"
                           color={student.grade === 'ممتاز' ? 'success' : 
                                  student.grade === 'جيد جداً' ? 'info' : 
                                  student.grade === 'جيد' ? 'warning' : 'error'}
-                        sx={{ height: 20, fontSize: '0.65rem' }}
-                      />
-                    </Box>
-                    <Box sx={{ mt: 1 }}>
-                      <LinearProgress 
-                        variant="determinate" 
+                          sx={{ height: 20, fontSize: '0.65rem' }}
+                        />
+                      </Box>
+                      <Box sx={{ mt: 1 }}>
+                        <LinearProgress 
+                          variant="determinate" 
                           value={student.progress}
                           color={student.progress >= 80 ? 'success' : 
                                  student.progress >= 60 ? 'info' : 
                                  student.progress >= 40 ? 'warning' : 'error'}
-                        sx={{ height: 6, borderRadius: 3 }}
-                      />
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          التقدم
-                        </Typography>
-                        <Typography variant="caption" fontWeight={600}>
+                          sx={{ height: 6, borderRadius: 3 }}
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            التقدم
+                          </Typography>
+                          <Typography variant="caption" fontWeight={600}>
                             {student.progress}%
-                        </Typography>
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
+                          </Typography>
+                        </Box>
                       </Box>
+                    </Box>
                   </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#9c27b0',
-                        borderRadius: 2
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-            </motion.div>
-          </Grid>
-<<<<<<< HEAD
-          
-            <Grid item xs={12} sm={6} md={3}>
-            <motion.div variants={item}>
-                <Card
-                sx={{
-                    height: 100,
-                    borderRadius: 3,
-                  background: 'white',
-                    border: 'none',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
-                  '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <CardContent sx={{ p: 2, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box
-                    sx={{
-                          width: 45,
-                          height: 45,
-                          borderRadius: 2,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                          background: '#2196f3',
-                      color: 'white',
-                      '& svg': {
-                            fontSize: '1.5rem'
-                      }
-                    }}
-                  >
-                        <SchoolIcon />
-                  </Box>
-                      <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
-                          عدد الفصول
-                    </Typography>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
-                          {stats.totalCourses || 0}
-                    </Typography>
-=======
-        ))}
+                </DashboardCard>
+              </motion.div>
+            </Grid>
+          ))}
         </Grid>
       </Box>
 
-        {/* Recent Activity & Announcements - محسن */}
+      {/* Recent Activity & Announcements - محسن */}
       <Box sx={{ mt: 4 }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
@@ -1075,21 +1004,11 @@ const TeacherDashboard = () => {
                       >
                         آخر ما حدث في منصتك
                       </Typography>
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                       </Box>
                   </Box>
-                  <Box
-                    sx={{
-                        width: 35,
-                        height: 3,
-                        background: '#2196f3',
-                        borderRadius: 2
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-            </motion.div>
-          </Grid>
+                </motion.div>
+              </Box>
+            </Grid>
             
           <Grid item xs={12} sm={6} md={3}>
             <motion.div variants={item}>
@@ -1202,8 +1121,8 @@ const TeacherDashboard = () => {
                     />
                   </CardContent>
                 </Card>
-            </motion.div>
-          </Grid>
+              </motion.div>
+            </Grid>
           </Grid>
         </Box>
           
@@ -1611,9 +1530,8 @@ const TeacherDashboard = () => {
                 )}
                 </Box>
             </Card>
-                </motion.div>
+            </motion.div>
         </Box>
-
       </motion.div>
     </Box>
   );

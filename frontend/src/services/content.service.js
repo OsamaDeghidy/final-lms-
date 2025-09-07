@@ -69,11 +69,7 @@ export const contentAPI = {
     if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
     if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-<<<<<<< HEAD
     const response = await api.post('/api/content/modules/', formData, {
-=======
-    const response = await api.post('/content/modules/', formData, {
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
@@ -92,11 +88,7 @@ export const contentAPI = {
     if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
     if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-<<<<<<< HEAD
     const response = await api.patch(`/api/content/modules/${moduleId}/`, formData, {
-=======
-    const response = await api.patch(`/content/modules/${moduleId}/`, formData, {
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;

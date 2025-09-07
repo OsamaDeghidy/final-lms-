@@ -710,11 +710,7 @@ const StudentAssignments = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                           <CalendarTodayIcon sx={{ color: '#666' }} />
                           <Typography variant="body1" sx={{ textAlign: 'right' }}>
-<<<<<<< HEAD
-                            تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('en-GB')}
-=======
                             تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('ar-SA')}
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                           </Typography>
                         </Box>
                         {selectedAssignment.allow_late_submissions && (
@@ -729,22 +725,14 @@ const StudentAssignments = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                             <AssignmentTurnedInIcon sx={{ color: '#2e7d32' }} />
                             <Typography variant="body1" sx={{ textAlign: 'right' }}>
-<<<<<<< HEAD
-                              تاريخ التسليم: {new Date(selectedAssignment.submission_date).toLocaleString('en-GB')}
-=======
                               تاريخ التسليم: {new Date(selectedAssignment.submission_date).toLocaleString('ar-SA')}
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                             </Typography>
                           </Box>
                         )}
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                           <AccessTimeIcon sx={{ color: '#666' }} />
                           <Typography variant="body1" sx={{ textAlign: 'right' }}>
-<<<<<<< HEAD
-                            تاريخ الإنشاء: {new Date(selectedAssignment.created_at).toLocaleString('en-GB')}
-=======
                             تاريخ الإنشاء: {new Date(selectedAssignment.created_at).toLocaleString('ar-SA')}
->>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                           </Typography>
                         </Box>
                       </Box>
