@@ -106,7 +106,11 @@ export const courseAPI = {
   // Enroll in a course
   enrollInCourse: async (courseId) => {
     try {
+<<<<<<< HEAD
       const response = await api.post(`/api/courses/courses/${courseId}/enroll/`);
+=======
+      const response = await api.post(`/courses/courses/${courseId}/enroll/`);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data;
     } catch (error) {
       console.error('Error enrolling in course:', error);
@@ -117,7 +121,11 @@ export const courseAPI = {
   // Unenroll from a course
   unenrollFromCourse: async (courseId) => {
     try {
+<<<<<<< HEAD
       const response = await api.post(`/api/courses/courses/${courseId}/unenroll/`);
+=======
+      const response = await api.post(`/courses/courses/${courseId}/unenroll/`);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data;
     } catch (error) {
       console.error('Error unenrolling from course:', error);
@@ -299,7 +307,11 @@ export const paymentAPI = {
   // Create Moyasar hosted payment and get redirect URL
   createMoyasarPayment: async () => {
     try {
+<<<<<<< HEAD
       const response = await api.post('/api/store/payment/moyasar/create/');
+=======
+      const response = await api.post('/store/payment/moyasar/create/');
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data; // { url, invoice }
     } catch (error) {
       console.error('Error creating Moyasar payment:', error);
@@ -310,7 +322,11 @@ export const paymentAPI = {
   // Create Moyasar hosted payment for a specific course
   createCoursePayment: async (courseId) => {
     try {
+<<<<<<< HEAD
       const response = await api.post(`/api/store/payment/moyasar/course/${courseId}/create/`);
+=======
+      const response = await api.post(`/store/payment/moyasar/course/${courseId}/create/`);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data; // { url, invoice }
     } catch (error) {
       console.error('Error creating course payment:', error);
@@ -321,7 +337,11 @@ export const paymentAPI = {
   // Get payment status
   getPaymentStatus: async (paymentId) => {
     try {
+<<<<<<< HEAD
       const response = await api.get(`/api/store/payment/${paymentId}/status/`);
+=======
+      const response = await api.get(`/store/payment/${paymentId}/status/`);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data;
     } catch (error) {
       console.error('Error getting payment status:', error);

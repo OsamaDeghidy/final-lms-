@@ -549,6 +549,7 @@ const StudentDashboard = () => {
             width: '100%',
             background: 'white',
              borderRadius: 4,
+<<<<<<< HEAD
             boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
             border: '1px solid #e0e0e0'
           }}>
@@ -582,6 +583,38 @@ const StudentDashboard = () => {
                   icon={<SchoolIcon />} 
                   label="مقرراتي" 
                   iconPosition="start"
+=======
+             border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+             position: 'relative',
+             overflow: 'hidden',
+             '&::before': {
+               content: '""',
+               position: 'absolute',
+               top: 0,
+               left: 0,
+               right: 0,
+               height: 3,
+               background: 'linear-gradient(90deg, #e5978b, #66bb6a, #81c784)',
+             }
+           }}>
+             <Box>
+               <Typography 
+                 variant="h5" 
+                 fontWeight={700} 
+                 sx={{ 
+                   mb: 1,
+                   background: 'linear-gradient(45deg, #e5978b, #66bb6a)',
+                   WebkitBackgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   display: 'inline-block'
+                 }}
+               >
+                 مقرراتي النشطة
+               </Typography>
+               <Typography 
+                 variant="body1" 
+                 color="text.secondary"
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
@@ -621,9 +654,15 @@ const StudentDashboard = () => {
                endIcon={<TrendingUpIcon />}
                     sx={{ 
                       borderRadius: 3,
+<<<<<<< HEAD
                         background: 'linear-gradient(45deg, #0e5181, #1a6ba8)',
                       '&:hover': {
                           background: 'linear-gradient(45deg, #1a6ba8, #0e5181)',
+=======
+                 background: 'linear-gradient(45deg, #e5978b, #66bb6a)',
+                      '&:hover': {
+                   background: 'linear-gradient(45deg, #388e3c, #e5978b)',
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                  }
                     }}
                onClick={() => navigate('/student/courses')}
@@ -648,6 +687,7 @@ const StudentDashboard = () => {
                    }
                  }}
                >
+<<<<<<< HEAD
                  <CardContent sx={{ p: 3 }}>
                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -657,6 +697,243 @@ const StudentDashboard = () => {
                            height: 32,
                            borderRadius: '50%',
                            background: '#f5f5f5',
+=======
+                 احصل على المزيد من النقاط والإنجازات
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+               display: 'flex', 
+               alignItems: 'center', 
+               gap: 1,
+               p: 1.5,
+               borderRadius: 2,
+               background: alpha(theme.palette.warning.main, 0.1),
+               border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
+             }}>
+               <BadgeIcon sx={{ color: theme.palette.warning.main, fontSize: '1.2rem' }} />
+               <Typography variant="caption" fontWeight={600} color="warning.main">
+                 نظام الإنجازات
+               </Typography>
+                  </Box>
+                </Box>
+            </motion.div>
+
+         <Grid container spacing={3}>
+           {achievements.map((achievement) => (
+             <Grid item xs={12} md={4} key={achievement.id}>
+               <motion.div variants={item}>
+                 <EnhancedAchievementCard achievement={achievement} />
+            </motion.div>
+          </Grid>
+        ))}
+         </Grid>
+       </Box>
+      
+        {/* Quick Stats */}
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} md={4}>
+          <motion.div variants={item}>
+            <DashboardCard 
+              sx={{
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(56, 14, 93, 0.3), rgba(103, 58, 183, 0.1))'
+                  : 'linear-gradient(135deg, rgba(237, 231, 246, 0.8), rgba(237, 231, 246, 0.4))',
+                border: 'none',
+                '&:hover': {
+                  transform: 'none',
+                  boxShadow: theme.shadows[5]
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: alpha(theme.palette.primary.main, 0.15),
+                    color: theme.palette.primary.main,
+                    mr: 2,
+                    '& svg': {
+                      fontSize: '1.8rem'
+                    }
+                  }}
+                >
+                  <TrendingUpIcon />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    أيام متتالية
+                  </Typography>
+                  <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.learningStreak}
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                      يوم
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                  احرزت {stats.learningStreak} أيام متتالية من التعلم! استمر في التقدم.
+              </Typography>
+            </DashboardCard>
+          </motion.div>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <motion.div variants={item}>
+            <DashboardCard 
+              sx={{
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(26, 35, 126, 0.3), rgba(57, 73, 171, 0.1))'
+                  : 'linear-gradient(135deg, rgba(232, 234, 246, 0.8), rgba(232, 234, 246, 0.4))',
+                border: 'none',
+                '&:hover': {
+                  transform: 'none',
+                  boxShadow: theme.shadows[5]
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: alpha(theme.palette.info.main, 0.15),
+                    color: theme.palette.info.main,
+                    mr: 2,
+                    '& svg': {
+                      fontSize: '1.8rem'
+                    }
+                  }}
+                >
+                    <MenuBookIcon />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                      الدروس المكتملة
+                  </Typography>
+                  <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.completedLessons}
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        درس
+                      </Typography>
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                  أكملت {stats.completedLessons} درساً حتى الآن.
+              </Typography>
+            </DashboardCard>
+          </motion.div>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <motion.div variants={item}>
+            <DashboardCard 
+              sx={{
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, rgba(0, 77, 64, 0.3), rgba(0, 121, 107, 0.1))'
+                  : 'linear-gradient(135deg, rgba(224, 242, 241, 0.8), rgba(224, 242, 241, 0.4))',
+                border: 'none',
+                '&:hover': {
+                  transform: 'none',
+                  boxShadow: theme.shadows[5]
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: alpha(theme.palette.success.main, 0.15),
+                    color: theme.palette.success.main,
+                    mr: 2,
+                    '& svg': {
+                      fontSize: '1.8rem'
+                    }
+                  }}
+                >
+                    <BadgeIcon />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                      الشهادات
+                  </Typography>
+                  <Typography variant="h4" fontWeight={700} sx={{ lineHeight: 1 }}>
+                      {stats.certificates}
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                        شهادة
+                      </Typography>
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                  حصلت على {stats.certificates} شهادة من المقررات المكتملة.
+              </Typography>
+            </DashboardCard>
+          </motion.div>
+        </Grid>
+      </Grid>
+
+                 {/* Recent Activity & Upcoming - محسن */}
+         <Box sx={{ mt: 4 }}>
+           <Grid container spacing={3}>
+             <Grid item xs={12} md={6}>
+               <Box sx={{ mb: 3 }}>
+                 <motion.div variants={item}>
+                   <Box sx={{ 
+                     display: 'flex', 
+                     justifyContent: 'space-between', 
+                     alignItems: 'center', 
+                     mb: 3,
+                     p: 3,
+                     background: theme.palette.mode === 'dark'
+                       ? 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(156, 39, 176, 0.05))'
+                       : 'linear-gradient(135deg, rgba(243, 229, 245, 0.8), rgba(243, 229, 245, 0.4))',
+                     borderRadius: 4,
+                     border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                     position: 'relative',
+                     overflow: 'hidden',
+                     '&::before': {
+                       content: '""',
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       right: 0,
+                       height: 3,
+                       background: 'linear-gradient(90deg, #1976d2, #ba68c8, #ce93d8)',
+                     }
+                   }}>
+                     <Box>
+                       <Typography 
+                         variant="h5" 
+                         fontWeight={700} 
+                         sx={{ 
+                           mb: 1,
+                           background: 'linear-gradient(45deg, #1976d2, #ba68c8)',
+                           WebkitBackgroundClip: 'text',
+                           WebkitTextFillColor: 'transparent',
+                           display: 'inline-block'
+                         }}
+                       >
+                         النشاطات الأخيرة
+                       </Typography>
+                       <Typography 
+                         variant="body1" 
+                         color="text.secondary"
+                         sx={{ 
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                            display: 'flex',
                            alignItems: 'center',
                            justifyContent: 'center',

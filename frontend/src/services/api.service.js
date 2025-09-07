@@ -349,7 +349,11 @@ export const courseAPI = {
   // Track lesson progress
   trackLessonProgress: async (courseId, lessonId, progressData) => {
     try {
+<<<<<<< HEAD
       const response = await api.post(`/api/content/progress/course/${courseId}/track/`, {
+=======
+      const response = await api.post(`/content/progress/course/${courseId}/track/`, {
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
         lesson_id: lessonId,
         ...progressData
       });
@@ -363,7 +367,11 @@ export const courseAPI = {
   // Update module progress
   updateModuleProgress: async (moduleId, progressData) => {
     try {
+<<<<<<< HEAD
       const response = await api.post(`/api/content/modules/${moduleId}/mark_progress/`, progressData);
+=======
+      const response = await api.post(`/content/modules/${moduleId}/mark_progress/`, progressData);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data;
     } catch (error) {
       console.error('Error updating module progress:', error);
@@ -374,7 +382,11 @@ export const courseAPI = {
   // Get lesson details
   getLessonDetails: async (lessonId) => {
     try {
+<<<<<<< HEAD
       const response = await api.get(`/api/content/lessons/${lessonId}/`);
+=======
+      const response = await api.get(`/content/lessons/${lessonId}/`);
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
       return response.data;
     } catch (error) {
       console.error('Error fetching lesson details:', error);
@@ -385,7 +397,11 @@ export const courseAPI = {
   // Download resource
   downloadResource: async (resourceId) => {
     try {
+<<<<<<< HEAD
       const response = await api.get(`/api/content/resources/${resourceId}/download/`, {
+=======
+      const response = await api.get(`/content/resources/${resourceId}/download/`, {
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
         responseType: 'blob'
       });
       return response.data;

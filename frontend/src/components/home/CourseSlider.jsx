@@ -849,7 +849,11 @@ const CourseCollections = () => {
               )
             )}
             
+<<<<<<< HEAD
             <Box sx={{ mb: 6 }}>
+=======
+            <Box sx={{ mb: 10 }}>
+>>>>>>> 9aa98372e81e42f9ef2516701e4b63696545131b
                          <SliderHeader>
                <Box>
                  <SectionTitle variant="h4" component="h2">
