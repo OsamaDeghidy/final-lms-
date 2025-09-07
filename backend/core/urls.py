@@ -36,6 +36,9 @@ urlpatterns = [
     path('admin/', custom_admin_site.urls),  # Use our custom admin site
     path('django-admin/', admin.site.urls),  # Keep default admin as fallback
     
+    # CKEditor 5 URLs for file uploads
+    path('ckeditor5/', include('django_ckeditor_5.urls'), name='ck_editor_5_upload_file'),
+    
     # API Documentation
     # path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
@@ -56,20 +59,20 @@ urlpatterns = [
     path('api/reviews/', include('reviews.urls')),  # Reviews app URLs
     path('api/permissions/', include('custom_permissions.urls')),  # Custom permissions URLs
     
-    # Legacy routes (for backward compatibility)
-    path('auth/', include('authentication.urls')),
-    path('users/', include('users.urls')),
-    path('courses/', include('courses.urls')),
-    path('assignments/', include('assignments.urls')),
-    path('certificates/', include('certificates.urls')),
-    path('meetings/', include('meetings.urls')),
-    path('notifications/', include('notifications.urls')),
-    path('articles/', include('articles.urls')),
-    path('extras/', include('extras.urls')),
-    path('content/', include('content.urls')),  # Content app URLs
-    path('store/', include('store.urls')),  # Store app URLs
-    path('reviews/', include('reviews.urls')),  # Reviews app URLs
-    path('permissions/', include('custom_permissions.urls')),  # Custom permissions URLs
+    # Legacy routes (for backward compatibility) - Commented out to avoid namespace conflicts
+    # path('auth/', include('authentication.urls')),
+    # path('users/', include('users.urls')),
+    # path('courses/', include('courses.urls')),
+    # path('assignments/', include('assignments.urls')),
+    # path('certificates/', include('certificates.urls')),
+    # path('meetings/', include('meetings.urls')),
+    # path('notifications/', include('notifications.urls')),
+    # path('articles/', include('articles.urls')),
+    # path('extras/', include('extras.urls')),
+    # path('content/', include('content.urls')),  # Content app URLs
+    # path('store/', include('store.urls')),  # Store app URLs
+    # path('reviews/', include('reviews.urls')),  # Reviews app URLs
+    # path('permissions/', include('custom_permissions.urls')),  # Custom permissions URLs
     
     # Template views for legacy support (data comes from APIs)
     # path('', include('templates.urls')),  # Main pages - disabled for now

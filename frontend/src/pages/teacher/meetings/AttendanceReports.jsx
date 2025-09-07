@@ -267,7 +267,7 @@ const AttendanceReports = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+        background: 'linear-gradient(135deg, #1976d2 0%, #7b1fa2 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -310,10 +310,10 @@ const AttendanceReports = () => {
               fontSize: '1rem',
             },
             '& .Mui-selected': {
-              color: '#9c27b0',
+              color: '#1976d2',
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#9c27b0',
+              backgroundColor: '#1976d2',
             },
           }}
         >
@@ -488,7 +488,7 @@ const AttendanceReports = () => {
         fullWidth
       >
         <DialogTitle sx={{ 
-          background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)', 
+          background: 'linear-gradient(135deg, #1976d2 0%, #7b1fa2 100%)', 
           color: 'white',
           display: 'flex',
           alignItems: 'center',
@@ -725,7 +725,7 @@ const AttendanceReports = () => {
               borderRadius: 2,
               textTransform: 'none',
               fontWeight: 600,
-              background: 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)',
+              background: 'linear-gradient(135deg, #1976d2 0%, #7b1fa2 100%)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%)',
               }

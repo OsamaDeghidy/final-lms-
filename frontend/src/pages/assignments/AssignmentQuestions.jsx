@@ -274,7 +274,7 @@ const AssignmentQuestions = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+        background: 'linear-gradient(135deg, #e5978b 0%, #2e7d32 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -327,7 +327,7 @@ const AssignmentQuestions = () => {
             startIcon={<AddIcon />}
             onClick={handleAddQuestion}
             sx={{
-              background: 'linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)',
+              background: 'linear-gradient(135deg, #e5978b 0%, #2e7d32 100%)',
               '&:hover': {
                 background: 'linear-gradient(135deg, #388e3c 0%, #1b5e20 100%)',
               }

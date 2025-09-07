@@ -19,6 +19,12 @@ urlpatterns = [
     # Comment Like endpoints
     path('comments/<int:comment_id>/like/', views.CommentLikeView.as_view(), name='comment-like'),
     
+    # Review Like endpoints
+    path('reviews/<int:review_id>/like/', views.like_review, name='review-like'),
+    
+    # Course Rating endpoints
+    path('courses/<int:course_id>/rating/', views.course_rating_stats, name='course-rating'),
+    
     # Moderation endpoints
     path('moderate/reviews/<int:pk>/', views.ReviewModerationView.as_view(), name='moderate-review'),
     path('moderate/replies/<int:pk>/', views.ReplyModerationView.as_view(), name='moderate-reply'),

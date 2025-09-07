@@ -11,6 +11,15 @@ api.interceptors.request.use(
     console.log('Request URL:', config.url);
     console.log('Request method:', config.method);
     
+    // Log request data for review creation
+    if (config.url && config.url.includes('/reviews/create/') && config.method === 'post') {
+      console.log('=== REQUEST INTERCEPTOR DEBUG ===');
+      console.log('Review creation request detected');
+      console.log('Request data:', config.data);
+      console.log('Request headers:', config.headers);
+      console.log('==================================');
+    }
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log('Authorization header added');
@@ -50,43 +59,43 @@ api.interceptors.response.use(
 export const authAPI = {
   // Login
   login: async (credentials) => {
-    const response = await api.post('/auth/login/', credentials);
+    const response = await api.post('/api/auth/login/', credentials);
     return response.data;
   },
 
   // Register
   register: async (userData) => {
-    const response = await api.post('/auth/register/', userData);
+    const response = await api.post('/api/auth/register/', userData);
     return response.data;
   },
 
   // Logout
   logout: async () => {
-    const response = await api.post('/auth/logout/');
+    const response = await api.post('/api/auth/logout/');
     return response.data;
   },
 
   // Get user profile
   getProfile: async () => {
-    const response = await api.get('/auth/profile/');
+    const response = await api.get('/api/auth/profile/');
     return response.data;
   },
 
   // Update profile
   updateProfile: async (profileData) => {
-    const response = await api.put('/auth/profile/update/', profileData);
+    const response = await api.put('/api/auth/profile/update/', profileData);
     return response.data;
   },
 
   // Change password
   changePassword: async (passwordData) => {
-    const response = await api.post('/auth/change-password/', passwordData);
+    const response = await api.post('/api/auth/change-password/', passwordData);
     return response.data;
   },
 
   // Check email exists
   checkEmail: async (email) => {
-    const response = await api.get(`/auth/check-email/?email=${email}`);
+    const response = await api.get(`/api/auth/check-email/?email=${email}`);
     return response.data;
   },
 };
@@ -95,14 +104,14 @@ export const authAPI = {
 export const courseAPI = {
   // Get all courses
   getCourses: async (params = {}) => {
-    const response = await api.get('/courses/courses/', { params });
+    const response = await api.get('/api/courses/courses/', { params });
     return response.data;
   },
 
   // Get public courses (no authentication required)
   getPublicCourses: async (params = {}) => {
     try {
-      const response = await api.get('/courses/public/', { params });
+      const response = await api.get('/api/courses/public/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching public courses:', error);
@@ -113,7 +122,7 @@ export const courseAPI = {
   // Get course by ID
   getCourse: async (id) => {
     try {
-      const response = await api.get(`/courses/courses/${id}/`);
+      const response = await api.get(`/api/courses/courses/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course:', error);
@@ -141,7 +150,7 @@ export const courseAPI = {
     });
 
     try {
-      const response = await api.post('/courses/courses/', formData, {
+      const response = await api.post('/api/courses/courses/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -153,7 +162,7 @@ export const courseAPI = {
       if (error.response?.status === 500) {
         // Check if the course was actually created by making a GET request
         try {
-          const coursesResponse = await api.get('/courses/courses/');
+          const coursesResponse = await api.get('/api/courses/courses/');
           const coursesData = coursesResponse.data;
           const coursesArray = Array.isArray(coursesData) ? coursesData : 
                              coursesData.results ? coursesData.results : 
@@ -197,7 +206,7 @@ export const courseAPI = {
     });
 
     try {
-      const response = await api.patch(`/courses/courses/${id}/`, formData, {
+      const response = await api.patch(`/api/courses/courses/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -211,14 +220,14 @@ export const courseAPI = {
 
   // Delete course
   deleteCourse: async (id) => {
-    const response = await api.delete(`/courses/courses/${id}/`);
+    const response = await api.delete(`/api/courses/courses/${id}/`);
     return response.data;
   },
 
   // Get categories
   getCategories: async () => {
     try {
-      const response = await api.get('/courses/categories/');
+      const response = await api.get('/api/courses/categories/');
       // Ensure we return an array
       const data = response.data;
       return Array.isArray(data) ? data : 
@@ -232,56 +241,56 @@ export const courseAPI = {
 
   // Get tags
   getTags: async () => {
-    const response = await api.get('/courses/tags/');
+    const response = await api.get('/api/courses/tags/');
     return response.data;
   },
 
   // Search courses
   searchCourses: async (params = {}) => {
-    const response = await api.get('/courses/search/', { params });
+    const response = await api.get('/api/courses/search/', { params });
     return response.data;
   },
 
   // Get featured courses
   getFeaturedCourses: async () => {
-    const response = await api.get('/courses/featured/');
+    const response = await api.get('/api/courses/featured/');
     return response.data;
   },
 
   // Get popular courses
   getPopularCourses: async () => {
-    const response = await api.get('/courses/popular/');
+    const response = await api.get('/api/courses/popular/');
     return response.data;
   },
 
   // Get recent courses
   getRecentCourses: async () => {
-    const response = await api.get('/courses/recent/');
+    const response = await api.get('/api/courses/recent/');
     return response.data;
   },
 
   // Enroll in course
   enrollInCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/enroll/`);
+    const response = await api.post(`/api/courses/courses/${courseId}/enroll/`);
     return response.data;
   },
 
   // Unenroll from course
   unenrollFromCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/unenroll/`);
+    const response = await api.post(`/api/courses/courses/${courseId}/unenroll/`);
     return response.data;
   },
 
   // Get dashboard stats
   getDashboardStats: async () => {
-    const response = await api.get('/courses/dashboard/stats/');
+    const response = await api.get('/api/courses/dashboard/stats/');
     return response.data;
   },
 
   // Get my enrolled courses
   getMyEnrolledCourses: async () => {
     try {
-      const response = await api.get('/courses/my-enrolled-courses/');
+      const response = await api.get('/api/courses/my-enrolled-courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching enrolled courses:', error);
@@ -292,7 +301,7 @@ export const courseAPI = {
   // Get course tracking data
   getCourseTrackingData: async (courseId) => {
     try {
-      const response = await api.get(`/courses/course-tracking/${courseId}/`);
+      const response = await api.get(`/api/courses/course-tracking/${courseId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course tracking data:', error);
@@ -303,7 +312,7 @@ export const courseAPI = {
   // Get quiz data
   getQuizData: async (quizId) => {
     try {
-      const response = await api.get(`/assignments/quiz/${quizId}/`);
+      const response = await api.get(`/api/assignments/quiz/${quizId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz data:', error);
@@ -314,12 +323,74 @@ export const courseAPI = {
   // Submit quiz attempt
   submitQuizAttempt: async (quizId, answers) => {
     try {
-      const response = await api.post(`/assignments/quiz/${quizId}/submit/`, {
+      const response = await api.post(`/api/assignments/quiz/${quizId}/submit/`, {
         answers: answers
       });
       return response.data;
     } catch (error) {
       console.error('Error submitting quiz attempt:', error);
+      throw error;
+    }
+  },
+
+  // Mark lesson as completed
+  markLessonCompleted: async (courseId, lessonId) => {
+    try {
+      const response = await api.post(`/api/content/progress/course/${courseId}/complete/`, {
+        lesson_id: lessonId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error);
+      throw error;
+    }
+  },
+
+  // Track lesson progress
+  trackLessonProgress: async (courseId, lessonId, progressData) => {
+    try {
+      const response = await api.post(`/api/content/progress/course/${courseId}/track/`, {
+        lesson_id: lessonId,
+        ...progressData
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error tracking lesson progress:', error);
+      throw error;
+    }
+  },
+
+  // Update module progress
+  updateModuleProgress: async (moduleId, progressData) => {
+    try {
+      const response = await api.post(`/api/content/modules/${moduleId}/mark_progress/`, progressData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating module progress:', error);
+      throw error;
+    }
+  },
+
+  // Get lesson details
+  getLessonDetails: async (lessonId) => {
+    try {
+      const response = await api.get(`/api/content/lessons/${lessonId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lesson details:', error);
+      throw error;
+    }
+  },
+
+  // Download resource
+  downloadResource: async (resourceId) => {
+    try {
+      const response = await api.get(`/api/content/resources/${resourceId}/download/`, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error downloading resource:', error);
       throw error;
     }
   },
@@ -329,13 +400,13 @@ export const courseAPI = {
 export const paymentAPI = {
   // Create Moyasar hosted payment and get redirect URL
   createMoyasarPayment: async () => {
-    const response = await api.post('/store/payment/moyasar/create/');
+    const response = await api.post('/api/store/payment/moyasar/create/');
     return response.data; // { url, invoice }
   },
   
   // Create Moyasar hosted payment for a specific course
   createCoursePayment: async (courseId) => {
-    const response = await api.post(`/store/payment/moyasar/course/${courseId}/create/`);
+    const response = await api.post(`/api/store/payment/moyasar/course/${courseId}/create/`);
     return response.data; // { url, invoice }
   },
 };
@@ -345,7 +416,7 @@ export const articleAPI = {
   // Get all articles
   getArticles: async (params = {}) => {
     try {
-      const response = await api.get('/articles/articles/', { params });
+      const response = await api.get('/api/articles/articles/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching articles:', error);
@@ -356,7 +427,7 @@ export const articleAPI = {
   // Get article by ID
   getArticle: async (id) => {
     try {
-      const response = await api.get(`/articles/articles/${id}/`);
+      const response = await api.get(`/api/articles/articles/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching article:', error);
@@ -367,7 +438,7 @@ export const articleAPI = {
   // Get article by slug
   getArticleBySlug: async (slug) => {
     try {
-      const response = await api.get(`/articles/articles/?slug=${slug}`);
+      const response = await api.get(`/api/articles/articles/?slug=${slug}`);
       // API returns a list, so we need to get the first item
       if (response.data && response.data.results && response.data.results.length > 0) {
         return response.data.results[0];
@@ -398,7 +469,7 @@ export const articleAPI = {
     });
 
     try {
-      const response = await api.post('/articles/articles/', formData, {
+      const response = await api.post('/api/articles/articles/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -426,7 +497,7 @@ export const articleAPI = {
     });
 
     try {
-      const response = await api.patch(`/articles/articles/${id}/`, formData, {
+      const response = await api.patch(`/api/articles/articles/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -441,7 +512,7 @@ export const articleAPI = {
   // Delete article
   deleteArticle: async (id) => {
     try {
-      const response = await api.delete(`/articles/articles/${id}/`);
+      const response = await api.delete(`/api/articles/articles/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting article:', error);
@@ -452,7 +523,7 @@ export const articleAPI = {
   // Get featured articles
   getFeaturedArticles: async () => {
     try {
-      const response = await api.get('/articles/featured/');
+      const response = await api.get('/api/articles/featured/');
       return response.data;
     } catch (error) {
       console.error('Error fetching featured articles:', error);
@@ -463,7 +534,7 @@ export const articleAPI = {
   // Get recent articles
   getRecentArticles: async () => {
     try {
-      const response = await api.get('/articles/recent/');
+      const response = await api.get('/api/articles/recent/');
       return response.data;
     } catch (error) {
       console.error('Error fetching recent articles:', error);
@@ -474,7 +545,7 @@ export const articleAPI = {
   // Get popular articles
   getPopularArticles: async () => {
     try {
-      const response = await api.get('/articles/popular/');
+      const response = await api.get('/api/articles/popular/');
       return response.data;
     } catch (error) {
       console.error('Error fetching popular articles:', error);
@@ -485,7 +556,7 @@ export const articleAPI = {
   // Get related articles
   getRelatedArticles: async (articleId, category = null, limit = 3) => {
     try {
-      let url = `/articles/articles/?limit=${limit}`;
+      let url = `/api/articles/articles/?limit=${limit}`;
       if (category) {
         url += `&category=${category}`;
       }
@@ -503,7 +574,7 @@ export const articleAPI = {
   // Get article tags
   getArticleTags: async () => {
     try {
-      const response = await api.get('/articles/tags/');
+      const response = await api.get('/api/articles/tags/');
       return response.data;
     } catch (error) {
       console.error('Error fetching article tags:', error);
@@ -519,12 +590,12 @@ export const articleAPI = {
       // Try different endpoints to get user profile data
       let response;
       const endpoints = [
-        `/users/${authorId}/`,
-        `/users/${authorId}/profile/`,
-        `/profiles/${authorId}/`,
-        `/users/profiles/${authorId}/`,
-        `/instructors/${authorId}/`,
-        `/teachers/${authorId}/`
+        `/api/users/${authorId}/`,
+        `/api/users/${authorId}/profile/`,
+        `/api/profiles/${authorId}/`,
+        `/api/users/profiles/${authorId}/`,
+        `/api/instructors/${authorId}/`,
+        `/api/teachers/${authorId}/`
       ];
       
       for (const endpoint of endpoints) {
@@ -586,7 +657,7 @@ export const articleAPI = {
   getTeacherProfile: async (teacherId) => {
     try {
       console.log('Fetching teacher profile for ID:', teacherId);
-      const response = await api.get(`/teachers/${teacherId}/`);
+      const response = await api.get(`/api/teachers/${teacherId}/`);
       console.log('Teacher profile response:', response.data);
       return response.data;
     } catch (error) {
@@ -598,7 +669,7 @@ export const articleAPI = {
   // Search articles
   searchArticles: async (query) => {
     try {
-      const response = await api.get('/articles/search/', { params: { q: query } });
+      const response = await api.get('/api/articles/search/', { params: { q: query } });
       return response.data;
     } catch (error) {
       console.error('Error searching articles:', error);
@@ -609,7 +680,7 @@ export const articleAPI = {
   // Get article categories
   getArticleCategories: async () => {
     try {
-      const response = await api.get('/articles/categories/');
+      const response = await api.get('/api/articles/categories/');
       return response.data;
     } catch (error) {
       console.error('Error fetching article categories:', error);
@@ -621,7 +692,7 @@ export const articleAPI = {
   getArticleComments: async (articleId) => {
     try {
       console.log('Fetching comments for article:', articleId);
-      const response = await api.get(`/articles/comments/?article=${articleId}`);
+      const response = await api.get(`/api/articles/comments/?article=${articleId}`);
       console.log('Comments API response:', response);
       return response.data;
     } catch (error) {
@@ -635,7 +706,7 @@ export const articleAPI = {
   createArticleComment: async (articleId, commentData) => {
     try {
       console.log('Creating comment for article:', articleId, 'with data:', commentData);
-      const response = await api.post('/articles/comments/', {
+      const response = await api.post('/api/articles/comments/', {
         article: articleId,
         ...commentData
       });
@@ -650,7 +721,7 @@ export const articleAPI = {
   // Like article
   likeArticle: async (articleId) => {
     try {
-      const response = await api.post(`/articles/articles/${articleId}/likes/`);
+      const response = await api.post(`/api/articles/articles/${articleId}/likes/`);
       return response.data;
     } catch (error) {
       console.error('Error liking article:', error);
@@ -661,7 +732,7 @@ export const articleAPI = {
   // Unlike article
   unlikeArticle: async (articleId) => {
     try {
-      const response = await api.delete(`/articles/articles/${articleId}/likes/unlike/`);
+      const response = await api.delete(`/api/articles/articles/${articleId}/likes/unlike/`);
       return response.data;
     } catch (error) {
       console.error('Error unliking article:', error);
@@ -672,7 +743,7 @@ export const articleAPI = {
   // Bookmark article
   bookmarkArticle: async (articleId, notes = null) => {
     try {
-      const response = await api.post(`/articles/articles/${articleId}/bookmarks/`, { notes });
+      const response = await api.post(`/api/articles/articles/${articleId}/bookmarks/`, { notes });
       return response.data;
     } catch (error) {
       console.error('Error bookmarking article:', error);
@@ -683,7 +754,7 @@ export const articleAPI = {
   // Remove bookmark
   removeBookmark: async (articleId) => {
     try {
-      const response = await api.delete(`/articles/articles/${articleId}/bookmarks/remove_bookmark/`);
+      const response = await api.delete(`/api/articles/articles/${articleId}/bookmarks/remove_bookmark/`);
       return response.data;
     } catch (error) {
       console.error('Error removing bookmark:', error);
@@ -694,7 +765,7 @@ export const articleAPI = {
   // Rate article
   rateArticle: async (articleId, rating, comment = null) => {
     try {
-      const response = await api.post(`/articles/articles/${articleId}/ratings/`, { rating, comment });
+      const response = await api.post(`/api/articles/articles/${articleId}/ratings/`, { rating, comment });
       return response.data;
     } catch (error) {
       console.error('Error rating article:', error);
@@ -705,7 +776,7 @@ export const articleAPI = {
   // Get user bookmarks
   getUserBookmarks: async () => {
     try {
-      const response = await api.get('/articles/my/bookmarks/');
+      const response = await api.get('/api/articles/my/bookmarks/');
       return response.data;
     } catch (error) {
       console.error('Error fetching user bookmarks:', error);
@@ -716,7 +787,7 @@ export const articleAPI = {
   // Get user ratings
   getUserRatings: async () => {
     try {
-      const response = await api.get('/articles/my/ratings/');
+      const response = await api.get('/api/articles/my/ratings/');
       return response.data;
     } catch (error) {
       console.error('Error fetching user ratings:', error);
@@ -727,7 +798,7 @@ export const articleAPI = {
   // Check if article is liked by current user
   checkArticleLike: async (articleId) => {
     try {
-      const response = await api.get(`/articles/articles/${articleId}/likes/check_like/`);
+      const response = await api.get(`/api/articles/articles/${articleId}/likes/check_like/`);
       return response.data;
     } catch (error) {
       console.error('Error checking article like:', error);
@@ -738,7 +809,7 @@ export const articleAPI = {
   // Check if article is bookmarked by current user
   checkArticleBookmark: async (articleId) => {
     try {
-      const response = await api.get(`/articles/articles/${articleId}/bookmarks/check_bookmark/`);
+      const response = await api.get(`/api/articles/articles/${articleId}/bookmarks/check_bookmark/`);
       return response.data;
     } catch (error) {
       console.error('Error checking article bookmark:', error);
@@ -749,7 +820,7 @@ export const articleAPI = {
   // Get article rating stats
   getArticleRatingStats: async (articleId) => {
     try {
-      const response = await api.get(`/articles/articles/${articleId}/ratings/stats/`);
+      const response = await api.get(`/api/articles/articles/${articleId}/ratings/stats/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching article rating stats:', error);

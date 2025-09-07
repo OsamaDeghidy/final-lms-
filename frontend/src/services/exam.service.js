@@ -5,7 +5,7 @@ export const examAPI = {
   // Get all exams
   getExams: async (params = {}) => {
     try {
-      const response = await api.get('/assignments/exams/', { params });
+      const response = await api.get('/api/assignments/exams/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching exams:', error);
@@ -16,7 +16,7 @@ export const examAPI = {
   // Get exam by ID
   getExam: async (id) => {
     try {
-      const response = await api.get(`/assignments/exams/${id}/`);
+      const response = await api.get(`/api/assignments/exams/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching exam:', error);
@@ -27,7 +27,7 @@ export const examAPI = {
   // Create new exam
   createExam: async (examData) => {
     try {
-      const response = await api.post('/assignments/exams/', examData);
+      const response = await api.post('/api/assignments/exams/', examData);
       return response.data;
     } catch (error) {
       console.error('Error creating exam:', error);
@@ -38,7 +38,7 @@ export const examAPI = {
   // Update exam
   updateExam: async (id, examData) => {
     try {
-      const response = await api.patch(`/assignments/exams/${id}/`, examData);
+      const response = await api.patch(`/api/assignments/exams/${id}/`, examData);
       return response.data;
     } catch (error) {
       console.error('Error updating exam:', error);
@@ -49,7 +49,7 @@ export const examAPI = {
   // Delete exam
   deleteExam: async (id) => {
     try {
-      const response = await api.delete(`/assignments/exams/${id}/`);
+      const response = await api.delete(`/api/assignments/exams/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting exam:', error);
@@ -60,7 +60,7 @@ export const examAPI = {
   // Get exam questions
   getExamQuestions: async (examId) => {
     try {
-      const response = await api.get(`/assignments/exams/${examId}/questions/`);
+      const response = await api.get(`/api/assignments/exams/${examId}/questions/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching exam questions:', error);
@@ -71,7 +71,7 @@ export const examAPI = {
   // Add question to exam
   addQuestion: async (examId, questionData) => {
     try {
-      const response = await api.post(`/assignments/exams/${examId}/questions/add/`, questionData);
+      const response = await api.post(`/api/assignments/exams/${examId}/questions/add/`, questionData);
       return response.data;
     } catch (error) {
       console.error('Error adding question:', error);
@@ -82,7 +82,7 @@ export const examAPI = {
   // Update question
   updateQuestion: async (questionId, questionData) => {
     try {
-      const response = await api.put(`/assignments/exam-questions/${questionId}/`, questionData);
+      const response = await api.put(`/api/assignments/exam-questions/${questionId}/`, questionData);
       return response.data;
     } catch (error) {
       console.error('Error updating question:', error);
@@ -93,7 +93,7 @@ export const examAPI = {
   // Delete question
   deleteQuestion: async (questionId) => {
     try {
-      const response = await api.delete(`/assignments/exam-questions/${questionId}/`);
+      const response = await api.delete(`/api/assignments/exam-questions/${questionId}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting question:', error);
@@ -104,7 +104,7 @@ export const examAPI = {
   // Get exam attempts
   getExamAttempts: async (examId) => {
     try {
-      const response = await api.get(`/assignments/exams/${examId}/attempts/`);
+      const response = await api.get(`/api/assignments/exams/${examId}/attempts/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching exam attempts:', error);
@@ -115,7 +115,7 @@ export const examAPI = {
   // Get exam statistics
   getExamStatistics: async (examId) => {
     try {
-      const response = await api.get(`/assignments/exams/${examId}/statistics/`);
+      const response = await api.get(`/api/assignments/exams/${examId}/statistics/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching exam statistics:', error);

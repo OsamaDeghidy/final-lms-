@@ -4,7 +4,7 @@ import api from './api.service';
 export const contentAPI = {
   // Modules
   getModules: async (courseId) => {
-    const response = await api.get('/content/modules/', {
+    const response = await api.get('/api/content/modules/', {
       params: { course_id: courseId, course: courseId }, // backend uses course_id; include course just in case
     });
     return response.data;
@@ -12,19 +12,19 @@ export const contentAPI = {
 
   // Lessons CRUD
   getLessons: async ({ moduleId, courseId } = {}) => {
-    const response = await api.get('/content/lessons/', {
+    const response = await api.get('/api/content/lessons/', {
       params: { module: moduleId, course: courseId },
     });
     return response.data;
   },
   getLessonById: async (lessonId) => {
-    const response = await api.get(`/content/lessons/${lessonId}/`);
+    const response = await api.get(`/api/content/lessons/${lessonId}/`);
     return response.data;
   },
   createLesson: async (payload) => {
     try {
       console.log('Creating lesson with payload:', payload);
-      const response = await api.post('/content/lessons/', payload);
+      const response = await api.post('/api/content/lessons/', payload);
       console.log('Lesson created successfully:', response.data);
       return response.data;
     } catch (error) {
@@ -41,16 +41,16 @@ export const contentAPI = {
     }
   },
   updateLesson: async (lessonId, payload) => {
-    const response = await api.patch(`/content/lessons/${lessonId}/`, payload);
+    const response = await api.patch(`/api/content/lessons/${lessonId}/`, payload);
     return response.data;
   },
   deleteLesson: async (lessonId) => {
-    const response = await api.delete(`/content/lessons/${lessonId}/`);
+    const response = await api.delete(`/api/content/lessons/${lessonId}/`);
     return response.data;
   },
 
   getModuleById: async (moduleId) => {
-    const response = await api.get(`/content/modules/${moduleId}/`);
+      const response = await api.get(`/api/content/modules/${moduleId}/`);
     return response.data;
   },
 
@@ -66,10 +66,12 @@ export const contentAPI = {
     const seconds = typeof videoDurationSeconds === 'number' ? videoDurationSeconds : (typeof durationMinutes === 'number' ? Math.round(durationMinutes * 60) : 0);
     if (seconds) formData.append('video_duration', String(seconds));
     if (note) formData.append('note', note);
-    if (videoFile instanceof File) formData.append('video', videoFile);
-    if (pdfFile instanceof File) formData.append('pdf', pdfFile);
+    if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
+    if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-    const response = await api.post('/content/modules/', formData);
+    const response = await api.post('/api/content/modules/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
@@ -83,16 +85,18 @@ export const contentAPI = {
     const seconds = typeof videoDurationSeconds === 'number' ? videoDurationSeconds : (typeof durationMinutes === 'number' ? Math.round(durationMinutes * 60) : undefined);
     if (typeof seconds !== 'undefined') formData.append('video_duration', String(seconds));
     if (note) formData.append('note', note);
-    if (videoFile instanceof File) formData.append('video', videoFile);
-    if (pdfFile instanceof File) formData.append('pdf', pdfFile);
+    if (videoFile && videoFile instanceof File) formData.append('video', videoFile);
+    if (pdfFile && pdfFile instanceof File) formData.append('pdf', pdfFile);
 
-    const response = await api.patch(`/content/modules/${moduleId}/`, formData);
+    const response = await api.patch(`/api/content/modules/${moduleId}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
   // Lesson resources
   getLessonResources: async ({ lessonId, moduleId } = {}) => {
-    const response = await api.get('/content/resources/', {
+    const response = await api.get('/api/content/resources/', {
       params: { lesson: lessonId, module: moduleId },
     });
     return response.data;
@@ -115,7 +119,7 @@ export const contentAPI = {
         console.log(`${key}: ${value}`);
       }
       
-      const response = await api.post('/content/resources/', form, {
+      const response = await api.post('/api/content/resources/', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data;
@@ -138,7 +142,7 @@ export const contentAPI = {
       Object.entries(payload || {}).forEach(([k, v]) => {
         if (v !== undefined && v !== null) form.append(k, v);
       });
-      const response = await api.patch(`/content/resources/${resourceId}/`, form, {
+      const response = await api.patch(`/api/content/resources/${resourceId}/`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data;
@@ -152,7 +156,7 @@ export const contentAPI = {
   },
   deleteLessonResource: async (resourceId) => {
     try {
-      const response = await api.delete(`/content/resources/${resourceId}/`);
+      const response = await api.delete(`/api/content/resources/${resourceId}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting lesson resource:', error);

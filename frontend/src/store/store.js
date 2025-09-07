@@ -8,7 +8,7 @@ const store = configureStore({
     ui: uiReducer,
     // Add other reducers here
   },
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.DEV,
 });
 
 export default store;

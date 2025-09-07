@@ -617,7 +617,7 @@ const StudentLiveMeeting = () => {
           <IconButton
             onClick={toggleMic}
             sx={{
-              bgcolor: isMicOn ? '#4caf50' : '#f44336',
+              bgcolor: isMicOn ? '#e5978b' : '#f44336',
               color: '#fff',
               '&:hover': {
                 bgcolor: isMicOn ? '#45a049' : '#d32f2f',
@@ -630,7 +630,7 @@ const StudentLiveMeeting = () => {
           <IconButton
             onClick={toggleVideo}
             sx={{
-              bgcolor: isVideoOn ? '#4caf50' : '#f44336',
+              bgcolor: isVideoOn ? '#e5978b' : '#f44336',
               color: '#fff',
               '&:hover': {
                 bgcolor: isVideoOn ? '#45a049' : '#d32f2f',

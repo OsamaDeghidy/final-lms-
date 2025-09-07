@@ -65,9 +65,9 @@ const pulse = keyframes`
 
 // Styled components
 const HeroSection = styled(Box)(({ theme }) => ({
-  background: `linear-gradient(135deg, #0e5181 0%, #e5978b 100%)`,
+  background: `linear-gradient(135deg, #0e5181 0%, #1a5f8a 50%, #0a3d62 100%)`,
   color: 'white',
-  padding: theme.spacing(8, 0, 6),
+  padding: theme.spacing(4, 0, 3),
   textAlign: 'center',
   position: 'relative',
   overflow: 'hidden',
@@ -735,26 +735,24 @@ const ArticlesPage = () => {
               transition={{ duration: 0.8 }}
             >
               <Typography 
-                variant="h2" 
+                variant="h3" 
                 component="h1" 
                 sx={{ 
                   fontWeight: 800, 
-                  mb: 3,
-                  background: 'linear-gradient(90deg, #fff, #e5978b)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
+                  mb: 2,
+                  color: '#ffffff',
+                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.2rem' },
                   lineHeight: 1.2,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                  textShadow: '0 2px 10px rgba(0,0,0,0.3)'
                 }}
               >
                 المدونة
               </Typography>
-              <Typography variant="h5" sx={{ 
+              <Typography variant="body1" sx={{ 
                 opacity: 0.9, 
-                mb: 4, 
+                mb: 2, 
                 fontWeight: 300,
-                fontSize: { xs: '1.1rem', md: '1.3rem' }
+                fontSize: { xs: '0.9rem', sm: '1rem' }
               }}>
                 اكتشف أحدث المقالات والتقنيات في عالم التطوير والتصميم
               </Typography>
@@ -762,23 +760,73 @@ const ArticlesPage = () => {
               <motion.div
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }}
               >
-                <SearchBox
-                  placeholder="ابحث في المقالات..."
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#0e5181' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{
-                    maxWidth: 500,
-                    width: '100%',
-                  }}
-                />
+                <Box sx={{ 
+                  position: 'relative',
+                  maxWidth: '400px',
+                  mx: 'auto',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-2px',
+                    left: '-2px',
+                    right: '-2px',
+                    bottom: '-2px',
+                    background: 'linear-gradient(45deg, #0e5181, #1a5f8a, #0a3d62)',
+                    borderRadius: '25px',
+                    zIndex: -1,
+                    opacity: 0.3,
+                    animation: `${pulse} 3s ease-in-out infinite`,
+                  }
+                }}>
+                  <SearchBox
+                    placeholder="ابحث في المقالات..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon sx={{ 
+                            color: '#0e5181', 
+                            ml: 1,
+                            fontSize: '1.1rem',
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                          }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      maxWidth: 400,
+                      width: '100%',
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '25px',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          border: 'none',
+                        },
+                        '&:hover fieldset': {
+                          border: 'none',
+                        },
+                        '&.Mui-focused fieldset': {
+                          border: 'none',
+                          boxShadow: '0 0 0 2px rgba(14, 81, 129, 0.5)',
+                        },
+                        paddingRight: '15px',
+                      },
+                      '& .MuiInputBase-input': {
+                        padding: '10px 15px',
+                        fontSize: '0.9rem',
+                        '&::placeholder': {
+                          opacity: 0.7,
+                          color: '#666',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
               </motion.div>
             </motion.div>
           </Container>

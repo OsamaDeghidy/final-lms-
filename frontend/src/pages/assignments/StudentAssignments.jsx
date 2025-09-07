@@ -15,7 +15,8 @@ import {
   School as SchoolIcon, Book as BookIcon, Warning as WarningIcon,
   Download as DownloadIcon, Visibility as VisibilityIcon, Edit as EditIcon,
   TrendingUp as TrendingUpIcon, AssignmentTurnedIn as AssignmentTurnedInIcon,
-  PendingActions as PendingActionsIcon, Cancel as CancelIcon
+  PendingActions as PendingActionsIcon, Cancel as CancelIcon,
+  People as PeopleIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
@@ -138,9 +139,34 @@ const StudentAssignments = () => {
     }
   };
 
-  const handleDownloadFile = (fileName) => {
-    // Logic to download assignment file
-    console.log('Downloading file:', fileName);
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
   };
 
   const handleChangePage = (event, newPage) => {
@@ -445,7 +471,7 @@ const StudentAssignments = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {new Date(assignment.due_date).toLocaleDateString('ar-SA')}
+                        {new Date(assignment.due_date).toLocaleDateString('en-GB')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                         {new Date(assignment.due_date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
@@ -472,7 +498,7 @@ const StudentAssignments = () => {
                               backgroundColor: '#e0e0e0',
                               '& .MuiLinearProgress-bar': {
                                 borderRadius: 3,
-                                background: 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)'
+                                background: 'linear-gradient(90deg, #e5978b 0%, #66bb6a 100%)'
                               }
                             }}
                           />
@@ -518,7 +544,7 @@ const StudentAssignments = () => {
                           <Tooltip title="تحميل الملف">
                             <IconButton
                               size="small"
-                              onClick={() => handleDownloadFile(assignment.assignment_file)}
+                              onClick={() => handleDownloadFile('assignment_file', assignment.assignment_file)}
                               sx={{
                                 color: '#1976d2',
                                 '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }
@@ -574,7 +600,12 @@ const StudentAssignments = () => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
+          sx: { 
+            borderRadius: 4, 
+            p: 0, 
+            overflow: 'hidden',
+            direction: 'rtl'
+          }
         }}
       >
         {selectedAssignment && (
@@ -598,105 +629,221 @@ const StudentAssignments = () => {
                 <CancelIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa' }}>
+            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Typography variant="h5" fontWeight={600} color="primary">
-                  {selectedAssignment.title}
-                </Typography>
-                
-                <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6 }}>
-                  {selectedAssignment.description}
-                </Typography>
+                {/* العنوان والوصف */}
+                <Box>
+                  <Typography variant="h5" fontWeight={600} color="primary" sx={{ mb: 2, textAlign: 'right' }}>
+                    {selectedAssignment.title}
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ 
+                    color: '#666', 
+                    lineHeight: 1.8, 
+                    textAlign: 'right',
+                    backgroundColor: 'white',
+                    p: 3,
+                    borderRadius: 2,
+                    border: '1px solid #e0e0e0',
+                    minHeight: 80
+                  }}>
+                    {selectedAssignment.description || 'لا يوجد وصف للواجب'}
+                  </Typography>
+                </Box>
 
                 <Divider />
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <SchoolIcon sx={{ color: '#0e5181' }} />
-                      <Typography variant="body1" fontWeight={500}>
-                        المقرر: {selectedAssignment.course_title || selectedAssignment.course?.title}
-                      </Typography>
-                    </Box>
-                    {(selectedAssignment.module_name || selectedAssignment.module?.name) && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <BookIcon sx={{ color: '#666' }} />
-                        <Typography variant="body1">
-                          الوحدة: {selectedAssignment.module_name || selectedAssignment.module?.name}
-                        </Typography>
+                {/* معلومات الواجب الأساسية */}
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    معلومات الواجب
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 3, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        height: '100%'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <SchoolIcon sx={{ color: '#0e5181' }} />
+                          <Typography variant="body1" fontWeight={500} sx={{ textAlign: 'right' }}>
+                            المقرر: {selectedAssignment.course_title || selectedAssignment.course?.title}
+                          </Typography>
+                        </Box>
+                        {(selectedAssignment.module_name || selectedAssignment.module?.name) && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <BookIcon sx={{ color: '#666' }} />
+                            <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                              الوحدة: {selectedAssignment.module_name || selectedAssignment.module?.name}
+                            </Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <GradeIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            الدرجة: {selectedAssignment.points} نقطة
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <StatusChip
+                            label={getStatusText(selectedAssignment)}
+                            status={selectedAssignment.submission_status || 'pending'}
+                            size="small"
+                          />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            الحالة
+                          </Typography>
+                        </Box>
                       </Box>
-                    )}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <GradeIcon sx={{ color: '#666' }} />
-                      <Typography variant="body1">
-                        الدرجة: {selectedAssignment.points} نقطة
-                      </Typography>
-                    </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 3, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        height: '100%'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <CalendarTodayIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('en-GB')}
+                          </Typography>
+                        </Box>
+                        {selectedAssignment.allow_late_submissions && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <WarningIcon sx={{ color: '#f57c00' }} />
+                            <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                              يسمح بالتسليم المتأخر (خصم {selectedAssignment.late_submission_penalty}%)
+                            </Typography>
+                          </Box>
+                        )}
+                        {selectedAssignment.submission_date && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <AssignmentTurnedInIcon sx={{ color: '#2e7d32' }} />
+                            <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                              تاريخ التسليم: {new Date(selectedAssignment.submission_date).toLocaleString('en-GB')}
+                            </Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <AccessTimeIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            تاريخ الإنشاء: {new Date(selectedAssignment.created_at).toLocaleString('en-GB')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
                   </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <CalendarTodayIcon sx={{ color: '#666' }} />
-                      <Typography variant="body1">
-                        تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('ar-SA')}
-                      </Typography>
-                    </Box>
-                    {selectedAssignment.allow_late_submissions && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <WarningIcon sx={{ color: '#f57c00' }} />
-                        <Typography variant="body1">
-                          يسمح بالتسليم المتأخر (خصم {selectedAssignment.late_submission_penalty}%)
-                        </Typography>
-                      </Box>
-                    )}
-                    {selectedAssignment.submission_date && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <AssignmentTurnedInIcon sx={{ color: '#2e7d32' }} />
-                        <Typography variant="body1">
-                          تاريخ التسليم: {new Date(selectedAssignment.submission_date).toLocaleString('ar-SA')}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Grid>
-                </Grid>
+                </Box>
 
+                {/* معلومات إضافية */}
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    معلومات إضافية
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 2, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <QuizIcon sx={{ color: '#0e5181', fontSize: 20 }} />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            عدد الأسئلة: {selectedAssignment.questions_count || 0}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <FileUploadIcon sx={{ color: '#2e7d32', fontSize: 20 }} />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            {selectedAssignment.has_file_upload ? 'يسمح برفع ملفات' : 'لا يسمح برفع ملفات'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 2, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <PeopleIcon sx={{ color: '#666', fontSize: 20 }} />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            إجمالي الطلاب: {selectedAssignment.total_students || 0}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                          <AssignmentTurnedInIcon sx={{ color: '#2e7d32', fontSize: 20 }} />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            تم التسليم: {selectedAssignment.submissions_count || 0}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                {/* التقييم */}
                 {(selectedAssignment.submission_status === 'submitted' || selectedAssignment.submission_status === 'graded') && (
                   <>
                     <Divider />
                     <Box>
-                      <Typography variant="h6" fontWeight={600} color="primary" gutterBottom>
+                      <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
                         التقييم
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Typography variant="h4" fontWeight={700} color="success.main">
-                          {selectedAssignment.grade || 0}/{selectedAssignment.points}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          ({Math.round(((selectedAssignment.grade || 0) / selectedAssignment.points) * 100)}%)
-                        </Typography>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 3, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        textAlign: 'center'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 2 }}>
+                          <Typography variant="h3" fontWeight={700} color="success.main">
+                            {selectedAssignment.grade || 0}/{selectedAssignment.points}
+                          </Typography>
+                          <Typography variant="h5" color="text.secondary">
+                            ({Math.round(((selectedAssignment.grade || 0) / selectedAssignment.points) * 100)}%)
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={((selectedAssignment.grade || 0) / selectedAssignment.points) * 100}
+                          sx={{
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: '#e0e0e0',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 4,
+                              background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)'
+                            }
+                          }}
+                        />
+                        {selectedAssignment.feedback && (
+                          <Alert severity="info" sx={{ mt: 3, textAlign: 'right' }}>
+                            <Typography variant="body1" fontWeight={500} gutterBottom>
+                              ملاحظات المعلم:
+                            </Typography>
+                            <Typography variant="body2">
+                              {selectedAssignment.feedback}
+                            </Typography>
+                          </Alert>
+                        )}
                       </Box>
-                      {selectedAssignment.feedback && (
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                          <Typography variant="body1" fontWeight={500} gutterBottom>
-                            ملاحظات المعلم:
-                          </Typography>
-                          <Typography variant="body2">
-                            {selectedAssignment.feedback}
-                          </Typography>
-                        </Alert>
-                      )}
                     </Box>
                   </>
                 )}
               </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
-              <Button
-                onClick={() => setOpenDetailsDialog(false)}
-                variant="outlined"
-                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
-              >
-                إغلاق
-              </Button>
+            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               {(selectedAssignment.submission_status === 'pending' || !selectedAssignment.submission_status) && (
                 <Button
                   variant="contained"
@@ -709,15 +856,22 @@ const StudentAssignments = () => {
                     px: 4, 
                     py: 1.5, 
                     fontWeight: 700, 
-                    background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
+                    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                     '&:hover': { 
-                      background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)' 
+                      background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)' 
                     } 
                   }}
                 >
                   تسليم الواجب
                 </Button>
               )}
+              <Button
+                onClick={() => setOpenDetailsDialog(false)}
+                variant="outlined"
+                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
+              >
+                إغلاق
+              </Button>
             </DialogActions>
           </>
         )}
@@ -782,7 +936,7 @@ const StudentAssignments = () => {
                         </ListItemIcon>
                         <ListItemText 
                           primary="تاريخ التسليم"
-                          secondary={new Date(selectedGrade.submission.submitted_at).toLocaleString('ar-SA')}
+                          secondary={new Date(selectedGrade.submission.submitted_at).toLocaleString('en-GB')}
                         />
                       </ListItem>
                       <ListItem>

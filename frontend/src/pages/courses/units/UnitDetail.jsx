@@ -20,36 +20,34 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  LinearProgress,
   Avatar,
   Alert,
   Snackbar,
   CircularProgress,
   Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Badge,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   PlayCircleOutline as PlayIcon,
   Article as ArticleIcon,
-  Quiz as QuizIcon,
-  Code as CodeIcon,
   VideoLibrary as VideoIcon,
   AccessTime as AccessTimeIcon,
   CheckCircle as CheckCircleIcon,
-  CheckCircleOutline as CheckCircleOutlineIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
   Download as DownloadIcon,
-  Share as ShareIcon,
-  BookmarkBorder as BookmarkBorderIcon,
-  Bookmark as BookmarkIcon,
   Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 import contentAPI from '../../../services/content.service';
+import LessonDetail from '../lessons/LessonDetail';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -86,7 +84,8 @@ const UnitDetail = () => {
   const { courseId, unitId } = useParams();
   const [unit, setUnit] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [expandedLessons, setExpandedLessons] = useState({});
+  const [lessonDetailOpen, setLessonDetailOpen] = useState(false);
+  const [selectedLessonId, setSelectedLessonId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // الجلب من API سيتم مباشرةً
@@ -120,11 +119,7 @@ const UnitDetail = () => {
           updatedAt: data?.updated_at,
         };
         setUnit(normalized);
-        const initialExpanded = {};
-        normalized.lessons.forEach((lesson) => {
-          initialExpanded[lesson.id] = false;
-        });
-        setExpandedLessons(initialExpanded);
+
       } catch (error) {
         console.error('Error fetching unit:', error);
         setSnackbar({
@@ -142,20 +137,21 @@ const UnitDetail = () => {
     }
   }, [unitId]);
 
-  const handleLessonToggle = (lessonId) => {
-    setExpandedLessons(prev => ({
-      ...prev,
-      [lessonId]: !prev[lessonId]
-    }));
-  };
+
 
   const handleEditUnit = () => {
     navigate(`/teacher/courses/${courseId}/units/${unitId}/edit`);
   };
 
   const handleLessonClick = (lesson) => {
-    // Navigate to lesson content or open in modal
-    console.log('Opening lesson:', lesson);
+    // Open lesson detail popup
+    setSelectedLessonId(lesson.id);
+    setLessonDetailOpen(true);
+  };
+
+  const handleCloseLessonDetail = () => {
+    setLessonDetailOpen(false);
+    setSelectedLessonId(null);
   };
 
   const getLessonIcon = (type) => {
@@ -173,10 +169,21 @@ const UnitDetail = () => {
     return lessonType ? lessonType.label : 'عام';
   };
 
-  const calculateProgress = () => {
-    if (!unit || !unit.lessons.length) return 0;
-    const completedLessons = unit.lessons.filter(lesson => lesson.completed).length;
-    return Math.round((completedLessons / unit.lessons.length) * 100);
+  const formatDate = (dateString) => {
+    if (!dateString) return 'غير محدد';
+    return new Date(dateString).toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getLessonStatus = (lesson) => {
+    if (lesson.completed) return { label: 'مكتمل', color: 'success' };
+    if (lesson.isPreview) return { label: 'معاينة', color: 'primary' };
+    return { label: 'غير مكتمل', color: 'default' };
   };
 
   if (loading) {
@@ -199,7 +206,7 @@ const UnitDetail = () => {
     );
   }
 
-  const progress = calculateProgress();
+
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -293,154 +300,394 @@ const UnitDetail = () => {
           {unit.description}
         </Typography>
 
-        {/* Progress */}
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              التقدم
+                 {/* Unit Details */}
+         <Grid container spacing={3} sx={{ mb: 3 }}>
+           <Grid item xs={12}>
+             <Box sx={{ 
+               p: 3, 
+               backgroundColor: theme.palette.grey[50], 
+               borderRadius: 3,
+               border: `1px solid ${theme.palette.divider}`,
+               boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+             }}>
+               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: theme.palette.primary.main, textAlign: 'center' }}>
+                 تفاصيل الوحدة
             </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {progress}% مكتمل
-            </Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{ height: 8, borderRadius: 4 }}
-          />
-        </Box>
-      </StyledPaper>
-
-      {/* Lessons */}
-      <StyledPaper elevation={0} sx={{ mt: 3 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: theme.palette.primary.main }}>
-          دروس الوحدة ({unit.lessons.length})
-        </Typography>
-
-        <List sx={{ p: 0 }}>
-          {unit.lessons.map((lesson, index) => (
-            <React.Fragment key={lesson.id}>
-              <ListItem
-                sx={{
-                  borderRadius: '8px',
-                  mb: 1,
-                  backgroundColor: expandedLessons[lesson.id] ? theme.palette.grey[50] : 'transparent',
-                  border: `1px solid ${expandedLessons[lesson.id] ? theme.palette.primary.main : theme.palette.divider}`,
+        <Grid container spacing={2}>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
                   transition: 'all 0.3s ease',
                   '&:hover': {
-                    backgroundColor: theme.palette.action.hover,
-                  },
-                }}
-              >
-                <ListItemIcon>
-                  <Avatar
-                    sx={{
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       تاريخ الإنشاء
+                      </Typography>
+                     <Typography variant="body1" fontWeight={600} color="primary.main">
+                       {formatDate(unit.createdAt)}
+                     </Typography>
+                    </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                     '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       آخر تحديث
+                        </Typography>
+                     <Typography variant="body1" fontWeight={600} color="primary.main">
+                       {formatDate(unit.updatedAt)}
+                        </Typography>
+                      </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                     '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       ترتيب الوحدة
+                          </Typography>
+                     <Typography variant="body1" fontWeight={600} color="primary.main">
+                       {unit.order || 'غير محدد'}
+                          </Typography>
+                        </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                     '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       إجمالي الدروس
+                          </Typography>
+                     <Typography variant="body1" fontWeight={600} color="primary.main">
+                       {unit.lessons.length} درس
+                          </Typography>
+                        </Box>
+                 </Grid>
+               </Grid>
+                    </Box>
+           </Grid>
+           <Grid item xs={12}>
+             <Box sx={{ 
+               p: 3, 
+               backgroundColor: theme.palette.grey[50], 
+               borderRadius: 3,
+               border: `1px solid ${theme.palette.divider}`,
+               boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+             }}>
+               <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: theme.palette.primary.main, textAlign: 'center' }}>
+                 إحصائيات الوحدة
+               </Typography>
+               <Grid container spacing={2}>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                            '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       إجمالي المدة
+                        </Typography>
+                     <Typography variant="body1" fontWeight={600} color="primary.main">
+                       {unit.duration} دقيقة
+                  </Typography>
+                      </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       الدروس المكتملة
+                                        </Typography>
+                     <Typography variant="body1" fontWeight={600} color="success.main">
+                       {unit.lessons.filter(l => l.completed).length} من {unit.lessons.length}
+                                        </Typography>
+                   </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                     '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       دروس المعاينة
+                      </Typography>
+                     <Typography variant="body1" fontWeight={600} color="warning.main">
+                       {unit.lessons.filter(l => l.isPreview).length} درس
+                     </Typography>
+                                      </Box>
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   <Box sx={{ 
+                     p: 2, 
+                     backgroundColor: 'white', 
+                     borderRadius: 2,
+                     border: `1px solid ${theme.palette.divider}`,
+                     transition: 'all 0.3s ease',
+                                          '&:hover': {
+                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                       transform: 'translateY(-1px)'
+                     }
+                   }}>
+                     <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5, fontSize: '0.8rem' }}>
+                       الحالة
+                     </Typography>
+                     <Chip 
+                       label={unit.status === 'published' ? 'منشور' : 'مسودة'} 
+                       color={unit.status === 'published' ? 'success' : 'warning'}
+                       size="small"
+                       sx={{ fontWeight: 600 }}
+                     />
+                                    </Box>
+                              </Grid>
+                        </Grid>
+                      </Box>
+            </Grid>
+        </Grid>
+      </StyledPaper>
+
+      {/* Lessons Table */}
+      <StyledPaper elevation={0} sx={{ mt: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
+          دروس الوحدة ({unit.lessons.length})
+                  </Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Chip 
+              label={`${unit.lessons.filter(l => l.completed).length} مكتمل`} 
+              color="success" 
+              size="small" 
+              variant="outlined"
+            />
+            <Chip 
+              label={`${unit.lessons.filter(l => l.isPreview).length} معاينة`} 
+              color="primary" 
+              size="small" 
+              variant="outlined"
+            />
+                </Box>
+            </Box>
+            
+        <TableContainer sx={{ borderRadius: 2, border: `1px solid ${theme.palette.divider}` }}>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
+                <TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ArticleIcon sx={{ fontSize: 20 }} />
+                    الدرس
+                </Box>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main, textAlign: 'center' }}>
+                  النوع
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main, textAlign: 'center' }}>
+                  المدة
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main, textAlign: 'center' }}>
+                  الحالة
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main, textAlign: 'center' }}>
+                  الإجراءات
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {unit.lessons.map((lesson, index) => {
+                const status = getLessonStatus(lesson);
+                      return (
+                  <TableRow 
+                    key={lesson.id}
+                            sx={{
+                              '&:hover': {
+                        backgroundColor: theme.palette.action.hover,
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      },
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => handleLessonClick(lesson)}
+                  >
+                    <TableCell>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Avatar
+                                  sx={{
                       bgcolor: theme.palette[getLessonColor(lesson.type)].main,
-                      width: 40,
-                      height: 40,
+                            width: 40,
+                            height: 40,
                     }}
                   >
                     {getLessonIcon(lesson.type)}
-                  </Avatar>
-                </ListItemIcon>
-                
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                </Avatar>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
                         {lesson.title}
                       </Typography>
+                          <Typography variant="body2" color="textSecondary" sx={{ 
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                            maxWidth: 300
+                          }}>
+                            {lesson.content || 'لا يوجد وصف للدرس'}
+                                  </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
                       <Chip
                         label={getLessonLabel(lesson.type)}
                         size="small"
                         color={getLessonColor(lesson.type)}
                         variant="outlined"
+                          sx={{ fontWeight: 600 }}
                       />
-                      {lesson.isPreview && (
-                        <Chip
-                          label="معاينة"
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <AccessTimeIcon sx={{ fontSize: '0.875rem', color: 'text.secondary' }} />
-                        <Typography variant="body2" color="textSecondary">
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                        <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                        <Typography variant="body2" fontWeight={500}>
                           {lesson.duration} دقيقة
-                        </Typography>
+                                  </Typography>
                       </Box>
-                      {lesson.completed && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <CheckCircleIcon sx={{ fontSize: '0.875rem', color: 'success.main' }} />
-                          <Typography variant="body2" color="success.main">
-                            مكتمل
-                          </Typography>
-                        </Box>
-                      )}
-                    </Box>
-                  }
-                />
-                
-                <ListItemSecondaryAction>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Tooltip title="عرض التفاصيل">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleLessonToggle(lesson.id)}
-                      >
-                        {expandedLessons[lesson.id] ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="فتح الدرس">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleLessonClick(lesson)}
-                      >
-                        <PlayIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </ListItemSecondaryAction>
-              </ListItem>
-              
-              {/* Expanded Lesson Details */}
-              {expandedLessons[lesson.id] && (
-                <Box sx={{ pl: 7, pr: 2, pb: 2 }}>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                    {lesson.content}
-                  </Typography>
-                  
-                  {lesson.resources.length > 0 && (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                        المرفقات:
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {lesson.resources.map((resource) => (
-                          <Chip
-                            key={resource.id}
-                            label={resource.name}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={status.label}
+                          size="small"
+                          color={status.color}
+                          variant="filled"
+                            sx={{ fontWeight: 600 }}
+                        />
+                        {lesson.completed && (
+                          <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                                  )}
+                                </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <Tooltip title="فتح الدرس">
+                                <IconButton
                             size="small"
-                            variant="outlined"
-                            icon={<DownloadIcon />}
-                            onClick={() => console.log('Download:', resource)}
-                            sx={{ cursor: 'pointer' }}
-                          />
-                        ))}
+                            color="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLessonClick(lesson);
+                            }}
+                    sx={{
+                              backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                      '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                                transform: 'scale(1.1)'
+                              }
+                            }}
+                          >
+                            <PlayIcon />
+                  </IconButton>
+                        </Tooltip>
+                        <Tooltip title="عرض التفاصيل">
+                  <IconButton
+                            size="small"
+                            color="secondary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLessonClick(lesson);
+                            }}
+                    sx={{
+                              backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                      '&:hover': {
+                                backgroundColor: 'rgba(156, 39, 176, 0.2)',
+                                transform: 'scale(1.1)'
+                              }
+                            }}
+                          >
+                            <VisibilityIcon />
+                  </IconButton>
+                        </Tooltip>
+                        {lesson.resources.length > 0 && (
+                          <Tooltip title={`${lesson.resources.length} مرفق`}>
+                            <Badge badgeContent={lesson.resources.length} color="primary">
+                  <IconButton
+                                size="small"
+                                color="info"
+                    sx={{
+                                  backgroundColor: 'rgba(3, 169, 244, 0.1)',
+                      '&:hover': {
+                                    backgroundColor: 'rgba(3, 169, 244, 0.2)',
+                                    transform: 'scale(1.1)'
+                                  }
+                                }}
+                              >
+                                <DownloadIcon />
+                  </IconButton>
+                            </Badge>
+                          </Tooltip>
+                        )}
                       </Box>
-                    </Box>
-                  )}
-                </Box>
-              )}
-            </React.Fragment>
-          ))}
-        </List>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+              
+
       </StyledPaper>
 
       {/* Snackbar */}
@@ -458,6 +705,15 @@ const UnitDetail = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Lesson Detail Popup */}
+      <LessonDetail
+        open={lessonDetailOpen}
+        onClose={handleCloseLessonDetail}
+        courseId={courseId}
+        unitId={unitId}
+        lessonId={selectedLessonId}
+      />
     </Container>
   );
 };

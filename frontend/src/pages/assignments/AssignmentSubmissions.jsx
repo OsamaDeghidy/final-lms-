@@ -180,8 +180,34 @@ const AssignmentSubmissions = () => {
     }
   };
 
-  const handleDownloadFile = (fileName) => {
-    console.log('Downloading file:', fileName);
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
   };
 
   const filteredSubmissions = submissions.filter(submission => {
@@ -235,7 +261,7 @@ const AssignmentSubmissions = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -286,12 +312,26 @@ const AssignmentSubmissions = () => {
             <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6 }}>
               {assignment.description}
             </Typography>
+            {assignment.assignment_file && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
+                <FileUploadIcon sx={{ color: '#1976d2' }} />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => handleDownloadFile('assignment_file', assignment.assignment_file)}
+                  sx={{ color: '#1976d2', borderColor: '#1976d2' }}
+                >
+                  تحميل ملف الواجب
+                </Button>
+              </Box>
+            )}
           </Grid>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <CalendarTodayIcon sx={{ color: '#666' }} />
               <Typography variant="body1">
-                تاريخ التسليم: {new Date(assignment.due_date).toLocaleString('ar-SA')}
+                تاريخ التسليم: {new Date(assignment.due_date).toLocaleString('en-GB')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -421,23 +461,23 @@ const AssignmentSubmissions = () => {
       </Paper>
 
       {/* Submissions Table */}
-      <TableContainer component={Paper} sx={{ mt: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+      <TableContainer component={Paper} sx={{ mt: 3, borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', direction: 'rtl' }}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f8f9fa' }}>
-              <TableCell sx={{ fontWeight: 600 }}>الطالب</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>تاريخ التسليم</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>الحالة</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>الدرجة</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>التقييم</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>الإجراءات</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'right' }}>الطالب</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'right' }}>تاريخ التسليم</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>الحالة</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>الدرجة</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>التقييم</TableCell>
+              <TableCell sx={{ fontWeight: 600, textAlign: 'center' }}>الإجراءات</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredSubmissions.map((submission) => (
               <TableRow key={submission.id} hover>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <TableCell sx={{ textAlign: 'right' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexDirection: 'row-reverse' }}>
                     <Avatar sx={{ backgroundColor: '#ff6b6b' }}>
                       <PersonIcon />
                     </Avatar>
@@ -451,9 +491,9 @@ const AssignmentSubmissions = () => {
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ textAlign: 'right' }}>
                   <Typography variant="body2">
-                    {new Date(submission.submitted_at).toLocaleString('ar-SA')}
+                    {new Date(submission.submitted_at).toLocaleString('en-GB')}
                   </Typography>
                   {submission.is_late && (
                     <Chip 
@@ -465,14 +505,14 @@ const AssignmentSubmissions = () => {
                     />
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
                   <StatusChip
                     label={getStatusText(submission.status, submission.is_late)}
                     status={submission.status}
                     size="small"
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
                   {submission.grade !== null ? (
                     <Typography variant="body1" fontWeight={600} color="primary">
                       {submission.grade}/{assignment.points}
@@ -483,12 +523,12 @@ const AssignmentSubmissions = () => {
                     </Typography>
                   )}
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ textAlign: 'center' }}>
                   {submission.status === 'graded' && submission.rubric_scores ? (
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                       {Object.entries(submission.rubric_scores).map(([key, value]) => (
                         <Tooltip key={key} title={`${key}: ${value}/5`}>
-                          <Rating value={value} readOnly size="small" />
+                          <Rating value={value} readOnly size="small" sx={{ direction: 'ltr' }} />
                         </Tooltip>
                       ))}
                     </Box>
@@ -498,8 +538,8 @@ const AssignmentSubmissions = () => {
                     </Typography>
                   )}
                 </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
+                <TableCell sx={{ textAlign: 'center' }}>
+                  <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                     <Tooltip title="عرض التفاصيل">
                       <IconButton
                         size="small"
@@ -520,6 +560,25 @@ const AssignmentSubmissions = () => {
                         </IconButton>
                       </Tooltip>
                     )}
+                    {submission.answers && Object.keys(submission.answers).length > 0 && (
+                      <Tooltip title="تحميل ملفات الواجب">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            // Find file answers in the submission
+                            const fileAnswers = Object.values(submission.answers).filter(answer => 
+                              typeof answer === 'string' && answer.includes('http')
+                            );
+                            if (fileAnswers.length > 0) {
+                              handleDownloadFile('assignment_files.zip', fileAnswers[0]);
+                            }
+                          }}
+                          sx={{ color: '#1976d2' }}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                 </TableCell>
               </TableRow>
@@ -535,7 +594,12 @@ const AssignmentSubmissions = () => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
+          sx: { 
+            borderRadius: 4, 
+            p: 0, 
+            overflow: 'hidden',
+            direction: 'rtl' // إضافة اتجاه RTL للـ popup
+          }
         }}
       >
         {selectedSubmission && (
@@ -547,7 +611,8 @@ const AssignmentSubmissions = () => {
               backgroundColor: 'primary.main', 
               color: 'white', 
               py: 3, 
-              px: 4 
+              px: 4,
+              direction: 'rtl' // إضافة اتجاه RTL للـ header
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <AssessmentIcon sx={{ fontSize: 28 }} />
@@ -559,93 +624,201 @@ const AssignmentSubmissions = () => {
                 <CancelIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa' }}>
+            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {/* Student Info */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'white', borderRadius: 2 }}>
-                  <Avatar sx={{ backgroundColor: '#ff6b6b' }}>
-                    <PersonIcon />
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 2, 
+                  p: 3, 
+                  backgroundColor: 'white', 
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  border: '1px solid #e0e0e0'
+                }}>
+                  <Avatar sx={{ backgroundColor: '#ff6b6b', width: 56, height: 56 }}>
+                    <PersonIcon sx={{ fontSize: 28 }} />
                   </Avatar>
-                  <Box>
-                    <Typography variant="h6" fontWeight={600}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={600} color="primary">
                       {selectedSubmission.student.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                       {selectedSubmission.student.email}
                     </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                      <StatusChip
+                        label={getStatusText(selectedSubmission.status, selectedSubmission.is_late)}
+                        status={selectedSubmission.status}
+                        size="small"
+                      />
+                      {selectedSubmission.is_late && (
+                        <Chip 
+                          label="متأخر" 
+                          size="small" 
+                          color="error" 
+                          variant="outlined"
+                        />
+                      )}
+                    </Box>
                   </Box>
                 </Box>
 
                 {/* Submission Details */}
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>
+                    <Card sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                      <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
                       تفاصيل التسليم
                     </Typography>
-                    <List dense>
-                      <ListItem>
-                        <ListItemIcon>
-                          <CalendarTodayIcon />
+                      <List dense sx={{ p: 0 }}>
+                        <ListItem sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <CalendarTodayIcon sx={{ color: '#0e5181' }} />
                         </ListItemIcon>
                         <ListItemText 
-                          primary="تاريخ التسليم"
-                          secondary={new Date(selectedSubmission.submitted_at).toLocaleString('ar-SA')}
+                            primary={
+                              <Typography variant="body2" fontWeight={600} color="text.primary">
+                                تاريخ التسليم
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="body2" color="text.secondary">
+                                {new Date(selectedSubmission.submitted_at).toLocaleString('en-GB')}
+                              </Typography>
+                            }
                         />
                       </ListItem>
-                      <ListItem>
-                        <ListItemIcon>
-                          <StatusChip
-                            label={getStatusText(selectedSubmission.status, selectedSubmission.is_late)}
-                            status={selectedSubmission.status}
-                            size="small"
+                        <ListItem sx={{ px: 0, py: 1 }}>
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            <AccessTimeIcon sx={{ color: '#0e5181' }} />
+                          </ListItemIcon>
+                          <ListItemText 
+                            primary={
+                              <Typography variant="body2" fontWeight={600} color="text.primary">
+                                الحالة
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="body2" color="text.secondary">
+                                {selectedSubmission.is_late ? 'متأخر' : 'في الوقت المحدد'}
+                              </Typography>
+                            }
                           />
+                        </ListItem>
+                        {selectedSubmission.grade !== null && (
+                          <ListItem sx={{ px: 0, py: 1 }}>
+                            <ListItemIcon sx={{ minWidth: 40 }}>
+                              <GradeIcon sx={{ color: '#0e5181' }} />
                         </ListItemIcon>
                         <ListItemText 
-                          primary="الحالة"
-                          secondary={selectedSubmission.is_late ? 'متأخر' : 'في الوقت المحدد'}
+                              primary={
+                                <Typography variant="body2" fontWeight={600} color="text.primary">
+                                  الدرجة الحالية
+                                </Typography>
+                              }
+                              secondary={
+                                <Typography variant="body2" color="primary" fontWeight={600}>
+                                  {selectedSubmission.grade}/{assignment.points}
+                                </Typography>
+                              }
                         />
                       </ListItem>
+                        )}
                     </List>
+                    </Card>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>
+                    <Card sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                      <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 600, mb: 2 }}>
                       الإجابات
                     </Typography>
-                    <List dense>
+                      <List dense sx={{ p: 0 }}>
                       {assignment.questions && assignment.questions.length > 0 ? (
                         assignment.questions.map((question, index) => {
                           const response = selectedSubmission.answers[question.id];
                           return (
-                            <ListItem key={question.id} sx={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, width: '100%' }}>
+                              <ListItem key={question.id} sx={{ 
+                                flexDirection: 'column', 
+                                alignItems: 'flex-start', 
+                                px: 0, 
+                                py: 2,
+                                borderBottom: index < assignment.questions.length - 1 ? '1px solid #e0e0e0' : 'none'
+                              }}>
+                                <Box sx={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: 1, 
+                                  mb: 1, 
+                                  width: '100%',
+                                  justifyContent: 'space-between'
+                                }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <QuizIcon sx={{ color: '#0e5181' }} />
                                 <Typography variant="subtitle2" fontWeight={600} color="primary">
-                                  السؤال {index + 1}: {question.text}
+                                      السؤال {index + 1}
                                 </Typography>
+                                  </Box>
                             {question.points && (
                               <Chip 
                                 label={`${question.points} نقطة`} 
                                 size="small" 
                                 variant="outlined"
-                                    sx={{ ml: 'auto' }}
+                                      sx={{ backgroundColor: '#f5f5f5' }}
                                   />
                                 )}
                               </Box>
-                              <Box sx={{ width: '100%', pl: 3 }}>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                  <strong>إجابة الطالب:</strong>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, width: '100%' }}>
+                                  {question.text}
+                                </Typography>
+                                <Box sx={{ width: '100%', pl: 2 }}>
+                                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                                    إجابة الطالب:
                                 </Typography>
                                 {response ? (
-                                  <Typography variant="body2" sx={{ 
-                                    p: 1, 
-                                    backgroundColor: '#f5f5f5', 
-                                    borderRadius: 1,
-                                    border: '1px solid #e0e0e0'
-                                  }}>
-                                    {response}
-                                  </Typography>
+                                  <Box>
+                                    {typeof response === 'string' && response.includes('http') ? (
+                                        <Box sx={{ 
+                                          display: 'flex', 
+                                          alignItems: 'center', 
+                                          gap: 1,
+                                          p: 2,
+                                          backgroundColor: '#f8f9fa',
+                                          borderRadius: 1,
+                                          border: '1px solid #e0e0e0'
+                                        }}>
+                                          <FileUploadIcon sx={{ color: '#1976d2' }} />
+                                          <Typography variant="body2" sx={{ flex: 1 }}>
+                                          ملف مرفوع
+                                        </Typography>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleDownloadFile(`question_${index + 1}_file`, response)}
+                                          sx={{ color: '#1976d2' }}
+                                        >
+                                          <DownloadIcon />
+                                        </IconButton>
+                                      </Box>
+                                    ) : (
+                                      <Typography variant="body2" sx={{ 
+                                          p: 2, 
+                                          backgroundColor: '#f8f9fa', 
+                                        borderRadius: 1,
+                                          border: '1px solid #e0e0e0',
+                                          lineHeight: 1.6
+                                      }}>
+                                        {response}
+                                      </Typography>
+                                    )}
+                                  </Box>
                                 ) : (
-                                  <Typography variant="body2" color="error">
+                                    <Typography variant="body2" color="error" sx={{ 
+                                      p: 2, 
+                                      backgroundColor: '#ffebee', 
+                                      borderRadius: 1,
+                                      border: '1px solid #ffcdd2'
+                                    }}>
                                     لم يتم الإجابة
                                   </Typography>
                                 )}
@@ -654,87 +827,250 @@ const AssignmentSubmissions = () => {
                           );
                         })
                       ) : (
-                        <ListItem>
+                          <ListItem sx={{ px: 0, py: 2 }}>
                           <ListItemText 
-                            primary="لا توجد أسئلة لهذا الواجب"
-                            secondary="الواجب قد يكون عبارة عن رفع ملف أو كتابة نص فقط"
+                              primary={
+                                <Typography variant="body2" fontWeight={600} color="text.primary">
+                                  لا توجد أسئلة لهذا الواجب
+                                </Typography>
+                              }
+                              secondary={
+                                <Typography variant="body2" color="text.secondary">
+                                  الواجب قد يكون عبارة عن رفع ملف أو كتابة نص فقط
+                                </Typography>
+                              }
                           />
                         </ListItem>
                       )}
                     </List>
+                    </Card>
                   </Grid>
                 </Grid>
 
-                <Divider />
+                <Divider sx={{ my: 2 }} />
 
                 {/* Grading Section */}
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    التقييم
+                 <Card sx={{ p: 3, borderRadius: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                     <GradeIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                     <Typography variant="h6" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                       التقييم والدرجات
                   </Typography>
+                   </Box>
                   
                   <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                      {/* الدرجة والملاحظات */}
+                      <Grid item xs={12} md={9}>
+                        <Card sx={{ p: 4, backgroundColor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+                          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 4 }}>
+                            الدرجة والملاحظات
+                          </Typography>
+                          
+                          <Grid container spacing={4}>
+                            {/* الدرجة والنسبة المئوية */}
+                            <Grid item xs={12} md={5}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                {/* الدرجة */}
+                                <Box>
+                                  <Typography variant="body1" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary', mb: 2 }}>
+                                    الدرجة (من {assignment.points})
+                                  </Typography>
                       <TextField
                         fullWidth
-                        label="الدرجة"
                         type="number"
                         variant="outlined"
                         value={gradingData.grade}
                         onChange={(e) => setGradingData(prev => ({ ...prev, grade: Number(e.target.value) }))}
-                        inputProps={{ min: 0, max: assignment.points }}
-                        sx={{ mb: 2 }}
-                      />
-                      
+                                    inputProps={{ 
+                                      min: 0, 
+                                      max: assignment.points,
+                                      step: 0.5
+                                    }}
+                                    sx={{ 
+                                      '& .MuiOutlinedInput-root': {
+                                        borderRadius: 2,
+                                        backgroundColor: 'white',
+                                        fontSize: '1.1rem'
+                                      }
+                                    }}
+                                  />
+                                </Box>
+                                
+                                {/* النسبة المئوية */}
+                                <Box sx={{ 
+                                  p: 3, 
+                                  backgroundColor: 'white', 
+                                  borderRadius: 2,
+                                  border: '1px solid #e0e0e0',
+                                  textAlign: 'center',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                }}>
+                                  <Typography variant="h3" fontWeight={700} color="primary">
+                                    {assignment.points > 0 ? Math.round((gradingData.grade / assignment.points) * 100) : 0}%
+                                  </Typography>
+                                  <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                                    النسبة المئوية
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </Grid>
+                            
+                            {/* ملاحظات المعلم */}
+                            <Grid item xs={12} md={7}>
+                              <Box>
+                                <Typography variant="body1" gutterBottom sx={{ fontWeight: 600, color: 'text.secondary', mb: 2 }}>
+                                  ملاحظات المعلم
+                                </Typography>
                       <TextField
                         fullWidth
-                        label="ملاحظات المعلم"
                         variant="outlined"
                         multiline
-                        rows={4}
+                                  rows={12}
+                                  placeholder="اكتب ملاحظاتك للطالب هنا..."
                         value={gradingData.feedback}
                         onChange={(e) => setGradingData(prev => ({ ...prev, feedback: e.target.value }))}
-                      />
+                                  sx={{ 
+                                    '& .MuiOutlinedInput-root': {
+                                      borderRadius: 2,
+                                      backgroundColor: 'white',
+                                      fontSize: '1rem'
+                                    }
+                                  }}
+                                />
+                              </Box>
+                            </Grid>
+                          </Grid>
+                        </Card>
                     </Grid>
                     
-                    <Grid item xs={12} md={6}>
-                      <Typography variant="subtitle1" gutterBottom>
-                        معايير التقييم
+                      {/* معايير التقييم */}
+                      <Grid item xs={12} md={3}>
+                       <Card sx={{ p: 2, backgroundColor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+                         <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
+                           معايير التقييم التفصيلية
                       </Typography>
                       
-                      {['accuracy', 'completeness', 'clarity', 'timeliness'].map((criterion) => (
-                        <Box key={criterion} sx={{ mb: 2 }}>
-                          <Typography variant="body2" gutterBottom>
-                            {criterion === 'accuracy' && 'الدقة'}
-                            {criterion === 'completeness' && 'الاكتمال'}
-                            {criterion === 'clarity' && 'الوضوح'}
-                            {criterion === 'timeliness' && 'الالتزام بالوقت'}
+                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                           {[
+                             { 
+                               key: 'accuracy', 
+                               label: 'الدقة في الإجابة', 
+                               description: 'مدى صحة ودقة الإجابات المقدمة'
+                             },
+                             { 
+                               key: 'completeness', 
+                               label: 'اكتمال الإجابة', 
+                               description: 'مدى شمولية واكتمال الإجابة'
+                             },
+                             { 
+                               key: 'clarity', 
+                               label: 'وضوح العرض', 
+                               description: 'مدى وضوح وسهولة فهم الإجابة'
+                             },
+                             { 
+                               key: 'timeliness', 
+                               label: 'الالتزام بالوقت', 
+                               description: 'مدى الالتزام بموعد التسليم'
+                             }
+                           ].map((criterion) => (
+                             <Box key={criterion.key} sx={{ 
+                               p: 2, 
+                               backgroundColor: 'white', 
+                               borderRadius: 1,
+                               border: '1px solid #e0e0e0'
+                             }}>
+                               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                 <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                                   {criterion.label}
+                                 </Typography>
+                                 <Typography variant="body2" color="primary" fontWeight={600}>
+                                   {gradingData.rubric_scores[criterion.key] || 0}/5
+                                 </Typography>
+                               </Box>
+                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                 {criterion.description}
                           </Typography>
                           <Rating
-                            value={gradingData.rubric_scores[criterion] || 0}
+                                 value={gradingData.rubric_scores[criterion.key] || 0}
                             onChange={(event, newValue) => {
                               setGradingData(prev => ({
                                 ...prev,
                                 rubric_scores: {
                                   ...prev.rubric_scores,
-                                  [criterion]: newValue
+                                       [criterion.key]: newValue
                                 }
                               }));
                             }}
                             size="small"
+                                 sx={{ direction: 'ltr' }}
                           />
                         </Box>
                       ))}
+                           
+                           {/* متوسط التقييم */}
+                           <Box sx={{ 
+                             p: 2, 
+                             backgroundColor: 'primary.main', 
+                             borderRadius: 1,
+                             color: 'white',
+                             textAlign: 'center'
+                           }}>
+                             <Typography variant="h6" fontWeight={700}>
+                               {(() => {
+                                 const scores = Object.values(gradingData.rubric_scores);
+                                 const average = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                                 return average.toFixed(1);
+                               })()}/5
+                             </Typography>
+                             <Typography variant="body2">
+                               متوسط التقييم التفصيلي
+                             </Typography>
+                           </Box>
+                         </Box>
+                       </Card>
                     </Grid>
                   </Grid>
+                   
+                   {/* ملخص التقييم */}
+                   <Box sx={{ 
+                     mt: 3, 
+                     p: 2, 
+                     backgroundColor: '#e3f2fd', 
+                     borderRadius: 1,
+                     border: '1px solid #bbdefb'
+                   }}>
+                     <Typography variant="subtitle2" fontWeight={600} color="primary" gutterBottom>
+                       ملخص التقييم:
+                     </Typography>
+                     <Typography variant="body2" color="text.secondary">
+                       الدرجة: {gradingData.grade}/{assignment.points} | 
+                       النسبة: {assignment.points > 0 ? Math.round((gradingData.grade / assignment.points) * 100) : 0}% | 
+                       متوسط التقييم التفصيلي: {(() => {
+                         const scores = Object.values(gradingData.rubric_scores);
+                         const average = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+                         return average.toFixed(1);
+                       })()}/5
+                     </Typography>
                 </Box>
+                 </Card>
               </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
+            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               <Button
                 onClick={() => setOpenGradeDialog(false)}
                 variant="outlined"
-                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
+                sx={{ 
+                  borderRadius: 2, 
+                  px: 4, 
+                  py: 1.5, 
+                  borderColor: '#9e9e9e', 
+                  color: '#9e9e9e', 
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#757575',
+                    color: '#757575'
+                  }
+                }}
               >
                 إلغاء
               </Button>
@@ -746,9 +1082,9 @@ const AssignmentSubmissions = () => {
                   px: 4, 
                   py: 1.5, 
                   fontWeight: 700, 
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': { 
-                    background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)' 
+                    background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)' 
                   } 
                 }}
               >

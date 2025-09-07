@@ -5,7 +5,7 @@ export const quizAPI = {
   // Get all quizzes for student
   getQuizzes: async (params = {}) => {
     try {
-      const response = await api.get('/assignments/quizzes/', { params });
+      const response = await api.get('/api/assignments/quizzes/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching quizzes:', error);
@@ -16,7 +16,7 @@ export const quizAPI = {
   // Get quiz by ID with questions and answers
   getQuiz: async (id) => {
     try {
-      const response = await api.get(`/assignments/quizzes/${id}/`);
+      const response = await api.get(`/api/assignments/quizzes/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz:', error);
@@ -27,7 +27,7 @@ export const quizAPI = {
   // Get quiz questions
   getQuizQuestions: async (quizId) => {
     try {
-      const response = await api.get(`/assignments/quiz-questions/?quiz=${quizId}`);
+      const response = await api.get(`/api/assignments/quiz-questions/?quiz=${quizId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz questions:', error);
@@ -38,7 +38,7 @@ export const quizAPI = {
   // Start a new quiz attempt
   startQuizAttempt: async (quizId) => {
     try {
-      const response = await api.post('/assignments/quiz-attempts/', {
+      const response = await api.post('/api/assignments/quiz-attempts/', {
         quiz: quizId
       });
       return response.data;
@@ -51,7 +51,7 @@ export const quizAPI = {
   // Submit quiz answers
   submitQuizAnswers: async (attemptId, answers) => {
     try {
-      const response = await api.post('/assignments/quiz-user-answers/submit_answers/', {
+      const response = await api.post('/api/assignments/quiz-user-answers/submit_answers/', {
         attempt: attemptId,
         answers: answers
       });
@@ -65,7 +65,7 @@ export const quizAPI = {
   // Finish quiz attempt
   finishQuizAttempt: async (attemptId) => {
     try {
-      const response = await api.patch(`/assignments/quiz-attempts/${attemptId}/finish/`);
+      const response = await api.patch(`/api/assignments/quiz-attempts/${attemptId}/finish/`);
       return response.data;
     } catch (error) {
       console.error('Error finishing quiz attempt:', error);
@@ -76,7 +76,7 @@ export const quizAPI = {
   // Get quiz attempt result
   getQuizAttemptResult: async (attemptId) => {
     try {
-      const response = await api.get(`/assignments/quiz-attempts/${attemptId}/`);
+      const response = await api.get(`/api/assignments/quiz-attempts/${attemptId}/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz attempt result:', error);
@@ -87,7 +87,7 @@ export const quizAPI = {
   // Get user's quiz attempts
   getUserQuizAttempts: async (params = {}) => {
     try {
-      const response = await api.get('/assignments/quiz-attempts/', { params });
+      const response = await api.get('/api/assignments/quiz-attempts/', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching user quiz attempts:', error);
@@ -98,7 +98,7 @@ export const quizAPI = {
   // Get quiz attempt answers
   getQuizAttemptAnswers: async (attemptId) => {
     try {
-      const response = await api.get(`/assignments/quiz-user-answers/?attempt=${attemptId}`);
+      const response = await api.get(`/api/assignments/quiz-user-answers/?attempt=${attemptId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz attempt answers:', error);
@@ -109,7 +109,7 @@ export const quizAPI = {
   // Get courses for quiz creation/editing
   getCourses: async () => {
     try {
-      const response = await api.get('/courses/courses/');
+      const response = await api.get('/api/courses/courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -120,7 +120,7 @@ export const quizAPI = {
   // Get modules for a specific course
   getModules: async (courseId) => {
     try {
-      const response = await api.get(`/courses/courses/${courseId}/modules/`);
+      const response = await api.get(`/api/courses/courses/${courseId}/modules/`);
       return response.data;
     } catch (error) {
       console.error('Error fetching modules:', error);
@@ -131,7 +131,7 @@ export const quizAPI = {
   // Create new quiz
   createQuiz: async (quizData) => {
     try {
-      const response = await api.post('/assignments/quizzes/', quizData);
+      const response = await api.post('/api/assignments/quizzes/', quizData);
       return response.data;
     } catch (error) {
       console.error('Error creating quiz:', error);
@@ -142,7 +142,7 @@ export const quizAPI = {
   // Update quiz
   updateQuiz: async (quizId, quizData) => {
     try {
-      const response = await api.patch(`/assignments/quizzes/${quizId}/`, quizData);
+      const response = await api.patch(`/api/assignments/quizzes/${quizId}/`, quizData);
       return response.data;
     } catch (error) {
       console.error('Error updating quiz:', error);
@@ -153,7 +153,7 @@ export const quizAPI = {
   // Delete quiz
   deleteQuiz: async (quizId) => {
     try {
-      const response = await api.delete(`/assignments/quizzes/${quizId}/`);
+      const response = await api.delete(`/api/assignments/quizzes/${quizId}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting quiz:', error);
@@ -177,7 +177,7 @@ export const quizAPI = {
       console.log('🚀 Creating quiz question with clean data:', JSON.stringify(cleanData, null, 2));
       
       // Set content type to JSON explicitly
-      const response = await api.post('/assignments/quiz-questions/', cleanData, {
+      const response = await api.post('/api/assignments/quiz-questions/', cleanData, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -208,7 +208,7 @@ export const quizAPI = {
       console.log('🔄 Updating quiz question with clean data:', JSON.stringify(cleanData, null, 2));
       
       // Set content type to JSON explicitly
-      const response = await api.patch(`/assignments/quiz-questions/${questionId}/`, cleanData, {
+      const response = await api.patch(`/api/assignments/quiz-questions/${questionId}/`, cleanData, {
         headers: {
           'Content-Type': 'application/json',
         }
@@ -227,7 +227,7 @@ export const quizAPI = {
   // Delete quiz question
   deleteQuizQuestion: async (questionId) => {
     try {
-      const response = await api.delete(`/assignments/quiz-questions/${questionId}/`);
+      const response = await api.delete(`/api/assignments/quiz-questions/${questionId}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting quiz question:', error);
@@ -238,7 +238,7 @@ export const quizAPI = {
   // Create quiz answer
   createQuizAnswer: async (answerData) => {
     try {
-      const response = await api.post('/assignments/quiz-answers/', answerData);
+      const response = await api.post('/api/assignments/quiz-answers/', answerData);
       return response.data;
     } catch (error) {
       console.error('Error creating quiz answer:', error);
@@ -249,7 +249,7 @@ export const quizAPI = {
   // Update quiz answer
   updateQuizAnswer: async (answerId, answerData) => {
     try {
-      const response = await api.patch(`/assignments/quiz-answers/${answerId}/`, answerData);
+      const response = await api.patch(`/api/assignments/quiz-answers/${answerId}/`, answerData);
       return response.data;
     } catch (error) {
       console.error('Error updating quiz answer:', error);
@@ -260,7 +260,7 @@ export const quizAPI = {
   // Delete quiz answer
   deleteQuizAnswer: async (answerId) => {
     try {
-      const response = await api.delete(`/assignments/quiz-answers/${answerId}/`);
+      const response = await api.delete(`/api/assignments/quiz-answers/${answerId}/`);
       return response.data;
     } catch (error) {
       console.error('Error deleting quiz answer:', error);
@@ -271,7 +271,7 @@ export const quizAPI = {
   // Get question answers
   getQuestionAnswers: async (questionId) => {
     try {
-      const response = await api.get(`/assignments/quiz-answers/?question=${questionId}`);
+      const response = await api.get(`/api/assignments/quiz-answers/?question=${questionId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching question answers:', error);

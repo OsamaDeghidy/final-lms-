@@ -276,7 +276,7 @@ const AnimatedBackground = styled('div')(() => ({
 const FloatingShape = styled('div')({
   position: 'absolute',
   borderRadius: '50%',
-  background: 'linear-gradient(45deg, #e94560, #533483)',
+  background: 'linear-gradient(45deg, #0e5181, #1a5f8a)',
   filter: 'blur(60px)',  
   opacity: 0.15,
   zIndex: 1,
@@ -301,15 +301,15 @@ const FloatingShape = styled('div')({
     top: '30%',
     left: '15%',
     animationDelay: '7s',
-    background: 'linear-gradient(45deg, #0f3460, #16213e)',
+    background: 'linear-gradient(45deg, #0a3d62, #0e5181)',
   },
 });
 
 const HeroSection = styled('div')(({ theme }) => ({
-  background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+  background: 'linear-gradient(135deg, #0e5181 0%, #1a5f8a 50%, #0a3d62 100%)',
   color: 'white',
-  padding: '50px 0 40px',
-  margin: '0 0 30px 0',
+  padding: '30px 0 25px',
+  margin: '0 0 20px 0',
   position: 'relative',
   overflow: 'hidden',
   boxShadow: '0 15px 50px rgba(0, 0, 0, 0.3)',
@@ -320,7 +320,7 @@ const HeroSection = styled('div')(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'radial-gradient(circle at 20% 30%, rgba(229, 151, 139, 0.15) 0%, transparent 50%)',
+    background: 'radial-gradient(circle at 20% 30%, rgba(14, 81, 129, 0.3) 0%, transparent 50%)',
     zIndex: 1,
     animation: `${pulse} 15s ease-in-out infinite`,
   },
@@ -416,10 +416,10 @@ const CourseTitle = styled(Typography)(({ theme }) => ({
   WebkitBoxOrient: 'vertical',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  minHeight: '3.6em',
+  minHeight: '1.6em',
   fontWeight: 700,
   lineHeight: 1.3,
-  marginBottom: '12px',
+  marginBottom: '8px',
   color: theme.palette.text.primary,
   transition: 'color 0.3s ease'
 }));
@@ -524,8 +524,6 @@ const Courses = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = !searchTerm || 
                          course.title?.toLowerCase().includes(searchLower) ||
-                         course.description?.toLowerCase().includes(searchLower) ||
-                         course.short_description?.toLowerCase().includes(searchLower) ||
                          (course.instructors && course.instructors.some(instructor => 
                            instructor.name?.toLowerCase().includes(searchLower)
                          ));
@@ -632,6 +630,13 @@ const Courses = () => {
     return instructors[0].profile_pic;
   };
 
+  const getCategoryName = (course) => {
+    if (!course.category) return null;
+    const categoryId = typeof course.category === 'object' ? course.category.id : course.category;
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.name : null;
+  };
+
   const getCourseImage = (course) => {
     if (course.image) {
       return course.image.startsWith('http') ? course.image : `http://127.0.0.1:8000${course.image}`;
@@ -725,7 +730,7 @@ const Courses = () => {
           >
             <Box sx={{ 
               textAlign: 'center', 
-              py: 6,
+              py: 3,
               position: 'relative',
               '&::before, &::after': {
                 content: '""',
@@ -749,17 +754,15 @@ const Courses = () => {
               }
             }}>
               <Typography 
-                variant="h2" 
+                variant="h3" 
                 component="h1" 
                 sx={{ 
                   fontWeight: 800, 
-                  mb: 3,
-                  background: 'linear-gradient(90deg, #fff, #e5978b)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  fontSize: { xs: '2rem', sm: '2.8rem', md: '3.2rem' },
+                  mb: 2,
+                  color: '#ffffff',
+                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.2rem' },
                   lineHeight: 1.2,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.1)'
+                  textShadow: '0 2px 10px rgba(0,0,0,0.3)'
                 }}
               >
                 اكتشف دوراتنا التعليمية
@@ -770,13 +773,13 @@ const Courses = () => {
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
                 <Typography 
-                  variant="h6" 
+                  variant="body1" 
                   sx={{ 
-                    maxWidth: '700px', 
+                    maxWidth: '600px', 
                     mx: 'auto', 
-                    mb: 3,
+                    mb: 2,
                     color: 'rgba(255,255,255,0.9)',
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    fontSize: { xs: '0.9rem', sm: '1rem' },
                     lineHeight: 1.6,
                     fontWeight: 300,
                     textShadow: '0 1px 3px rgba(0,0,0,0.2)'
@@ -791,45 +794,71 @@ const Courses = () => {
                 transition={{ duration: 0.8, delay: 0.6 }}
                 style={{ width: '100%', maxWidth: '700px', margin: '0 auto' }}
               >
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="ابحث عن دورة..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  sx={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '50px',
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': {
-                        border: 'none',
+                <Box sx={{ 
+                  position: 'relative',
+                  maxWidth: '400px',
+                  mx: 'auto',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '-2px',
+                    left: '-2px',
+                    right: '-2px',
+                    bottom: '-2px',
+                    background: 'linear-gradient(45deg, #0e5181, #1a5f8a, #0a3d62)',
+                    borderRadius: '25px',
+                    zIndex: -1,
+                    opacity: 0.3,
+                    animation: `${pulse} 3s ease-in-out infinite`,
+                  }
+                }}>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="ابحث عن دورة..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    sx={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '25px',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          border: 'none',
+                        },
+                        '&:hover fieldset': {
+                          border: 'none',
+                        },
+                        '&.Mui-focused fieldset': {
+                          border: 'none',
+                          boxShadow: '0 0 0 2px rgba(229, 151, 139, 0.5)',
+                        },
+                        paddingRight: '15px',
                       },
-                      '&:hover fieldset': {
-                        border: 'none',
+                      '& .MuiInputBase-input': {
+                        padding: '10px 15px',
+                        fontSize: '0.9rem',
+                        '&::placeholder': {
+                          opacity: 0.7,
+                          color: theme.palette.text.secondary,
+                        },
                       },
-                      '&.Mui-focused fieldset': {
-                        border: 'none',
-                        boxShadow: '0 0 0 2px rgba(229, 151, 139, 0.5)',
-                      },
-                      paddingRight: '20px',
-                    },
-                    '& .MuiInputBase-input': {
-                      padding: '12px 20px',
-                      fontSize: '0.95rem',
-                      '&::placeholder': {
-                        opacity: 0.7,
-                        color: theme.palette.text.secondary,
-                      },
-                    },
-                  }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search sx={{ color: 'text.secondary', ml: 1 }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search sx={{ 
+                            color: '#0e5181', 
+                            ml: 1,
+                            fontSize: '1.1rem',
+                            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                          }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
               </motion.div>
             </Box>
           </motion.div>
@@ -1067,6 +1096,28 @@ const Courses = () => {
                         p: 3,
                       }}>
                         <Box sx={{ mb: 1.5 }}>
+                          {getCategoryName(course) && (
+                            <Chip
+                              label={getCategoryName(course)}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'rgba(229, 151, 139, 0.1)',
+                                color: 'primary.main',
+                                border: '1px solid rgba(229, 151, 139, 0.3)',
+                                fontWeight: 500,
+                                fontSize: '0.7rem',
+                                height: '24px',
+                                mb: 1,
+                                '& .MuiChip-label': {
+                                  px: 1.5,
+                                },
+                                '&:hover': {
+                                  backgroundColor: 'rgba(229, 151, 139, 0.2)',
+                                  borderColor: 'primary.main',
+                                },
+                              }}
+                            />
+                          )}
                           <Chip 
                             label={getLevelLabel(course.level)}
                             size="small"
@@ -1080,20 +1131,6 @@ const Courses = () => {
                           <CourseTitle variant="h6" component="h3" gutterBottom>
                             {course.title}
                           </CourseTitle>
-                          <Typography 
-                            variant="body2" 
-                            color="text.secondary" 
-                            sx={{ 
-                              mb: 2,
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                            title={course.short_description || course.description}
-                          >
-                            {truncateText(course.short_description || course.description, 30)}
-                          </Typography>
                         </Box>
                         
                         <InstructorInfo>
@@ -1117,9 +1154,6 @@ const Courses = () => {
                                 {course.average_rating?.toFixed(1) || '0.0'}
                               </Typography>
                             </Box>
-                            <Typography variant="caption" color="text.secondary">
-                              ({course.total_enrollments?.toLocaleString() || 0})
-                            </Typography>
                           </Box>
                         </InstructorInfo>
                         

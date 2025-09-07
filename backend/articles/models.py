@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.text import slugify
 from django.urls import reverse
 from django.db.models import Count, Avg, Q
@@ -93,7 +93,7 @@ class Article(models.Model):
     
     title = models.CharField(max_length=255, verbose_name='العنوان')
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True, verbose_name='الرابط')
-    content = RichTextField(verbose_name='المحتوى')
+    content = CKEditor5Field(verbose_name='المحتوى')
     summary = models.TextField(blank=True, null=True, verbose_name='ملخص')
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='articles', verbose_name='الكاتب')
     tags = models.ManyToManyField(Tags, blank=True, related_name='articles', verbose_name='الوسوم')

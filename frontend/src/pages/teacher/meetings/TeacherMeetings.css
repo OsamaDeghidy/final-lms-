@@ -12,7 +12,7 @@
 }
 
 .meeting-card.ongoing {
-  border: 2px solid #4caf50;
+  border: 2px solid #e5978b;
   background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
 }
 
@@ -65,7 +65,7 @@
 }
 
 .fab-button {
-  background: linear-gradient(45deg, #0e5181 30%, #9c27b0 90%);
+  background: linear-gradient(45deg, #0e5181 30%, #1976d2 90%);
   box-shadow: 0 3px 15px rgba(103, 58, 183, 0.3);
   transition: all 0.3s ease;
 }
@@ -109,7 +109,7 @@
 .progress-bar {
   height: 8px;
   border-radius: 4px;
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+  background: linear-gradient(90deg, #e5978b 0%, #66bb6a 100%);
 }
 
 .action-button {
@@ -289,6 +289,6 @@
 
 .success-state .success-icon {
   font-size: 64px;
-  color: #4caf50;
+  color: #e5978b;
   margin-bottom: 16px;
 } 

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from django.db import models
 from django.contrib.auth.models import User
-from ckeditor.fields import RichTextField
+from django_ckeditor_5.fields import CKEditor5Field
 from django.utils import timezone
 # from django.contrib.contenttypes.fields import GenericRelation
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -129,7 +129,7 @@ class Exam(models.Model):
     title = models.CharField(max_length=255)
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='exams')
     module = models.ForeignKey('content.Module', on_delete=models.CASCADE, null=True, blank=True, related_name='module_exams')
-    description = RichTextField(null=True, blank=True)
+    description = CKEditor5Field(null=True, blank=True)
     time_limit = models.PositiveIntegerField(help_text='وقت الامتحان بالدقائق', null=True, blank=True)
     pass_mark = models.FloatField(default=60.0, help_text='النسبة المئوية للنجاح')
     is_final = models.BooleanField(default=False, help_text='هل هذا امتحان نهائي للدورة؟')

@@ -58,22 +58,25 @@ const floatAnimation = keyframes`
 `;
 
 const SectionContainer = styled(Box)(({ theme }) => ({
-  padding: theme.spacing(10, 0),
+  padding: theme.spacing(2, 0, 4, 0),
   position: 'relative',
   overflow: 'hidden',
-  background: 'linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%)',
+  background: '#ffffff',
   [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(6, 0),
+    padding: theme.spacing(1, 0, 3, 0),
+  },
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(1, 0, 2, 0),
   },
   '&:before': {
     content: '""',
     position: 'absolute',
-    width: '500px',
-    height: '500px',
+    width: '400px',
+    height: '400px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.1) 0%, rgba(229, 151, 139, 0.1) 100%)',
-    top: '-250px',
-    right: '-250px',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.03) 0%, rgba(229, 151, 139, 0.03) 100%)',
+    top: '-200px',
+    right: '-200px',
     zIndex: 0,
   },
   '&:after': {
@@ -82,7 +85,7 @@ const SectionContainer = styled(Box)(({ theme }) => ({
     width: '300px',
     height: '300px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.1) 0%, rgba(229, 151, 139, 0.1) 100%)',
+    background: 'linear-gradient(135deg, rgba(229, 151, 139, 0.02) 0%, rgba(14, 81, 129, 0.02) 100%)',
     bottom: '-150px',
     left: '-150px',
     zIndex: 0,
@@ -91,34 +94,34 @@ const SectionContainer = styled(Box)(({ theme }) => ({
 
 const SectionHeader = styled(Box)(({ theme }) => ({
   textAlign: 'center',
-  marginBottom: theme.spacing(8),
+  marginBottom: theme.spacing(2),
   position: 'relative',
   zIndex: 1,
   [theme.breakpoints.down('sm')]: {
-    marginBottom: theme.spacing(6),
+    marginBottom: theme.spacing(1),
   },
 }));
 
 const SectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 800,
-  marginBottom: theme.spacing(3),
+  marginBottom: theme.spacing(2),
   position: 'relative',
   display: 'inline-block',
   background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  fontSize: '2.5rem',
+  fontSize: '2rem',
   [theme.breakpoints.down('sm')]: {
-    fontSize: '2rem',
+    fontSize: '1.5rem',
   },
   '&:after': {
     content: '""',
     position: 'absolute',
     right: '50%',
-    bottom: -10,
+    bottom: -8,
     transform: 'translateX(50%)',
-    width: 60,
-    height: 4,
+    width: 50,
+    height: 3,
     background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
     borderRadius: 2,
   },
@@ -260,14 +263,14 @@ const TestimonialCard = styled(Box, {
   shouldForwardProp: (prop) => prop !== 'bgColor' && prop !== 'isActive',
 })(({ theme, bgColor, isActive }) => ({
   backgroundColor: '#fff',
-  borderRadius: '20px',
-  padding: theme.spacing(4, 3.5),
-  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.05)',
-  width: 'calc(100% - 40px)',
-  maxWidth: '420px',
-  minHeight: '300px',
+  borderRadius: '14px',
+  padding: theme.spacing(2, 2),
+  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.05)',
+  width: 'calc(50% - 16px)',
+  maxWidth: 'calc(50% - 16px)',
+  minHeight: '160px',
   flex: '0 0 auto',
-  margin: theme.spacing(0, 2.5),
+  margin: theme.spacing(0, 1),
   display: 'flex',
   flexDirection: 'column',
   position: 'relative',
@@ -279,7 +282,7 @@ const TestimonialCard = styled(Box, {
   transform: isActive ? 'scale(1.02)' : 'scale(0.98)',
   '&:hover': {
     transform: isActive ? 'scale(1.05)' : 'scale(1.02)',
-    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 12px 35px rgba(0, 0, 0, 0.1)',
     opacity: 1,
   },
   '&:before': {
@@ -288,28 +291,29 @@ const TestimonialCard = styled(Box, {
     top: 0,
     right: 0,
     width: '100%',
-    height: '5px',
+    height: '3px',
     background: bgColor || theme.palette.primary.main,
     zIndex: 2,
     transition: 'all 0.3s ease',
   },
   [theme.breakpoints.down('lg')]: {
-    width: 'calc(100% - 40px)',
-    maxWidth: '380px',
-    minHeight: '280px',
-    margin: theme.spacing(0, 2),
+    width: 'calc(50% - 16px)',
+    maxWidth: 'calc(50% - 16px)',
+    minHeight: '140px',
+    margin: theme.spacing(0, 1),
   },
   [theme.breakpoints.down('sm')]: {
-    width: 'calc(100% - 32px)',
-    maxWidth: '320px',
-    minHeight: '260px',
-    margin: theme.spacing(0, 1.5),
-    padding: theme.spacing(3, 3),
+    width: 'calc(100% - 16px)',
+    maxWidth: 'calc(100% - 16px)',
+    minHeight: '120px',
+    margin: theme.spacing(0, 0.5),
+    padding: theme.spacing(1.5, 1.5),
   },
   [theme.breakpoints.down('xs')]: {
-    width: 'calc(100% - 24px)',
-    margin: theme.spacing(0, 1),
-    padding: theme.spacing(3, 2.5),
+    width: 'calc(100% - 12px)',
+    maxWidth: 'calc(100% - 12px)',
+    margin: theme.spacing(0, 0.25),
+    padding: theme.spacing(1.5, 1),
   },
 }));
 
@@ -380,7 +384,7 @@ const TestimonialsSection = () => {
       <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
         <SectionHeader>
           <SectionTitle variant="h2" component="h2">
-            آراء عملائنا
+            آراء طلابنا
           </SectionTitle>
           <SectionSubtitle>
             اكتشف ما يقوله طلابنا عن تجربتهم مع منصتنا التعليمية
@@ -437,101 +441,65 @@ const TestimonialsSection = () => {
                   {testimonial.content}
                 </TestimonialContent>
                 <QuoteIcon />
-                <TestimonialFooter>
-                  <TestimonialAvatar 
-                    src={testimonial.avatar} 
-                    alt={testimonial.name}
-                    bgColor={testimonial.bgColor}
-                  />
-                  <TestimonialInfo>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <TestimonialName>{testimonial.name}</TestimonialName>
-                        <TestimonialRole>{testimonial.role}</TestimonialRole>
-                      </Box>
-                      <Rating rating={testimonial.rating}>
-                        {renderStars(testimonial.rating)}
-                      </Rating>
+                
+                {/* Name and Date Only */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  mt: 'auto',
+                  pt: 2,
+                  borderTop: '1px solid rgba(0, 0, 0, 0.05)'
+                }}>
+                  <Typography variant="body2" sx={{ 
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    fontSize: '0.9rem'
+                  }}>
+                    {testimonial.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ 
+                    color: 'text.secondary',
+                    fontSize: '0.8rem'
+                  }}>
+                    {new Date().toLocaleDateString('ar-SA', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </Typography>
                     </Box>
-                  </TestimonialInfo>
-                </TestimonialFooter>
               </TestimonialCard>
             ))}
           </Box>
 
-          <IconButton 
-            className="nav-button"
-            onClick={() => handleScroll('prev')}
-            disabled={activeIndex === 0}
+          {/* Navigation Dots */}
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            gap: 1,
+            mt: 4
+          }}>
+            {testimonials.map((_, index) => (
+              <Box
+                key={index}
+                onClick={() => scrollToTestimonial(index)}
             sx={{
-              position: 'absolute',
-              left: { xs: 8, sm: 16, md: 24 },
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: 'background.paper',
-              boxShadow: 3,
-              zIndex: 2,
-              opacity: { xs: 1, md: 0.7 },
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: index === activeIndex ? '#0e5181' : 'rgba(14, 81, 129, 0.3)',
+                  cursor: 'pointer',
               transition: 'all 0.3s ease',
-              width: 48,
-              height: 48,
               '&:hover': {
-                backgroundColor: 'background.paper',
-                opacity: 1,
-                transform: 'translateY(-50%) scale(1.1)',
-              },
-              '&.Mui-disabled': {
-                opacity: 0.2,
-              },
-              [theme.breakpoints.down('sm')]: {
-                display: 'none',
-              },
-            }}
-          >
-            <Box component="span" sx={{ 
-              transform: 'rotate(180deg)', 
-              display: 'inline-block',
-              fontSize: '1.5rem',
-              fontWeight: 'bold',
-              color: theme.palette.primary.main,
-            }}>→</Box>
-          </IconButton>
-
-          <IconButton 
-            className="nav-button"
-            onClick={() => handleScroll('next')}
-            disabled={activeIndex === testimonials.length - 1}
-            sx={{
-              position: 'absolute',
-              right: { xs: 8, sm: 16, md: 24 },
-              top: '50%',
-              transform: 'translateY(-50%)',
-              backgroundColor: 'background.paper',
-              boxShadow: 3,
-              zIndex: 2,
-              opacity: { xs: 1, md: 0.7 },
-              transition: 'all 0.3s ease',
-              width: 48,
-              height: 48,
-              '&:hover': {
-                backgroundColor: 'background.paper',
-                opacity: 1,
-                transform: 'translateY(-50%) scale(1.1)',
-              },
-              '&.Mui-disabled': {
-                opacity: 0.2,
-              },
-              [theme.breakpoints.down('sm')]: {
-                display: 'none',
-              },
-            }}
-          >
-            <Box component="span" sx={{ 
-              fontSize: '1.5rem',
-              fontWeight: 'bold',
-              color: theme.palette.primary.main,
-            }}>→</Box>
-          </IconButton>
+                    backgroundColor: index === activeIndex ? '#0e5181' : 'rgba(14, 81, 129, 0.6)',
+                    transform: 'scale(1.2)',
+                  },
+                }}
+              />
+            ))}
+          </Box>
         </Box>
       </Container>
     </SectionContainer>

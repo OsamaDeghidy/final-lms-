@@ -12,6 +12,10 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.admin.views.decorators import staff_member_required
 from .admin_views import user_permissions, group_permissions
 
+# CKEditor 5 configuration for admin
+from django_ckeditor_5.widgets import CKEditor5Widget
+from django import forms
+
 class LMSAdminSite(AdminSite):
     # Site headers
     site_header = "نظام إدارة التعلم - LMS"

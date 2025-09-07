@@ -18,7 +18,7 @@ const store = configureStore({
         ignoredPaths: ['auth.user'],
       },
     }),
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.DEV,
 });
 
 export default store;

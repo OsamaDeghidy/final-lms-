@@ -163,7 +163,7 @@ const CreateCourse = () => {
     discount_price: null,
     
     // Status
-    status: 'draft',
+    status: 'published',
     is_featured: false,
     is_certified: false,
     
@@ -252,14 +252,14 @@ const CreateCourse = () => {
         // Show success message
         setSnackbar({
           open: true,
-          message: 'تم حفظ الدورة بنجاح!',
+          message: 'تم حفظ الدورة بنجاح! سيتم توجيهك إلى صفحة دوراتك...',
           severity: 'success'
         });
         
-        // Navigate to the courses list after a short delay
+        // Navigate to the teacher's courses list after a short delay
         setTimeout(() => {
-          navigate('/teacher/courses');
-        }, 1500);
+          navigate('/teacher/my-courses');
+        }, 2000);
         
       } catch (error) {
         console.error('Error creating course:', error);
@@ -283,14 +283,14 @@ const CreateCourse = () => {
               // Course was created successfully despite the 500 error
               setSnackbar({
                 open: true,
-                message: 'تم حفظ الدورة بنجاح! (تم إنشاؤها بنجاح رغم خطأ في الاستجابة)',
+                message: 'تم حفظ الدورة بنجاح! سيتم توجيهك إلى صفحة دوراتك...',
                 severity: 'success'
               });
               
-              // Navigate to the courses list
+              // Navigate to the teacher's courses list
               setTimeout(() => {
-                navigate('/teacher/courses');
-              }, 1500);
+                navigate('/teacher/my-courses');
+              }, 2000);
               return;
             }
           } catch (fetchError) {
@@ -305,7 +305,7 @@ const CreateCourse = () => {
                            'خطأ في حفظ الدورة';
         setSnackbar({
           open: true,
-          message: errorMessage,
+          message: `${errorMessage} - يمكنك المحاولة مرة أخرى أو الانتقال إلى صفحة دوراتك`,
           severity: 'error'
         });
       } finally {
@@ -913,11 +913,25 @@ const CreateCourse = () => {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={snackbar.severity === 'success' ? 6000 : 4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => navigate('/teacher/my-courses')}
+              sx={{ fontWeight: 600 }}
+            >
+              {snackbar.severity === 'success' ? 'عرض دوراتي' : 'العودة للدورات'}
+            </Button>
+          }
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

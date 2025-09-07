@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// Define __dirname for ES modules
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -22,6 +25,7 @@ export default defineConfig({
     open: true,
     host: true,
     strictPort: true,
+    historyApiFallback: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -39,10 +43,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/courses': {
+      '/api/courses': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/assignments': {
         target: 'http://localhost:8000',

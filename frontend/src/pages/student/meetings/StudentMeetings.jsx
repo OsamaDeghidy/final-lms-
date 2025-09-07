@@ -28,7 +28,7 @@ const StyledCard = styled(Card)(({ theme, status }) => ({
   borderRadius: 16,
   boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
   transition: 'all 0.3s ease',
-  border: status === 'ongoing' ? '2px solid #4caf50' : '1px solid #e0e0e0',
+  border: status === 'ongoing' ? '2px solid #e5978b' : '1px solid #e0e0e0',
   '&:hover': {
     transform: 'translateY(-4px)',
     boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
@@ -604,10 +604,10 @@ const StudentMeetings = () => {
               fontSize: '1rem',
             },
             '& .Mui-selected': {
-              color: '#4caf50',
+              color: '#e5978b',
             },
             '& .MuiTabs-indicator': {
-              backgroundColor: '#4caf50',
+              backgroundColor: '#e5978b',
             },
           }}
         >

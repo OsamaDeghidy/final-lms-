@@ -96,7 +96,8 @@ import {
   Schedule as ScheduleIcon,
   Group as GroupIcon,
   TrendingUp as TrendingUpIcon,
-  Payment as PaymentIcon
+  Payment as PaymentIcon,
+  Lock as LockIcon
 } from '@mui/icons-material';
 // إضافات أيقونات بسيطة للوحدات
 import { ListAlt as ListAltIcon } from '@mui/icons-material';
@@ -104,9 +105,12 @@ import { styled, keyframes, alpha, useTheme } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
-import { courseAPI } from '../../services/courseService';
-import { paymentAPI } from '../../services/api.service';
-import { cartAPI } from '../../services/courseService';
+import { courseAPI, cartAPI, paymentAPI } from '../../services/courseService';
+import { contentAPI } from '../../services/content.service';
+import { assignmentsAPI } from '../../services/assignment.service';
+import { examAPI } from '../../services/exam.service';
+import { reviewsAPI } from '../../services/reviews.service';
+import api from '../../services/api.service';
 
 // Animation keyframes - تحسين الأنيميشن
 const gradientAnimation = keyframes`
@@ -861,6 +865,14 @@ const CourseDetail = () => {
   const [cartItems, setCartItems] = useState([]);
   const [cartTotal, setCartTotal] = useState(0);
   
+  // Review states
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: ''
+  });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  
   // Handle scroll for header and sidebar visibility
   useEffect(() => {
     const handleScroll = () => {
@@ -946,6 +958,15 @@ const CourseDetail = () => {
     if (lesson?.type === 'file') {
       return <DownloadIcon htmlColor="#e5978b" />;
     }
+    if (lesson?.type === 'project') {
+      return <CodeIcon htmlColor="#0e5181" />;
+    }
+    if (lesson?.type === 'exercise') {
+      return <AssignmentTurnedInIcon htmlColor="#e5978b" />;
+    }
+    if (lesson?.type === 'case-study') {
+      return <InfoIcon htmlColor="#0e5181" />;
+    }
     if (lesson?.isPreview) {
       return <PlayCircleOutline htmlColor="#0e5181" />;
     }
@@ -1006,7 +1027,7 @@ const CourseDetail = () => {
     resources: 45,
     students: 1542,
     rating: 4.8,
-    reviews: 243,
+    reviewCount: 243,
     price: 99.99,
     originalPrice: 199.99,
     discount: 50,
@@ -1167,6 +1188,8 @@ const CourseDetail = () => {
       setLoading(true);
       setError(null);
       try {
+        console.log('Fetching course data for ID:', id);
+        
         // Fetch course details
         const courseData = await courseAPI.getCourseById(id);
         console.log('Course data from API:', courseData);
@@ -1176,15 +1199,19 @@ const CourseDetail = () => {
         try {
           const relatedResponse = await courseAPI.getRelatedCourses(id);
           relatedCoursesData = relatedResponse.results || relatedResponse || [];
+          console.log('Related courses data:', relatedCoursesData);
         } catch (error) {
           console.warn('Could not fetch related courses:', error);
+          relatedCoursesData = [];
         }
         
-        // Fetch course modules if available
+        // Fetch course modules from content API (real data)
         let modulesData = [];
+        let isUserEnrolled = false;
         try {
-          const modulesResponse = await courseAPI.getCourseModules(id);
-          console.log('Modules response:', modulesResponse);
+          console.log('Fetching modules from content API for course:', id);
+          const modulesResponse = await contentAPI.getModules(id);
+          console.log('Content API modules response:', modulesResponse);
           
           // Handle different response formats
           if (modulesResponse && typeof modulesResponse === 'object') {
@@ -1194,6 +1221,8 @@ const CourseDetail = () => {
               modulesData = modulesResponse.modules;
             } else if (modulesResponse.results && Array.isArray(modulesResponse.results)) {
               modulesData = modulesResponse.results;
+            } else if (modulesResponse.data && Array.isArray(modulesResponse.data)) {
+              modulesData = modulesResponse.data;
             } else {
               modulesData = [];
             }
@@ -1201,18 +1230,193 @@ const CourseDetail = () => {
             modulesData = [];
           }
           
-          console.log('Processed modules data:', modulesData);
+          console.log('Processed content modules data:', modulesData);
+          
+          // If we got modules data, user is enrolled or content is public
+          if (modulesData.length > 0) {
+            isUserEnrolled = true;
+          } else {
+            // Try to get modules from course API as fallback
+            try {
+              const courseModulesResponse = await courseAPI.getCourseModules(id);
+              console.log('Course API modules response:', courseModulesResponse);
+              
+              if (courseModulesResponse && typeof courseModulesResponse === 'object') {
+                if (Array.isArray(courseModulesResponse)) {
+                  modulesData = courseModulesResponse;
+                } else if (courseModulesResponse.modules && Array.isArray(courseModulesResponse.modules)) {
+                  modulesData = courseModulesResponse.modules;
+                } else if (courseModulesResponse.results && Array.isArray(courseModulesResponse.results)) {
+                  modulesData = courseModulesResponse.results;
+                }
+              }
+              
+              if (modulesData.length > 0) {
+                isUserEnrolled = true;
+              }
+            } catch (courseModulesError) {
+              console.warn('Could not fetch course modules from course API:', courseModulesError);
+              if (courseModulesError.response && courseModulesError.response.status === 403) {
+                isUserEnrolled = false;
+              }
+            }
+          }
         } catch (error) {
-          console.warn('Could not fetch course modules:', error);
-          // If it's a 403 error, user is not enrolled
-          if (error.response && error.response.status === 403) {
-            console.log('User is not enrolled in this course, modules will not be available');
+          console.warn('Could not fetch modules from content API:', error);
+          
+          // Try course API as fallback
+          try {
+            const courseModulesResponse = await courseAPI.getCourseModules(id);
+            console.log('Fallback course API modules response:', courseModulesResponse);
+            
+            if (courseModulesResponse && typeof courseModulesResponse === 'object') {
+              if (Array.isArray(courseModulesResponse)) {
+                modulesData = courseModulesResponse;
+              } else if (courseModulesResponse.modules && Array.isArray(courseModulesResponse.modules)) {
+                modulesData = courseModulesResponse.modules;
+              } else if (courseModulesResponse.results && Array.isArray(courseModulesResponse.results)) {
+                modulesData = courseModulesResponse.results;
+              }
+            }
+            
+            if (modulesData.length > 0) {
+              isUserEnrolled = true;
+            }
+          } catch (courseModulesError) {
+            console.warn('Could not fetch course modules from course API:', courseModulesError);
+            if (courseModulesError.response && courseModulesError.response.status === 403) {
+              isUserEnrolled = false;
           }
           modulesData = [];
+          }
+        }
+        
+        // Fetch lessons, assignments, quizzes, and exams for each module
+        if (modulesData.length > 0) {
+          console.log('Fetching content for modules...');
+          for (let i = 0; i < modulesData.length; i++) {
+            const module = modulesData[i];
+            const moduleId = module.id;
+            
+            // Fetch lessons
+            try {
+              const lessonsResponse = await contentAPI.getLessons({ moduleId: moduleId, courseId: id });
+              console.log(`Lessons for module ${moduleId}:`, lessonsResponse);
+              
+              if (lessonsResponse && Array.isArray(lessonsResponse)) {
+                modulesData[i].lessons = lessonsResponse;
+              } else if (lessonsResponse && Array.isArray(lessonsResponse.results)) {
+                modulesData[i].lessons = lessonsResponse.results;
+              } else if (lessonsResponse && Array.isArray(lessonsResponse.data)) {
+                modulesData[i].lessons = lessonsResponse.data;
+              }
+            } catch (error) {
+              console.warn(`Could not fetch lessons for module ${moduleId}:`, error);
+              modulesData[i].lessons = [];
+            }
+
+            // Fetch assignments for this module
+            try {
+              const assignmentsResponse = await assignmentsAPI.getAssignments({ 
+                course: id, 
+                module: moduleId 
+              });
+              console.log(`Assignments for module ${moduleId}:`, assignmentsResponse);
+              
+              if (assignmentsResponse && Array.isArray(assignmentsResponse)) {
+                modulesData[i].assignments = assignmentsResponse;
+              } else if (assignmentsResponse && Array.isArray(assignmentsResponse.results)) {
+                modulesData[i].assignments = assignmentsResponse.results;
+              } else if (assignmentsResponse && Array.isArray(assignmentsResponse.data)) {
+                modulesData[i].assignments = assignmentsResponse.data;
+              }
+            } catch (error) {
+              console.warn(`Could not fetch assignments for module ${moduleId}:`, error);
+              modulesData[i].assignments = [];
+            }
+
+            // Fetch quizzes for this module
+            try {
+              const quizzesResponse = await api.get(`/assignments/quizzes/`, {
+                params: { course: id, module: moduleId }
+              });
+              console.log(`Quizzes for module ${moduleId}:`, quizzesResponse.data);
+              
+              if (quizzesResponse.data && Array.isArray(quizzesResponse.data)) {
+                modulesData[i].quizzes = quizzesResponse.data;
+              } else if (quizzesResponse.data && Array.isArray(quizzesResponse.data.results)) {
+                modulesData[i].quizzes = quizzesResponse.data.results;
+              }
+            } catch (error) {
+              console.warn(`Could not fetch quizzes for module ${moduleId}:`, error);
+              modulesData[i].quizzes = [];
+            }
+
+            // Fetch exams for this module
+            try {
+              const examsResponse = await examAPI.getExams({ 
+                course: id, 
+                module: moduleId 
+              });
+              console.log(`Exams for module ${moduleId}:`, examsResponse);
+              
+              if (examsResponse && Array.isArray(examsResponse)) {
+                modulesData[i].exams = examsResponse;
+              } else if (examsResponse && Array.isArray(examsResponse.results)) {
+                modulesData[i].exams = examsResponse.results;
+              } else if (examsResponse && Array.isArray(examsResponse.data)) {
+                modulesData[i].exams = examsResponse.data;
+              }
+            } catch (error) {
+              console.warn(`Could not fetch exams for module ${moduleId}:`, error);
+              modulesData[i].exams = [];
+            }
+          }
+        }
+
+        // Fetch course reviews from reviews API (real data)
+        let reviewsData = [];
+        let ratingStats = null;
+        try {
+          console.log('Fetching reviews from reviews API for course:', id);
+          const reviewsResponse = await reviewsAPI.getCourseReviews(id);
+          console.log('Reviews API response:', reviewsResponse);
+          
+          if (reviewsResponse && reviewsResponse.results) {
+            reviewsData = reviewsResponse.results;
+          } else if (Array.isArray(reviewsResponse)) {
+            reviewsData = reviewsResponse;
+          } else {
+            reviewsData = [];
+          }
+          
+          console.log('Processed reviews data:', reviewsData);
+        } catch (error) {
+          console.warn('Could not fetch reviews from reviews API:', error);
+          
+          // Try course API as fallback
+          try {
+            const courseReviewsResponse = await courseAPI.getCourseReviews(id);
+            reviewsData = courseReviewsResponse.results || courseReviewsResponse || [];
+            console.log('Fallback course reviews data:', reviewsData);
+          } catch (courseReviewsError) {
+            console.warn('Could not fetch course reviews from course API:', courseReviewsError);
+            reviewsData = [];
+          }
+        }
+
+        // Fetch course rating statistics
+        try {
+          const ratingResponse = await reviewsAPI.getCourseRating(id);
+          console.log('Course rating stats:', ratingResponse);
+          ratingStats = ratingResponse;
+        } catch (error) {
+          console.warn('Could not fetch course rating stats:', error);
+          ratingStats = null;
         }
         
         // Transform API data to match expected format
-        const transformedCourse = transformCourseData(courseData, modulesData);
+        const transformedCourse = transformCourseData(courseData, modulesData, reviewsData, isUserEnrolled, ratingStats);
         console.log('Transformed course:', transformedCourse);
         console.log('Transformed course modules:', transformedCourse.modules);
         
@@ -1222,27 +1426,29 @@ const CourseDetail = () => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching course data:', error);
-        let errorMessage = 'Failed to load course data';
+        let errorMessage = 'فشل في تحميل بيانات الدورة';
         
         if (error.response) {
           // Server responded with error status
           if (error.response.status === 404) {
-            errorMessage = 'Course not found';
+            errorMessage = 'الدورة غير موجودة';
           } else if (error.response.status === 403) {
-            errorMessage = 'You do not have permission to view this course';
+            errorMessage = 'ليس لديك صلاحية لعرض هذه الدورة';
           } else if (error.response.status === 401) {
-            errorMessage = 'Please log in to view this course';
+            errorMessage = 'يرجى تسجيل الدخول لعرض هذه الدورة';
           } else if (error.response.data?.detail) {
             errorMessage = error.response.data.detail;
           } else if (error.response.data?.error) {
             errorMessage = error.response.data.error;
+          } else if (error.response.data?.message) {
+            errorMessage = error.response.data.message;
           }
         } else if (error.request) {
           // Network error
-          errorMessage = 'Network error. Please check your internet connection.';
+          errorMessage = 'خطأ في الشبكة. يرجى التحقق من اتصال الإنترنت.';
         } else {
           // Other error
-          errorMessage = error.message || 'An unexpected error occurred';
+          errorMessage = error.message || 'حدث خطأ غير متوقع';
         }
         
         setError(errorMessage);
@@ -1256,7 +1462,7 @@ const CourseDetail = () => {
   }, [id]);
 
   // Transform API data to match expected format
-  const transformCourseData = (apiCourse, modulesData = []) => {
+  const transformCourseData = (apiCourse, modulesData = [], reviewsData = [], isUserEnrolled = false, ratingStats = null) => {
     console.log('Transforming course data:', apiCourse);
     
     // Handle image URLs
@@ -1295,34 +1501,61 @@ const CourseDetail = () => {
 
     const totalHours = Math.round(totalLessons * 0.5); // Estimate 30 minutes per lesson
 
+    // Transform reviews data with real API data
+    const transformedReviews = Array.isArray(reviewsData) ? reviewsData.map(review => ({
+      id: review.id,
+      user: {
+        name: review.user_name || review.user?.username || review.user?.first_name || review.user?.name || 'مستخدم',
+        avatar: getImageUrl(review.user_image || review.user?.profile?.avatar || review.user?.profile_pic || review.avatar),
+        id: review.user?.id || null,
+      },
+      rating: review.rating || 5,
+      date: review.created_at ? new Date(review.created_at).toLocaleDateString('ar-EG', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      }) : 'مؤخراً',
+      title: review.title || 'تقييم ممتاز',
+      content: review.review_text || review.content || review.comment || review.text || '',
+      likes: review.like_count || review.helpful_count || review.likes_count || 0,
+      isLiked: review.is_liked_by_user || review.is_liked || false,
+      isOwner: review.is_owner || false,
+      isApproved: review.is_approved !== false,
+      ...review
+    })) : [];
+
+    // Use rating statistics if available
+    const courseRating = ratingStats?.average_rating || apiCourse.average_rating || apiCourse.rating || 4.8;
+    const totalReviews = ratingStats?.review_count || ratingStats?.total_reviews || transformedReviews.length;
+
     return {
       id: apiCourse.id,
-      title: apiCourse.title || '',
-      subtitle: apiCourse.subtitle || apiCourse.short_description || '',
+      title: apiCourse.title || apiCourse.name || '',
+      subtitle: apiCourse.subtitle || apiCourse.short_description || apiCourse.description?.substring(0, 100) || '',
       description: apiCourse.description || '',
-      longDescription: apiCourse.description || apiCourse.long_description || '',
-      instructor: apiCourse.instructors?.[0]?.name || apiCourse.instructor?.name || 'Unknown Instructor',
-      instructorTitle: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.title || '',
-      instructorBio: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.bio || '',
-      instructorAvatar: getImageUrl(apiCourse.instructors?.[0]?.profile_pic || apiCourse.instructor?.profile_pic),
-      instructorRating: apiCourse.instructor?.rating || 4.9,
-      instructorStudents: apiCourse.instructor?.students_count || apiCourse.total_enrollments || 0,
-      instructorCourses: apiCourse.instructor?.courses_count || 8,
-      bannerImage: getImageUrl(apiCourse.image || apiCourse.banner_image),
-      thumbnail: getImageUrl(apiCourse.image || apiCourse.thumbnail),
-      category: apiCourse.category?.name || 'Web Development',
-      level: apiCourse.level || 'beginner',
+      longDescription: apiCourse.description || apiCourse.long_description || apiCourse.content || '',
+      instructor: apiCourse.instructors?.[0]?.name || apiCourse.instructor?.name || apiCourse.teacher?.name || 'مدرس محترف',
+      instructorTitle: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.title || apiCourse.teacher?.title || 'مدرس محترف',
+      instructorBio: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.bio || apiCourse.teacher?.bio || '',
+      instructorAvatar: getImageUrl(apiCourse.instructors?.[0]?.profile_pic || apiCourse.instructor?.profile_pic || apiCourse.teacher?.profile_pic),
+      instructorRating: apiCourse.instructor?.rating || apiCourse.teacher?.rating || 4.9,
+      instructorStudents: apiCourse.instructor?.students_count || apiCourse.teacher?.students_count || apiCourse.total_enrollments || 0,
+      instructorCourses: apiCourse.instructor?.courses_count || apiCourse.teacher?.courses_count || 8,
+      bannerImage: getImageUrl(apiCourse.image || apiCourse.banner_image || apiCourse.cover_image),
+      thumbnail: getImageUrl(apiCourse.image || apiCourse.thumbnail || apiCourse.cover_image),
+      category: apiCourse.category?.name || apiCourse.category || 'التدريب الإلكتروني',
+      level: apiCourse.level || 'مبتدئ',
       duration: apiCourse.duration || `${totalHours} ساعة`,
       totalHours: totalHours,
       lectures: totalLessons,
-      resources: apiCourse.resources_count || 45,
-      students: apiCourse.total_enrollments || apiCourse.students_count || 0,
-      rating: apiCourse.average_rating || apiCourse.rating || 4.8,
-      reviews: apiCourse.reviews?.length || 0,
+      resources: apiCourse.resources_count || apiCourse.materials_count || 45,
+      students: apiCourse.total_enrollments || apiCourse.students_count || apiCourse.enrollments_count || 0,
+      rating: courseRating,
+      courseReviews: transformedReviews,
       price: price,
       originalPrice: discountPrice > 0 ? price : price,
       discount: discount,
-      isBestseller: apiCourse.is_featured || false,
+      isBestseller: apiCourse.is_featured || apiCourse.is_bestseller || false,
       lastUpdated: apiCourse.updated_at ? new Date(apiCourse.updated_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long' }) : 'مؤخراً',
       language: apiCourse.language || 'العربية',
       captions: apiCourse.captions || ['العربية', 'English'],
@@ -1337,16 +1570,15 @@ const CourseDetail = () => {
       isEnrolled: apiCourse.is_enrolled || false,
       planPdfUrl: getFileUrl(apiCourse.timeline_pdf || apiCourse.plan_pdf || apiCourse.plan || apiCourse.syllabus_pdf),
       enrichmentPdfUrl: getFileUrl(apiCourse.enrichment_pdf || apiCourse.resources_pdf || apiCourse.materials_pdf),
-      requirements: apiCourse.requirements || [],
-      whoIsThisFor: apiCourse.who_is_this_for || apiCourse.target_audience || [],
-      modules: transformModulesData(modulesData, apiCourse),
+      requirements: apiCourse.requirements || apiCourse.prerequisites || [],
+      whoIsThisFor: apiCourse.who_is_this_for || apiCourse.target_audience || apiCourse.audience || [],
+      modules: transformModulesData(modulesData, apiCourse, isUserEnrolled),
       curriculum: [
         { title: 'البداية', duration: '2h 45m', lectures: 5, completed: 2 },
         { title: 'أنماط React المتقدمة', duration: '4h 15m', lectures: 6, completed: 0 },
         { title: 'إدارة الحالة مع Redux', duration: '5h 30m', lectures: 6, completed: 0 },
         { title: 'تحسين الأداء', duration: '3h 45m', lectures: 5, completed: 0 },
       ],
-      reviews: apiCourse.reviews || [],
       faqs: apiCourse.faqs || [
         {
           question: 'كيف يمكنني الوصول إلى دورتي بعد الشراء؟',
@@ -1373,8 +1605,8 @@ const CourseDetail = () => {
   };
 
   // Transform modules data
-  const transformModulesData = (modulesData, courseData) => {
-    console.log('transformModulesData called with:', { modulesData, courseData });
+  const transformModulesData = (modulesData, courseData, isUserEnrolled = false) => {
+    console.log('transformModulesData called with:', { modulesData, courseData, isUserEnrolled });
     
     // Ensure modulesData is an array
     if (!modulesData || !Array.isArray(modulesData)) {
@@ -1382,82 +1614,268 @@ const CourseDetail = () => {
       modulesData = [];
     }
     
-    if (modulesData.length === 0) {
-      // Return default modules if no modules data
+    // Check if modulesData is empty or has no lessons
+    const hasValidModules = modulesData.length > 0 && modulesData.some(module => {
+      const lessons = module.lessons || module.content || module.lectures || [];
+      return Array.isArray(lessons) && lessons.length > 0;
+    });
+    
+    // If user is not enrolled or no valid modules, show preview modules
+    if (!isUserEnrolled || !hasValidModules) {
+      console.log('User not enrolled or no valid modules, showing preview modules');
+      
+      // Get course title for better preview content
+      const courseTitle = courseData?.title || courseData?.name || 'الدورة';
+      const isReactCourse = courseTitle.toLowerCase().includes('react');
+      const isWebCourse = courseTitle.toLowerCase().includes('web') || courseTitle.toLowerCase().includes('frontend');
+      const isBackendCourse = courseTitle.toLowerCase().includes('backend') || courseTitle.toLowerCase().includes('django') || courseTitle.toLowerCase().includes('python');
+      
+      // Return preview modules based on course type
       return [
         {
           id: 1,
-          title: 'مقدمة متقدمة في React',
+          title: `مقدمة إلى ${isReactCourse ? 'React' : isWebCourse ? 'تطوير الويب' : isBackendCourse ? 'تطوير الخلفية' : 'الدورة'}`,
           description: 'إعداد بيئة التطوير وفهم المفاهيم الأساسية',
           duration: '2h 45m',
           lessons: [
-            { id: 1, title: 'مقدمة إلى React المتقدم', duration: '15:30', isPreview: true, completed: true, type: 'video' },
-            { id: 2, title: 'إعداد بيئة التطوير', duration: '12:45', isPreview: true, completed: true, type: 'video' },
-            { id: 3, title: 'نظرة عامة على مزايا React 18+', duration: '18:20', isPreview: false, completed: false, type: 'video' },
+            { id: 1, title: `مقدمة إلى ${isReactCourse ? 'React' : isWebCourse ? 'تطوير الويب' : isBackendCourse ? 'تطوير الخلفية' : 'الدورة'}`, duration: '15:30', isPreview: true, completed: false, type: 'video' },
+            { id: 2, title: 'إعداد بيئة التطوير', duration: '12:45', isPreview: true, completed: false, type: 'video' },
+            { id: 3, title: 'المفاهيم الأساسية', duration: '18:20', isPreview: false, completed: false, type: 'video' },
             { id: 4, title: 'إعداد المشروع والتهيئة', duration: '22:10', isPreview: false, completed: false, type: 'video' },
             { id: 5, title: 'موارد الدورة والأدوات', duration: '08:30', isPreview: true, completed: false, type: 'article' },
+            { id: 6, title: 'واجب الوحدة الأولى: مشروع تطبيقي', duration: '45:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 7, title: 'كويز المفاهيم الأساسية', duration: '20:00', isPreview: false, completed: false, type: 'quiz' },
           ],
         },
         {
           id: 2,
-          title: 'أنماط React المتقدمة',
-          description: 'إتقان أنماط React المتقدمة وأفضل الممارسات',
+          title: 'المفاهيم المتقدمة',
+          description: 'إتقان المفاهيم المتقدمة وأفضل الممارسات',
           duration: '4h 15m',
           lessons: [
-            { id: 6, title: 'نمط Render Props', duration: '22:10', isPreview: true, completed: false, type: 'video' },
-            { id: 7, title: 'المكوّنات عالية الترتيب (HOCs)', duration: '18:30', isPreview: true, completed: false, type: 'video' },
-            { id: 8, title: 'التعمق في Context API', duration: '20:15', isPreview: false, completed: false, type: 'video' },
-            { id: 9, title: 'نمط المكونات المركبة', duration: '25:40', isPreview: false, completed: false, type: 'video' },
-            { id: 10, title: 'سلاسل React Hooks المخصصة', duration: '28:20', isPreview: false, completed: false, type: 'video' },
-            { id: 11, title: 'تمرين عملي: بناء مكوّن نافذة منبثقة', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
+            { id: 8, title: 'المفاهيم المتقدمة - الجزء الأول', duration: '22:10', isPreview: true, completed: false, type: 'video' },
+            { id: 9, title: 'المفاهيم المتقدمة - الجزء الثاني', duration: '18:30', isPreview: true, completed: false, type: 'video' },
+            { id: 10, title: 'التطبيق العملي', duration: '20:15', isPreview: false, completed: false, type: 'video' },
+            { id: 11, title: 'أفضل الممارسات', duration: '25:40', isPreview: false, completed: false, type: 'video' },
+            { id: 12, title: 'التطبيقات العملية', duration: '28:20', isPreview: false, completed: false, type: 'video' },
+            { id: 13, title: 'تمرين عملي: تطبيق المفاهيم', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
+            { id: 14, title: 'واجب الوحدة الثانية: مشروع متقدم', duration: '60:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 15, title: 'كويز المفاهيم المتقدمة', duration: '25:00', isPreview: false, completed: false, type: 'quiz' },
+          ],
+        },
+        {
+          id: 3,
+          title: 'المشاريع العملية',
+          description: 'تطبيق المفاهيم في مشاريع حقيقية',
+          duration: '5h 30m',
+          lessons: [
+            { id: 16, title: 'مقدمة المشاريع العملية', duration: '25:20', isPreview: true, completed: false, type: 'video' },
+            { id: 17, title: 'تطوير المشروع الأول', duration: '19:45', isPreview: false, completed: false, type: 'video' },
+            { id: 18, title: 'تطوير المشروع الثاني', duration: '21:30', isPreview: true, completed: false, type: 'video' },
+            { id: 19, title: 'اختبار وتحسين المشاريع', duration: '28:15', isPreview: false, completed: false, type: 'video' },
+            { id: 20, title: 'نشر المشاريع', duration: '17:50', isPreview: false, completed: false, type: 'video' },
+            { id: 21, title: 'مشروع نهائي شامل', duration: '45:00', isPreview: false, completed: false, type: 'project' },
+            { id: 22, title: 'واجب الوحدة الثالثة: مشروع شامل', duration: '90:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 23, title: 'امتحان منتصف الدورة', duration: '60:00', isPreview: false, completed: false, type: 'exam' },
+          ],
+        },
+        {
+          id: 4,
+          title: 'التحسين والتطوير',
+          description: 'تحسين الأداء والتطوير المستمر',
+          duration: '3h 45m',
+          lessons: [
+            { id: 24, title: 'تحسين الأداء', duration: '20:10', isPreview: true, completed: false, type: 'video' },
+            { id: 25, title: 'أدوات التطوير', duration: '18:30', isPreview: false, completed: false, type: 'video' },
+            { id: 26, title: 'اختبار الجودة', duration: '25:45', isPreview: false, completed: false, type: 'video' },
+            { id: 27, title: 'أدوات المراقبة', duration: '22:15', isPreview: false, completed: false, type: 'video' },
+            { id: 28, title: 'دراسة حالة شاملة', duration: '30:00', isPreview: false, completed: false, type: 'case-study' },
+            { id: 29, title: 'واجب الوحدة الرابعة: تحسين شامل', duration: '75:00', isPreview: false, completed: false, type: 'assignment' },
+            { id: 30, title: 'كويز التحسين والتطوير', duration: '30:00', isPreview: false, completed: false, type: 'quiz' },
           ],
         },
       ];
     }
 
     const result = modulesData.map((module, index) => {
-      // Transform lessons with better type detection
+      // Transform assignments
+      const transformAssignments = (assignments) => {
+        if (!Array.isArray(assignments)) return [];
+        
+        return assignments.map((assignment, aIndex) => {
+          return {
+            id: `assignment_${assignment.id || aIndex + 1}`,
+            title: assignment.title || `واجب ${aIndex + 1}`,
+            duration: '45:00', // Default assignment duration
+            type: 'assignment',
+            isPreview: false,
+            completed: false,
+            description: assignment.description || '',
+            dueDate: assignment.due_date,
+            points: assignment.points || 100,
+            hasQuestions: assignment.has_questions || false,
+            hasFileUpload: assignment.has_file_upload || false,
+            order: assignment.order || aIndex + 1,
+            isActive: assignment.is_active !== false,
+            ...assignment
+          };
+        });
+      };
+
+      // Transform quizzes
+      const transformQuizzes = (quizzes) => {
+        if (!Array.isArray(quizzes)) return [];
+        
+        return quizzes.map((quiz, qIndex) => {
+          return {
+            id: `quiz_${quiz.id || qIndex + 1}`,
+            title: quiz.title || `كويز ${qIndex + 1}`,
+            duration: quiz.time_limit ? `${quiz.time_limit}:00` : '20:00',
+            type: 'quiz',
+            isPreview: false,
+            completed: false,
+            description: quiz.description || '',
+            passMark: quiz.pass_mark || 60,
+            totalQuestions: quiz.get_total_questions ? quiz.get_total_questions() : 0,
+            order: quiz.order || qIndex + 1,
+            isActive: quiz.is_active !== false,
+            ...quiz
+          };
+        });
+      };
+
+      // Transform exams
+      const transformExams = (exams) => {
+        if (!Array.isArray(exams)) return [];
+        
+        return exams.map((exam, eIndex) => {
+          return {
+            id: `exam_${exam.id || eIndex + 1}`,
+            title: exam.title || `امتحان ${eIndex + 1}`,
+            duration: exam.time_limit ? `${exam.time_limit}:00` : '60:00',
+            type: 'exam',
+            isPreview: false,
+            completed: false,
+            description: exam.description || '',
+            passMark: exam.pass_mark || 60,
+            isFinal: exam.is_final || false,
+            order: exam.order || eIndex + 1,
+            isActive: exam.is_active !== false,
+            ...exam
+          };
+        });
+      };
+
+      // Transform lessons with better type detection for real API data
       const transformLessons = (lessons) => {
         if (!Array.isArray(lessons)) return [];
         
         return lessons.map((lesson, lIndex) => {
-          // Determine lesson type based on content or type field
-          let lessonType = lesson.type || 'video';
+          // Determine lesson type based on lesson_type field from API
+          let lessonType = lesson.lesson_type || lesson.type || 'video';
           
-          if (lesson.title?.toLowerCase().includes('واجب') || lesson.title?.toLowerCase().includes('assignment')) {
+          // Enhanced type detection for Arabic and English content
+          const title = lesson.title?.toLowerCase() || lesson.name?.toLowerCase() || '';
+          
+          if (title.includes('واجب') || title.includes('assignment') || title.includes('homework')) {
             lessonType = 'assignment';
-          } else if (lesson.title?.toLowerCase().includes('كويز') || lesson.title?.toLowerCase().includes('quiz')) {
+          } else if (title.includes('كويز') || title.includes('quiz') || title.includes('test')) {
             lessonType = 'quiz';
-          } else if (lesson.title?.toLowerCase().includes('امتحان') || lesson.title?.toLowerCase().includes('exam')) {
+          } else if (title.includes('امتحان') || title.includes('exam') || title.includes('final')) {
             lessonType = 'exam';
-          } else if (lesson.title?.toLowerCase().includes('مقال') || lesson.title?.toLowerCase().includes('article')) {
+          } else if (title.includes('مقال') || title.includes('article') || title.includes('text')) {
             lessonType = 'article';
-          } else if (lesson.title?.toLowerCase().includes('ملف') || lesson.title?.toLowerCase().includes('file')) {
+          } else if (title.includes('ملف') || title.includes('file') || title.includes('document')) {
             lessonType = 'file';
+          } else if (title.includes('مشروع') || title.includes('project')) {
+            lessonType = 'project';
+          } else if (title.includes('تمرين') || title.includes('exercise') || title.includes('practice')) {
+            lessonType = 'exercise';
+          } else if (title.includes('دراسة') || title.includes('case') || title.includes('study')) {
+            lessonType = 'case-study';
           }
+          
+          // Convert duration from minutes to MM:SS format
+          const formatDuration = (minutes) => {
+            if (!minutes) return '15:00';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return hours > 0 ? `${hours}:${mins.toString().padStart(2, '0')}` : `${mins}:00`;
+          };
           
           return {
             id: lesson.id || lIndex + 1,
             title: lesson.title || lesson.name || `الدرس ${lIndex + 1}`,
-            duration: lesson.duration || lesson.length || '15:00',
+            duration: formatDuration(lesson.duration_minutes || lesson.duration),
             type: lessonType,
-            isPreview: lesson.is_preview || lesson.isPreview || false,
+            isPreview: lesson.is_free || lesson.is_preview || lesson.isPreview || false,
             completed: lesson.completed || lesson.is_completed || false,
             description: lesson.description || '',
             videoUrl: lesson.video_url || lesson.videoUrl || null,
             fileUrl: lesson.file_url || lesson.fileUrl || null,
+            content: lesson.content || '',
+            difficulty: lesson.difficulty || 'beginner',
+            order: lesson.order || lIndex + 1,
             ...lesson
           };
         });
       };
 
-      return {
-        id: module.id || index + 1,
-        title: module.name || module.title || `الوحدة ${index + 1}`,
-        description: module.description || '',
-        duration: module.duration || '1h 00m',
-        lessons: transformLessons(module.lessons || module.content || module.lectures || [])
+      // Get lessons, assignments, quizzes, and exams from various possible field names
+        const lessons = module.lessons || module.content || module.lectures || [];
+      const assignments = module.assignments || [];
+      const quizzes = module.quizzes || [];
+      const exams = module.exams || [];
+      
+      console.log(`Module ${module.id || index + 1}:`, {
+        lessons: lessons.length,
+        assignments: assignments.length,
+        quizzes: quizzes.length,
+        exams: exams.length
+      });
+
+      // Transform all content types
+        const transformedLessons = transformLessons(lessons);
+      const transformedAssignments = transformAssignments(assignments);
+      const transformedQuizzes = transformQuizzes(quizzes);
+      const transformedExams = transformExams(exams);
+
+      // Combine all content and sort by order
+      const allContent = [
+        ...transformedLessons,
+        ...transformedAssignments,
+        ...transformedQuizzes,
+        ...transformedExams
+      ].sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // If no content found, add some default content
+      if (allContent.length === 0) {
+        console.log(`No content found for module ${module.id || index + 1}, adding default content`);
+        allContent.push(
+          { id: 1, title: 'مقدمة إلى الوحدة', duration: '15:00', isPreview: true, completed: false, type: 'video', order: 1 },
+          { id: 2, title: 'واجب الوحدة', duration: '45:00', isPreview: false, completed: false, type: 'assignment', order: 2 },
+          { id: 3, title: 'كويز الوحدة', duration: '20:00', isPreview: false, completed: false, type: 'quiz', order: 3 }
+        );
+      }
+
+      // Convert module duration from seconds to readable format
+      const formatModuleDuration = (seconds) => {
+        if (!seconds) return '1h 00m';
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
       };
+
+        return {
+          id: module.id || index + 1,
+          title: module.name || module.title || `الوحدة ${index + 1}`,
+          description: module.description || '',
+          duration: formatModuleDuration(module.video_duration || module.duration),
+          lessons: allContent, // Now includes lessons, assignments, quizzes, and exams
+          order: module.order || index + 1,
+          status: module.status || 'published',
+          isActive: module.is_active !== false
+        };
     });
     
     console.log('transformModulesData result:', result);
@@ -1468,6 +1886,92 @@ const CourseDetail = () => {
     setTabValue(newValue);
   };
 
+  // Review handlers
+  const handleReviewFormChange = (field, value) => {
+    setReviewForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewForm.comment.trim()) {
+      alert('يرجى كتابة تعليق للتقييم');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      
+      // Transform data to match API expectations
+      const reviewData = {
+        rating: reviewForm.rating,
+        review_text: reviewForm.comment
+      };
+      
+      console.log('=== REVIEW SUBMISSION DEBUG ===');
+      console.log('Original reviewForm:', reviewForm);
+      console.log('Transformed reviewData:', reviewData);
+      console.log('Course ID:', id);
+      console.log('================================');
+      
+      const response = await reviewsAPI.createReview(id, reviewData);
+      console.log('Review submitted successfully:', response);
+      
+      // Show success message
+      alert('تم إضافة تقييمك بنجاح!');
+      
+      // Reset form and close
+      setReviewForm({ rating: 5, comment: '' });
+      setShowReviewForm(false);
+      
+      // Refresh course data to show new review
+      window.location.reload();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      let errorMessage = 'فشل في إضافة التقييم';
+      
+      if (error.response) {
+        if (error.response.status === 403) {
+          errorMessage = 'يجب أن تكون مسجلاً في الدورة لتتمكن من تقييمها';
+        } else if (error.response.status === 400) {
+          errorMessage = error.response.data?.error || 'بيانات التقييم غير صحيحة';
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleLikeReview = async (reviewId) => {
+    try {
+      console.log('Liking review:', reviewId);
+      const response = await reviewsAPI.likeReview(reviewId);
+      console.log('Like response:', response);
+      
+              // Update the specific review's like status without reloading
+        setCourse(prevData => ({
+        ...prevData,
+        reviews: prevData.reviews.map(review => 
+          review.id === reviewId 
+            ? { 
+                ...review, 
+                likes: response.liked ? review.likes + 1 : review.likes - 1,
+                isLiked: response.liked 
+              }
+            : review
+        )
+      }));
+    } catch (error) {
+      console.error('Error liking review:', error);
+      alert('فشل في إعجاب التقييم');
+    }
+  };
+
   // Handle enrollment with better error handling
   const handleEnroll = async (courseId) => {
     try {
@@ -1475,30 +1979,36 @@ const CourseDetail = () => {
       const response = await courseAPI.enrollInCourse(courseId);
       console.log('Enrollment response:', response);
     setIsEnrolled(true);
+      
       // Show success message
-      // You might want to add a snackbar or toast notification here
+      alert('تم التسجيل في الدورة بنجاح!');
+      
+      // Refresh course data to update enrollment status
+      window.location.reload();
     } catch (error) {
       console.error('Error enrolling in course:', error);
-      let errorMessage = 'Failed to enroll in course';
+      let errorMessage = 'فشل في التسجيل في الدورة';
       
       if (error.response) {
         if (error.response.status === 403) {
-          errorMessage = 'You do not have permission to enroll in this course';
+          errorMessage = 'ليس لديك صلاحية للتسجيل في هذه الدورة';
         } else if (error.response.status === 409) {
-          errorMessage = 'You are already enrolled in this course';
+          errorMessage = 'أنت مسجل بالفعل في هذه الدورة';
         } else if (error.response.data?.detail) {
           errorMessage = error.response.data.detail;
         } else if (error.response.data?.error) {
           errorMessage = error.response.data.error;
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
         }
       } else if (error.request) {
-        errorMessage = 'Network error. Please check your internet connection.';
+        errorMessage = 'خطأ في الشبكة. يرجى التحقق من اتصال الإنترنت.';
       } else {
-        errorMessage = error.message || 'An unexpected error occurred';
+        errorMessage = error.message || 'حدث خطأ غير متوقع';
       }
       
       // Show error message
-      // You might want to add a snackbar or toast notification here
+      alert(errorMessage);
       console.error('Enrollment error:', errorMessage);
     } finally {
       setLoading(false);
@@ -1528,7 +2038,19 @@ const CourseDetail = () => {
       alert('تم إضافة الدورة إلى السلة بنجاح!');
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('حدث خطأ أثناء إضافة الدورة إلى السلة');
+      let errorMessage = 'حدث خطأ أثناء إضافة الدورة إلى السلة';
+      
+      if (error.response) {
+        if (error.response.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsAddingToCart(false);
     }
@@ -1539,14 +2061,26 @@ const CourseDetail = () => {
     try {
       setIsProcessingPayment(true);
       
-      // Create Moyasar payment
-      const { url } = await paymentAPI.createMoyasarPayment();
+      // Create Moyasar payment for specific course
+      const { url } = await paymentAPI.createCoursePayment(course.id);
       
       // Redirect to Moyasar payment page
       window.location.href = url;
     } catch (error) {
       console.error('Payment error:', error);
-      alert('حدث خطأ أثناء بدء عملية الدفع');
+      let errorMessage = 'حدث خطأ أثناء بدء عملية الدفع';
+      
+      if (error.response) {
+        if (error.response.data?.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response.data?.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsProcessingPayment(false);
     }
@@ -2249,6 +2783,52 @@ const CourseDetail = () => {
 
               {tabValue === 1 && (
                 <ContentSection>
+                  {/* Alert for non-enrolled users */}
+                  {!course.isEnrolled && (
+                    <Alert 
+                      severity="info" 
+                      sx={{ 
+                        mb: 3, 
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.05) 0%, rgba(229, 151, 139, 0.05) 100%)',
+                        border: '1px solid rgba(14, 81, 129, 0.1)',
+                        '& .MuiAlert-icon': {
+                          color: '#0e5181'
+                        }
+                      }}
+                    >
+                      <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
+                        🔒 محتوى الدورة الحقيقي
+                      </Typography>
+                      <Typography variant="body2">
+                        هذا هو المحتوى الحقيقي للدورة من قاعدة البيانات، يتضمن المحاضرات والواجبات والكويزات والامتحانات. سجل في الدورة للوصول إلى جميع المحتويات.
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  {/* Success message for enrolled users */}
+                  {course.isEnrolled && (
+                    <Alert 
+                      severity="success" 
+                      sx={{ 
+                        mb: 3, 
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, rgba(76, 175, 80, 0.02) 100%)',
+                        border: '1px solid rgba(76, 175, 80, 0.1)',
+                        '& .MuiAlert-icon': {
+                          color: '#4caf50'
+                        }
+                      }}
+                    >
+                      <Typography variant="body1" fontWeight={600} sx={{ mb: 1 }}>
+                        ✅ محتوى الدورة الكامل
+                      </Typography>
+                      <Typography variant="body2">
+                        مرحباً بك في الدورة! يمكنك الآن الوصول إلى جميع المحتويات: المحاضرات والواجبات والكويزات والامتحانات.
+                      </Typography>
+                    </Alert>
+                  )}
+
                   <Box sx={{ mb: 3, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                       <VideoLibraryIcon sx={{ color: 'primary.main' }} />
@@ -2260,6 +2840,24 @@ const CourseDetail = () => {
                       <Chip size="small" color="default" variant="outlined" icon={<VideoLibraryIcon />} label={`${Array.isArray(course.modules) ? course.modules.length : 0} أقسام`} />
                       <Chip size="small" color="default" variant="outlined" icon={<ArticleIcon />} label={`${totalLessons} محاضرة`} />
                       <Chip size="small" color="default" variant="outlined" icon={<AccessTime />} label={`${course.totalHours} ساعة`} />
+                      {!course.isEnrolled && (
+                        <Chip 
+                          size="small" 
+                          color="warning" 
+                          variant="outlined" 
+                          icon={<LockIcon />} 
+                          label="محتوى حقيقي" 
+                        />
+                      )}
+                      {course.isEnrolled && (
+                        <Chip 
+                          size="small" 
+                          color="success" 
+                          variant="outlined" 
+                          icon={<CheckCircleIcon />} 
+                          label="محتوى كامل" 
+                        />
+                      )}
                     </Box>
                    </Box>
 
@@ -2373,25 +2971,54 @@ const CourseDetail = () => {
                                     py: 1.5,
                                     bgcolor: 'background.paper',
                                     transition: 'all 0.3s ease',
+                                    opacity: !course.isEnrolled && !lesson.isPreview ? 0.6 : 1,
                                     '&:hover': { 
                                       borderColor: '#0e5181',
                                       bgcolor: 'rgba(14, 81, 129, 0.02)',
-                                      transform: 'translateX(-5px)'
+                                      transform: course.isEnrolled || lesson.isPreview ? 'translateX(-5px)' : 'none'
                                     }
                                   }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                                       {/* Icon on the far right (RTL) */}
                                       <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.primary', opacity: 0.95 }}>
-                                        {getLessonIcon(lesson)}
+                                        {!course.isEnrolled && !lesson.isPreview ? (
+                                          <LockIcon sx={{ color: '#e5978b', fontSize: '1.2rem' }} />
+                                        ) : (
+                                          getLessonIcon(lesson)
+                                        )}
                                       </Box>
-                                                                              <Typography variant="body2" dir="rtl" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                                      <Typography variant="body2" dir="rtl" sx={{ 
+                                        color: !course.isEnrolled && !lesson.isPreview ? 'text.secondary' : 'text.primary', 
+                                        fontWeight: 500 
+                                      }}>
                                           {lesson.title}
+                                        {!course.isEnrolled && !lesson.isPreview && (
+                                          <Typography component="span" variant="caption" sx={{ 
+                                            color: '#e5978b', 
+                                            ml: 1,
+                                            fontSize: '0.7rem'
+                                          }}>
+                                            (محتوى محمي)
+                                          </Typography>
+                                        )}
                                     </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                       <Typography variant="caption" sx={{ color: '#e5978b', fontWeight: 600 }}>
                                         {lesson.duration}
                                         </Typography>
+                                      {lesson.isPreview && (
+                                        <Chip 
+                                          size="small" 
+                                          label="عرض مجاني" 
+                                          sx={{ 
+                                            bgcolor: 'rgba(14, 81, 129, 0.1)', 
+                                            color: '#0e5181',
+                                            fontSize: '0.7rem',
+                                            height: 20
+                                          }} 
+                                        />
+                                      )}
                                       </Box>
                                   </Box>
                                 </LessonItem>
@@ -2505,6 +3132,7 @@ const CourseDetail = () => {
                     <Button 
                       variant="contained" 
                       startIcon={<DescriptionOutlined />}
+                      onClick={() => setShowReviewForm(true)}
                       sx={{ 
                         borderRadius: 3,
                         px: 4,
@@ -2570,10 +3198,14 @@ const CourseDetail = () => {
                       >
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar src={review.avatar} alt={review.user} sx={{ width: 48, height: 48, mr: 2 }} />
+                            <Avatar 
+                              src={review.user?.avatar} 
+                              alt={review.user?.name} 
+                              sx={{ width: 48, height: 48, mr: 2 }} 
+                            />
                             <Box>
                               <Typography variant="subtitle1" fontWeight={600} dir="rtl">
-                                {review.user}
+                                {review.user?.name || 'مستخدم'}
                               </Typography>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <Rating 
@@ -2593,7 +3225,7 @@ const CourseDetail = () => {
                           <IconButton 
                             size="small" 
                             color={review.isLiked ? 'primary' : 'default'}
-                            onClick={() => {}}
+                            onClick={() => handleLikeReview(review.id)}
                             sx={{ 
                               '&:hover': {
                                 transform: 'scale(1.1)',
@@ -2607,9 +3239,11 @@ const CourseDetail = () => {
                             </Typography>
                           </IconButton>
                         </Box>
+                        {review.title && (
                         <Typography variant="h6" component="h3" sx={{ mb: 1, fontWeight: 600 }} dir="rtl">
                           {review.title}
                         </Typography>
+                        )}
                         <Typography variant="body1" color="text.secondary" dir="rtl" sx={{ lineHeight: 1.8 }}>
                           {review.content}
                         </Typography>
@@ -2989,6 +3623,110 @@ const CourseDetail = () => {
           </Grid>
         </Container>
       )}
+
+      {/* Review Form Dialog */}
+      <Dialog 
+        open={showReviewForm} 
+        onClose={() => setShowReviewForm(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(14, 81, 129, 0.1)',
+          }
+        }}
+      >
+        <DialogContent sx={{ p: 4 }}>
+          <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
+            تقييم الدورة
+          </Typography>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              تقييمك للدورة
+            </Typography>
+            <Rating
+              value={reviewForm.rating}
+              onChange={(event, newValue) => {
+                handleReviewFormChange('rating', newValue);
+              }}
+              size="large"
+              sx={{
+                '& .MuiRating-iconFilled': {
+                  color: '#e5978b',
+                },
+                '& .MuiRating-iconHover': {
+                  color: '#e5978b',
+                },
+              }}
+            />
+          </Box>
+          
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+              تعليقك (اختياري)
+            </Typography>
+            <textarea
+              value={reviewForm.comment}
+              onChange={(e) => handleReviewFormChange('comment', e.target.value)}
+              placeholder="اكتب تعليقك عن الدورة..."
+              style={{
+                width: '100%',
+                minHeight: '120px',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                direction: 'rtl'
+              }}
+            />
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              onClick={() => setShowReviewForm(false)}
+              disabled={submittingReview}
+              sx={{
+                borderColor: '#0e5181',
+                color: '#0e5181',
+                '&:hover': {
+                  borderColor: '#e5978b',
+                  color: '#e5978b',
+                },
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+              }}
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubmitReview}
+              disabled={submittingReview || !reviewForm.comment.trim()}
+              startIcon={submittingReview ? <CircularProgress size={20} color="inherit" /> : null}
+              sx={{
+                background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+                },
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              {submittingReview ? 'جاري الإرسال...' : 'إرسال التقييم'}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <Box sx={{ mt: 'auto' }}>

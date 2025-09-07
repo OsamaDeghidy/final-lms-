@@ -136,9 +136,34 @@ const TeacherAssignments = () => {
     navigate(`/teacher/assignments/${assignmentId}/questions`);
   };
 
-  const handleDownloadFile = (fileName) => {
-    // Logic to download assignment file
-    console.log('Downloading file:', fileName);
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
   };
 
   const handleChangePage = (event, newPage) => {
@@ -169,7 +194,7 @@ const TeacherAssignments = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -326,12 +351,12 @@ const TeacherAssignments = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #ff6b6b 30%, #ee5a24 90%)',
-            boxShadow: '0 4px 20px rgba(255,107,107,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #ff5252 30%, #e64a19 90%)',
-              boxShadow: '0 6px 25px rgba(255,107,107,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
@@ -425,7 +450,7 @@ const TeacherAssignments = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {new Date(assignment.due_date).toLocaleDateString('ar-SA')}
+                        {new Date(assignment.due_date).toLocaleDateString('en-GB')}
                       </Typography>
                     </TableCell>
                     <TableCell>
@@ -509,7 +534,7 @@ const TeacherAssignments = () => {
                           size="small"
                           onClick={() => handleManageQuestions(assignment.id)}
                           sx={{
-                            color: '#4caf50',
+                            color: '#e5978b',
                               '&:hover': { backgroundColor: 'rgba(76, 175, 80, 0.1)' }
                             }}
                           >
@@ -560,7 +585,12 @@ const TeacherAssignments = () => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 4, p: 0, overflow: 'hidden' }
+          sx: { 
+            borderRadius: 4, 
+            p: 0, 
+            overflow: 'hidden',
+            direction: 'rtl'
+          }
         }}
       >
         {selectedAssignment && (
@@ -584,112 +614,229 @@ const TeacherAssignments = () => {
                 <CancelIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa' }}>
+            <DialogContent sx={{ p: 4, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Typography variant="h5" fontWeight={600} color="primary">
-                  {selectedAssignment.title}
-                </Typography>
-                
-                <Typography variant="body1" sx={{ color: '#666', lineHeight: 1.6 }}>
-                  {selectedAssignment.description}
-                </Typography>
-
-                <Divider />
-
-                <Grid container spacing={2}>
-                  <Grid xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <SchoolIcon sx={{ color: '#ff6b6b' }} />
-                      <Typography variant="body1" fontWeight={500}>
-                        المقرر: {selectedAssignment.course_title}
-                      </Typography>
-                    </Box>
-                    {selectedAssignment.module_name && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                        <BookIcon sx={{ color: '#666' }} />
-                        <Typography variant="body1">
-                          الوحدة: {selectedAssignment.module_name}
-                        </Typography>
-                      </Box>
-                    )}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <GradeIcon sx={{ color: '#666' }} />
-                      <Typography variant="body1">
-                        الدرجة: {selectedAssignment.points} نقطة
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <CalendarTodayIcon sx={{ color: '#666' }} />
-                      <Typography variant="body1">
-                        تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('ar-SA')}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <PeopleIcon sx={{ color: '#666' }} />
-                      <Typography variant="body1">
-                        عدد الطلاب: {selectedAssignment.total_students}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                      <AssignmentTurnedInIcon sx={{ color: '#2e7d32' }} />
-                      <Typography variant="body1">
-                        التسليمات: {selectedAssignment.submissions_count}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-
-                <Divider />
-
+                {/* العنوان والوصف */}
                 <Box>
-                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom>
+                  <Typography variant="h5" fontWeight={600} color="primary" sx={{ mb: 2, textAlign: 'right' }}>
+                    {selectedAssignment.title}
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ 
+                    color: '#666', 
+                    lineHeight: 1.8, 
+                    textAlign: 'right',
+                    backgroundColor: 'white',
+                    p: 3,
+                    borderRadius: 2,
+                    border: '1px solid #e0e0e0',
+                    minHeight: 80
+                  }}>
+                    {selectedAssignment.description || 'لا يوجد وصف للواجب'}
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                {/* معلومات الواجب الأساسية */}
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    معلومات الواجب
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 3, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        height: '100%'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <SchoolIcon sx={{ color: '#ff6b6b' }} />
+                          <Typography variant="body1" fontWeight={500} sx={{ textAlign: 'right' }}>
+                            المقرر: {selectedAssignment.course_title}
+                          </Typography>
+                        </Box>
+                        {selectedAssignment.module_name && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                            <BookIcon sx={{ color: '#666' }} />
+                            <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                              الوحدة: {selectedAssignment.module_name}
+                            </Typography>
+                          </Box>
+                        )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <GradeIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            الدرجة: {selectedAssignment.points} نقطة
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <StatusChip
+                            label={getStatusText(selectedAssignment.is_active ? 'active' : 'inactive')}
+                            status={selectedAssignment.is_active ? 'active' : 'inactive'}
+                            size="small"
+                          />
+                          <Typography variant="body2" sx={{ textAlign: 'right' }}>
+                            الحالة
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    <Grid xs={12} md={6}>
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 3, 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        height: '100%'
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <CalendarTodayIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            تاريخ التسليم: {new Date(selectedAssignment.due_date).toLocaleString('en-GB')}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <PeopleIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            عدد الطلاب: {selectedAssignment.total_students}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <AssignmentTurnedInIcon sx={{ color: '#2e7d32' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            التسليمات: {selectedAssignment.submissions_count}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                          <AccessTimeIcon sx={{ color: '#666' }} />
+                          <Typography variant="body1" sx={{ textAlign: 'right' }}>
+                            تاريخ الإنشاء: {new Date(selectedAssignment.created_at).toLocaleString('en-GB')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Box>
+
+                <Divider />
+
+                {/* إحصائيات الواجب */}
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 3 }}>
                     إحصائيات الواجب
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                  <Grid container spacing={3}>
+                    <Grid xs={12} md={3}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        backgroundColor: 'white', 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
                         <Typography variant="h4" fontWeight={700} color="primary">
                           {selectedAssignment.submissions_count}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          تسليم
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          إجمالي التسليمات
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                    <Grid xs={12} md={3}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        backgroundColor: 'white', 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
                         <Typography variant="h4" fontWeight={700} color="success.main">
                           {selectedAssignment.graded_count}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                           تم التصحيح
                         </Typography>
                       </Box>
                     </Grid>
-                    <Grid xs={12} md={4}>
-                      <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+                    <Grid xs={12} md={3}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        backgroundColor: 'white', 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
+                        <Typography variant="h4" fontWeight={700} color="warning.main">
+                          {selectedAssignment.submissions_count - selectedAssignment.graded_count}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                          في انتظار التصحيح
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid xs={12} md={3}>
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        p: 3, 
+                        backgroundColor: 'white', 
+                        borderRadius: 2, 
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}>
                         <Typography variant="h4" fontWeight={700} color="secondary.main">
                           {selectedAssignment.average_grade > 0 ? selectedAssignment.average_grade.toFixed(1) : 0}%
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                           متوسط الدرجات
                         </Typography>
                       </Box>
                     </Grid>
                   </Grid>
                 </Box>
+
+                {/* معدل التسليم */}
+                <Box>
+                  <Typography variant="h6" fontWeight={600} color="primary" gutterBottom sx={{ textAlign: 'right', mb: 2 }}>
+                    معدل التسليم
+                  </Typography>
+                  <Box sx={{ 
+                    backgroundColor: 'white', 
+                    p: 3, 
+                    borderRadius: 2, 
+                    border: '1px solid #e0e0e0'
+                  }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'right' }}>
+                        {selectedAssignment.total_students > 0 ? Math.round((selectedAssignment.submissions_count / selectedAssignment.total_students) * 100) : 0}%
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedAssignment.submissions_count} من {selectedAssignment.total_students} طالب
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={selectedAssignment.total_students > 0 ? (selectedAssignment.submissions_count / selectedAssignment.total_students) * 100 : 0}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#e0e0e0',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 4,
+                          background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)'
+                        }
+                      }}
+                    />
+                  </Box>
+                </Box>
               </Box>
             </DialogContent>
-            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
-              <Button
-                onClick={() => setOpenDetailsDialog(false)}
-                variant="outlined"
-                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
-              >
-                إغلاق
-              </Button>
+            <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa', direction: 'rtl' }}>
               <Button
                 variant="contained"
                 onClick={() => {
@@ -701,13 +848,20 @@ const TeacherAssignments = () => {
                   px: 4, 
                   py: 1.5, 
                   fontWeight: 700, 
-                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)',
+                  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': { 
-                    background: 'linear-gradient(135deg, #ff5252 0%, #e64a19 100%)' 
+                    background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)' 
                   } 
                 }}
               >
                 تصحيح الواجبات
+              </Button>
+              <Button
+                onClick={() => setOpenDetailsDialog(false)}
+                variant="outlined"
+                sx={{ borderRadius: 2, px: 4, py: 1.5, borderColor: '#9e9e9e', color: '#9e9e9e', fontWeight: 600 }}
+              >
+                إغلاق
               </Button>
             </DialogActions>
           </>

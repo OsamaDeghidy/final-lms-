@@ -29,7 +29,7 @@ import {
   CardContent,
   Divider
 } from '@mui/material';
-import { Add, Edit, Delete, Visibility, Assessment, FilterList, Clear } from '@mui/icons-material';
+import { Add, Edit, Delete, Visibility, Assessment, FilterList, Clear, Search as SearchIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { examAPI } from '../../../services/exam.service';
 import { courseAPI } from '../../../services/courseService';
@@ -248,7 +248,7 @@ const ExamList = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -392,12 +392,12 @@ const ExamList = () => {
           sx={{
             width: 56,
             height: 56,
-            background: 'linear-gradient(45deg, #0e5181 30%, #9c27b0 90%)',
-            boxShadow: '0 4px 20px rgba(103,58,183,0.3)',
+            background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+            boxShadow: '0 4px 20px rgba(14, 81, 129, 0.3)',
             color: 'white',
             '&:hover': {
-              background: 'linear-gradient(45deg, #5e35b1 30%, #8e24aa 90%)',
-              boxShadow: '0 6px 25px rgba(103,58,183,0.4)',
+              background: 'linear-gradient(90deg, #0a3d5f 0%, #d17a6e 100%)',
+              boxShadow: '0 6px 25px rgba(14, 81, 129, 0.4)',
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
@@ -413,55 +413,54 @@ const ExamList = () => {
         </Alert>
       )}
 
-      {/* Filters Section */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <FilterList sx={{ mr: 1, color: 'primary.main' }} />
-              <Typography variant="h6" fontWeight={600}>
-                فلاتر البحث
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                النتائج:
-              </Typography>
-              <Chip 
-                label={`${filteredExams.length} من ${exams.length}`} 
-                color="primary" 
-                size="small" 
-                variant="outlined"
-              />
-            </Box>
-          </Box>
-          
+      {/* Filters Section - Compact */}
+      <Card sx={{ 
+        mb: 3, 
+        borderRadius: 2, 
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+      }}>
+        <CardContent sx={{ p: 2 }}>
           <Box sx={{ 
             display: 'flex', 
-            flexDirection: 'row', 
-            flexWrap: 'wrap', 
+            alignItems: 'center', 
             gap: 2, 
-            alignItems: 'flex-end',
-            '& > *': { flex: '0 0 auto' }
+            flexWrap: 'wrap'
           }}>
+            {/* Search Field */}
             <TextField
-              label="البحث في العنوان والوصف"
+              label="البحث"
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              sx={{ minWidth: 280, flex: '1 1 280px' }}
               size="small"
-              placeholder="اكتب للبحث..."
+              placeholder="ابحث في الامتحانات..."
+              sx={{ 
+                minWidth: 200,
+                flex: '1 1 200px',
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }
+              }}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary', fontSize: '1.2rem' }} />
+              }}
             />
             
-            <FormControl sx={{ minWidth: 200 }} size="small">
+            {/* Course Filter */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>الدورة</InputLabel>
               <Select
                 value={filters.course}
                 onChange={(e) => handleFilterChange('course', e.target.value)}
                 label="الدورة"
                 disabled={filtersLoading}
+                sx={{ 
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }}
               >
-                <MenuItem value="">جميع الدورات</MenuItem>
+                <MenuItem value="">الكل</MenuItem>
                 {courses.length > 0 ? (
                   courses.map((course) => (
                     <MenuItem key={course.id} value={course.id}>
@@ -476,15 +475,20 @@ const ExamList = () => {
               </Select>
             </FormControl>
             
-            <FormControl sx={{ minWidth: 200 }} size="small">
+            {/* Module Filter */}
+            <FormControl size="small" sx={{ minWidth: 140 }}>
               <InputLabel>الوحدة</InputLabel>
               <Select
                 value={filters.module}
                 onChange={(e) => handleFilterChange('module', e.target.value)}
                 label="الوحدة"
                 disabled={filtersLoading}
+                sx={{ 
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }}
               >
-                <MenuItem value="">جميع الوحدات</MenuItem>
+                <MenuItem value="">الكل</MenuItem>
                 {filteredModules.length > 0 ? (
                   filteredModules.map((module) => (
                     <MenuItem key={module.id} value={module.id}>
@@ -500,49 +504,80 @@ const ExamList = () => {
               </Select>
             </FormControl>
             
-            <FormControl sx={{ minWidth: 160 }} size="small">
-              <InputLabel>نوع الامتحان</InputLabel>
+            {/* Exam Type Filter */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>النوع</InputLabel>
               <Select
                 value={filters.isFinal}
                 onChange={(e) => handleFilterChange('isFinal', e.target.value)}
-                label="نوع الامتحان"
+                label="النوع"
+                sx={{ 
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }}
               >
-                <MenuItem value="">جميع الأنواع</MenuItem>
+                <MenuItem value="">الكل</MenuItem>
                 <MenuItem value="true">نهائي</MenuItem>
                 <MenuItem value="false">عادي</MenuItem>
               </Select>
             </FormControl>
             
-            <FormControl sx={{ minWidth: 160 }} size="small">
+            {/* Status Filter */}
+            <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>الحالة</InputLabel>
               <Select
                 value={filters.isActive}
                 onChange={(e) => handleFilterChange('isActive', e.target.value)}
                 label="الحالة"
+                sx={{ 
+                  borderRadius: 2,
+                  backgroundColor: 'white'
+                }}
               >
-                <MenuItem value="">جميع الحالات</MenuItem>
+                <MenuItem value="">الكل</MenuItem>
                 <MenuItem value="true">نشط</MenuItem>
                 <MenuItem value="false">معطل</MenuItem>
               </Select>
             </FormControl>
             
+            {/* Results Counter */}
+            <Chip 
+              label={`${filteredExams.length} من ${exams.length}`} 
+              color={filteredExams.length !== exams.length ? "secondary" : "primary"}
+              size="small" 
+              variant="outlined"
+              sx={{ 
+                minWidth: 'fit-content',
+                fontWeight: 'bold',
+                borderRadius: 2
+              }}
+            />
+            
+            {/* Clear Filters Button */}
             <IconButton
               onClick={clearFilters}
+              disabled={!filters.search && !filters.course && !filters.module && !filters.isFinal && !filters.isActive}
+              size="small"
               sx={{ 
-                width: 40,
-                height: 40,
-                border: '1px solid',
-                borderColor: 'grey.300',
-                color: 'grey.700',
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                backgroundColor: 'rgba(0,0,0,0.04)',
+                color: 'text.secondary',
                 '&:hover': {
-                  borderColor: 'grey.400',
-                  backgroundColor: 'grey.50',
-                  color: 'error.main'
-                }
+                  backgroundColor: 'rgba(244,67,54,0.1)',
+                  color: 'error.main',
+                  transform: 'scale(1.05)'
+                },
+                '&:disabled': {
+                  opacity: 0.4,
+                  cursor: 'not-allowed'
+                },
+                transition: 'all 0.2s ease'
               }}
-              title="مسح جميع الفلاتر"
+              title="مسح الفلاتر"
             >
-              <Clear />
+              <Clear sx={{ fontSize: '1.1rem' }} />
             </IconButton>
           </Box>
         </CardContent>

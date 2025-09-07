@@ -1,6 +1,13 @@
 /* Import the main dashboard styles */
 @import './DashboardStyles.css';
 
+/* Override Material-UI Grid spacing */
+.MuiGrid-root {
+  /* Override any default spacing */
+  --Grid-columnSpacing: 0px;
+  --Grid-rowSpacing: 0px;
+}
+
 /* Additional fixes for Material-UI icons */
 .MuiSvgIcon-root {
   display: inline-flex !important;

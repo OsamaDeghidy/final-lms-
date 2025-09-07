@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from . import dashboard_views
 
 # Create router
 router = DefaultRouter()
@@ -29,6 +30,21 @@ urlpatterns = [
     # Statistics and dashboard
     path('dashboard/stats/', views.dashboard_stats, name='dashboard_stats'),
     path('general/stats/', views.general_stats, name='general_stats'),
+    
+    # Teacher Dashboard APIs
+    path('teacher/dashboard/stats/', dashboard_views.teacher_dashboard_stats, name='teacher_dashboard_stats'),
+    path('teacher/courses/', dashboard_views.teacher_courses, name='teacher_courses'),
+    path('teacher/student-progress/', dashboard_views.teacher_student_progress, name='teacher_student_progress'),
+    path('teacher/recent-activity/', dashboard_views.teacher_recent_activity, name='teacher_recent_activity'),
+    path('teacher/announcements/', dashboard_views.teacher_announcements, name='teacher_announcements'),
+    
+    # Student Dashboard APIs
+    path('student/dashboard/stats/', dashboard_views.student_dashboard_stats, name='student_dashboard_stats'),
+    path('student/courses/', dashboard_views.student_courses, name='student_courses'),
+    path('student/achievements/', dashboard_views.student_achievements, name='student_achievements'),
+    path('student/recent-activity/', dashboard_views.student_recent_activity, name='student_recent_activity'),
+    path('student/upcoming-assignments/', dashboard_views.student_upcoming_assignments, name='student_upcoming_assignments'),
+    path('student/upcoming-meetings/', dashboard_views.student_upcoming_meetings, name='student_upcoming_meetings'),
     
     # Include router URLs
     path('', include(router.urls)),

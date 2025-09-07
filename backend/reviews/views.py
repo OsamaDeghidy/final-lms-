@@ -1,34 +1,44 @@
 from rest_framework import status, generics, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser, IsAuthenticatedOrReadOnly
+from rest_framework.parsers import JSONParser
+from rest_framework.serializers import ValidationError
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
 
 from courses.models import Course
 from users.models import User
-from .models import CourseReview, ReviewReply, Comment, CommentLike
+from .models import CourseReview, ReviewReply, Comment, CommentLike, ReviewLike
 from .serializers import (
     ReviewCreateSerializer, ReviewSerializer, ReviewReplySerializer,
-    CommentSerializer, CommentCreateSerializer, CommentLikeSerializer
+    CommentSerializer, CommentCreateSerializer, CommentLikeSerializer, ReviewLikeSerializer
 )
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([JSONParser])
 def create_review(request, course_id):
     """إنشاء تقييم للدورة"""
     course = get_object_or_404(Course, id=course_id)
     
+    # Debug logging
+    print(f"Creating review for course {course_id}")
+    print(f"Request data: {request.data}")
+    print(f"User: {request.user}")
+    
     # Check if user is enrolled
-    if not course.enroller_user.filter(id=request.user.id).exists():
+    if not course.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists():
+        print(f"User {request.user} is not enrolled in course {course_id}")
         return Response({
             'error': 'يجب أن تكون مسجلاً في الدورة لتتمكن من تقييمها'
         }, status=status.HTTP_403_FORBIDDEN)
     
     # Check if user already reviewed
     if CourseReview.objects.filter(course=course, user=request.user).exists():
+        print(f"User {request.user} already reviewed course {course_id}")
         return Response({
             'error': 'لقد قمت بتقييم هذه الدورة بالفعل'
         }, status=status.HTTP_400_BAD_REQUEST)
@@ -36,14 +46,27 @@ def create_review(request, course_id):
     data = request.data.copy()
     data['course'] = course.id
     
+    print(f"=== VIEW DATA PROCESSING DEBUG ===")
+    print(f"Original request.data: {request.data}")
+    print(f"Request data type: {type(request.data)}")
+    print(f"Request data keys: {list(request.data.keys()) if hasattr(request.data, 'keys') else 'No keys'}")
+    print(f"Processed data: {data}")
+    print(f"review_text in processed data: {'review_text' in data}")
+    if 'review_text' in data:
+        print(f"review_text value: '{data['review_text']}'")
+    print(f"===================================")
+    
     serializer = ReviewCreateSerializer(data=data, context={'request': request})
     if serializer.is_valid():
+        print(f"Serializer is valid. Saving review...")
         review = serializer.save()
+        print(f"Review saved successfully. ID: {review.id}, Text: '{review.review_text}'")
         return Response({
             'message': 'تم إضافة تقييمك بنجاح',
             'review': ReviewSerializer(review).data
         }, status=status.HTTP_201_CREATED)
     
+    print(f"Serializer errors: {serializer.errors}")
     return Response({
         'error': 'بيانات غير صحيحة',
         'details': serializer.errors
@@ -161,7 +184,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
         if parent_id:
             parent = get_object_or_404(Comment, id=parent_id)
             if parent.course_id != course.id:
-                raise serializers.ValidationError("Parent comment must be from the same course.")
+                raise ValidationError("Parent comment must be from the same course.")
         
         serializer.save(
             course=course,
@@ -213,10 +236,10 @@ class CommentLikeView(generics.CreateAPIView, generics.DestroyAPIView):
         )
         
         if comment.user == self.request.user:
-            raise serializers.ValidationError("You cannot like your own comment.")
+            raise ValidationError("You cannot like your own comment.")
         
         if self.get_queryset().exists():
-            raise serializers.ValidationError("You have already liked this comment.")
+            raise ValidationError("You have already liked this comment.")
         
         serializer.save(
             comment=comment,
@@ -231,6 +254,91 @@ class CommentLikeView(generics.CreateAPIView, generics.DestroyAPIView):
         return Response(
             {"detail": "Like not found"},
             status=status.HTTP_404_NOT_FOUND
+        )
+
+
+# Review Likes
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_review(request, review_id):
+    """Like or unlike a review"""
+    try:
+        review = get_object_or_404(CourseReview, id=review_id, is_approved=True)
+        
+        # Check if user is trying to like their own review
+        if review.user == request.user:
+            return Response(
+                {"detail": "You cannot like your own review."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if user has already liked this review
+        if review.likes.filter(id=request.user.id).exists():
+            # Unlike the review
+            review.likes.remove(request.user)
+            return Response(
+                {"detail": "Review unliked successfully", "liked": False},
+                status=status.HTTP_200_OK
+            )
+        else:
+            # Like the review
+            review.likes.add(request.user)
+            return Response(
+                {"detail": "Review liked successfully", "liked": True},
+                status=status.HTTP_201_CREATED
+            )
+            
+    except CourseReview.DoesNotExist:
+        return Response(
+            {"detail": "Review not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"detail": f"Error processing like: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+def course_rating_stats(request, course_id):
+    """Get course rating statistics"""
+    try:
+        course = get_object_or_404(Course, id=course_id)
+        
+        # Get all approved reviews for this course
+        reviews = CourseReview.objects.filter(course=course, is_approved=True)
+        
+        # Calculate statistics
+        total_reviews = reviews.count()
+        average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+        
+        # Rating distribution
+        rating_distribution = {}
+        for i in range(1, 6):
+            count = reviews.filter(rating=i).count()
+            percentage = (count / total_reviews * 100) if total_reviews > 0 else 0
+            rating_distribution[i] = {
+                'count': count,
+                'percentage': round(percentage, 1)
+            }
+        
+        return Response({
+            'course_id': course_id,
+            'total_reviews': total_reviews,
+            'average_rating': round(average_rating, 1),
+            'rating_distribution': rating_distribution
+        })
+        
+    except Course.DoesNotExist:
+        return Response(
+            {"detail": "Course not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {"detail": f"Error getting rating stats: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 

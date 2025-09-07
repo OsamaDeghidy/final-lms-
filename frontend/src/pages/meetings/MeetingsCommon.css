@@ -6,7 +6,7 @@
 }
 
 .meetings-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   border-radius: 20px;
   padding: 32px;
   margin-bottom: 32px;
@@ -55,12 +55,12 @@
 
 .stat-card.ongoing {
   background: linear-gradient(135deg, #e8f5e8 0%, #ffffff 100%);
-  border-left: 4px solid #4caf50;
+  border-left: 4px solid #e5978b;
 }
 
 .stat-card.completed {
   background: linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%);
-  border-left: 4px solid #9c27b0;
+  border-left: 4px solid #1976d2;
 }
 
 .stat-card.absent {
@@ -111,7 +111,7 @@
 }
 
 .progress-bar-fill {
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%) !important;
+  background: linear-gradient(90deg, #e5978b 0%, #66bb6a 100%) !important;
   border-radius: 8px !important;
 }
 
@@ -134,7 +134,7 @@
 
 .meetings-tabs .MuiTab-root.Mui-selected {
   color: #667eea;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   color: white;
 }
 
@@ -159,7 +159,7 @@
 }
 
 .meeting-card.ongoing {
-  border: 2px solid #4caf50;
+  border: 2px solid #e5978b;
   background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
 }
 
@@ -170,7 +170,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+  background: linear-gradient(90deg, #e5978b 0%, #66bb6a 100%);
 }
 
 .meeting-card-header {
@@ -232,7 +232,7 @@
 }
 
 .meeting-action-btn.primary {
-  background: linear-gradient(45deg, #667eea 30%, #764ba2 90%) !important;
+  background: linear-gradient(45deg, #667eea 30%, #0e5181 90%) !important;
   color: white !important;
 }
 
@@ -241,7 +241,7 @@
 }
 
 .meeting-action-btn.success {
-  background: linear-gradient(45deg, #4caf50 30%, #66bb6a 90%) !important;
+  background: linear-gradient(45deg, #e5978b 30%, #66bb6a 90%) !important;
   color: white !important;
 }
 
@@ -264,7 +264,7 @@
   position: fixed !important;
   bottom: 32px !important;
   right: 32px !important;
-  background: linear-gradient(45deg, #667eea 30%, #764ba2 90%) !important;
+  background: linear-gradient(45deg, #667eea 30%, #0e5181 90%) !important;
   color: white !important;
   box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4) !important;
   border-radius: 50% !important;
@@ -285,7 +285,7 @@
 }
 
 .meeting-dialog .MuiDialogTitle-root {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   color: white;
   text-align: center;
   font-weight: 600;
@@ -338,7 +338,7 @@
 }
 
 .attendance-list-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   border-radius: 4px;
 }
 
@@ -375,7 +375,7 @@
 }
 
 .attendance-avatar.present {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%) !important;
+  background: linear-gradient(135deg, #e5978b 0%, #66bb6a 100%) !important;
 }
 
 .attendance-avatar.absent {
@@ -393,7 +393,7 @@
 }
 
 .attendance-tabs .MuiTab-root.Mui-selected {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
@@ -442,7 +442,7 @@
 }
 
 .attendance-progress-fill {
-  background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%) !important;
+  background: linear-gradient(90deg, #e5978b 0%, #66bb6a 100%) !important;
   border-radius: 6px !important;
 }
 
@@ -625,7 +625,7 @@
 }
 
 .meetings-container ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #0e5181 100%);
   border-radius: 4px;
 }
 

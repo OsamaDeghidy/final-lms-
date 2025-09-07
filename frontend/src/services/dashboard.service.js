@@ -4,7 +4,7 @@ class DashboardService {
   // إحصائيات لوحة تحكم الطالب
   async getStudentStats() {
     try {
-      const response = await apiService.get('/dashboard/student-stats/');
+      const response = await apiService.get('/api/courses/student/dashboard/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching student stats:', error);
@@ -24,7 +24,7 @@ class DashboardService {
   // إحصائيات لوحة تحكم المعلم
   async getTeacherStats() {
     try {
-      const response = await apiService.get('/dashboard/teacher-stats/');
+      const response = await apiService.get('/api/courses/teacher/dashboard/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching teacher stats:', error);
@@ -44,7 +44,7 @@ class DashboardService {
   // المقررات النشطة للطالب
   async getStudentCourses() {
     try {
-      const response = await apiService.get('/dashboard/student-courses/');
+      const response = await apiService.get('/api/courses/student/courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching student courses:', error);
@@ -55,7 +55,7 @@ class DashboardService {
   // المقررات النشطة للمعلم
   async getTeacherCourses() {
     try {
-      const response = await apiService.get('/dashboard/teacher-courses/');
+      const response = await apiService.get('/api/courses/teacher/courses/');
       return response.data;
     } catch (error) {
       console.error('Error fetching teacher courses:', error);
@@ -63,10 +63,10 @@ class DashboardService {
     }
   }
 
-  // النشاطات الأخيرة
+  // النشاطات الأخيرة للطالب
   async getRecentActivity() {
     try {
-      const response = await apiService.get('/dashboard/recent-activity/');
+      const response = await apiService.get('/api/courses/student/recent-activity/');
       return response.data;
     } catch (error) {
       console.error('Error fetching recent activity:', error);
@@ -74,10 +74,10 @@ class DashboardService {
     }
   }
 
-  // الواجبات القادمة
+  // الواجبات القادمة للطالب
   async getUpcomingAssignments() {
     try {
-      const response = await apiService.get('/dashboard/upcoming-assignments/');
+      const response = await apiService.get('/api/courses/student/upcoming-assignments/');
       return response.data;
     } catch (error) {
       console.error('Error fetching upcoming assignments:', error);
@@ -85,10 +85,10 @@ class DashboardService {
     }
   }
 
-  // المحاضرات القادمة
+  // المحاضرات القادمة للطالب
   async getUpcomingMeetings() {
     try {
-      const response = await apiService.get('/dashboard/upcoming-meetings/');
+      const response = await apiService.get('/api/courses/student/upcoming-meetings/');
       return response.data;
     } catch (error) {
       console.error('Error fetching upcoming meetings:', error);
@@ -99,7 +99,7 @@ class DashboardService {
   // تقدم الطلاب (للمعلم)
   async getStudentProgress() {
     try {
-      const response = await apiService.get('/dashboard/student-progress/');
+      const response = await apiService.get('/api/courses/teacher/student-progress/');
       return response.data;
     } catch (error) {
       console.error('Error fetching student progress:', error);
@@ -107,10 +107,10 @@ class DashboardService {
     }
   }
 
-  // الإنجازات
+  // الإنجازات للطالب
   async getAchievements() {
     try {
-      const response = await apiService.get('/dashboard/achievements/');
+      const response = await apiService.get('/api/courses/student/achievements/');
       return response.data;
     } catch (error) {
       console.error('Error fetching achievements:', error);
@@ -121,7 +121,7 @@ class DashboardService {
   // الإعلانات الأخيرة
   async getRecentAnnouncements() {
     try {
-      const response = await apiService.get('/dashboard/recent-announcements/');
+      const response = await apiService.get('/api/courses/teacher/announcements/');
       return response.data;
     } catch (error) {
       console.error('Error fetching recent announcements:', error);

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Course, Category, Tag, Enrollment
 from users.models import Instructor
 from django.db.models import Count
+from django.utils.text import slugify
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -30,6 +31,7 @@ class CourseBasicSerializer(serializers.ModelSerializer):
     enrolled_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
@@ -37,9 +39,9 @@ class CourseBasicSerializer(serializers.ModelSerializer):
             'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'image_url', 'price',
             'discount_price', 'category', 'category_name', 'instructors', 'tags',
             'level', 'status', 'is_complete_course', 'created_at', 'rating', 'enrolled_count',
-            'is_free', 'is_featured', 'is_certified', 'total_enrollments', 'average_rating'
+            'is_free', 'is_featured', 'is_certified', 'total_enrollments', 'average_rating', 'duration'
         ]
-        read_only_fields = ['id', 'created_at', 'rating', 'total_enrollments', 'average_rating']
+        read_only_fields = ['id', 'created_at', 'rating', 'total_enrollments', 'average_rating', 'duration']
     
     def get_instructors(self, obj):
         instructors = []
@@ -92,6 +94,32 @@ class CourseBasicSerializer(serializers.ModelSerializer):
         if obj.image:
             return self.context['request'].build_absolute_uri(obj.image.url)
         return None
+    
+    def get_duration(self, obj):
+        """Calculate total duration of all lessons in the course"""
+        try:
+            total_minutes = 0
+            for module in obj.modules.all():
+                for lesson in module.lessons.all():
+                    total_minutes += lesson.duration_minutes or 0
+            
+            if total_minutes == 0:
+                return "غير محدد"
+            
+            hours = total_minutes // 60
+            minutes = total_minutes % 60
+            
+            if hours > 0 and minutes > 0:
+                return f"{hours}س {minutes}د"
+            elif hours > 0:
+                return f"{hours}س"
+            else:
+                return f"{minutes}د"
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error calculating duration for course {obj.id}: {str(e)}")
+            return "غير محدد"
 
 
 class CourseInstructorSerializer(serializers.Serializer):
@@ -105,6 +133,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     instructors = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     is_enrolled = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
@@ -113,9 +142,9 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'price', 'discount_price', 'category', 'instructors', 'tags', 'level', 'status', 
             'is_complete_course', 'created_at', 'updated_at', 'is_enrolled', 'is_free', 
             'is_featured', 'is_certified', 'total_enrollments', 'average_rating', 'language',
-            'syllabus_pdf', 'materials_pdf'
+            'syllabus_pdf', 'materials_pdf', 'duration'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'total_enrollments', 'average_rating']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_enrollments', 'average_rating', 'duration']
     
     def get_instructors(self, obj):
         instructors = []
@@ -169,6 +198,32 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             logger = logging.getLogger(__name__)
             logger.error(f"Error in get_is_enrolled: {str(e)}")
             return False
+    
+    def get_duration(self, obj):
+        """Calculate total duration of all lessons in the course"""
+        try:
+            total_minutes = 0
+            for module in obj.modules.all():
+                for lesson in module.lessons.all():
+                    total_minutes += lesson.duration_minutes or 0
+            
+            if total_minutes == 0:
+                return "غير محدد"
+            
+            hours = total_minutes // 60
+            minutes = total_minutes % 60
+            
+            if hours > 0 and minutes > 0:
+                return f"{hours}س {minutes}د"
+            elif hours > 0:
+                return f"{hours}س"
+            else:
+                return f"{minutes}د"
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error calculating duration for course {obj.id}: {str(e)}")
+            return "غير محدد"
 
 
 class CourseCreateSerializer(serializers.ModelSerializer):
@@ -227,6 +282,16 @@ class CourseCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Instructor profile not found")
         
         try:
+            # Generate slug if not provided
+            if not validated_data.get('slug') and validated_data.get('title'):
+                base_slug = slugify(validated_data['title'])
+                slug = base_slug
+                counter = 1
+                while Course.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                validated_data['slug'] = slug
+            
             # Create the course
             course = Course.objects.create(**validated_data)
             
@@ -277,6 +342,16 @@ class CourseUpdateSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         try:
             tags_data = validated_data.pop('tags', None)
+            
+            # Check if title changed and update slug accordingly
+            if 'title' in validated_data and validated_data['title'] != instance.title:
+                base_slug = slugify(validated_data['title'])
+                slug = base_slug
+                counter = 1
+                while Course.objects.filter(slug=slug).exclude(pk=instance.pk).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                validated_data['slug'] = slug
             
             for attr, value in validated_data.items():
                 setattr(instance, attr, value)

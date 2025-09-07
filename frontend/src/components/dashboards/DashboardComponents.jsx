@@ -158,16 +158,18 @@ export const EnhancedCourseCard = ({
   const theme = useTheme();
 
   const getProgressColor = (progress) => {
-    if (progress >= 80) return 'success';
-    if (progress >= 60) return 'info';
-    if (progress >= 40) return 'warning';
+    const progressValue = progress || 0;
+    if (progressValue >= 80) return 'success';
+    if (progressValue >= 60) return 'info';
+    if (progressValue >= 40) return 'warning';
     return 'error';
   };
 
   const getProgressLabel = (progress) => {
-    if (progress >= 80) return 'ممتاز';
-    if (progress >= 60) return 'جيد جداً';
-    if (progress >= 40) return 'جيد';
+    const progressValue = progress || 0;
+    if (progressValue >= 80) return 'ممتاز';
+    if (progressValue >= 60) return 'جيد جداً';
+    if (progressValue >= 40) return 'جيد';
     return 'يحتاج تحسين';
   };
 
@@ -227,9 +229,9 @@ export const EnhancedCourseCard = ({
               }}
             >
               <Chip
-                label={getProgressLabel(course.progress)}
+                label={getProgressLabel(course.progress || 0)}
                 size="small"
-                color={getProgressColor(course.progress)}
+                color={getProgressColor(course.progress || 0)}
                 sx={{ 
                   fontWeight: 600,
                   backdropFilter: 'blur(10px)',
@@ -250,28 +252,28 @@ export const EnhancedCourseCard = ({
                   fontWeight: 600,
                 }}
               >
-                {course.name.charAt(0)}
+                {(course.title || course.name || 'C').charAt(0)}
               </Avatar>
               
               <Box sx={{ flexGrow: 1 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ mb: 0.5 }}>
-                  {course.name}
+                  {course.title || course.name || 'مقرر بدون عنوان'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {course.teacher}
+                  {course.instructors ? course.instructors.join(', ') : course.teacher || 'غير محدد'}
                 </Typography>
                 
                 {variant === 'teacher' && (
                   <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                     <Chip
                       icon={<Group fontSize="small" />}
-                      label={`${course.students} طالب`}
+                      label={`${course.students || 0} طالب`}
                       size="small"
                       variant="outlined"
                     />
                     <Chip
                       icon={<Assignment fontSize="small" />}
-                      label={`${course.assignments} واجب`}
+                      label={`${course.assignments || 0} واجب`}
                       size="small"
                       variant="outlined"
                     />
@@ -287,13 +289,13 @@ export const EnhancedCourseCard = ({
                   التقدم
                 </Typography>
                 <Typography variant="body2" fontWeight={600}>
-                  {course.progress}%
+                  {course.progress || 0}%
                 </Typography>
               </Box>
               <LinearProgress
                 variant="determinate"
-                value={course.progress}
-                color={getProgressColor(course.progress)}
+                value={course.progress || 0}
+                color={getProgressColor(course.progress || 0)}
                 sx={{
                   height: 8,
                   borderRadius: 4,

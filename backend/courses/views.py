@@ -523,7 +523,7 @@ def dashboard_stats(request):
                 instructor_courses = Course.objects.filter(instructors=instructor)
                 total_students = 0
                 for course in instructor_courses:
-                    total_students += course.enroller_user.count()
+                    total_students += course.enrollments.count()
                 
                 stats = {
                     'total_courses': instructor_courses.count(),

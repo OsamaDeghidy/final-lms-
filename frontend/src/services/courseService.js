@@ -4,139 +4,329 @@ import api from './api.service';
 export const courseAPI = {
   // Get all courses with filtering and pagination
   getCourses: async (params = {}) => {
-    const response = await api.get('/courses/public/', { params });
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/public/', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      throw error;
+    }
   },
 
   // Get a specific course by ID
   getCourseById: async (courseId) => {
-    const response = await api.get(`/courses/courses/${courseId}/`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course by ID:', error);
+      throw error;
+    }
   },
 
   // Get a specific course by ID (alias for getCourseById)
   getCourse: async (courseId) => {
-    const response = await api.get(`/courses/courses/${courseId}/`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course:', error);
+      throw error;
+    }
   },
 
   // Search courses
   searchCourses: async (query, params = {}) => {
-    const response = await api.get('/courses/search/', { 
-      params: { query, ...params } 
-    });
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/search/', { 
+        params: { query, ...params } 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error searching courses:', error);
+      throw error;
+    }
   },
 
   // Get featured courses
   getFeaturedCourses: async () => {
-    const response = await api.get('/courses/featured/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/featured/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching featured courses:', error);
+      throw error;
+    }
   },
 
   // Get popular courses
   getPopularCourses: async () => {
-    const response = await api.get('/courses/popular/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/popular/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching popular courses:', error);
+      throw error;
+    }
   },
 
   // Get recent courses
   getRecentCourses: async () => {
-    const response = await api.get('/courses/recent/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/recent/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recent courses:', error);
+      throw error;
+    }
   },
 
   // Get categories
   getCategories: async () => {
-    const response = await api.get('/courses/categories/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/categories/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
   },
 
   // Get tags
   getTags: async () => {
-    const response = await api.get('/courses/tags/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/tags/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      throw error;
+    }
   },
 
   // Enroll in a course
   enrollInCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/enroll/`);
-    return response.data;
+    try {
+      const response = await api.post(`/api/courses/courses/${courseId}/enroll/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      throw error;
+    }
   },
 
   // Unenroll from a course
   unenrollFromCourse: async (courseId) => {
-    const response = await api.post(`/courses/courses/${courseId}/unenroll/`);
-    return response.data;
+    try {
+      const response = await api.post(`/api/courses/courses/${courseId}/unenroll/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unenrolling from course:', error);
+      throw error;
+    }
   },
 
   // Get course modules
   getCourseModules: async (courseId) => {
-    const response = await api.get(`/courses/courses/${courseId}/modules/`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/modules/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course modules:', error);
+      throw error;
+    }
   },
 
   // Get my courses (enrolled courses)
   getMyCourses: async () => {
-    const response = await api.get('/courses/courses/my_courses/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/courses/my_courses/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching my courses:', error);
+      throw error;
+    }
   },
 
   // Get dashboard stats
   getDashboardStats: async () => {
-    const response = await api.get('/courses/dashboard/stats/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/dashboard/stats/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      throw error;
+    }
   },
 
   // Get general stats
   getGeneralStats: async () => {
-    const response = await api.get('/courses/general/stats/');
-    return response.data;
+    try {
+      const response = await api.get('/api/courses/general/stats/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching general stats:', error);
+      throw error;
+    }
   },
 
   // Get related courses
   getRelatedCourses: async (courseId) => {
-    const response = await api.get(`/courses/courses/${courseId}/related/`);
-    return response.data;
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/related/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching related courses:', error);
+      throw error;
+    }
   },
 
   // Get course collections with courses
   getCourseCollections: async () => {
-    const response = await api.get('/extras/collections/with_courses/');
-    return response.data;
+    try {
+      const response = await api.get('/api/extras/collections/with_courses/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course collections:', error);
+      throw error;
+    }
+  },
+
+  // Get promotional banners
+  getPromotionalBanners: async () => {
+    try {
+      const response = await api.get('/api/extras/banners/promotional/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching promotional banners:', error);
+      throw error;
+    }
+  },
+
+  // Get course reviews
+  getCourseReviews: async (courseId) => {
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/reviews/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course reviews:', error);
+      throw error;
+    }
+  },
+
+  // Add course review
+  addCourseReview: async (courseId, reviewData) => {
+    try {
+      const response = await api.post(`/api/courses/courses/${courseId}/reviews/`, reviewData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding course review:', error);
+      throw error;
+    }
+  },
+
+  // Get course progress
+  getCourseProgress: async (courseId) => {
+    try {
+      const response = await api.get(`/api/courses/courses/${courseId}/progress/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching course progress:', error);
+      throw error;
+    }
   },
 };
 
-// Cart API methods (moved from api.service.js)
+// Cart API methods
 export const cartAPI = {
   // Get cart items
   getCart: async () => {
-    const response = await api.get('/store/cart/');
-    return response.data;
+    try {
+      const response = await api.get('/api/store/cart/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching cart:', error);
+      throw error;
+    }
   },
 
   // Add course to cart
   addToCart: async (courseId) => {
-    const response = await api.post('/store/cart/items/', { course_id: courseId });
-    return response.data;
+    try {
+      const response = await api.post('/api/store/cart/items/', { course_id: courseId });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      throw error;
+    }
   },
 
   // Remove course from cart
   removeFromCart: async (itemId) => {
-    const response = await api.delete(`/store/cart/items/${itemId}/`);
-    return response.data;
+    try {
+      const response = await api.delete(`/api/store/cart/items/${itemId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      throw error;
+    }
   },
 
   // Update cart item quantity
   updateCartItem: async (itemId, quantity) => {
-    const response = await api.patch(`/store/cart/items/${itemId}/`, { quantity });
-    return response.data;
+    try {
+      const response = await api.patch(`/api/store/cart/items/${itemId}/`, { quantity });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating cart item:', error);
+      throw error;
+    }
   },
 
   // Clear cart
   clearCart: async () => {
-    const response = await api.delete('/store/cart/');
-    return response.data;
+    try {
+      const response = await api.delete('/api/store/cart/');
+      return response.data;
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      throw error;
+    }
+  },
+};
+
+// Payment API methods
+export const paymentAPI = {
+  // Create Moyasar hosted payment and get redirect URL
+  createMoyasarPayment: async () => {
+    try {
+      const response = await api.post('/api/store/payment/moyasar/create/');
+      return response.data; // { url, invoice }
+    } catch (error) {
+      console.error('Error creating Moyasar payment:', error);
+      throw error;
+    }
+  },
+  
+  // Create Moyasar hosted payment for a specific course
+  createCoursePayment: async (courseId) => {
+    try {
+      const response = await api.post(`/api/store/payment/moyasar/course/${courseId}/create/`);
+      return response.data; // { url, invoice }
+    } catch (error) {
+      console.error('Error creating course payment:', error);
+      throw error;
+    }
+  },
+
+  // Get payment status
+  getPaymentStatus: async (paymentId) => {
+    try {
+      const response = await api.get(`/api/store/payment/${paymentId}/status/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting payment status:', error);
+      throw error;
+    }
   },
 };
 

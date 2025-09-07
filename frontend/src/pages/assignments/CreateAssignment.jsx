@@ -501,7 +501,7 @@ const CreateAssignment = () => {
                           </Grid>
                           <Grid xs={12} md={6}>
                             <Typography variant="body2" color="text.secondary">
-                              تاريخ التسليم: {assignmentData.due_date ? new Date(assignmentData.due_date).toLocaleString('ar-SA') : 'غير محدد'}
+                              تاريخ التسليم: {assignmentData.due_date ? new Date(assignmentData.due_date).toLocaleString('en-GB') : 'غير محدد'}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                               الدرجة: {assignmentData.points} نقطة

@@ -6,16 +6,17 @@ import HeroBanner from '../components/home/HeroBanner';
 import CourseCollections from '../components/home/CourseSlider';
 import TestimonialsSection from '../components/home/TestimonialsSection';
 import LearningMethodsSection from '../components/home/LearningMethodsSection';
+import MotionSeparator from '../components/home/MotionSeparator';
 
 
 const HomePage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Helmet>
-        <title>الرئيسية | منصة التطوير المهني التعليمية</title>
+        <title>الرئيسية | منصة معهد التطوير المهني العالي للتدريب</title>
         <meta 
           name="description" 
-          content="منصة تعليمية متكاملة تقدم دورات تدريبية احترافية في مختلف المجالات. تعلم من أفضل المدربين واحصل على شهادات معتمدة." 
+          content="منصة معهد التطوير المهني العالي للتدريب - منصة تعليمية متكاملة تقدم دورات تدريبية احترافية في مختلف المجالات." 
         />
         <meta name="keywords" content="تعليم عن بعد, دورات تدريبية, تعلم اونلاين, شهادات معتمدة, تطوير مهني" />
       </Helmet>
@@ -32,6 +33,11 @@ const HomePage = () => {
         {/* Learning Methods Section */}
         <Box component="section" id="learning-methods">
           <LearningMethodsSection />
+        </Box>
+
+        {/* Motion Separator - Stats & Partners */}
+        <Box component="section" id="stats-separator">
+          <MotionSeparator />
         </Box>
  
         {/* Course Collections Section */}

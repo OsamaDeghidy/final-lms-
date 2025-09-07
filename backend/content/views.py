@@ -18,6 +18,7 @@ class ModuleViewSet(ModelViewSet):
     """إدارة الوحدات"""
     queryset = Module.objects.select_related('course').all()
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -97,6 +98,25 @@ class ModuleViewSet(ModelViewSet):
             'error': 'بيانات غير صحيحة',
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    def create(self, request, *args, **kwargs):
+        """Create a new module with better error handling"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            if serializer.is_valid():
+                self.perform_create(serializer)
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            else:
+                return Response({
+                    'error': 'بيانات غير صحيحة',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'error': 'حدث خطأ أثناء إنشاء الوحدة',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['get'], url_path='courses/(?P<course_id>[^/.]+)')
     def course_modules(self, request, course_id=None):

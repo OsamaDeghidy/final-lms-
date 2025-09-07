@@ -1,7 +1,7 @@
 import api from './api.service';
 
 // Assignments API service
-const BASE = '/assignments';
+const BASE = '/api/assignments';
 
 export const assignmentsAPI = {
   // List assignments (can filter by course, is_active, ordering, search)

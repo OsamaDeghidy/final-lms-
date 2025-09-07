@@ -83,6 +83,36 @@ const SubmitAssignment = () => {
   const isOverdue = assignment ? new Date() > new Date(assignment.due_date) : false;
   const canSubmit = assignment ? assignment.is_active && (!isOverdue || assignment.allow_late_submissions) : false;
 
+  const handleDownloadFile = async (fileName, fileUrl) => {
+    try {
+      if (!fileUrl) {
+        console.error('No file URL provided');
+        return;
+      }
+
+      // Ensure the URL is absolute
+      let downloadUrl = fileUrl;
+      if (!fileUrl.startsWith('http')) {
+        downloadUrl = `http://localhost:8000${fileUrl}`;
+      }
+
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'assignment_file';
+      link.target = '_blank';
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('Downloading file:', fileName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
   const steps = [
     {
       label: 'مراجعة الواجب',
@@ -372,7 +402,7 @@ const SubmitAssignment = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
+        background: 'linear-gradient(135deg, #0e5181 0%, #1976d2 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -428,7 +458,7 @@ const SubmitAssignment = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
               <CalendarTodayIcon sx={{ color: '#666' }} />
               <Typography variant="body1">
-                تاريخ التسليم: {new Date(assignment.due_date).toLocaleString('ar-SA')}
+                تاريخ التسليم: {new Date(assignment.due_date).toLocaleString('en-GB')}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
@@ -447,8 +477,8 @@ const SubmitAssignment = () => {
               <Button
                 variant="outlined"
                 startIcon={<DownloadIcon />}
-                onClick={() => console.log('Download file:', assignment.assignment_file)}
-                sx={{ mt: 1 }}
+                onClick={() => handleDownloadFile('assignment_file', assignment.assignment_file)}
+                sx={{ mt: 1, color: '#1976d2', borderColor: '#1976d2' }}
               >
                 تحميل ملف الواجب
               </Button>
@@ -464,7 +494,7 @@ const SubmitAssignment = () => {
             انتبه! هذا الواجب متأخر
           </Typography>
           <Typography variant="body2">
-            تاريخ التسليم كان: {new Date(assignment.due_date).toLocaleString('ar-SA')}
+            تاريخ التسليم كان: {new Date(assignment.due_date).toLocaleString('en-GB')}
             {assignment.allow_late_submissions && ` - سيتم خصم ${assignment.late_submission_penalty}% من الدرجة`}
           </Typography>
         </Alert>
@@ -668,7 +698,7 @@ const SubmitAssignment = () => {
               disabled={isSubmitting || !canSubmit || error}
               startIcon={isSubmitting ? <CircularProgress size={20} /> : <SendIcon />}
               sx={{
-                background: 'linear-gradient(135deg, #0e5181 0%, #9c27b0 100%)',
+                background: 'linear-gradient(135deg, #0e5181 0%, #1976d2 100%)',
                 '&:hover': {
                   background: 'linear-gradient(135deg, #5e35b1 0%, #8e24aa 100%)',
                 }

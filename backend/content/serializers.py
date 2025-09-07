@@ -42,15 +42,34 @@ class ModuleProgressSerializer(serializers.ModelSerializer):
     
     def get_progress_percentage(self, obj):
         """Calculate progress percentage"""
-        total = self.get_total_lessons(obj)
-        if total == 0:
+        try:
+            # Use the model's method if available
+            if hasattr(obj, 'get_completion_percentage'):
+                return obj.get_completion_percentage()
+            
+            # Fallback calculation based on module components
+            total_components = 4  # video, pdf, notes, quiz
+            if total_components == 0:
+                return 0
+                
+            completed_components = sum([
+                obj.video_watched,
+                obj.pdf_viewed,
+                obj.notes_read,
+                obj.quiz_completed
+            ])
+            
+            return int((completed_components / total_components) * 100)
+        except Exception as e:
+            print(f"Error calculating progress percentage: {e}")
             return 0
-        completed = self.get_completed_lessons(obj)
-        return int((completed / total) * 100)
 
 
 class ModuleCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating a new module"""
+    video = serializers.FileField(required=False, allow_null=True)
+    pdf = serializers.FileField(required=False, allow_null=True)
+    
     class Meta:
         model = Module
         fields = [
