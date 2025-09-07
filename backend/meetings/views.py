@@ -151,7 +151,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         # Check if meeting is available to join
         now = timezone.now()
         buffer_time = timedelta(minutes=15)  # Allow joining 15 minutes early
-        end_time = meeting.start_time + timedelta(minutes=meeting.duration)
+        end_time = meeting.start_time + meeting.duration
         
         if not ((meeting.start_time - buffer_time) <= now <= end_time):
             return Response({
@@ -410,6 +410,60 @@ class MeetingViewSet(viewsets.ModelViewSet):
         })
     
     @action(detail=True, methods=['post'])
+    def update_attendance(self, request, pk=None):
+        """
+        تحديث حالة الحضور للمشارك (للمعلم)
+        """
+        meeting = self.get_object()
+        user = request.user
+        
+        # Check if user is the creator or admin
+        if not (user.is_superuser or 
+                (hasattr(user, 'profile') and user.profile.is_teacher_or_admin()) or
+                meeting.creator == user):
+            return Response({
+                'error': 'ليس لديك صلاحية لتحديث الحضور'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        participant_id = request.data.get('participant_id')
+        attendance_status = request.data.get('attendance_status')
+        
+        if not participant_id or not attendance_status:
+            return Response({
+                'error': 'معرف المشارك وحالة الحضور مطلوبان'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if attendance_status not in ['present', 'late', 'absent']:
+            return Response({
+                'error': 'حالة الحضور غير صحيحة'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            participant = Participant.objects.get(
+                id=participant_id,
+                meeting=meeting
+            )
+            
+            participant.attendance_status = attendance_status
+            participant.is_attending = attendance_status in ['present', 'late']
+            
+            if attendance_status in ['present', 'late']:
+                participant.attendance_time = timezone.now()
+            
+            participant.save()
+            
+            return Response({
+                'message': f'تم تحديث حالة الحضور إلى {attendance_status}',
+                'participant_id': participant.id,
+                'attendance_status': attendance_status
+            })
+            
+        except Participant.DoesNotExist:
+            return Response({
+                'error': 'المشارك غير موجود'
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'])
     def register(self, request, pk=None):
         """
         التسجيل في الاجتماع (للطلاب)
@@ -448,6 +502,131 @@ class MeetingViewSet(viewsets.ModelViewSet):
             'message': 'تم التسجيل في الاجتماع بنجاح',
             'participant_id': participant.id
         })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def mark_absent_participants(request, meeting_id):
+    """
+    تسجيل الطلاب الغائبين تلقائياً (للمعلم)
+    """
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    user = request.user
+    
+    # Check if user is the creator or admin
+    if not (user.is_superuser or 
+            (hasattr(user, 'profile') and user.profile.is_teacher_or_admin()) or
+            meeting.creator == user):
+        return Response({
+            'error': 'ليس لديك صلاحية لتسجيل الغياب'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Mark all registered participants who haven't joined as absent
+    now = timezone.now()
+    meeting_end = meeting.start_time + meeting.duration
+    
+    # Only mark absent if meeting has ended or is significantly past start time
+    if now > meeting.start_time + timedelta(minutes=30):
+        absent_count = 0
+        
+        for participant in meeting.participants.filter(attendance_status='registered'):
+            participant.attendance_status = 'absent'
+            participant.save()
+            absent_count += 1
+        
+        return Response({
+            'message': f'تم تسجيل {absent_count} طالب كغائبين',
+            'absent_count': absent_count
+        })
+    else:
+        return Response({
+            'error': 'لا يمكن تسجيل الغياب قبل انتهاء الاجتماع'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def auto_join_meeting(request, meeting_id):
+    """
+    انضمام تلقائي للاجتماع وتسجيل الحضور
+    """
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    user = request.user
+    
+    # Check if meeting is available
+    now = timezone.now()
+    buffer_time = timedelta(minutes=15)  # Allow joining 15 minutes early
+    end_time = meeting.start_time + meeting.duration
+    
+    if not ((meeting.start_time - buffer_time) <= now <= end_time):
+        return Response({
+            'error': 'الاجتماع غير متاح للانضمام في الوقت الحالي'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if not meeting.is_active:
+        return Response({
+            'error': 'الاجتماع غير نشط'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if user is a participant
+    if not meeting.participants.filter(user=user).exists():
+        return Response({
+            'error': 'يجب التسجيل في الاجتماع للانضمام إليه'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get or create participant record
+    participant, created = Participant.objects.get_or_create(
+        meeting=meeting,
+        user=user,
+        defaults={
+            'attendance_status': 'registered'
+        }
+    )
+    
+    # Check if already attended (prevent duplicate attendance)
+    if participant.is_attending and participant.attendance_time:
+        return Response({
+            'message': 'تم تسجيل الحضور مسبقاً',
+            'attendance_status': participant.attendance_status,
+            'meeting_url': meeting.zoom_link,
+            'participant_id': participant.id,
+            'already_attended': True
+        })
+    
+    # Auto mark attendance and update join time
+    participant.is_attending = True
+    participant.attendance_time = timezone.now()
+    
+    # Determine attendance status based on join time
+    meeting_start = meeting.start_time
+    current_time = timezone.now()
+    
+    # If joined more than 15 minutes after meeting start, mark as late
+    if current_time > meeting_start + timedelta(minutes=15):
+        participant.attendance_status = 'late'
+    else:
+        participant.attendance_status = 'present'
+    
+    participant.save()
+    
+    return Response({
+        'message': 'تم الانضمام التلقائي للاجتماع وتسجيل الحضور',
+        'attendance_status': participant.attendance_status,
+        'meeting_url': meeting.zoom_link,
+        'participant_id': participant.id
+    })
     
     @action(detail=True, methods=['post'])
     def unregister(self, request, pk=None):
@@ -820,7 +999,7 @@ def meeting_status(request, meeting_id):
     # Determine meeting status
     if meeting.start_time > now:
         status = 'upcoming'
-    elif meeting.start_time <= now <= meeting.start_time + timedelta(minutes=meeting.duration):
+    elif meeting.start_time <= now <= meeting.start_time + meeting.duration:
         status = 'live'
     else:
         status = 'completed'
@@ -1190,3 +1369,129 @@ def create_quick_meeting(request):
             }, status=status.HTTP_403_FORBIDDEN)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_join(request, meeting_id):
+    """
+    الانضمام للاجتماع
+    """
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    user = request.user
+    
+    # Check if meeting is available to join
+    now = timezone.now()
+    buffer_time = timedelta(minutes=15)  # Allow joining 15 minutes early
+    end_time = meeting.start_time + meeting.duration
+    
+    if not ((meeting.start_time - buffer_time) <= now <= end_time):
+        return Response({
+            'error': 'الاجتماع غير متاح للانضمام في الوقت الحالي'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    if not meeting.is_active:
+        return Response({
+            'error': 'الاجتماع غير نشط'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if user is a participant
+    if not meeting.participants.filter(user=user).exists():
+        return Response({
+            'error': 'يجب التسجيل في الاجتماع للانضمام إليه'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Check if meeting is full
+    current_attendees = meeting.participants.filter(
+        is_attending=True
+    ).count()
+    
+    if current_attendees >= meeting.max_participants:
+        return Response({
+            'error': 'الاجتماع ممتلئ'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Get or create participant record
+    participant, created = Participant.objects.get_or_create(
+        meeting=meeting,
+        user=user,
+        defaults={
+            'attendance_status': 'registered'
+        }
+    )
+    
+    # Mark attendance and update join time
+    participant.is_attending = True
+    participant.attendance_time = timezone.now()
+    
+    # Determine attendance status based on join time
+    meeting_start = meeting.start_time
+    current_time = timezone.now()
+    
+    # If joined more than 15 minutes after meeting start, mark as late
+    if current_time > meeting_start + timedelta(minutes=15):
+        participant.attendance_status = 'late'
+    else:
+        participant.attendance_status = 'present'
+    
+    participant.save()
+    
+    return Response({
+        'message': 'تم الانضمام للاجتماع بنجاح',
+        'meeting_url': meeting.zoom_link,
+        'participant_id': participant.id
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def meeting_register(request, meeting_id):
+    """
+    التسجيل في الاجتماع (للطلاب)
+    """
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+    except Meeting.DoesNotExist:
+        return Response({
+            'error': 'الاجتماع غير موجود'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    user = request.user
+    
+    # Check if meeting is active
+    if not meeting.is_active:
+        return Response({
+            'error': 'الاجتماع غير نشط'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if meeting is full
+    current_participants = meeting.participants.count()
+    if current_participants >= meeting.max_participants:
+        return Response({
+            'error': 'الاجتماع ممتلئ'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if user is already registered
+    if meeting.participants.filter(user=user).exists():
+        return Response({
+            'error': 'أنت مسجل بالفعل في هذا الاجتماع'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create participant record
+    participant = Participant.objects.create(
+        meeting=meeting,
+        user=user,
+        attendance_status='registered',
+        is_attending=False
+    )
+    
+    return Response({
+        'message': 'تم التسجيل في الاجتماع بنجاح',
+        'participant_id': participant.id
+    })

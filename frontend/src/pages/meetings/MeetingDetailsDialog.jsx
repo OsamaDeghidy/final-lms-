@@ -48,9 +48,29 @@ import {
 
   Badge,
 
-  Tooltip,
+  Table,
+
+  TableBody,
+
+  TableCell,
+
+  TableContainer,
+
+  TableHead,
+
+  TableRow,
 
   Paper,
+
+  TablePagination,
+
+  FormControl,
+
+  Select,
+
+  MenuItem,
+
+  Tooltip,
 
   Alert,
 
@@ -108,6 +128,12 @@ import {
 
   TrendingDown as TrendingDownIcon,
 
+  Check as CheckIcon,
+
+  Close as CloseIcon2,
+
+  Schedule as ScheduleIcon2,
+
   Close as CloseIcon,
 
   Refresh as RefreshIcon,
@@ -153,6 +179,10 @@ const MeetingDetailsDialog = ({
   const [meetingDetails, setMeetingDetails] = useState(null);
 
   const [error, setError] = useState(null);
+
+  // Pagination state for participants table
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
 
 
@@ -204,6 +234,22 @@ const MeetingDetailsDialog = ({
 
       setMeetingDetails(response);
 
+      // Fetch participants separately
+      try {
+        console.log('Fetching participants for meeting:', meeting.id);
+        const participantsResponse = await meetingAPI.getMeetingParticipants(meeting.id);
+        console.log('Participants response:', participantsResponse);
+        
+        // Update meeting details with participants
+        setMeetingDetails(prev => ({
+          ...prev,
+          participants: participantsResponse
+        }));
+      } catch (participantsError) {
+        console.error('Error fetching participants:', participantsError);
+        // Don't show error for participants, just log it
+      }
+
     } catch (err) {
 
       console.error('Error fetching meeting details:', err);
@@ -222,7 +268,39 @@ const MeetingDetailsDialog = ({
 
   };
 
+  // Handle attendance status change
+  const handleAttendanceChange = async (participantId, newStatus) => {
+    try {
+      // If clicking the same status, toggle it off (set to registered)
+      const currentParticipant = meetingDetails?.participants?.find(p => p.id === participantId);
+      const finalStatus = currentParticipant?.attendance_status === newStatus ? 'registered' : newStatus;
+      
+      await meetingAPI.updateParticipantAttendance(meeting.id, participantId, finalStatus);
+      
+      // Update local state
+      setMeetingDetails(prev => ({
+        ...prev,
+        participants: prev.participants.map(p => 
+          p.id === participantId ? { ...p, attendance_status: finalStatus } : p
+        )
+      }));
+      
+      console.log(`Attendance updated for participant ${participantId} to ${finalStatus}`);
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+      alert('حدث خطأ في تحديث الحضور');
+    }
+  };
 
+  // Handle pagination change
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   if (!meeting) return null;
 
@@ -508,7 +586,9 @@ const MeetingDetailsDialog = ({
 
           maxHeight: '90vh',
 
-          overflow: 'hidden'
+          overflow: 'hidden',
+
+          direction: 'rtl'
 
         }
 
@@ -655,7 +735,7 @@ const MeetingDetailsDialog = ({
 
             <CircularProgress />
 
-            <Typography sx={{ ml: 2 }}>جاري تحميل تفاصيل الاجتماع...</Typography>
+            <Typography sx={{ mr: 2 }}>جاري تحميل تفاصيل الاجتماع...</Typography>
 
           </Box>
 
@@ -667,7 +747,7 @@ const MeetingDetailsDialog = ({
 
               <Button color="inherit" size="small" onClick={fetchMeetingDetails}>
 
-                <RefreshIcon sx={{ mr: 1 }} />
+                <RefreshIcon sx={{ ml: 1 }} />
 
                 إعادة المحاولة
 
@@ -715,7 +795,7 @@ const MeetingDetailsDialog = ({
 
                   <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                    <CalendarTodayIcon sx={{ color: '#667eea', mr: 2, fontSize: 24 }} />
+                    <CalendarTodayIcon sx={{ color: '#667eea', ml: 2, fontSize: 24 }} />
 
                     <Box>
 
@@ -751,7 +831,7 @@ const MeetingDetailsDialog = ({
 
                   <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                    <AccessTimeIcon sx={{ color: '#667eea', mr: 2, fontSize: 24 }} />
+                    <AccessTimeIcon sx={{ color: '#667eea', ml: 2, fontSize: 24 }} />
 
                     <Box>
 
@@ -783,11 +863,15 @@ const MeetingDetailsDialog = ({
 
                 </Grid>
 
+                {userRole === 'instructor' && (
+
+                <>
+
                 <Grid item xs={12} sm={6} md={3}>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                    <VideoCallIcon sx={{ color: '#667eea', mr: 2, fontSize: 24 }} />
+                    <VideoCallIcon sx={{ color: '#667eea', ml: 2, fontSize: 24 }} />
 
                     <Box>
 
@@ -813,7 +897,7 @@ const MeetingDetailsDialog = ({
 
                   <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                    <GroupIcon sx={{ color: '#667eea', mr: 2, fontSize: 24 }} />
+                    <GroupIcon sx={{ color: '#667eea', ml: 2, fontSize: 24 }} />
 
                     <Box>
 
@@ -835,11 +919,17 @@ const MeetingDetailsDialog = ({
 
                 </Grid>
 
+                </>
+
+                )}
+
               </Grid>
 
 
 
-                {/* Additional Info Grid */}
+                {/* Additional Info Grid - Only for instructors */}
+
+                {userRole === 'instructor' && (
 
                 <Grid container spacing={3} sx={{ mt: 2 }}>
 
@@ -847,7 +937,7 @@ const MeetingDetailsDialog = ({
 
                     <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                      <CreateIcon sx={{ color: '#ff9800', mr: 2, fontSize: 24 }} />
+                      <CreateIcon sx={{ color: '#ff9800', ml: 2, fontSize: 24 }} />
 
                       <Box>
 
@@ -873,7 +963,7 @@ const MeetingDetailsDialog = ({
 
                     <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                      <PersonIcon sx={{ color: '#e5978b', mr: 2, fontSize: 24 }} />
+                      <PersonIcon sx={{ color: '#e5978b', ml: 2, fontSize: 24 }} />
 
                       <Box>
 
@@ -899,7 +989,7 @@ const MeetingDetailsDialog = ({
 
                     <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                      <ScheduleIcon sx={{ color: '#1976d2', mr: 2, fontSize: 24 }} />
+                      <ScheduleIcon sx={{ color: '#1976d2', ml: 2, fontSize: 24 }} />
 
                       <Box>
 
@@ -925,7 +1015,7 @@ const MeetingDetailsDialog = ({
 
                     <Box sx={{ display: 'flex', alignItems: 'center', p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #e0e0e0' }}>
 
-                      <CheckCircleIcon sx={{ color: '#e5978b', mr: 2, fontSize: 24 }} />
+                      <CheckCircleIcon sx={{ color: '#e5978b', ml: 2, fontSize: 24 }} />
 
                       <Box>
 
@@ -949,9 +1039,13 @@ const MeetingDetailsDialog = ({
 
                 </Grid>
 
+                )}
+
                 
 
-                {/* Meeting Features */}
+                {/* Meeting Features - Only for instructors */}
+
+                {userRole === 'instructor' && (
 
                 <Box sx={{ mt: 3 }}>
 
@@ -1002,6 +1096,8 @@ const MeetingDetailsDialog = ({
                   </Box>
 
                 </Box>
+
+                )}
 
               </Paper>
 
@@ -1073,7 +1169,9 @@ const MeetingDetailsDialog = ({
 
 
 
-            {/* Attendance Statistics */}
+            {/* Attendance Statistics - Only for instructors */}
+
+              {userRole === 'instructor' && (
 
               <Paper elevation={0} sx={{ p: 4, mb: 3, background: 'linear-gradient(135deg, #fff3e0 0%, #ffffff 100%)', borderRadius: 3, border: '1px solid #ffcc02' }}>
 
@@ -1179,104 +1277,283 @@ const MeetingDetailsDialog = ({
 
             </Paper>
 
+              )}
 
 
-              {/* Participants List */}
+
+              {/* Participants Table */}
 
               <Paper elevation={0} sx={{ p: 4, background: 'linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%)', borderRadius: 3, border: '1px solid #e1bee7' }}>
 
-                <Typography variant="h6" fontWeight={600} gutterBottom color="secondary.main">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
 
-                  قائمة المشاركين
+                  <Typography variant="h6" fontWeight={600} color="secondary.main">
 
-                </Typography>
-
-                {participants.length > 0 ? (
-
-                  <List>
-
-                    {participants.map((participant, index) => (
-
-                      <ListItem key={participant.id || index} sx={{ 
-
-                        mb: 1, 
-
-                        bgcolor: 'background.paper', 
-
-                        borderRadius: 2,
-
-                        border: '1px solid #e0e0e0'
-
-                      }}>
-
-                      <ListItemAvatar>
-
-                          <Avatar src={participant.user_image}>
-
-                            {participant.user_name?.charAt(0) || 'U'}
-
-                        </Avatar>
-
-                      </ListItemAvatar>
-
-                      <ListItemText
-
-                          primary={participant.user_name || 'مستخدم غير محدد'}
-
-                        secondary={
-
-                          <Box>
-
-                              <Typography variant="body2" color="text.secondary">
-
-                                {participant.user_email}
-
-                            </Typography>
-
-                              {participant.joined_at && (
-
-                                  <Typography variant="caption" color="text.secondary">
-
-                                  انضم: {formatTime(participant.joined_at)}
-
-                                  </Typography>
-
-                            )}
-
-                          </Box>
-
-                        }
-
-                      />
-
-                        <Chip
-
-                          label={participant.attendance_status === 'attending' ? 'حاضر' : 
-
-                                 participant.attendance_status === 'registered' ? 'مسجل' : 'غير محدد'}
-
-                          color={participant.attendance_status === 'attending' ? 'success' : 
-
-                                 participant.attendance_status === 'registered' ? 'primary' : 'default'}
-
-                          size="small"
-
-                        />
-
-                    </ListItem>
-
-                  ))}
-
-                </List>
-
-                ) : (
-
-                  <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-
-                    لا يوجد مشاركون مسجلون بعد
+                    قائمة المشاركين
 
                   </Typography>
 
+
+                </Box>
+
+                {userRole === 'instructor' ? (
+                  // Instructor view - show participants table
+                  participants.length > 0 ? (
+
+                  <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid #e0e0e0' }}>
+
+                    <Table>
+
+                      <TableHead>
+
+                        <TableRow sx={{ bgcolor: 'grey.50' }}>
+
+                          <TableCell sx={{ fontWeight: 600 }}>الطالب</TableCell>
+
+                          <TableCell sx={{ fontWeight: 600 }}>حاضر</TableCell>
+
+                          <TableCell sx={{ fontWeight: 600 }}>متأخر</TableCell>
+
+                          <TableCell sx={{ fontWeight: 600 }}>غائب</TableCell>
+
+                          <TableCell sx={{ fontWeight: 600 }}>الحالة</TableCell>
+
+                          <TableCell sx={{ fontWeight: 600 }}>وقت الانضمام</TableCell>
+
+                        </TableRow>
+
+                      </TableHead>
+
+                      <TableBody>
+
+                        {participants.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((participant, index) => (
+
+                          <TableRow key={participant.id || index} hover>
+
+                            <TableCell>
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+
+                                <Avatar src={participant.user_image} sx={{ width: 40, height: 40 }}>
+
+                                  {participant.user_name?.charAt(0) || 'U'}
+
+                                </Avatar>
+
+                                <Box>
+
+                                  <Typography variant="body2" fontWeight={500}>
+
+                                    {participant.user_name || 'مستخدم غير محدد'}
+
+                                  </Typography>
+
+                                  <Typography variant="caption" color="text.secondary">
+
+                                    {participant.user_email}
+
+                                  </Typography>
+
+                                </Box>
+
+                              </Box>
+
+                            </TableCell>
+
+                            <TableCell align="center">
+
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+
+                                {participant.attendance_status === 'present' ? (
+
+                                  <CheckIcon 
+
+                                    fontSize="large" 
+
+                                    sx={{ color: 'success.main' }}
+
+                                  />
+
+                                ) : (
+
+                                  <Box sx={{ width: 24, height: 24 }} />
+
+                                )}
+
+                              </Box>
+
+                            </TableCell>
+
+                            <TableCell align="center">
+
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+
+                                {participant.attendance_status === 'late' ? (
+
+                                  <ScheduleIcon2 
+
+                                    fontSize="large" 
+
+                                    sx={{ color: 'warning.main' }}
+
+                                  />
+
+                                ) : (
+
+                                  <Box sx={{ width: 24, height: 24 }} />
+
+                                )}
+
+                              </Box>
+
+                            </TableCell>
+
+                            <TableCell align="center">
+
+                              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+
+                                {participant.attendance_status === 'absent' ? (
+
+                                  <CloseIcon2 
+
+                                    fontSize="large" 
+
+                                    sx={{ color: 'error.main' }}
+
+                                  />
+
+                                ) : (
+
+                                  <Box sx={{ width: 24, height: 24 }} />
+
+                                )}
+
+                              </Box>
+
+                            </TableCell>
+
+                            <TableCell>
+
+                              <Chip
+
+                                label={
+
+                                  participant.attendance_status === 'present' ? 'حاضر' :
+
+                                  participant.attendance_status === 'late' ? 'متأخر' :
+
+                                  participant.attendance_status === 'absent' ? 'غائب' :
+
+                                  participant.attendance_status === 'registered' ? 'مسجل' : 'غير محدد'
+
+                                }
+
+                                color={
+
+                                  participant.attendance_status === 'present' ? 'success' :
+
+                                  participant.attendance_status === 'late' ? 'warning' :
+
+                                  participant.attendance_status === 'absent' ? 'error' :
+
+                                  participant.attendance_status === 'registered' ? 'primary' : 'default'
+
+                                }
+
+                                size="small"
+
+                                variant="outlined"
+
+                              />
+
+                            </TableCell>
+
+                            <TableCell>
+
+                              <Typography variant="body2" color="text.secondary">
+
+                                {participant.joined_at ? formatTime(participant.joined_at) : 'لم ينضم بعد'}
+
+                              </Typography>
+
+                            </TableCell>
+
+                          </TableRow>
+
+                        ))}
+
+                      </TableBody>
+
+                    </Table>
+
+                    <TablePagination
+
+                      rowsPerPageOptions={[5, 10, 25]}
+
+                      component="div"
+
+                      count={participants.length}
+
+                      rowsPerPage={rowsPerPage}
+
+                      page={page}
+
+                      onPageChange={handleChangePage}
+
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+
+                      labelRowsPerPage="عدد الصفوف في الصفحة:"
+
+                      labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+
+                    />
+
+                  </TableContainer>
+
+                  ) : (
+
+                    <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+
+                      لا يوجد مشاركون مسجلون بعد
+
+                    </Typography>
+
+                  )
+                ) : (
+                  // Student view - show attendance info only
+                  <Box sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2 }}>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckCircleIcon color="primary" />
+                      معلومات الحضور
+                    </Typography>
+                    
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1" fontWeight={500}>
+                          حالة الحضور:
+                        </Typography>
+                        <Chip
+                          label="تم التسجيل تلقائياً"
+                          color="success"
+                          variant="filled"
+                          icon={<CheckCircleIcon />}
+                        />
+                      </Box>
+                      
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body1" fontWeight={500}>
+                          وقت التسجيل:
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date().toLocaleString('ar-EG')}
+                        </Typography>
+                      </Box>
+                      
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        تم تسجيل حضورك تلقائياً عند فتح رابط الاجتماع. لا حاجة لأي إجراء إضافي.
+                      </Alert>
+                    </Box>
+                  </Box>
                 )}
 
               </Paper>
@@ -1293,7 +1570,7 @@ const MeetingDetailsDialog = ({
 
       {/* Action Buttons */}
 
-      <DialogActions sx={{ p: 3, gap: 2, justifyContent: 'flex-end' }}>
+      <DialogActions sx={{ p: 3, gap: 2, justifyContent: 'flex-start', direction: 'rtl' }}>
 
         {userRole === 'teacher' && status === 'upcoming' && onEdit && (
 
@@ -1339,7 +1616,29 @@ const MeetingDetailsDialog = ({
 
         
 
-        {meetingData.zoom_link && status === 'ongoing' && onJoinMeeting && (
+        {meetingData.zoom_link && status === 'ongoing' && onJoinMeeting && userRole === 'student' && (
+
+          <Button
+
+            variant="contained"
+
+            color="primary"
+
+            onClick={() => onJoinMeeting(meetingData)}
+
+            startIcon={<VideoCallIcon />}
+
+          >
+
+            انضم للاجتماع
+
+          </Button>
+
+        )}
+
+        
+
+        {meetingData.zoom_link && status === 'ongoing' && onJoinMeeting && userRole === 'instructor' && (
 
           <Button
 

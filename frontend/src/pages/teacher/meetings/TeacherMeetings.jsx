@@ -16,7 +16,7 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import '../../meetings/MeetingsCommon.css';
-import MeetingDetailsDialog from '../../meetings/MeetingDetailsDialog';
+import TeacherMeetingDetailsDialog from '../../meetings/TeacherMeetingDetailsDialog';
 import { meetingAPI } from '../../../services/meeting.service';
 
 // Styled Components
@@ -1048,11 +1048,10 @@ const TeacherMeetings = () => {
       </Dialog>
 
       {/* Meeting Details Dialog */}
-      <MeetingDetailsDialog
+      <TeacherMeetingDetailsDialog
         open={openDetailsDialog}
         onClose={() => setOpenDetailsDialog(false)}
         meeting={selectedMeeting}
-        userRole="teacher"
         onEdit={(meeting) => {
           console.log('Edit button clicked for meeting:', meeting);
           openEditDialog(meeting);

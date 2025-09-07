@@ -76,6 +76,7 @@ const StudentLiveMeeting = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [isJoined, setIsJoined] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [attendanceMessage, setAttendanceMessage] = useState(null);
 
   // Get current user from localStorage
   useEffect(() => {
@@ -101,25 +102,42 @@ const StudentLiveMeeting = () => {
         setMeetingInfo(response);
         setError(null);
         
-        // Join the meeting automatically
+        // Auto join the meeting and mark attendance
         try {
-          console.log('Attempting to join meeting:', meetingId);
-          await meetingAPI.joinMeeting(meetingId);
-          console.log('Successfully joined meeting');
+          console.log('Attempting auto join meeting:', meetingId);
+          const autoJoinResult = await meetingAPI.autoJoinMeeting(meetingId);
+          console.log('Successfully auto joined meeting:', autoJoinResult);
           setIsJoined(true);
-        } catch (joinError) {
-          console.error('Error joining meeting:', joinError);
-          // Try to register first if join fails
+          
+          // Show attendance status to user
+          if (autoJoinResult.already_attended) {
+            setAttendanceMessage('تم تسجيل الحضور مسبقاً');
+            console.log('تم تسجيل الحضور مسبقاً');
+          } else if (autoJoinResult.attendance_status === 'present') {
+            setAttendanceMessage('تم تسجيل الحضور - حاضر');
+            console.log('تم تسجيل الحضور - حاضر');
+          } else if (autoJoinResult.attendance_status === 'late') {
+            setAttendanceMessage('تم تسجيل الحضور - متأخر');
+            console.log('تم تسجيل الحضور - متأخر');
+          }
+          
+          // Hide message after 5 seconds
+          setTimeout(() => {
+            setAttendanceMessage(null);
+          }, 5000);
+        } catch (autoJoinError) {
+          console.error('Error auto joining meeting:', autoJoinError);
+          // Try to register first if auto join fails
           try {
-            console.log('Join failed, trying to register first...');
+            console.log('Auto join failed, trying to register first...');
             await meetingAPI.registerForMeeting(meetingId);
             console.log('Successfully registered for meeting');
-            // Try join again
-            await meetingAPI.joinMeeting(meetingId);
-            console.log('Successfully joined meeting after registration');
+            // Try auto join again
+            const autoJoinResult = await meetingAPI.autoJoinMeeting(meetingId);
+            console.log('Successfully auto joined meeting after registration:', autoJoinResult);
             setIsJoined(true);
           } catch (registerError) {
-            console.error('Error registering/joining meeting:', registerError);
+            console.error('Error registering/auto joining meeting:', registerError);
             alert('حدث خطأ في الانضمام للاجتماع');
           }
         }
@@ -333,6 +351,25 @@ const StudentLiveMeeting = () => {
 
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#1a1a1a' }}>
+      {/* Attendance Message */}
+      {attendanceMessage && (
+        <Alert 
+          severity="success" 
+          sx={{ 
+            position: 'fixed', 
+            top: 20, 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 9999,
+            minWidth: 300,
+            textAlign: 'center'
+          }}
+          onClose={() => setAttendanceMessage(null)}
+        >
+          {attendanceMessage}
+        </Alert>
+      )}
+      
       {/* Header */}
       <AppBar position="static" sx={{ bgcolor: '#2d2d2d', boxShadow: 'none' }}>
         <Toolbar sx={{ justifyContent: 'space-between' }}>

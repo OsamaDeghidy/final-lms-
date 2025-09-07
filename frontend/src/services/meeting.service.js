@@ -178,6 +178,43 @@ export const meetingAPI = {
     }
   },
 
+  // Update participant attendance (for teachers)
+  updateParticipantAttendance: async (meetingId, participantId, attendanceStatus) => {
+    try {
+      const response = await api.post(`/api/meetings/meetings/${meetingId}/update_attendance/`, {
+        participant_id: participantId,
+        attendance_status: attendanceStatus
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating participant attendance:', error);
+      throw error;
+    }
+  },
+
+
+  // Auto join meeting (for students)
+  autoJoinMeeting: async (meetingId) => {
+    try {
+      const response = await api.post(`/api/meetings/meetings/${meetingId}/auto-join/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error auto joining meeting:', error);
+      throw error;
+    }
+  },
+
+  // Mark absent participants (for teachers)
+  markAbsentParticipants: async (meetingId) => {
+    try {
+      const response = await api.post(`/api/meetings/meetings/${meetingId}/mark-absent/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking absent participants:', error);
+      throw error;
+    }
+  },
+
   // Register for meeting
   registerForMeeting: async (meetingId) => {
     try {
@@ -363,17 +400,6 @@ export const meetingAPI = {
       return response.data;
     } catch (error) {
       console.error('Error exporting meeting data:', error);
-      throw error;
-    }
-  },
-
-  // Register for meeting (for students)
-  registerForMeeting: async (meetingId) => {
-    try {
-      const response = await api.post(`/api/meetings/${meetingId}/register/`);
-      return response.data;
-    } catch (error) {
-      console.error('Error registering for meeting:', error);
       throw error;
     }
   },

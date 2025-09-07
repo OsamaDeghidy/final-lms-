@@ -39,6 +39,12 @@ urlpatterns = [
     path('<int:meeting_id>/attendance-report/', views.meeting_attendance_report, name='meeting-attendance-report'),
     path('<int:meeting_id>/export/', views.export_meeting_data, name='export-meeting-data'),
     
+    # Meeting join and register endpoints
+    path('meetings/<int:meeting_id>/join/', views.meeting_join, name='meeting-join'),
+    path('meetings/<int:meeting_id>/register/', views.meeting_register, name='meeting-register'),
+    path('meetings/<int:meeting_id>/mark-absent/', views.mark_absent_participants, name='mark-absent-participants'),
+    path('meetings/<int:meeting_id>/auto-join/', views.auto_join_meeting, name='auto-join-meeting'),
+    
     # Router URLs
     path('', include(router.urls)),
 ] 
