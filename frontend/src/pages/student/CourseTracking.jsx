@@ -125,6 +125,7 @@ import FinalExamModal from './FinalExamModal';
 import { courseAPI } from '../../services/api.service';
 import certificateAPI from '../../services/certificate.service';
 import Header from '../../components/layout/Header.jsx';
+import Footer from '../../components/layout/Footer.jsx';
 // Force reload
 
 // Simple video player component to replace ReactPlayer
@@ -2284,8 +2285,7 @@ const CourseTracking = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      {/* <Header /> */}
-      <Box sx={{ height: 64, bgcolor: 'primary.main' }} />
+      <Header />
       
       {/* Mobile App Bar */}
       <AppBar 
@@ -2854,8 +2854,8 @@ const CourseTracking = () => {
           </Box>
         </Box>
       </Container>
-      {/* <Footer /> */}
-      <Box sx={{ height: 100, bgcolor: 'grey.100' }} />
+      
+      <Footer />
       
       {/* Quiz Modal */}
       <Modal
