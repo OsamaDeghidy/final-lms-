@@ -24,8 +24,8 @@ const CreativeBanner = styled(Box)(({ theme, position = 'top' }) => ({
   width: '100%',
   height: position === 'top' ? '120px' : '100px',
   background: position === 'top' 
-    ? 'linear-gradient(135deg, #0e5181 0%, #e5978b 50%, #0e5181 100%)'
-    : 'linear-gradient(135deg, #e5978b 0%, #0e5181 50%, #e5978b 100%)',
+    ? 'linear-gradient(135deg, rgba(14, 81, 129, 0.8) 0%, rgba(229, 151, 139, 0.8) 50%, rgba(14, 81, 129, 0.8) 100%)'
+    : 'linear-gradient(135deg, rgba(229, 151, 139, 0.8) 0%, rgba(14, 81, 129, 0.8) 50%, rgba(229, 151, 139, 0.8) 100%)',
   overflow: 'hidden',
   display: 'flex',
   alignItems: 'center',
@@ -159,9 +159,7 @@ const SliderHeader = styled(Box)(({ theme }) => ({
 const SectionTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 800,
   position: 'relative',
-  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
+  color: '#0e5181',
   fontSize: '2rem',
   marginBottom: theme.spacing(1),
   '&:after': {
@@ -172,7 +170,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
     transform: 'translateX(-50%)',
     width: '80px',
     height: '4px',
-    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+    background: '#e5978b',
     borderRadius: '2px',
   },
   [theme.breakpoints.down('sm')]: {
@@ -449,7 +447,7 @@ const PromotionalBanner = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.8) 0%, rgba(229, 151, 139, 0.8) 100%)',
+    background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.6) 0%, rgba(229, 151, 139, 0.6) 100%)',
     zIndex: 1,
   },
   '&:after': {

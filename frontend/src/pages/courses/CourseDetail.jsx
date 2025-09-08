@@ -101,7 +101,8 @@ import {
 } from '@mui/icons-material';
 // إضافات أيقونات بسيطة للوحدات
 import { ListAlt as ListAltIcon } from '@mui/icons-material';
-import { styled, keyframes, alpha, useTheme } from '@mui/material/styles';
+import { styled, keyframes, alpha } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
@@ -3125,7 +3126,7 @@ const CourseDetail = () => {
                           sx={{ mr: 1.25 }}
                         />
                         <Typography variant="body1" color="text.secondary" sx={{ ml: 0.5 }}>
-                          تقييم الدورة • {course.reviews.length} تقييم
+                          تقييم الدورة • {course.reviews?.length || 0} تقييم
                         </Typography>
                       </Box>
                     </Box>
@@ -3176,7 +3177,7 @@ const CourseDetail = () => {
                             </Box>
                           </Box>
                           <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40, textAlign: 'right' }}>
-                            {Math.round((star / 5) * course.reviews.length)} تقييم
+                            {Math.round((star / 5) * (course.reviews?.length || 0))} تقييم
                           </Typography>
                         </Box>
                     ))}

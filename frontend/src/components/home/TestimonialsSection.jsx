@@ -107,9 +107,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
   marginBottom: theme.spacing(2),
   position: 'relative',
   display: 'inline-block',
-  background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
+  color: '#0e5181',
   fontSize: '2rem',
   [theme.breakpoints.down('sm')]: {
     fontSize: '1.5rem',
@@ -122,7 +120,7 @@ const SectionTitle = styled(Typography)(({ theme }) => ({
     transform: 'translateX(50%)',
     width: 50,
     height: 3,
-    background: 'linear-gradient(90deg, #0e5181 0%, #e5978b 100%)',
+    background: '#e5978b',
     borderRadius: 2,
   },
 }));

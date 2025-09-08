@@ -106,7 +106,7 @@ const StyledCardMedia = styled(CardMedia)({
 
 
 
-const EmptyState = () => (
+const EmptyState = ({ isCompleted = false }) => (
   <Fade in={true} timeout={500}>
     <Box sx={{
       textAlign: 'center',
@@ -119,61 +119,146 @@ const EmptyState = () => (
     }}>
       <SentimentSatisfiedAlt sx={{ fontSize: 80, color: '#e5978b' }} />
       <Typography variant="h5" fontWeight={700} gutterBottom>
-        لا توجد كورسات مسجلة بعد
+        {isCompleted ? 'لا توجد كورسات مكتملة بعد' : 'لا توجد كورسات مسجلة بعد'}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-        يمكنك تصفح الكورسات المتاحة والتسجيل فيها لتبدأ رحلة التعلم
+        {isCompleted 
+          ? 'أكمل الكورسات المسجلة لتحصل على شهادات الإنجاز' 
+          : 'يمكنك تصفح الكورسات المتاحة والتسجيل فيها لتبدأ رحلة التعلم'
+        }
       </Typography>
-      <Button variant="contained" size="large" sx={{ bgcolor: '#0e5181', borderRadius: 3, px: 5, py: 1.5, fontWeight: 700, '&:hover': { bgcolor: '#0a3d5f' } }}>
-        تصفح الكورسات
-      </Button>
+      {!isCompleted && (
+        <Button 
+          variant="contained" 
+          size="large" 
+          sx={{ 
+            bgcolor: '#0e5181', 
+            borderRadius: 3, 
+            px: 5, 
+            py: 1.5, 
+            fontWeight: 700, 
+            '&:hover': { bgcolor: '#0a3d5f' } 
+          }}
+          onClick={() => window.location.href = '/courses'}
+        >
+          تصفح الكورسات
+        </Button>
+      )}
     </Box>
   </Fade>
 );
 
 const CourseCard = ({ course, onClick }) => {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [courseContent, setCourseContent] = useState([]);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [calculatedData, setCalculatedData] = useState({
+    totalLessons: 0,
+    completedLessons: 0,
+    duration: "0د"
+  });
   
   // Ensure progress is a valid number between 0 and 100
   const progress = Math.min(Math.max(course.progress || 0, 0), 100);
   
   // Calculate completed lessons and total runtime from course data
-  const totalLessons = course.total_lessons || course.lessons_count || 20;
-  const completedLessons = Math.floor((progress / 100) * totalLessons);
-  const totalRuntime = course.total_duration || course.duration || "1h 34m 44s";
+  const totalLessons = calculatedData.totalLessons || course.totalLessons || course.total_lessons || course.lessons_count || 0;
+  const completedLessons = calculatedData.completedLessons || course.completedLessons || Math.floor((progress / 100) * totalLessons);
+  const totalRuntime = calculatedData.duration || course.duration || course.total_duration || "0د";
+  
+  // Debug logging
+  console.log('Course data:', {
+    id: course.id,
+    title: course.title,
+    progress: course.progress,
+    totalLessons: course.totalLessons,
+    completedLessons: course.completedLessons,
+    duration: course.duration,
+    total_duration: course.total_duration
+  });
   
   const handleExpandClick = async () => {
     if (!expanded && courseContent.length === 0) {
       setLoadingContent(true);
       try {
         const allContent = [];
+        let totalLessonsCount = 0;
+        let completedLessonsCount = 0;
+        let totalDurationSeconds = 0;
         
         // Fetch course modules and lessons
-        const modules = await contentAPI.getModules(course.id);
+        const modulesResponse = await contentAPI.getModules(course.id);
+        console.log('Modules fetched:', modulesResponse);
+        
+        // Extract modules from paginated response
+        const modules = modulesResponse.results || modulesResponse || [];
+        console.log('Modules array:', modules);
+        
+        if (!Array.isArray(modules)) {
+          console.error('Modules is not an array:', modules);
+          throw new Error('Invalid modules data format');
+        }
         
         for (const module of modules) {
           // Get lessons for this module
-          const lessons = await contentAPI.getLessons({ moduleId: module.id });
-          const mappedLessons = lessons.map(lesson => ({
-            id: `lesson-${lesson.id}`,
-            title: lesson.title,
-            type: lesson.content_type || 'video',
-            duration: lesson.duration || null,
-            completed: lesson.is_completed || false,
-            progress: lesson.progress_percentage || 0,
-            module_title: module.title,
-            module_id: module.id,
-            content_id: lesson.id,
-            content_type: 'lesson'
-          }));
+          const lessonsResponse = await contentAPI.getLessons({ moduleId: module.id });
+          console.log(`Lessons for module ${module.id}:`, lessonsResponse);
+          
+          // Extract lessons from paginated response
+          const lessons = lessonsResponse.results || lessonsResponse || [];
+          console.log(`Lessons array for module ${module.id}:`, lessons);
+          
+          if (!Array.isArray(lessons)) {
+            console.error(`Lessons for module ${module.id} is not an array:`, lessons);
+            continue; // Skip this module if lessons data is invalid
+          }
+          
+          const mappedLessons = lessons.map(lesson => {
+            totalLessonsCount++;
+            if (lesson.is_completed) completedLessonsCount++;
+            
+            // Calculate duration in seconds
+            if (lesson.duration) {
+              const durationParts = lesson.duration.split(':');
+              if (durationParts.length === 3) {
+                const hours = parseInt(durationParts[0]) || 0;
+                const minutes = parseInt(durationParts[1]) || 0;
+                const seconds = parseInt(durationParts[2]) || 0;
+                totalDurationSeconds += hours * 3600 + minutes * 60 + seconds;
+              }
+            }
+            
+            return {
+              id: `lesson-${lesson.id}`,
+              title: lesson.title,
+              type: lesson.content_type || 'video',
+              duration: lesson.duration || null,
+              completed: lesson.is_completed || false,
+              progress: lesson.progress_percentage || 0,
+              module_title: module.title,
+              module_id: module.id,
+              content_id: lesson.id,
+              content_type: 'lesson'
+            };
+          });
           allContent.push(...mappedLessons);
         }
         
         // Fetch assignments for this course
         try {
-          const assignments = await assignmentsAPI.getAssignments({ course: course.id });
+          const assignmentsResponse = await assignmentsAPI.getAssignments({ course: course.id });
+          console.log('Assignments fetched:', assignmentsResponse);
+          
+          // Extract assignments from paginated response
+          const assignments = assignmentsResponse.results || assignmentsResponse || [];
+          console.log('Assignments array:', assignments);
+          
+          if (!Array.isArray(assignments)) {
+            console.error('Assignments is not an array:', assignments);
+            throw new Error('Invalid assignments data format');
+          }
+          
           const mappedAssignments = assignments.map(assignment => ({
             id: `assignment-${assignment.id}`,
             title: assignment.title,
@@ -196,7 +281,18 @@ const CourseCard = ({ course, onClick }) => {
         
         // Fetch quizzes for this course
         try {
-          const quizzes = await quizAPI.getQuizzes({ course: course.id });
+          const quizzesResponse = await quizAPI.getQuizzes({ course: course.id });
+          console.log('Quizzes fetched:', quizzesResponse);
+          
+          // Extract quizzes from paginated response
+          const quizzes = quizzesResponse.results || quizzesResponse || [];
+          console.log('Quizzes array:', quizzes);
+          
+          if (!Array.isArray(quizzes)) {
+            console.error('Quizzes is not an array:', quizzes);
+            throw new Error('Invalid quizzes data format');
+          }
+          
           const mappedQuizzes = quizzes.map(quiz => ({
             id: `quiz-${quiz.id}`,
             title: quiz.title,
@@ -219,7 +315,18 @@ const CourseCard = ({ course, onClick }) => {
         
         // Fetch exams for this course
         try {
-          const exams = await examAPI.getExams({ course: course.id });
+          const examsResponse = await examAPI.getExams({ course: course.id });
+          console.log('Exams fetched:', examsResponse);
+          
+          // Extract exams from paginated response
+          const exams = examsResponse.results || examsResponse || [];
+          console.log('Exams array:', exams);
+          
+          if (!Array.isArray(exams)) {
+            console.error('Exams is not an array:', exams);
+            throw new Error('Invalid exams data format');
+          }
+          
           const mappedExams = exams.map(exam => ({
             id: `exam-${exam.id}`,
             title: exam.title,
@@ -269,18 +376,44 @@ const CourseCard = ({ course, onClick }) => {
           return (typeOrder[a.content_type] || 5) - (typeOrder[b.content_type] || 5);
         });
         
+        // Update course data with calculated values
+        const calculatedProgress = totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0;
+        const calculatedDuration = totalDurationSeconds > 0 ? 
+          `${Math.floor(totalDurationSeconds / 3600)}س ${Math.floor((totalDurationSeconds % 3600) / 60)}د` : 
+          "0د";
+        
+        console.log('Calculated data:', {
+          totalLessonsCount,
+          completedLessonsCount,
+          calculatedProgress,
+          calculatedDuration
+        });
+        
+        // Update calculated data
+        setCalculatedData({
+          totalLessons: totalLessonsCount,
+          completedLessons: completedLessonsCount,
+          duration: calculatedDuration
+        });
+        
         setCourseContent(allContent);
       } catch (error) {
         console.error('Error fetching course content:', error);
-        // Fallback to mock data
-        setCourseContent([
-          { id: 1, title: 'Resources', type: 'resource', duration: null, completed: false, content_type: 'resource' },
-          { id: 2, title: 'Biological Chemistry', type: 'video', duration: '5:36', completed: false, content_type: 'lesson' },
-          { id: 3, title: 'Biological Chemistry Quiz', type: 'quiz', duration: '30 min', completed: false, progress: 0, content_type: 'quiz' },
-          { id: 4, title: 'Carbohydrates', type: 'video', duration: '8:56', completed: false, content_type: 'lesson' },
-          { id: 5, title: 'Assignment 1', type: 'assignment', duration: '2024-01-15', completed: false, progress: 0, content_type: 'assignment' },
-          { id: 6, title: 'Midterm Exam', type: 'exam', duration: '120 min', completed: false, progress: 0, content_type: 'exam' }
-        ]);
+        // Show error message instead of fallback data
+        setCourseContent([]);
+        
+        // Show user-friendly error message
+        if (error.message.includes('Invalid')) {
+          console.error('Data format error:', error.message);
+        } else if (error.response?.status === 404) {
+          console.error('Course content not found');
+        } else if (error.response?.status === 403) {
+          console.error('Access denied to course content');
+        } else {
+          console.error('Unexpected error:', error.message);
+        }
+        
+        console.warn('Failed to load course content. Please try again later.');
       } finally {
         setLoadingContent(false);
       }
@@ -382,19 +515,87 @@ const CourseCard = ({ course, onClick }) => {
         }
       }}
     >
-      {/* Course Header */}
-      <Box sx={{ p: 3, pb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+      {/* Course Content with Image on Side */}
+      <Box sx={{ 
+        display: 'flex', 
+        minHeight: 200,
+        flexDirection: { xs: 'column', md: 'row' }
+      }}>
+        
+        {/* Course Content */}
+        <Box sx={{ 
+          flex: 1, 
+          p: 3, 
+          pb: 2, 
+          display: 'flex', 
+          flexDirection: 'column',
+          justifyContent: 'space-between'
+        }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ 
-              fontSize: '18px', 
-              fontWeight: 600, 
-              color: '#333',
-              mb: 1
-            }}>
-              <span style={{ color: '#999', marginRight: '8px' }}>1</span>
-              {course.title}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Typography variant="h6" sx={{ 
+                fontSize: '18px', 
+                fontWeight: 600, 
+                color: '#333'
+              }}>
+                {course.title}
+              </Typography>
+              {course.status && (
+                <Chip 
+                  label={course.status === 'completed' ? 'مكتمل' : 'نشط'} 
+                  size="small"
+                  sx={{
+                    bgcolor: course.status === 'completed' ? '#4caf50' : '#2196f3',
+                    color: 'white',
+                    fontSize: '10px',
+                    height: 20
+                  }}
+                />
+              )}
+            </Box>
+            
+            {course.description && (
+              <Typography variant="body2" sx={{ 
+                color: '#666', 
+                fontSize: '14px',
+                mb: 1,
+                lineHeight: 1.4
+              }}>
+                {course.description}
+              </Typography>
+            )}
+            
+            {/* Course Meta Info */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 1, flexWrap: 'wrap', flexDirection: { xs: 'column', sm: 'row' } }}>
+              {course.instructor && (
+                <Typography variant="caption" sx={{ 
+                  color: '#999', 
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5
+                }}>
+                  <SchoolIcon sx={{ fontSize: 14 }} />
+                  {course.instructor}
+                </Typography>
+              )}
+              {course.category && (
+                <Typography variant="caption" sx={{ 
+                  color: '#999', 
+                  fontSize: '12px'
+                }}>
+                  {course.category}
+                </Typography>
+              )}
+              {course.enrollment_date && (
+                <Typography variant="caption" sx={{ 
+                  color: '#999', 
+                  fontSize: '12px'
+                }}>
+                  مسجل منذ: {new Date(course.enrollment_date).toLocaleDateString('ar-EG')}
+                </Typography>
+              )}
+            </Box>
             
             {/* Progress Bar */}
             <Box sx={{ mb: 1 }}>
@@ -418,14 +619,183 @@ const CourseCard = ({ course, onClick }) => {
               fontSize: '14px',
               mb: 2
             }}>
-              {completedLessons} of {totalLessons} lessons completed • {totalRuntime} runtime
-        </Typography>
+              {totalLessons > 0 ? `${completedLessons} من ${totalLessons} درس مكتمل` : 'لا توجد دروس متاحة'} • {totalRuntime} مدة الكورس
+              {course.grade && (
+                <span style={{ marginLeft: '8px', color: '#4caf50', fontWeight: 'bold' }}>
+                  • الدرجة: {course.grade}
+                </span>
+              )}
+            </Typography>
+            
+            
+            {/* Show content summary */}
+            {expanded && courseContent.length > 0 && (
+              <Typography variant="caption" sx={{ 
+                color: '#4caf50', 
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                {courseContent.length} عنصر محتوى متاح
+              </Typography>
+            )}
+            
+            {/* Show content breakdown */}
+            {expanded && courseContent.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                {(() => {
+                  const contentTypes = courseContent.reduce((acc, item) => {
+                    acc[item.content_type] = (acc[item.content_type] || 0) + 1;
+                    return acc;
+                  }, {});
+                  
+                  return Object.entries(contentTypes).map(([type, count]) => (
+                    <Chip
+                      key={type}
+                      label={`${count} ${getContentTypeLabel(type)}`}
+                      size="small"
+                      sx={{
+                        bgcolor: getContentTypeColor(type),
+                        color: 'white',
+                        fontSize: '10px',
+                        height: 20
+                      }}
+                    />
+                  ));
+                })()}
+              </Box>
+            )}
+            
+            
+            {/* Show last updated time */}
+            {expanded && courseContent.length > 0 && (
+              <Typography variant="caption" sx={{ 
+                color: '#999', 
+                fontSize: '10px',
+                fontStyle: 'italic'
+              }}>
+                آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
+              </Typography>
+            )}
+            
+            {/* Show error message if content failed to load */}
+            {expanded && courseContent.length === 0 && !loadingContent && (
+              <Typography variant="caption" sx={{ 
+                color: '#f44336', 
+                fontSize: '11px',
+                fontStyle: 'italic'
+              }}>
+                فشل في تحميل محتوى الكورس. يرجى المحاولة مرة أخرى.
+              </Typography>
+            )}
+            
+            {/* Show retry button if content failed to load */}
+            {expanded && courseContent.length === 0 && !loadingContent && (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleExpandClick}
+                sx={{
+                  mt: 1,
+                  fontSize: '10px',
+                  py: 0.5,
+                  px: 2,
+                  minWidth: 'auto'
+                }}
+              >
+                إعادة المحاولة
+              </Button>
+            )}
+            
+            {/* Show loading indicator */}
+            {loadingContent && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <CircularProgress size={16} sx={{ color: '#7c4dff' }} />
+                <Typography variant="caption" sx={{ 
+                  color: '#666', 
+                  fontSize: '11px'
+                }}>
+                  جاري تحميل المحتوى...
+                </Typography>
+              </Box>
+            )}
+            
+            
+            {/* Show content types preview */}
+            {!expanded && courseContent.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                {(() => {
+                  const contentTypes = courseContent.reduce((acc, item) => {
+                    acc[item.content_type] = (acc[item.content_type] || 0) + 1;
+                    return acc;
+                  }, {});
+                  
+                  return Object.entries(contentTypes).slice(0, 3).map(([type, count]) => (
+                    <Chip
+                      key={type}
+                      label={`${count} ${getContentTypeLabel(type)}`}
+                      size="small"
+                      sx={{
+                        bgcolor: getContentTypeColor(type),
+                        color: 'white',
+                        fontSize: '9px',
+                        height: 18
+                      }}
+                    />
+                  ));
+                })()}
+                {Object.keys(courseContent.reduce((acc, item) => {
+                  acc[item.content_type] = (acc[item.content_type] || 0) + 1;
+                  return acc;
+                }, {})).length > 3 && (
+                  <Typography variant="caption" sx={{ 
+                    color: '#999', 
+                    fontSize: '9px',
+                    alignSelf: 'center'
+                  }}>
+                    +{Object.keys(courseContent.reduce((acc, item) => {
+                      acc[item.content_type] = (acc[item.content_type] || 0) + 1;
+                      return acc;
+                    }, {})).length - 3} أكثر
+                  </Typography>
+                )}
+              </Box>
+            )}
+            
+            {/* Show progress preview */}
+            {!expanded && courseContent.length > 0 && (
+              <Box sx={{ mt: 0.5 }}>
+                <Typography variant="caption" sx={{ 
+                  color: '#666', 
+                  fontSize: '10px'
+                }}>
+                  التقدم: {Math.round((courseContent.filter(item => item.completed).length / courseContent.length) * 100)}% مكتمل
+                </Typography>
+              </Box>
+            )}
+            
+            
+            
+            {/* Show loading preview */}
+            {!expanded && loadingContent && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                <CircularProgress size={12} sx={{ color: '#7c4dff' }} />
+                <Typography variant="caption" sx={{ 
+                  color: '#666', 
+                  fontSize: '10px'
+                }}>
+                  جاري التحميل...
+                </Typography>
+              </Box>
+            )}
+            
+            
+            
       </Box>
           
         <Button 
           variant="contained" 
           sx={{
-              bgcolor: '#2196f3',
+              bgcolor: course.status === 'completed' ? '#4caf50' : '#2196f3',
               color: 'white',
               borderRadius: '8px',
               px: 3,
@@ -433,8 +803,11 @@ const CourseCard = ({ course, onClick }) => {
               fontSize: '14px',
               fontWeight: 600,
               textTransform: 'none',
+              minWidth: 100,
+              alignSelf: 'flex-start',
+              mt: 2,
             '&:hover': { 
-                bgcolor: '#1976d2'
+                bgcolor: course.status === 'completed' ? '#45a049' : '#1976d2'
             }
           }}
             onClick={(e) => {
@@ -442,18 +815,31 @@ const CourseCard = ({ course, onClick }) => {
             onClick(course.id);
           }}
         >
-            Start
+            {course.status === 'completed' ? 'مراجعة' : progress > 0 ? 'متابعة' : 'ابدأ'}
         </Button>
         </Box>
         
         {/* Expand/Collapse Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          mt: 2,
+          borderTop: '1px solid #f0f0f0',
+          pt: 2,
+          bgcolor: '#fafafa'
+        }}>
           <IconButton
             onClick={handleExpandClick}
             sx={{
               color: '#666',
+              border: 'none',
+              outline: 'none',
               '&:hover': {
                 bgcolor: 'rgba(0,0,0,0.04)'
+              },
+              '&:focus': {
+                outline: 'none',
+                border: 'none'
               }
             }}
           >
@@ -464,10 +850,26 @@ const CourseCard = ({ course, onClick }) => {
 
       {/* Course Content Dropdown */}
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <Box sx={{ borderTop: '1px solid #f0f0f0' }}>
+        <Box sx={{ 
+          borderTop: '1px solid #f0f0f0',
+          bgcolor: '#fafafa'
+        }}>
           {loadingContent ? (
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <CircularProgress size={24} />
+              <CircularProgress size={24} sx={{ color: '#7c4dff' }} />
+              <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+                جاري تحميل محتوى الكورس...
+              </Typography>
+            </Box>
+          ) : courseContent.length === 0 ? (
+            <Box sx={{ p: 3, textAlign: 'center', color: '#666' }}>
+              <SchoolIcon sx={{ fontSize: 40, color: '#ccc', mb: 1 }} />
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                لا يوجد محتوى متاح لهذا الكورس حالياً
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                سيتم إضافة المحتوى قريباً
+              </Typography>
             </Box>
           ) : (
             <List sx={{ p: 0 }}>
@@ -590,15 +992,13 @@ const CompletedCourseCard = ({ course }) => {
     sx={{
       display: 'flex',
       alignItems: 'center',
-      borderRadius: '48px',
-      minHeight: 220,
+      borderRadius: '16px',
+      minHeight: 200,
       boxShadow: '0 8px 32px 0 rgba(229, 151, 139, 0.15)',
       mb: 3,
       overflow: 'hidden',
       background: 'linear-gradient(120deg, #fdf2f2 0%, #fff 100%)',
       transition: 'transform 0.25s, box-shadow 0.25s',
-      px: 4,
-      py: 2,
       border: '2px solid #e5978b',
       '&:hover': {
         transform: 'translateY(-8px) scale(1.03)',
@@ -617,106 +1017,109 @@ const CompletedCourseCard = ({ course }) => {
       }
     }}
   >
-    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', pr: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Chip label={course.category} sx={{ bgcolor: 'rgba(14, 81, 129, 0.1)', color: '#0e5181', fontWeight: 700, fontSize: 14 }} />
-      </Box>
-      <Typography variant="h6" fontWeight={800} color="#0e5181" sx={{ mb: 0.5, fontSize: 22 }}>
-        {course.title}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 36, fontSize: 16 }}>
-        {course.description}
-      </Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 1, fontSize: 15 }}>
-        <SchoolIcon sx={{ fontSize: 20, color: '#e5978b', ml: 0.5 }} />
-        {course.instructor}
-        </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <Box sx={{ 
-            height: 12, 
-            bgcolor: 'rgba(229, 151, 139, 0.1)', 
-            borderRadius: 6, 
-            overflow: 'hidden',
-            position: 'relative',
-            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            <Box 
-              sx={{ 
-                width: `${progress}%`, 
-                height: '100%', 
-                background: 'linear-gradient(90deg, #e5978b 0%, #f0a8a0 100%)',
-                borderRadius: 6, 
-                transition: 'width 0.8s ease-in-out',
-                position: 'relative',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%)',
-                  borderRadius: 6
-                }
-              }} 
-            />
-          </Box>
+    {/* Course Content with Image on Side */}
+    <Box sx={{ 
+      display: 'flex', 
+      width: '100%',
+      flexDirection: { xs: 'column', md: 'row' }
+    }}>
+      
+      {/* Course Content */}
+      <Box sx={{ flex: 1, p: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Chip label={course.category} sx={{ bgcolor: 'rgba(14, 81, 129, 0.1)', color: '#0e5181', fontWeight: 700, fontSize: 14 }} />
         </Box>
-        <CheckCircleIcon sx={{ color: '#e5978b', fontSize: 28 }} />
-        <Typography 
-          variant="body2" 
-          fontWeight={700} 
-          color="#e5978b" 
-          sx={{ 
-            fontSize: 16,
-            minWidth: '45px',
-            textAlign: 'center',
-            background: 'rgba(229, 151, 139, 0.1)',
-            borderRadius: 2,
-            px: 1,
-            py: 0.5
-          }}
-        >
-          {Math.round(progress)}%
+        <Typography variant="h6" fontWeight={800} color="#0e5181" sx={{ mb: 0.5, fontSize: 22 }}>
+          {course.title}
         </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
-        <Typography variant="body2" fontWeight={700} color="#e5978b" sx={{ fontSize: 16 }}>
-          مكتمل - {course.grade || 'A'}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, minHeight: 36, fontSize: 16 }}>
+          {course.description}
         </Typography>
-        {course.completion_date && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
-            تم الإكمال في: {new Date(course.completion_date).toLocaleDateString('ar-EG')}
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, fontSize: 15 }}>
+          <SchoolIcon sx={{ fontSize: 20, color: '#e5978b', ml: 0.5 }} />
+          {course.instructor}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+          <Box sx={{ flexGrow: 1 }}>
+            <Box sx={{ 
+              height: 12, 
+              bgcolor: 'rgba(229, 151, 139, 0.1)', 
+              borderRadius: 6, 
+              overflow: 'hidden',
+              position: 'relative',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <Box 
+                sx={{ 
+                  width: `${progress}%`, 
+                  height: '100%', 
+                  background: 'linear-gradient(90deg, #e5978b 0%, #f0a8a0 100%)',
+                  borderRadius: 6, 
+                  transition: 'width 0.8s ease-in-out',
+                  position: 'relative',
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.2) 100%)',
+                    borderRadius: 6
+                  }
+                }} 
+              />
+            </Box>
+          </Box>
+          <CheckCircleIcon sx={{ color: '#e5978b', fontSize: 28 }} />
+          <Typography 
+            variant="body2" 
+            fontWeight={700} 
+            color="#e5978b" 
+            sx={{ 
+              fontSize: 16,
+              minWidth: '45px',
+              textAlign: 'center',
+              background: 'rgba(229, 151, 139, 0.1)',
+              borderRadius: 2,
+              px: 1,
+              py: 0.5
+            }}
+          >
+            {Math.round(progress)}%
           </Typography>
-        )}
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+          <Typography variant="body2" fontWeight={700} color="#e5978b" sx={{ fontSize: 16 }}>
+            مكتمل - {course.grade || 'A'}
+          </Typography>
+          {course.completion_date && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: 14 }}>
+              تم الإكمال في: {new Date(course.completion_date).toLocaleDateString('ar-EG')}
+            </Typography>
+          )}
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+          <Button
+            variant="outlined"
+            size="large"
+            startIcon={<SchoolIcon />}
+            sx={{
+              color: '#0e5181',
+              borderColor: '#0e5181',
+              borderRadius: 3,
+              fontWeight: 700,
+              fontSize: 18,
+              px: 5,
+              py: 1.5,
+              '&:hover': { bgcolor: 'rgba(14, 81, 129, 0.1)', borderColor: '#0e5181' }
+            }}
+          >
+            عرض الشهادة
+          </Button>
+        </Box>
       </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
-        <Button
-          variant="outlined"
-          size="large"
-          startIcon={<SchoolIcon />}
-          sx={{
-            color: '#0e5181',
-            borderColor: '#0e5181',
-            borderRadius: 3,
-            fontWeight: 700,
-            fontSize: 18,
-            px: 5,
-            py: 1.5,
-            '&:hover': { bgcolor: 'rgba(14, 81, 129, 0.1)', borderColor: '#0e5181' }
-          }}
-        >
-          عرض الشهادة
-        </Button>
-      </Box>
-    </CardContent>
-    <CardMedia
-      component="img"
-      image={course.image}
-      alt={course.title}
-      sx={{ width: 180, height: 180, objectFit: 'cover', borderRadius: '40px', ml: 2 }}
-    />
+    </Box>
   </Card>
   );
 };
@@ -762,11 +1165,16 @@ const MyCourses = () => {
           minHeight: '100vh',
           background: 'linear-gradient(120deg, #ede7f6 0%, #fff 100%)',
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
-          alignItems: 'center'
+          alignItems: 'center',
+          gap: 2
         }}
       >
         <CircularProgress size={60} sx={{ color: '#7c4dff' }} />
+        <Typography variant="h6" sx={{ color: '#7c4dff', fontWeight: 600 }}>
+          جاري تحميل الكورسات...
+        </Typography>
       </Box>
     );
   }
@@ -781,16 +1189,25 @@ const MyCourses = () => {
         }}
       >
         <Container maxWidth="xl">
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-          <Button 
-            variant="contained" 
-            onClick={fetchMyCourses}
-            sx={{ bgcolor: '#7c4dff' }}
-          >
-            إعادة المحاولة
-          </Button>
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Alert severity="error" sx={{ mb: 3, maxWidth: 600, mx: 'auto' }}>
+              {error}
+            </Alert>
+            <Button 
+              variant="contained" 
+              onClick={fetchMyCourses}
+              sx={{ 
+                bgcolor: '#7c4dff',
+                borderRadius: 3,
+                px: 4,
+                py: 1.5,
+                fontWeight: 600,
+                '&:hover': { bgcolor: '#6a3dcc' }
+              }}
+            >
+              إعادة المحاولة
+            </Button>
+          </Box>
         </Container>
       </Box>
     );
@@ -893,12 +1310,12 @@ const MyCourses = () => {
                 ? enrolledCourses.map(course => (
                     <CourseCard key={course.id} course={course} onClick={handleCourseClick} />
                   ))
-                : <EmptyState />)
+                : <EmptyState isCompleted={false} />)
             : (completedCourses.length > 0
                 ? completedCourses.map(course => (
                     <CompletedCourseCard key={course.id} course={course} />
                   ))
-                : <EmptyState />)
+                : <EmptyState isCompleted={true} />)
           }
         </Box>
     </Container>

@@ -149,14 +149,27 @@ class ModuleDetailSerializer(serializers.ModelSerializer):
                     user=request.user,
                     module=obj
                 )
+                # Calculate progress percentage based on completed components
+                total_components = 4  # video, pdf, notes, quiz
+                completed_components = sum([
+                    progress.video_watched,
+                    progress.pdf_viewed,
+                    progress.notes_read,
+                    progress.quiz_completed
+                ])
+                progress_percentage = (completed_components / total_components) * 100 if total_components > 0 else 0
+                
                 return {
                     'is_completed': progress.is_completed,
                     'completed_at': progress.completed_at,
-                    'progress_percentage': progress.progress_percentage,
+                    'progress_percentage': round(progress_percentage, 2),
                     'video_watched': progress.video_watched,
                     'pdf_viewed': progress.pdf_viewed,
                     'notes_read': progress.notes_read,
-                    'quiz_completed': progress.quiz_completed
+                    'quiz_completed': progress.quiz_completed,
+                    'video_progress': progress.video_progress,
+                    'quiz_score': progress.quiz_score,
+                    'status': progress.status
                 }
             except ModuleProgress.DoesNotExist:
                 pass
