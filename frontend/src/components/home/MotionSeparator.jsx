@@ -75,6 +75,45 @@ const CurvedText = styled(Typography)(({ theme }) => ({
   },
 }));
 
+const TitleContainer = styled(Box)(({ theme }) => ({
+  textAlign: 'center',
+  marginBottom: theme.spacing(4),
+  position: 'relative',
+  zIndex: 3,
+  padding: theme.spacing(2, 0),
+}));
+
+const MainTitle = styled(Typography)(({ theme }) => ({
+  fontSize: '2.5rem',
+  fontWeight: 800,
+  color: '#0e5181',
+  marginBottom: theme.spacing(1),
+  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+  animation: `${slideInAnimation} 0.8s ease-out 0.2s both`,
+  [theme.breakpoints.down('md')]: {
+    fontSize: '2.2rem',
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1.8rem',
+  },
+}));
+
+const SubTitle = styled(Typography)(({ theme }) => ({
+  fontSize: '1.1rem',
+  fontWeight: 500,
+  color: '#666',
+  maxWidth: '600px',
+  margin: '0 auto',
+  lineHeight: 1.6,
+  animation: `${slideInAnimation} 0.8s ease-out 0.4s both`,
+  [theme.breakpoints.down('md')]: {
+    fontSize: '1rem',
+  },
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '0.9rem',
+  },
+}));
+
 const StatsGrid = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -93,7 +132,9 @@ const StatsGrid = styled(Box)(({ theme }) => ({
   },
 }));
 
-const StatItem = styled(Box)(({ theme, delay = 0, isHighlighted = false }) => ({
+const StatItem = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'delay' && prop !== 'isHighlighted',
+})(({ theme, delay = 0, isHighlighted = false }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -140,7 +181,9 @@ const StatItem = styled(Box)(({ theme, delay = 0, isHighlighted = false }) => ({
   },
 }));
 
-const StatIcon = styled(Box)(({ theme, color = '#0e5181' }) => ({
+const StatIcon = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'color',
+})(({ theme, color = '#0e5181' }) => ({
   width: '50px',
   height: '50px',
   borderRadius: '50%',
@@ -365,6 +408,16 @@ const MotionSeparator = () => {
       </FloatingElements>
       
       <Container maxWidth="lg">
+        <TitleContainer>
+          <MainTitle>
+            إحصائيات منصتنا التعليمية
+          </MainTitle>
+          <SubTitle>
+            نحن فخورون بما حققناه من إنجازات في مجال التعليم الإلكتروني، 
+            ونسعى دائماً لتقديم أفضل تجربة تعليمية لطلابنا
+          </SubTitle>
+        </TitleContainer>
+        
         <StatsGrid>
           {stats.map((stat, index) => (
             <StatItem 

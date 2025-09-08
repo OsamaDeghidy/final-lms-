@@ -61,8 +61,15 @@ export const profileService = {
   // Get user statistics
   getStatistics: async () => {
     try {
-      const response = await api.get('/api/courses/dashboard/stats/');
-      return response.data;
+      // Try student stats first, then fallback to general stats
+      try {
+        const response = await api.get('/api/courses/student/dashboard/stats/');
+        return response.data;
+      } catch (studentError) {
+        // Fallback to general dashboard stats
+        const response = await api.get('/api/courses/dashboard/stats/');
+        return response.data;
+      }
     } catch (error) {
       throw error;
     }

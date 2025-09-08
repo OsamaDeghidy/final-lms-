@@ -731,12 +731,12 @@ def course_tracking_data(request, course_id):
         course_quizzes = Quiz.objects.filter(
             course=course,
             is_active=True
-        ).prefetch_related('questions', 'questions__answers')
+        ).prefetch_related('questions')
         
         module_quizzes = Quiz.objects.filter(
             module__in=modules,
             is_active=True
-        ).prefetch_related('questions', 'questions__answers')
+        ).prefetch_related('questions')
         
         # Get user quiz attempts
         quiz_attempts = QuizAttempt.objects.filter(
@@ -910,6 +910,35 @@ def course_tracking_data(request, course_id):
                 'is_overdue': assignment.is_overdue()
             })
         
+        # Prepare quizzes data
+        quizzes_data = []
+        all_quizzes = list(course_quizzes) + list(module_quizzes)
+        # Remove duplicates based on quiz ID
+        seen_quiz_ids = set()
+        unique_quizzes = []
+        for quiz in all_quizzes:
+            if quiz.id not in seen_quiz_ids:
+                seen_quiz_ids.add(quiz.id)
+                unique_quizzes.append(quiz)
+        
+        for quiz in unique_quizzes:
+            attempt = quiz_attempts.filter(quiz=quiz).first()
+            quizzes_data.append({
+                'id': quiz.id,
+                'title': quiz.title,
+                'description': quiz.description,
+                'time_limit': quiz.time_limit,
+                'pass_mark': quiz.pass_mark,
+                'total_points': quiz.get_total_points(),
+                'total_questions': quiz.questions.count(),
+                'allow_multiple_attempts': True,  # Default value since field doesn't exist
+                'max_attempts': None,  # Default value since field doesn't exist
+                'attempted': attempt is not None,
+                'score': attempt.score if attempt else None,
+                'passed': attempt.passed if attempt else None,
+                'attempt_number': attempt.attempt_number if attempt else 0
+            })
+        
         # Prepare exams data
         exams_data = []
         for exam in exams:
@@ -931,10 +960,75 @@ def course_tracking_data(request, course_id):
                 'attempt_number': attempt.attempt_number if attempt else 0
             })
         
+        # Get final exam data if exists
+        final_exam_data = None
+        final_exam = exams.filter(is_final=True).first()
+        if final_exam:
+            # Get user's previous attempts for final exam
+            from assignments.models import UserExamAttempt
+            previous_attempts = UserExamAttempt.objects.filter(
+                user=user,
+                exam=final_exam
+            ).order_by('-attempt_number')
+            
+            final_exam_data = {
+                'id': final_exam.id,
+                'title': final_exam.title,
+                'description': final_exam.description,
+                'time_limit': final_exam.time_limit,
+                'pass_mark': final_exam.pass_mark,
+                'total_points': final_exam.total_points,
+                'total_questions': final_exam.questions.count(),
+                'allow_multiple_attempts': final_exam.allow_multiple_attempts,
+                'max_attempts': final_exam.max_attempts,
+                'show_answers_after': final_exam.show_answers_after,
+                'previous_attempts': [
+                    {
+                        'id': attempt.id,
+                        'attempt_number': attempt.attempt_number,
+                        'score': attempt.score,
+                        'passed': attempt.passed,
+                        'start_time': attempt.start_time,
+                        'end_time': attempt.end_time
+                    }
+                    for attempt in previous_attempts
+                ],
+                'questions': []
+            }
+            
+            # Get questions with answers
+            questions = final_exam.questions.all().order_by('order').prefetch_related('answers')
+            for question in questions:
+                question_data = {
+                    'id': question.id,
+                    'text': question.text,
+                    'question_type': question.question_type,
+                    'points': question.points,
+                    'explanation': question.explanation,
+                    'image': request.build_absolute_uri(question.image.url) if question.image else None,
+                    'order': question.order,
+                    'answers': []
+                }
+                
+                # Get answers
+                answers = question.answers.all().order_by('order')
+                for answer in answers:
+                    question_data['answers'].append({
+                        'id': answer.id,
+                        'text': answer.text,
+                        'is_correct': answer.is_correct,
+                        'explanation': answer.explanation,
+                        'order': answer.order
+                    })
+                
+                final_exam_data['questions'].append(question_data)
+
         return Response({
             'course': course_data,
             'assignments': assignments_data,
+            'quizzes': quizzes_data,
             'exams': exams_data,
+            'final_exam': final_exam_data,
             'enrollment': {
                 'id': enrollment.id,
                 'status': enrollment.status,

@@ -227,9 +227,11 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     def score_display(self, obj):
         if obj.score is not None:
             color = '#28a745' if obj.passed else '#dc3545'
+            score_text = f"{obj.score:.1f}%"
             return format_html(
-                '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-                color, obj.score
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color, 
+                score_text
             )
         return 'غير محسوب'
     score_display.short_description = 'النتيجة'
@@ -318,9 +320,10 @@ class ExamAdmin(admin.ModelAdmin):
             passed_attempts = obj.attempts.filter(passed=True).count()
             rate = (passed_attempts / total_attempts) * 100
             color = '#28a745' if rate >= 70 else '#ffc107' if rate >= 50 else '#dc3545'
+            formatted_rate = f"{rate:.1f}%"
             return format_html(
-                '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-                color, rate
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color, formatted_rate
             )
         return '0%'
     pass_rate.short_description = 'معدل النجاح'
@@ -361,9 +364,11 @@ class UserExamAttemptAdmin(admin.ModelAdmin):
     def score_display(self, obj):
         if obj.score is not None:
             color = '#28a745' if obj.passed else '#dc3545'
+            score_text = f"{obj.score:.1f}%"
             return format_html(
-                '<span style="color: {}; font-weight: bold;">{:.1f}%</span>',
-                color, obj.score
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color, 
+                score_text
             )
         return 'غير محسوب'
     score_display.short_description = 'النتيجة'

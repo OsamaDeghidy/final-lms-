@@ -74,6 +74,7 @@ import StudentDashboard from './components/dashboards/StudentDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import CourseTracking from './pages/student/CourseTracking';
 import MyCertificates from './pages/student/MyCertificates';
+import CertificateVerification from './pages/CertificateVerification';
 import StudentAssignments from './pages/assignments/StudentAssignments';
 import TeacherAssignments from './pages/assignments/TeacherAssignments';
 import AssignmentSubmissions from './pages/assignments/AssignmentSubmissions';
@@ -285,6 +286,7 @@ const AppContent = () => {
                   <Route path="/courses/:id" element={<CourseDetail />} />
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/articles/:slug" element={<ArticleDetail />} />
+                  <Route path="/certificates/verify/:verificationCode" element={<CertificateVerification />} />
                   {/* Store Routes */}
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/payment/:courseId" element={<PaymentPage />} />

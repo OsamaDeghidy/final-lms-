@@ -24,6 +24,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Alert,
+  Snackbar,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -144,6 +145,11 @@ const CreateUnit = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   
   // Form state
   const [unitData, setUnitData] = useState({
@@ -240,6 +246,10 @@ const CreateUnit = () => {
     }
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -265,8 +275,18 @@ const CreateUnit = () => {
       }
       const created = await contentAPI.createModule(payload);
       console.log('Module created:', created);
-      alert('تم حفظ الوحدة بنجاح!');
-      navigate(`/teacher/courses/${courseId}/units`);
+      
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: 'تم حفظ الوحدة بنجاح! سيتم توجيهك إلى صفحة الوحدات...',
+        severity: 'success'
+      });
+      
+      // Navigate after showing success message
+      setTimeout(() => {
+        navigate(`/teacher/courses/${courseId}/units`);
+      }, 2000);
     } catch (error) {
       console.error('Error creating module:', error);
       let serverMsg = 'تعذر حفظ الوحدة. برجاء التحقق من الحقول.';
@@ -404,6 +424,32 @@ const CreateUnit = () => {
           </Box>
         </Box>
       </StyledPaper>
+
+      {/* Success Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%' }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={() => navigate(`/teacher/courses/${courseId}/units`)}
+              sx={{ fontWeight: 600 }}
+            >
+              عرض الوحدات
+            </Button>
+          }
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

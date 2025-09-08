@@ -323,16 +323,8 @@ const HeroSection = styled('div')(({ theme }) => ({
   position: 'relative',
   overflow: 'hidden',
   color: theme.palette.primary.contrastText,
-  // Animated gradient using brand colors
-  background: `linear-gradient(135deg,
-    ${alpha('#0e5181', 0.96)},
-    ${alpha('#0e5181', 0.95)}, 
-    ${alpha('#e5978b', 0.9)},
-    ${alpha('#0e5181', 0.95)}, 
-    ${alpha('#0e5181', 0.96)}
-  )`,
-  backgroundSize: '220% 220%',
-  animation: `${gradientDrift} 26s ease-in-out infinite alternate`,
+  // Solid blue background - dominant color
+  background: '#0e5181',
   // Decorative moving waves
   '&::before': {
     display: 'none',
@@ -342,8 +334,8 @@ const HeroSection = styled('div')(({ theme }) => ({
     content: '""',
     position: 'absolute',
     inset: 0,
-    background: `radial-gradient( circle at 20% 80%, ${alpha('#e5978b', 0.25)} 0%, transparent 55%),
-                 radial-gradient( circle at 85% 20%, ${alpha('#0e5181', 0.22)} 0%, transparent 50%)`,
+    background: `radial-gradient( circle at 20% 80%, ${alpha('#e5978b', 0.15)} 0%, transparent 55%),
+                 radial-gradient( circle at 85% 20%, ${alpha('#ffffff', 0.1)} 0%, transparent 50%)`,
     animation: `${glowPulse} 8s ease-in-out infinite`,
     pointerEvents: 'none',
   },
@@ -1338,7 +1330,7 @@ const CourseDetail = () => {
 
             // Fetch quizzes for this module
             try {
-              const quizzesResponse = await api.get(`/assignments/quizzes/`, {
+              const quizzesResponse = await api.get(`/api/assignments/quizzes/`, {
                 params: { course: id, module: moduleId }
               });
               console.log(`Quizzes for module ${moduleId}:`, quizzesResponse.data);
@@ -3380,25 +3372,27 @@ const CourseDetail = () => {
             </Typography>
           </Box>
           
-          {/* Grid Container */}
-          <Grid container spacing={4}>
+          {/* Grid Container - 3 cards side by side */}
+          <Grid container spacing={3} justifyContent="center">
             {Array.isArray(relatedCourses) ? relatedCourses.slice(0, 3).map((relatedCourse) => (
-              <Grid key={relatedCourse.id} xs={12} sm={6} md={4}>
+              <Grid key={relatedCourse.id} xs={12} sm={6} lg={4}>
                 <Card 
                   sx={{ 
                     height: '100%',
                     cursor: 'pointer',
-                    borderRadius: 4,
-                    boxShadow: '0 8px 25px rgba(14, 81, 129, 0.1)',
+                    borderRadius: 3,
+                    boxShadow: '0 6px 20px rgba(14, 81, 129, 0.08)',
                     border: '1px solid',
-                    borderColor: 'rgba(14, 81, 129, 0.1)',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderColor: 'rgba(14, 81, 129, 0.08)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
                     backdropFilter: 'blur(10px)',
+                    maxWidth: '400px',
+                    mx: 'auto',
                     '&:hover': {
-                      transform: 'translateY(-12px) scale(1.02)',
-                      boxShadow: '0 20px 40px rgba(14, 81, 129, 0.2)',
-                      borderColor: 'rgba(14, 81, 129, 0.3)',
+                      transform: 'translateY(-8px) scale(1.02)',
+                      boxShadow: '0 15px 35px rgba(14, 81, 129, 0.15)',
+                      borderColor: 'rgba(14, 81, 129, 0.2)',
                     },
                   }}
                   onClick={() => navigate(`/courses/${relatedCourse.id}`)}
@@ -3407,7 +3401,7 @@ const CourseDetail = () => {
                   <Box sx={{ position: 'relative', overflow: 'hidden' }}>
                     <Box sx={{
                       width: '100%',
-                      height: 200,
+                      height: 180,
                       background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
                       display: 'flex',
                       alignItems: 'center',
@@ -3478,7 +3472,7 @@ const CourseDetail = () => {
                   </Box>
                   
                   {/* Course Content */}
-                  <CardContent sx={{ p: 3 }}>
+                  <CardContent sx={{ p: 2.5 }}>
                     {/* Course Title */}
                     <Typography 
                       variant="h6" 
@@ -3486,13 +3480,13 @@ const CourseDetail = () => {
                       sx={{ 
                         fontWeight: 700,
                         lineHeight: 1.3,
-                        mb: 2,
+                        mb: 1.5,
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        fontSize: '1.1rem',
+                        fontSize: '1rem',
                         color: '#0e5181',
                       }}
                       dir="rtl"
@@ -3501,24 +3495,24 @@ const CourseDetail = () => {
                     </Typography>
                     
                     {/* Instructor Info */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                       <Avatar 
                         src={relatedCourse.instructorAvatar || relatedCourse.instructor?.avatar} 
                         alt={relatedCourse.instructor}
                         sx={{ 
-                          width: 32, 
-                          height: 32, 
-                          mr: 1.5,
+                          width: 28, 
+                          height: 28, 
+                          mr: 1,
                           border: '2px solid #e5978b'
                         }}
                       />
-                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                         {relatedCourse.instructor || 'مدرس محترف'}
                       </Typography>
                     </Box>
                     
                     {/* Course Stats */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, gap: 1.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <VideoIcon fontSize="small" sx={{ color: '#0e5181', mr: 0.5 }} />
                         <Typography variant="caption" color="text.secondary">
@@ -3534,7 +3528,7 @@ const CourseDetail = () => {
                     </Box>
                     
                     {/* Rating */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                       <Rating 
                         value={(() => {
                           const rating = relatedCourse.rating;
@@ -3578,7 +3572,7 @@ const CourseDetail = () => {
                       <Typography 
                         variant="h6" 
                         sx={{ 
-                          fontSize: '1.2rem',
+                          fontSize: '1.1rem',
                           fontWeight: 700,
                           background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
                           WebkitBackgroundClip: 'text',
@@ -3612,6 +3606,9 @@ const CourseDetail = () => {
                           borderRadius: 2,
                           textTransform: 'none',
                           fontWeight: 600,
+                          fontSize: '0.8rem',
+                          px: 2,
+                          py: 0.5,
                         }}
                       >
                         عرض الدورة
@@ -3637,37 +3634,41 @@ const CourseDetail = () => {
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(14, 81, 129, 0.1)',
+            direction: 'rtl',
           }
         }}
       >
-        <DialogContent sx={{ p: 4 }}>
+        <DialogContent sx={{ p: 4, direction: 'rtl' }}>
           <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
             تقييم الدورة
           </Typography>
           
           <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, textAlign: 'right' }}>
               تقييمك للدورة
             </Typography>
-            <Rating
-              value={reviewForm.rating}
-              onChange={(event, newValue) => {
-                handleReviewFormChange('rating', newValue);
-              }}
-              size="large"
-              sx={{
-                '& .MuiRating-iconFilled': {
-                  color: '#e5978b',
-                },
-                '& .MuiRating-iconHover': {
-                  color: '#e5978b',
-                },
-              }}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Rating
+                value={reviewForm.rating}
+                onChange={(event, newValue) => {
+                  handleReviewFormChange('rating', newValue);
+                }}
+                size="large"
+                sx={{
+                  direction: 'ltr',
+                  '& .MuiRating-iconFilled': {
+                    color: '#e5978b',
+                  },
+                  '& .MuiRating-iconHover': {
+                    color: '#e5978b',
+                  },
+                }}
+              />
+            </Box>
           </Box>
           
           <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, textAlign: 'right' }}>
               تعليقك (اختياري)
             </Typography>
             <textarea
@@ -3683,12 +3684,13 @@ const CourseDetail = () => {
                 fontSize: '14px',
                 fontFamily: 'inherit',
                 resize: 'vertical',
-                direction: 'rtl'
+                direction: 'rtl',
+                textAlign: 'right'
               }}
             />
           </Box>
           
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-start', flexDirection: 'row-reverse' }}>
             <Button
               variant="outlined"
               onClick={() => setShowReviewForm(false)}
@@ -3711,7 +3713,7 @@ const CourseDetail = () => {
               variant="contained"
               onClick={handleSubmitReview}
               disabled={submittingReview || !reviewForm.comment.trim()}
-              startIcon={submittingReview ? <CircularProgress size={20} color="inherit" /> : null}
+              endIcon={submittingReview ? <CircularProgress size={20} color="inherit" /> : null}
               sx={{
                 background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
                 '&:hover': {

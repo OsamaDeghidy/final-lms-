@@ -460,7 +460,7 @@ const TestimonialsSection = () => {
                     color: 'text.secondary',
                     fontSize: '0.8rem'
                   }}>
-                    {new Date().toLocaleDateString('ar-SA', { 
+                    {new Date().toLocaleDateString('en-US', { 
                       year: 'numeric', 
                       month: 'short', 
                       day: 'numeric' 

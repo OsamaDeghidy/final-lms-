@@ -9,16 +9,16 @@ from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.core.exceptions import PermissionDenied
 
-from .models import Certificate, CertificateTemplate, PresetCertificateTemplate, UserSignature
-from courses.models import Course
+from .models import Certificate, CertificateTemplate, UserSignature
+from courses.models import Course, Enrollment
 from users.models import Instructor, Profile
 from .serializers import (
     CertificateTemplateSerializer, CertificationListSerializer,
     CertificationDetailSerializer, CertificateCreateSerializer,
     CertificateTemplateBasicSerializer, CertificateTemplateDetailSerializer,
     CertificateTemplateCreateSerializer, CertificateTemplateUpdateSerializer,
-    PresetCertificateTemplateSerializer, UserSignatureSerializer,
-    UserSignatureCreateSerializer, PresetTemplateSelectionSerializer,
+    UserSignatureSerializer,
+    UserSignatureCreateSerializer,
     CertificateTemplateFilterSerializer
 )
 
@@ -44,20 +44,19 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
         if user.profile.status not in ['Teacher', 'Admin', 'Manager']:
             # Students can only see public templates
             return CertificateTemplate.objects.filter(
-                is_active=True, is_public=True
-            ).select_related('created_by__profile')
+                is_active=True
+            )
         
-        # Teachers and admins see their own templates + public templates
+        # Teachers and admins see all templates
         queryset = CertificateTemplate.objects.filter(
-            Q(created_by=user) | Q(is_public=True),
             is_active=True
-        ).select_related('created_by__profile')
+        )
         
         # Admins see all templates
         if user.profile.status in ['Admin', 'Manager']:
             queryset = CertificateTemplate.objects.filter(
                 is_active=True
-            ).select_related('created_by__profile')
+            )
         
         return queryset.order_by('-created_at')
     
@@ -71,11 +70,10 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
     
     def perform_update(self, serializer):
         """Update certificate template with permission check"""
-        template = self.get_object()
         user = self.request.user
         
-        # Check permissions
-        if not (template.created_by == user or user.profile.status in ['Admin', 'Manager']):
+        # Check permissions - only admins can update
+        if user.profile.status not in ['Admin', 'Manager']:
             raise PermissionDenied("ليس لديك صلاحية لتعديل هذا القالب")
         
         serializer.save()
@@ -84,8 +82,8 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
         """Delete certificate template with permission check"""
         user = self.request.user
         
-        # Check permissions
-        if not (instance.created_by == user or user.profile.status in ['Admin', 'Manager']):
+        # Check permissions - only admins can delete
+        if user.profile.status not in ['Admin', 'Manager']:
             raise PermissionDenied("ليس لديك صلاحية لحذف هذا القالب")
         
         # Soft delete - mark as inactive
@@ -98,15 +96,14 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
         template = self.get_object()
         user = request.user
         
-        # Check if user can set default (own template or admin)
-        if not (template.created_by == user or user.profile.status in ['Admin', 'Manager']):
+        # Check if user can set default (only admins)
+        if user.profile.status not in ['Admin', 'Manager']:
             return Response({
                 'error': 'ليس لديك صلاحية لتعديل هذا القالب'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        # Unset other default templates for this user
+        # Unset other default templates
         CertificateTemplate.objects.filter(
-            created_by=user,
             is_default=True
         ).update(is_default=False)
         
@@ -151,7 +148,6 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_403_FORBIDDEN)
         
         templates = CertificateTemplate.objects.filter(
-            created_by=user,
             is_active=True
         ).order_by('-created_at')
         
@@ -165,15 +161,6 @@ class CertificateTemplateViewSet(viewsets.ModelViewSet):
         })
 
 
-class PresetCertificateTemplateViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for preset certificate templates (read-only)"""
-    serializer_class = PresetCertificateTemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-    def get_queryset(self):
-        return PresetCertificateTemplate.objects.filter(
-            is_active=True
-        ).order_by('template_name')
 
 
 class UserSignatureViewSet(viewsets.ModelViewSet):
@@ -227,77 +214,6 @@ class UserSignatureViewSet(viewsets.ModelViewSet):
         })
 
 
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def create_from_preset(request):
-    """Create custom template from preset template"""
-    # Check permissions
-    if request.user.profile.status not in ['Teacher', 'Admin', 'Manager']:
-        return Response({
-            'error': 'ليس لديك صلاحية لإنشاء قوالب الشهادات'
-        }, status=status.HTTP_403_FORBIDDEN)
-    
-    serializer = PresetTemplateSelectionSerializer(
-        data=request.data, 
-        context={'request': request}
-    )
-    
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    validated_data = serializer.validated_data
-    
-    # Get preset template
-    preset = get_object_or_404(
-        PresetCertificateTemplate, 
-        id=validated_data['preset_template_id'],
-        is_active=True
-    )
-    
-    # Get user signature if provided
-    user_signature = None
-    if validated_data.get('user_signature_id'):
-        user_signature = get_object_or_404(
-            UserSignature,
-            id=validated_data['user_signature_id'],
-            user=request.user
-        )
-    
-    # Create custom template from preset
-    template = CertificateTemplate.objects.create(
-        created_by=request.user,
-        template_name=f"قالب {request.user.profile.name} - {preset.template_style}",
-        template_style=preset.template_style,
-        template_source='preset',
-        primary_color=preset.primary_color,
-        secondary_color=preset.secondary_color,
-        background_pattern=preset.background_pattern,
-        border_style=preset.border_style,
-        font_family=preset.font_family,
-        institution_name=validated_data['institution_name'],
-        signature_name=validated_data['signature_name'],
-        signature_title=validated_data['signature_title'],
-        certificate_text=preset.certificate_text or "هذا يشهد بأن {student_name} قد أكمل بنجاح دورة {course_name} بتاريخ {completion_date}",
-        include_qr_code=preset.include_qr_code,
-        include_grade=preset.include_grade,
-        include_completion_date=preset.include_completion_date,
-        include_course_duration=preset.include_course_duration,
-        is_public=validated_data.get('is_public', False),
-        institution_logo=validated_data.get('institution_logo'),
-        user_signature=user_signature.signature_image if user_signature else None
-    )
-    
-    # Return created template
-    response_serializer = CertificateTemplateDetailSerializer(
-        template, context={'request': request}
-    )
-    
-    return Response({
-        'message': 'تم إنشاء القالب من النموذج الجاهز بنجاح',
-        'template': response_serializer.data
-    }, status=status.HTTP_201_CREATED)
-
-
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def search_templates(request):
@@ -309,46 +225,25 @@ def search_templates(request):
     filters = filter_serializer.validated_data
     user = request.user
     
-    # Base queryset
-    if user.profile.status not in ['Teacher', 'Admin', 'Manager']:
-        # Students see only public templates
-        queryset = CertificateTemplate.objects.filter(
-            is_active=True, is_public=True
-        )
-    else:
-        # Teachers see their own + public templates
-        queryset = CertificateTemplate.objects.filter(
-            Q(created_by=user) | Q(is_public=True),
-            is_active=True
-        )
-        
-        # Admins see all templates
-        if user.profile.status in ['Admin', 'Manager']:
-            queryset = CertificateTemplate.objects.filter(is_active=True)
+    # Base queryset - all users see all active templates
+    queryset = CertificateTemplate.objects.filter(is_active=True)
     
     # Apply filters
-    if filters.get('template_style'):
-        queryset = queryset.filter(template_style=filters['template_style'])
+    if filters.get('is_default') is not None:
+        queryset = queryset.filter(is_default=filters['is_default'])
     
-    if filters.get('template_source'):
-        queryset = queryset.filter(template_source=filters['template_source'])
-    
-    if filters.get('is_public') is not None:
-        queryset = queryset.filter(is_public=filters['is_public'])
-    
-    if filters.get('created_by'):
-        queryset = queryset.filter(created_by_id=filters['created_by'])
+    if filters.get('is_active') is not None:
+        queryset = queryset.filter(is_active=filters['is_active'])
     
     if filters.get('search'):
         search_term = filters['search']
         queryset = queryset.filter(
             Q(template_name__icontains=search_term) |
-            Q(institution_name__icontains=search_term) |
-            Q(created_by__profile__name__icontains=search_term)
+            Q(institution_name__icontains=search_term)
         )
     
     # Order and paginate
-    queryset = queryset.select_related('created_by__profile').order_by('-created_at')
+    queryset = queryset.order_by('-created_at')
     
     page = request.GET.get('page', 1)
     paginator = Paginator(queryset, 20)
@@ -373,50 +268,24 @@ def dashboard_stats(request):
     """Get certificate template statistics for dashboard"""
     user = request.user
     
-    if user.profile.status == 'Teacher':
-        # Teacher statistics
-        total_templates = CertificateTemplate.objects.filter(
-            created_by=user, is_active=True
-        ).count()
-        public_templates = CertificateTemplate.objects.filter(
-            created_by=user, is_active=True, is_public=True
+    if user.profile.status in ['Teacher', 'Admin', 'Manager']:
+        # Teacher/Admin statistics
+        total_templates = CertificateTemplate.objects.filter(is_active=True).count()
+        default_templates = CertificateTemplate.objects.filter(
+            is_active=True, is_default=True
         ).count()
         signatures_count = UserSignature.objects.filter(user=user).count()
         
         return Response({
             'total_templates': total_templates,
-            'public_templates': public_templates,
+            'default_templates': default_templates,
             'signatures_count': signatures_count
-        })
-    
-    elif user.profile.status in ['Admin', 'Manager']:
-        # Admin statistics
-        total_templates = CertificateTemplate.objects.filter(is_active=True).count()
-        custom_templates = CertificateTemplate.objects.filter(
-            is_active=True, template_source='custom'
-        ).count()
-        preset_templates = PresetCertificateTemplate.objects.filter(is_active=True).count()
-        total_signatures = UserSignature.objects.count()
-        
-        # Template styles distribution
-        template_styles = CertificateTemplate.objects.filter(
-            is_active=True
-        ).values('template_style').annotate(
-            count=Count('id')
-        ).order_by('-count')
-        
-        return Response({
-            'total_templates': total_templates,
-            'custom_templates': custom_templates,
-            'preset_templates': preset_templates,
-            'total_signatures': total_signatures,
-            'template_styles': list(template_styles)
         })
     
     else:
         # Students - limited stats
         available_templates = CertificateTemplate.objects.filter(
-            is_active=True, is_public=True
+            is_active=True
         ).count()
         
         return Response({
@@ -429,37 +298,23 @@ def dashboard_stats(request):
 def general_stats(request):
     """Get general certificate template statistics"""
     total_templates = CertificateTemplate.objects.filter(is_active=True).count()
-    public_templates = CertificateTemplate.objects.filter(
-        is_active=True, is_public=True
+    default_templates = CertificateTemplate.objects.filter(
+        is_active=True, is_default=True
     ).count()
-    custom_templates = CertificateTemplate.objects.filter(
-        is_active=True, template_source='custom'
-    ).count()
-    preset_templates = PresetCertificateTemplate.objects.filter(is_active=True).count()
     total_signatures = UserSignature.objects.count()
-    
-    # Template styles distribution
-    template_styles = CertificateTemplate.objects.filter(
-        is_active=True
-    ).values('template_style').annotate(
-        count=Count('id')
-    ).order_by('-count')
     
     # Recent templates
     recent_templates = CertificateTemplate.objects.filter(
         is_active=True
-    ).select_related('created_by__profile').order_by('-created_at')[:5]
+    ).order_by('-created_at')[:5]
     recent_serializer = CertificateTemplateBasicSerializer(
         recent_templates, many=True, context={'request': request}
     )
     
     return Response({
         'total_templates': total_templates,
-        'public_templates': public_templates,
-        'custom_templates': custom_templates,
-        'preset_templates': preset_templates,
+        'default_templates': default_templates,
         'total_signatures': total_signatures,
-        'template_styles': list(template_styles),
         'recent_templates': recent_serializer.data
     })
 
@@ -561,4 +416,262 @@ def verify_certificate(request, certificate_id):
         return Response({
             'is_valid': False,
             'message': 'الشهادة غير موجودة أو غير صالحة'
-        }, status=status.HTTP_404_NOT_FOUND) 
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+# API Views for Certificate Generation
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def generate_certificate(request, course_id):
+    """Generate certificate for completed course"""
+    try:
+        user = request.user
+        course = get_object_or_404(Course, id=course_id)
+        
+        # Check if user is enrolled in the course
+        try:
+            enrollment = Enrollment.objects.get(student=user, course=course)
+        except Enrollment.DoesNotExist:
+            return Response({
+                'error': 'أنت غير مسجل في هذه الدورة'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if course is completed (all lessons completed)
+        print(f"Debug - Enrollment status: {enrollment.status}")
+        print(f"Debug - Enrollment progress: {enrollment.progress}")
+        print(f"Debug - Course completion check: status={enrollment.status}, progress={enrollment.progress}")
+        
+        # Check if all modules are completed by checking ModuleProgress
+        from content.models import Module, ModuleProgress
+        total_modules = Module.objects.filter(course=course, is_active=True).count()
+        completed_modules = ModuleProgress.objects.filter(
+            user=user,
+            module__course=course,
+            is_completed=True
+        ).count()
+        
+        print(f"Debug - Total modules: {total_modules}, Completed modules: {completed_modules}")
+        
+        # Course is completed if all modules are completed OR enrollment status is completed OR progress is 100%
+        is_course_completed = (
+            (total_modules > 0 and completed_modules == total_modules) or
+            enrollment.status == 'completed' or 
+            enrollment.progress >= 100
+        )
+        
+        if not is_course_completed:
+            return Response({
+                'error': f'يجب إكمال جميع وحدات الدورة أولاً. الوحدات المكتملة: {completed_modules}/{total_modules}, الحالة: {enrollment.status}, التقدم: {enrollment.progress}%'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if certificate already exists
+        existing_certificate = Certificate.objects.filter(user=user, course=course).first()
+        if existing_certificate:
+            return Response({
+                'message': 'الشهادة موجودة بالفعل',
+                'certificate': CertificationDetailSerializer(existing_certificate).data
+            }, status=status.HTTP_200_OK)
+        
+        # Get default template or create one
+        template = CertificateTemplate.get_default_template()
+        if not template:
+            # Create a basic default template
+            template = CertificateTemplate.objects.create(
+                template_name="قالب افتراضي",
+                institution_name="أكاديمية التعلم الإلكتروني",
+                signature_name="مدير الأكاديمية",
+                signature_title="مدير التعليم",
+                certificate_text="هذا يشهد بأن {student_name} قد أكمل بنجاح دورة {course_name} بتاريخ {completion_date}",
+                is_default=True,
+                is_active=True
+            )
+        
+        # Calculate final grade if available
+        final_grade = None
+        if hasattr(enrollment, 'final_grade') and enrollment.final_grade:
+            final_grade = enrollment.final_grade
+        
+        # Create certificate
+        certificate = Certificate.objects.create(
+            user=user,
+            course=course,
+            template=template,
+            student_name=f"{user.first_name} {user.last_name}".strip() or user.username,
+            course_title=course.title,
+            institution_name=template.institution_name,
+            completion_date=timezone.now(),
+            final_grade=final_grade,
+            completion_percentage=100.0,
+            course_duration_hours=_calculate_course_duration_hours(course),
+            status='active',
+            verification_status='verified',
+            issued_by=course.instructors.first().profile.user if course.instructors.exists() else None
+        )
+        
+        return Response({
+            'message': 'تم إنشاء الشهادة بنجاح',
+            'certificate': CertificationDetailSerializer(certificate).data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء إنشاء الشهادة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_my_certificates(request):
+    """Get user's certificates"""
+    try:
+        user = request.user
+        certificates = Certificate.objects.filter(user=user).select_related('course', 'template').prefetch_related('template')
+        
+        serializer = CertificationListSerializer(certificates, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء جلب الشهادات: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_certificate_detail(request, certificate_id):
+    """Get certificate details"""
+    try:
+        user = request.user
+        certificate = get_object_or_404(Certificate, id=certificate_id, user=user)
+        
+        serializer = CertificationDetailSerializer(certificate)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء جلب تفاصيل الشهادة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def verify_certificate(request, verification_code):
+    """Verify certificate by verification code"""
+    try:
+        certificate = get_object_or_404(Certificate, verification_code=verification_code)
+        
+        if certificate.status != 'active':
+            return Response({
+                'error': 'هذه الشهادة غير صالحة أو ملغية'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = CertificationDetailSerializer(certificate)
+        return Response({
+            'certificate': serializer.data,
+            'verified': True
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء التحقق من الشهادة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def download_certificate_pdf(request, certificate_id):
+    """Download certificate as PDF"""
+    try:
+        user = request.user
+        certificate = get_object_or_404(Certificate, id=certificate_id, user=user)
+        
+        # If PDF doesn't exist, return the certificate detail URL for printing
+        if not certificate.pdf_file:
+            return Response({
+                'download_url': f'/certificates/verify/{certificate.verification_code}/',
+                'message': 'يمكنك طباعة الشهادة من صفحة التفاصيل'
+            }, status=status.HTTP_200_OK)
+        
+        # Return file URL for download
+        return Response({
+            'download_url': certificate.pdf_file.url
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء تحميل الشهادة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_course_completion(request, course_id):
+    """Check if course is completed and certificate can be generated"""
+    try:
+        user = request.user
+        course = get_object_or_404(Course, id=course_id)
+        
+        # Check enrollment
+        try:
+            enrollment = Enrollment.objects.get(student=user, course=course)
+        except Enrollment.DoesNotExist:
+            return Response({
+                'error': 'أنت غير مسجل في هذه الدورة'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if certificate already exists
+        existing_certificate = Certificate.objects.filter(user=user, course=course).first()
+        
+        # Check if all modules are completed by checking ModuleProgress
+        from content.models import Module, ModuleProgress
+        total_modules = Module.objects.filter(course=course, is_active=True).count()
+        completed_modules = ModuleProgress.objects.filter(
+            user=user,
+            module__course=course,
+            is_completed=True
+        ).count()
+        
+        # Course is completed if all modules are completed OR enrollment status is completed OR progress is 100%
+        is_completed = (
+            (total_modules > 0 and completed_modules == total_modules) or
+            enrollment.status == 'completed' or 
+            enrollment.progress >= 100
+        )
+        
+        print(f"Debug - Check completion: status={enrollment.status}, progress={enrollment.progress}, total_modules={total_modules}, completed_modules={completed_modules}, is_completed={is_completed}")
+        
+        return Response({
+            'is_completed': is_completed,
+            'has_certificate': existing_certificate is not None,
+            'certificate_id': existing_certificate.id if existing_certificate else None,
+            'progress_percentage': enrollment.progress,
+            'enrollment_status': enrollment.status,
+            'total_modules': total_modules,
+            'completed_modules': completed_modules
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء فحص إكمال الدورة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _calculate_course_duration_hours(course):
+    """Calculate course duration in hours from modules and lessons"""
+    try:
+        from content.models import Module, Lesson
+        from django.db import models
+        
+        # Calculate total duration from all lessons in all modules
+        total_minutes = Lesson.objects.filter(
+            module__course=course,
+            module__is_active=True,
+            is_active=True
+        ).aggregate(
+            total=models.Sum('duration_minutes')
+        )['total'] or 0
+        
+        # Convert minutes to hours (round to nearest hour)
+        return round(total_minutes / 60) if total_minutes > 0 else 0
+    except Exception:
+        # Return default value if calculation fails
+        return 0 

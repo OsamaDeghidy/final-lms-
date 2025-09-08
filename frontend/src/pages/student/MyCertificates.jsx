@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -22,7 +23,14 @@ import {
   Badge,
   Tooltip,
   useTheme,
-  useMediaQuery
+  useMediaQuery,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -39,9 +47,10 @@ import {
   Search as SearchIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { certificateAPI } from '../../services/certificate.service';
+import certificateAPI from '../../services/certificate.service';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { API_CONFIG } from '../../config/api.config';
 
 const MyCertificates = () => {
   const [certificates, setCertificates] = useState([]);
@@ -49,22 +58,136 @@ const MyCertificates = () => {
   const [error, setError] = useState(null);
   const [selectedCertificate, setSelectedCertificate] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Add print styles
+  useEffect(() => {
+    const printStyles = `
+      @media print {
+        * {
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body * {
+          visibility: hidden;
+        }
+        .certificate-print, .certificate-print * {
+          visibility: visible;
+        }
+        .certificate-print {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        @page {
+          margin: 0;
+          size: A4 landscape;
+        }
+      }
+    `;
+    
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = printStyles;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
+  
+  // Debug dialog state
+  useEffect(() => {
+    console.log('Dialog state changed:', dialogOpen);
+  }, [dialogOpen]);
+  
+  // Debug selected certificate
+  useEffect(() => {
+    console.log('Selected certificate changed:', selectedCertificate);
+  }, [selectedCertificate]);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  
+  // Debug URL params
+  useEffect(() => {
+    console.log('URL params:', {
+      courseId: searchParams.get('courseId'),
+      autoOpen: searchParams.get('autoOpen'),
+      fullURL: location.pathname + location.search
+    });
+  }, [searchParams, location]);
 
   // Fetch certificates on component mount
   useEffect(() => {
     fetchCertificates();
   }, []);
 
+  // Handle URL parameters for auto-opening certificate
+  useEffect(() => {
+    const courseId = searchParams.get('courseId');
+    const autoOpen = searchParams.get('autoOpen');
+    
+    console.log('URL params check:', { courseId, autoOpen, certificatesLength: certificates.length, loading });
+    
+    if (courseId && autoOpen === 'true' && certificates.length > 0 && !loading) {
+      // Find certificate for the specific course
+      const courseCertificate = certificates.find(cert => 
+        cert.course_id === parseInt(courseId) || 
+        cert.course?.id === parseInt(courseId)
+      );
+      
+      if (courseCertificate) {
+        console.log('Auto-opening certificate for course:', courseId);
+        console.log('Found certificate:', courseCertificate);
+        setSelectedCertificate(courseCertificate);
+        setDialogOpen(true);
+        console.log('Dialog should be open now');
+      } else {
+        console.log('No certificate found for course:', courseId);
+        console.log('Available certificates:', certificates.map(c => ({ id: c.id, course_id: c.course_id, course: c.course })));
+      }
+    }
+  }, [certificates, searchParams, loading]);
+
   const fetchCertificates = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await certificateAPI.getMyCertificates();
-      setCertificates(data);
+      console.log('Fetched certificates data:', data);
+      if (data && data.length > 0) {
+        console.log('First certificate template:', data[0].template);
+        if (data[0].template?.template_file) {
+          console.log('First certificate template file:', data[0].template.template_file);
+        }
+        // Log all certificates with their course info
+        data.forEach((cert, index) => {
+          console.log(`Certificate ${index}:`, {
+            id: cert.id,
+            course_id: cert.course_id,
+            course: cert.course,
+            course_title: cert.course_title
+          });
+        });
+      }
+      setCertificates(data || []);
     } catch (err) {
       console.error('Error fetching certificates:', err);
       setError('حدث خطأ أثناء تحميل الشهادات. يرجى المحاولة مرة أخرى.');
@@ -74,44 +197,106 @@ const MyCertificates = () => {
   };
 
   const handleCertificateClick = (certificate) => {
+    console.log('Certificate clicked:', certificate);
+    console.log('Template data:', certificate.template);
+    if (certificate.template?.template_file) {
+      console.log('Template file URL:', getAbsoluteUrl(certificate.template.template_file));
+    }
     setSelectedCertificate(certificate);
     setDialogOpen(true);
   };
 
   const handleDownload = async (certificateId) => {
     try {
-      const blob = await certificateAPI.downloadPDF(certificateId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `certificate-${certificateId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const result = await certificateAPI.downloadPDF(certificateId);
+      if (result.download_url) {
+        // If it's a PDF file, download it
+        if (result.download_url.endsWith('.pdf')) {
+        const link = document.createElement('a');
+          link.href = result.download_url;
+        link.download = `certificate-${certificateId}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        } else {
+          // If it's not a PDF, find the certificate and open its details
+          const certificate = certificates.find(cert => cert.id === certificateId);
+          if (certificate) {
+            handleCertificateClick(certificate);
+          } else {
+            // Fallback: open the verification page
+            window.open(result.download_url, '_blank');
+          }
+        }
+        
+        if (result.message) {
+          // Show a more user-friendly message
+          console.log(result.message);
+        }
+      }
     } catch (error) {
       console.error('Error downloading certificate:', error);
       alert('حدث خطأ أثناء تحميل الشهادة');
     }
   };
 
-  const handleShare = (certificate) => {
-    const verificationUrl = `${window.location.origin}/certificates/verify/${certificate.verification_code}`;
-    if (navigator.share) {
-      navigator.share({
-        title: `شهادة ${certificate.course_name}`,
-        text: `شهادة إكمال دورة ${certificate.course_name}`,
-        url: verificationUrl
-      });
-    } else {
-      navigator.clipboard.writeText(verificationUrl);
-      alert('تم نسخ رابط التحقق من الشهادة');
+  const handleShare = async (certificate) => {
+    try {
+      const result = await certificateAPI.shareCertificate(certificate);
+      if (result.success) {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error sharing certificate:', error);
+      alert('حدث خطأ أثناء مشاركة الشهادة');
     }
   };
 
   const handlePrint = (certificate) => {
-    const verificationUrl = `${window.location.origin}/certificates/verify/${certificate.verification_code}`;
-    window.open(verificationUrl, '_blank');
+    // Set the certificate and open dialog, then trigger print
+    setSelectedCertificate(certificate);
+    setDialogOpen(true);
+    
+    // Wait for dialog to open, then trigger print
+    setTimeout(() => {
+      // Add additional print styles before printing
+      const additionalPrintStyles = `
+        @media print {
+          .certificate-print {
+            background-image: url(${getAbsoluteUrl(certificate.template?.template_file)}) !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `;
+      
+      const styleSheet = document.createElement("style");
+      styleSheet.type = "text/css";
+      styleSheet.innerText = additionalPrintStyles;
+      document.head.appendChild(styleSheet);
+      
+      window.print();
+      
+      // Remove the additional styles after printing
+      setTimeout(() => {
+        document.head.removeChild(styleSheet);
+      }, 1000);
+    }, 500);
+  };
+
+  // Table pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const getStatusColor = (status) => {
@@ -142,7 +327,8 @@ const MyCertificates = () => {
 
   const filteredCertificates = certificates.filter(certificate => {
     const matchesFilter = filter === 'all' || certificate.verification_status === filter;
-    const matchesSearch = certificate.course_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const courseName = certificate.course_title || certificate.course_name || '';
+    const matchesSearch = courseName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          certificate.certificate_id?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
@@ -153,6 +339,24 @@ const MyCertificates = () => {
     } catch (error) {
       return dateString;
     }
+  };
+
+  // Helper function to convert relative URLs to absolute URLs
+  const getAbsoluteUrl = (url) => {
+    console.log('getAbsoluteUrl called with:', url);
+    console.log('API_CONFIG.baseURL:', API_CONFIG.baseURL);
+    
+    if (!url) {
+      console.log('getAbsoluteUrl: No URL provided');
+      return null;
+    }
+    if (url.startsWith('http')) {
+      console.log('getAbsoluteUrl: Already absolute URL:', url);
+      return url;
+    }
+    const absoluteUrl = `${API_CONFIG.baseURL}${url}`;
+    console.log('getAbsoluteUrl: Converted URL:', url, '->', absoluteUrl);
+    return absoluteUrl;
   };
 
   if (loading) {
@@ -391,7 +595,7 @@ const MyCertificates = () => {
         </Grid>
       </Paper>
 
-      {/* Certificates Grid */}
+      {/* Certificates Table */}
       {filteredCertificates.length === 0 ? (
         <Paper elevation={1} sx={{ p: 8, textAlign: 'center' }}>
           <SchoolIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
@@ -406,73 +610,86 @@ const MyCertificates = () => {
           </Typography>
         </Paper>
       ) : (
-        <Grid container spacing={3}>
-          {filteredCertificates.map((certificate) => (
-            <Grid item xs={12} md={6} lg={4} key={certificate.id}>
-              <Card 
-                elevation={3} 
+        <Paper elevation={1} sx={{ overflow: 'hidden' }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>اسم الدورة</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>رقم الشهادة</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>تاريخ الإصدار</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>الدرجة النهائية</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem' }}>حالة التحقق</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem', textAlign: 'center' }}>الإجراءات</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredCertificates
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((certificate) => (
+                    <TableRow 
+                      key={certificate.id}
                 sx={{ 
-                  height: '100%',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: theme.shadows[8]
-                  }
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  {/* Certificate Header */}
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                        '&:hover': { bgcolor: 'action.hover' },
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => handleCertificateClick(certificate)}
+                    >
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                            <SchoolIcon />
+                          </Avatar>
                     <Box>
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        {certificate.course_name || 'دورة غير محددة'}
+                            <Typography variant="subtitle1" fontWeight="bold">
+                        {certificate.course_title || certificate.course_name || 'دورة غير محددة'}
                       </Typography>
-                      <Chip
-                        label={getStatusText(certificate.verification_status)}
-                        color={getStatusColor(certificate.verification_status)}
-                        size="small"
-                        icon={certificate.verification_status === 'verified' ? <VerifiedIcon /> : undefined}
-                      />
+                            <Typography variant="caption" color="text.secondary">
+                              {certificate.student_name || 'اسم الطالب'}
+                            </Typography>
                     </Box>
-                    <Avatar sx={{ bgcolor: 'primary.main', width: 50, height: 50 }}>
-                      <SchoolIcon />
-                    </Avatar>
                   </Box>
-
-                  <Divider sx={{ my: 2 }} />
-
-                  {/* Certificate Details */}
-                  <Stack spacing={1.5} mb={3}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <AssignmentIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        رقم الشهادة: {certificate.certificate_id}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontFamily="monospace">
+                          {certificate.certificate_id}
                       </Typography>
-                    </Box>
-                    
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <ScheduleIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        تاريخ الإصدار: {formatDate(certificate.date_issued)}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {formatDate(certificate.date_issued)}
                       </Typography>
-                    </Box>
-
-                    {certificate.final_grade && (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <GradeIcon fontSize="small" color="action" />
+                      </TableCell>
+                      <TableCell>
+                        {certificate.final_grade ? (
+                          <Chip 
+                            label={`${certificate.final_grade}%`}
+                            color={certificate.final_grade >= 80 ? 'success' : certificate.final_grade >= 60 ? 'warning' : 'error'}
+                            size="small"
+                          />
+                        ) : (
                         <Typography variant="body2" color="text.secondary">
-                          الدرجة النهائية: {certificate.final_grade}%
+                            غير محدد
                         </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-
-                  {/* Actions */}
-                  <Box display="flex" gap={1} flexWrap="wrap">
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusText(certificate.verification_status)}
+                          color={getStatusColor(certificate.verification_status)}
+                          size="small"
+                          icon={certificate.verification_status === 'verified' ? <VerifiedIcon /> : undefined}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box display="flex" gap={1} justifyContent="center">
                     <Tooltip title="عرض التفاصيل">
                       <IconButton
                         size="small"
-                        onClick={() => handleCertificateClick(certificate)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCertificateClick(certificate);
+                              }}
                         color="primary"
                       >
                         <VisibilityIcon />
@@ -482,7 +699,10 @@ const MyCertificates = () => {
                     <Tooltip title="تحميل PDF">
                       <IconButton
                         size="small"
-                        onClick={() => handleDownload(certificate.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownload(certificate.id);
+                              }}
                         color="success"
                       >
                         <DownloadIcon />
@@ -492,7 +712,10 @@ const MyCertificates = () => {
                     <Tooltip title="مشاركة">
                       <IconButton
                         size="small"
-                        onClick={() => handleShare(certificate)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(certificate);
+                              }}
                         color="info"
                       >
                         <ShareIcon />
@@ -502,123 +725,455 @@ const MyCertificates = () => {
                     <Tooltip title="طباعة">
                       <IconButton
                         size="small"
-                        onClick={() => handlePrint(certificate)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrint(certificate);
+                              }}
                         color="secondary"
                       >
                         <PrintIcon />
                       </IconButton>
                     </Tooltip>
                   </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={filteredCertificates.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="عدد الصفوف في الصفحة:"
+            labelDisplayedRows={({ from, to, count }) => `${from}-${to} من ${count}`}
+          />
+        </Paper>
       )}
 
-      {/* Certificate Details Dialog */}
+      {/* Certificate Preview Dialog */}
       <Dialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         fullScreen={isMobile}
+        PaperProps={{
+          sx: {
+            minHeight: '80vh',
+            maxHeight: '90vh'
+          }
+        }}
       >
         {selectedCertificate && (
           <>
-            <DialogTitle>
-              <Box display="flex" alignItems="center" gap={2}>
-                <SchoolIcon color="primary" />
-                <Typography variant="h6">
-                  تفاصيل الشهادة
-                </Typography>
+            <DialogTitle className="no-print">
+              <Box display="flex" alignItems="center" justifyContent="center">
+                <Box display="flex" alignItems="center" gap={2}>
+                  <SchoolIcon color="primary" />
+                  <Typography variant="h6">
+                    معاينة الشهادة
+                  </Typography>
+                </Box>
               </Box>
             </DialogTitle>
-            <DialogContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    معلومات الدورة
-                  </Typography>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        اسم الدورة
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {selectedCertificate.course_name}
-                      </Typography>
+            <DialogContent sx={{ p: 0, overflow: 'auto' }}>
+              {/* Certificate Template Preview */}
+              <Box sx={{ 
+                p: 4,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '70vh',
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+              }}>
+                <Paper 
+                  elevation={8}
+                  className="certificate-print"
+                  sx={{ 
+                    width: '100%',
+                    maxWidth: '800px',
+                    aspectRatio: '4/3',
+                    background: selectedCertificate.template?.template_file 
+                      ? `url(${getAbsoluteUrl(selectedCertificate.template.template_file)})` 
+                      : 'white',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    border: 'none',
+                    borderRadius: 2,
+                    '@media print': {
+                      background: selectedCertificate.template?.template_file 
+                        ? `url(${getAbsoluteUrl(selectedCertificate.template.template_file)})` 
+                        : 'white',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      width: '100%',
+                      height: '100vh',
+                      maxWidth: 'none',
+                      aspectRatio: 'none',
+                      margin: 0,
+                      padding: 0,
+                      boxShadow: 'none',
+                      border: 'none',
+                      borderRadius: 0,
+                      '-webkit-print-color-adjust': 'exact',
+                      'color-adjust': 'exact',
+                      'print-color-adjust': 'exact',
+                    }
+                  }}
+                >
+                   {/* Institution Logo - positioned absolutely */}
+                     {selectedCertificate.template?.institution_logo && (
+                       <Box sx={{ 
+                         position: 'absolute', 
+                       top: 50,
+                       left: 40,
+                       width: 80,
+                       height: 80,
+                       zIndex: 10
+                       }}>
+                         <img 
+                           src={getAbsoluteUrl(selectedCertificate.template.institution_logo)} 
+                           alt="شعار المؤسسة"
+                           style={{
+                             width: '100%',
+                             height: '100%',
+                             objectFit: 'contain'
+                           }}
+                         />
+                       </Box>
+                     )}
+
+                  {/* Certificate Content */}
+                  <Box sx={{ 
+                    p: 4, 
+                    pb: 5, // إضافة padding من الأسفل
+                    textAlign: 'center',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    background: 'transparent',
+                    position: 'relative'
+                  }}>
+                     {/* Main Content */}
+                     <Box sx={{ 
+                       flex: 1, 
+                       display: 'flex', 
+                       flexDirection: 'column', 
+                       justifyContent: 'center',
+                       alignItems: 'center',
+                       textAlign: 'center',
+                       maxWidth: '700px',
+                       mx: 'auto',
+                       py: 4
+                     }}>
+                       {/* Use template text if available, otherwise use default */}
+                       {selectedCertificate.template?.certificate_text ? (
+                         <Box sx={{ 
+                           mb: 4,
+                           lineHeight: 2
+                         }}>
+                           {selectedCertificate.template.certificate_text
+                             .replace('{student_name}', selectedCertificate.student_name || 'اسم الطالب')
+                             .replace('{course_name}', selectedCertificate.course_title || selectedCertificate.course_name || 'اسم الدورة')
+                             .replace('{completion_date}', formatDate(selectedCertificate.date_issued))
+                             .replace('{institution_name}', selectedCertificate.template.institution_name || 'أكاديمية التعلم الإلكتروني')
+                             .replace('{final_grade}', selectedCertificate.final_grade && selectedCertificate.final_grade > 0 ? selectedCertificate.final_grade : 'غير محدد')
+                             .replace('{course_duration}', selectedCertificate.course_duration_hours || 'غير محدد')
+                             .split('\n').map((line, index) => (
+                               <Typography 
+                                 key={index}
+                                 variant={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "h4" : "body1"}
+                                 fontWeight={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "bold" : "normal"}
+                                 sx={{ 
+                                   mb: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 3 : 1.5, 
+                                   fontSize: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? '2rem' : '1.3rem',
+                                   lineHeight: 1.6,
+                                   color: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
+                                     '#0e5181' : '#2c3e50',
+                                   textAlign: 'center',
+                                   fontFamily: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
+                                     '"Cairo", "Arial", sans-serif' : '"Cairo", "Arial", sans-serif'
+                                 }}
+                               >
+                                 {line}
+                               </Typography>
+                             ))
+                           }
+                         </Box>
+                       ) : (
+                         <Box sx={{ 
+                           mb: 4,
+                           lineHeight: 2
+                         }}>
+                           <Typography 
+                             variant="body1" 
+                             sx={{ 
+                               mb: 2, 
+                               fontSize: '1.5rem', 
+                               lineHeight: 1.8,
+                               color: '#2c3e50',
+                               textAlign: 'center',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                             هذا يشهد بأن
+                           </Typography>
+                           
+                           <Typography 
+                             variant="h4" 
+                             fontWeight="bold" 
+                             sx={{ 
+                               mb: 3, 
+                               fontSize: '2.2rem',
+                               color: '#0e5181',
+                               textAlign: 'center',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                             {selectedCertificate.student_name || 'اسم الطالب'}
+                           </Typography>
+                           
+                           <Typography 
+                             variant="body1" 
+                             sx={{ 
+                               mb: 2, 
+                               fontSize: '1.5rem', 
+                               lineHeight: 1.8,
+                               color: '#2c3e50',
+                               textAlign: 'center',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                             قد أكمل بنجاح دورة
+                           </Typography>
+                           
+                           <Typography 
+                             variant="h5" 
+                             fontWeight="bold" 
+                             sx={{ 
+                               mb: 3, 
+                               fontSize: '1.8rem',
+                               color: '#0e5181',
+                               textAlign: 'center',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                             {selectedCertificate.course_title || selectedCertificate.course_name || 'اسم الدورة'}
+                           </Typography>
+                           
+                           <Typography 
+                             variant="body1" 
+                             sx={{ 
+                               mb: 2, 
+                               fontSize: '1.3rem', 
+                               lineHeight: 1.8,
+                               color: '#666',
+                               textAlign: 'center',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                             بتاريخ {formatDate(selectedCertificate.date_issued)}
+                           </Typography>
+                         </Box>
+                       )}
+
+                       {/* Show grade if template includes it or if available */}
+                       {(selectedCertificate.template?.include_grade || selectedCertificate.final_grade) && selectedCertificate.final_grade && selectedCertificate.final_grade > 0 && (
+                         <Box sx={{ 
+                           mb: 3,
+                           mt: 2
+                         }}>
+                           <Typography 
+                             variant="h6" 
+                             sx={{ 
+                               color: '#2e7d32', 
+                               fontWeight: 'bold',
+                               textAlign: 'center',
+                               fontSize: '1.4rem',
+                               fontFamily: '"Cairo", "Arial", sans-serif'
+                             }}
+                           >
+                           بدرجة: {selectedCertificate.final_grade}%
+                         </Typography>
+                         </Box>
+                       )}
+
+                       {/* Show course duration if template includes it
+                       {selectedCertificate.template?.include_course_duration && selectedCertificate.course_duration_hours && (
+                         <Box sx={{ 
+                           mb: 2
+                         }}>
+                           <Typography 
+                             variant="body1" 
+                             sx={{ 
+                               color: '#666', 
+                               fontSize: '1.2rem',
+                               textAlign: 'center'
+                             }}
+                           >
+                           مدة الدورة: {selectedCertificate.course_duration_hours} ساعة
+                         </Typography>
+                         </Box>
+                       )} */}
+                     </Box>
+
+                    {/* Certificate Footer */}
+                    <Box sx={{ 
+                      position: 'absolute',
+                      bottom: 100, // زيادة المسافة من الأسفل
+                      left: 20,
+                      right: 20,
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'flex-end'
+                    }}>
+                       {/* Institution Info */}
+                       <Box sx={{ textAlign: 'center', flex: 1 }}>
+                         <Typography 
+                           variant="h6" 
+                           fontWeight="bold" 
+                           sx={{ 
+                             color: '#0e5181', 
+                             mb: 1,
+                             fontSize: '1.1rem',
+                             fontFamily: '"Cairo", "Arial", sans-serif'
+                           }}
+                         >
+                           {selectedCertificate.template?.institution_name || selectedCertificate.institution_name || 'أكاديمية التعلم الإلكتروني'}
+                         </Typography>
+                         <Typography 
+                           variant="body2" 
+                           sx={{ 
+                             color: '#666',
+                             fontSize: '0.9rem',
+                             fontFamily: '"Cairo", "Arial", sans-serif'
+                           }}
+                         >
+                           {selectedCertificate.template?.institution_description || 'مؤسسة تعليمية معتمدة'}
+                         </Typography>
+                       </Box>
+
+                       {/* Signature */}
+                       <Box sx={{ textAlign: 'center', flex: 1 }}>
+                         <Box sx={{ 
+                           height: 70, 
+                           borderBottom: '2px solid #0e5181', 
+                           mb: 1,
+                           position: 'relative',
+                           display: 'flex',
+                           alignItems: 'center',
+                           justifyContent: 'center'
+                         }}>
+                           {selectedCertificate.template?.signature_image ? (
+                             <Box
+                               component="img"
+                               src={getAbsoluteUrl(selectedCertificate.template.signature_image)}
+                               alt="توقيع"
+                               sx={{
+                                 height: '100%',
+                                 objectFit: 'contain'
+                               }}
+                             />
+                           ) : (
+                             <Typography 
+                               variant="body2" 
+                               sx={{ 
+                                 color: '#0e5181',
+                                 fontStyle: 'italic'
+                               }}
+                             >
+                               توقيع
+                             </Typography>
+                           )}
+                         </Box>
+                         <Typography 
+                           variant="body2" 
+                           fontWeight="bold" 
+                           sx={{ 
+                             color: '#0e5181',
+                             fontSize: '0.9rem',
+                             fontFamily: '"Cairo", "Arial", sans-serif'
+                           }}
+                         >
+                           {selectedCertificate.template?.signature_name || 'مدير الأكاديمية'}
+                         </Typography>
+                         <Typography 
+                           variant="caption" 
+                           sx={{ 
+                             color: '#666',
+                             fontSize: '0.8rem',
+                             fontFamily: '"Cairo", "Arial", sans-serif'
+                           }}
+                         >
+                           {selectedCertificate.template?.signature_title || 'مدير التعليم'}
+                         </Typography>
+                       </Box>
                     </Box>
-                    
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        رقم الشهادة
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {selectedCertificate.certificate_id}
-                      </Typography>
-                    </Box>
-                    
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        رمز التحقق
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium" fontFamily="monospace">
-                        {selectedCertificate.verification_code}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    معلومات الإصدار
-                  </Typography>
-                  <Stack spacing={2}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        تاريخ الإصدار
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {formatDate(selectedCertificate.date_issued)}
-                      </Typography>
-                    </Box>
-                    
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        حالة التحقق
-                      </Typography>
-                      <Chip
-                        label={getStatusText(selectedCertificate.verification_status)}
-                        color={getStatusColor(selectedCertificate.verification_status)}
-                        icon={selectedCertificate.verification_status === 'verified' ? <VerifiedIcon /> : undefined}
-                      />
-                    </Box>
-                    
-                    {selectedCertificate.final_grade && (
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          الدرجة النهائية
-                        </Typography>
-                        <Typography variant="body1" fontWeight="medium">
-                          {selectedCertificate.final_grade}%
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Grid>
-              </Grid>
+                  </Box>
+
+                   {/* Certificate ID and QR Code */}
+                   <Box sx={{ 
+                     position: 'absolute', 
+                     bottom: 70, // زيادة المسافة من الأسفل
+                     left: 60, 
+                     right: 120,
+                     display: 'flex',
+                     justifyContent: 'space-between',
+                     alignItems: 'center'
+                   }}>
+                     <Typography 
+                       variant="caption" 
+                       sx={{ 
+                         color: '#666', 
+                         fontFamily: '"Cairo", "Arial", sans-serif',
+                         fontSize: '0.8rem',
+                         fontWeight: 'bold'
+                       }}
+                     >
+                       رقم الشهادة: {selectedCertificate.certificate_id}
+                     </Typography>
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                       {selectedCertificate.verification_code && (
+                         <Typography 
+                           variant="caption" 
+                           sx={{ 
+                             color: '#666', 
+                             fontFamily: '"Cairo", "Arial", sans-serif',
+                             fontSize: '0.8rem',
+                             fontWeight: 'bold'
+                           }}
+                         >
+                           رمز التحقق: {selectedCertificate.verification_code}
+                         </Typography>
+                       )}
+                       {selectedCertificate.template?.include_qr_code && selectedCertificate.qr_code_image && (
+                         <Box sx={{ width: 25, height: 25 }}>
+                           <img 
+                             src={selectedCertificate.qr_code_image} 
+                             alt="QR Code"
+                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                           />
+                         </Box>
+                       )}
+                     </Box>
+                   </Box>
+
+                </Paper>
+              </Box>
             </DialogContent>
-            <DialogActions>
+            <DialogActions className="no-print" sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
               <Button onClick={() => setDialogOpen(false)}>
                 إغلاق
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => handleDownload(selectedCertificate.id)}
-                startIcon={<DownloadIcon />}
-              >
-                تحميل PDF
               </Button>
             </DialogActions>
           </>

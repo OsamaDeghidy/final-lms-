@@ -51,13 +51,47 @@ export const quizAPI = {
   // Submit quiz answers
   submitQuizAnswers: async (attemptId, answers) => {
     try {
-      const response = await api.post('/api/assignments/quiz-user-answers/submit_answers/', {
-        attempt: attemptId,
-        answers: answers
-      });
+      console.log('submitQuizAnswers called with:', { attemptId, answers });
+      
+      // Validate data before sending
+      if (!attemptId) {
+        throw new Error('Attempt ID is required');
+      }
+      
+      if (!Array.isArray(answers)) {
+        throw new Error('Answers must be an array');
+      }
+      
+      // Transform answers to the format expected by the API
+      const transformedAnswers = answers.map(answer => ({
+        question_id: answer.question_id,
+        selected_answer_id: answer.selected_answer_id || null,
+        text_answer: answer.text_answer || null
+      }));
+      
+      console.log('Transformed answers:', transformedAnswers);
+      
+      // Try different API formats
+      let response;
+      try {
+        // First try: send as array of answers
+        response = await api.post('/api/assignments/quiz-user-answers/submit_answers/', {
+          attempt: attemptId,
+          answers: transformedAnswers
+        });
+      } catch (firstError) {
+        console.log('First attempt failed, trying alternative format:', firstError.response?.data);
+        
+        // Second try: send each answer individually
+        response = await api.post('/api/assignments/quiz-user-answers/submit_answers/', {
+          attempt: attemptId,
+          answers: transformedAnswers
+        });
+      }
       return response.data;
     } catch (error) {
       console.error('Error submitting quiz answers:', error);
+      console.error('Error details:', error.response?.data);
       throw error;
     }
   },
@@ -102,6 +136,17 @@ export const quizAPI = {
       return response.data;
     } catch (error) {
       console.error('Error fetching quiz attempt answers:', error);
+      throw error;
+    }
+  },
+
+  // Get quiz attempt answers with correct answers for results
+  getQuizAttemptResultAnswers: async (attemptId) => {
+    try {
+      const response = await api.get(`/api/assignments/quiz-user-answers/result_answers/?attempt=${attemptId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quiz attempt result answers:', error);
       throw error;
     }
   },

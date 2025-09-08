@@ -3,9 +3,10 @@ import { Box, Typography, Paper, Button, RadioGroup, FormControlLabel, Radio, Te
 import { useNavigate, useParams } from 'react-router-dom';
 import { quizAPI } from '../../../services/quiz.service';
 
-const QuizStart = ({ onFinish }) => {
+const QuizStart = ({ quizId, onFinish }) => {
   const navigate = useNavigate();
-  const { quizId } = useParams();
+  const { quizId: urlQuizId } = useParams();
+  const actualQuizId = quizId || urlQuizId;
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState({});
   const [quiz, setQuiz] = useState(null);
@@ -17,23 +18,23 @@ const QuizStart = ({ onFinish }) => {
 
   useEffect(() => {
     loadQuiz();
-  }, [quizId]);
+  }, [actualQuizId]);
 
   const loadQuiz = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get quiz details
-      const quizData = await quizAPI.getQuiz(quizId);
+      // Get quiz details with questions and answers
+      const quizData = await quizAPI.getQuiz(actualQuizId);
       setQuiz(quizData);
       
-      // Get quiz questions with answers
-      const questionsData = await quizAPI.getQuizQuestions(quizId);
-      setQuestions(questionsData.results || questionsData);
+      // Extract questions from quiz data
+      const questionsData = quizData.questions || [];
+      setQuestions(questionsData);
       
       // Start quiz attempt
-      const attemptData = await quizAPI.startQuizAttempt(quizId);
+      const attemptData = await quizAPI.startQuizAttempt(actualQuizId);
       setAttemptId(attemptData.id);
       
     } catch (err) {
@@ -60,12 +61,19 @@ const QuizStart = ({ onFinish }) => {
     try {
       setSubmitting(true);
       
+      if (!attemptId) {
+        setError('لم يتم العثور على معرف المحاولة. يرجى إعادة تحميل الصفحة.');
+        return;
+      }
+      
       // Submit all answers
       const answersToSubmit = questions.map((question, index) => ({
-        question: question.id,
-        selected_answer: answers[index]?.selected_answer || null,
+        question_id: question.id,
+        selected_answer_id: answers[index]?.selected_answer || null,
         text_answer: answers[index]?.text_answer || null
       }));
+      
+      console.log('Answers to submit:', answersToSubmit);
 
       await quizAPI.submitQuizAnswers(attemptId, answersToSubmit);
       
@@ -73,9 +81,9 @@ const QuizStart = ({ onFinish }) => {
       await quizAPI.finishQuizAttempt(attemptId);
       
       if (onFinish) {
-        onFinish();
+        onFinish(attemptId);
       } else {
-        navigate(`/student/quiz/${quizId}/result/${attemptId}`);
+        navigate(`/student/quiz/${actualQuizId}/result/${attemptId}`);
       }
     } catch (err) {
       console.error('Error submitting quiz:', err);
@@ -97,7 +105,7 @@ const QuizStart = ({ onFinish }) => {
     return (
       <Box sx={{ maxWidth: 700, mx: 'auto', p: { xs: 1, md: 3 } }}>
         <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        <Button variant="contained" onClick={loadQuiz}>إعادة المحاولة</Button>
+        <Button variant="contained" onClick={() => window.location.reload()}>إعادة المحاولة</Button>
       </Box>
     );
   }
@@ -133,14 +141,23 @@ const QuizStart = ({ onFinish }) => {
             value={answers[current]?.selected_answer || ''} 
             onChange={e => handleChange({ ...answers[current], selected_answer: e.target.value })}
           >
-            {q.answers?.map((a, idx) => (
-              <FormControlLabel 
-                key={idx} 
-                value={a.id} 
-                control={<Radio />} 
-                label={a.text} 
-              />
-            ))}
+            {q.answers && q.answers.length > 0 ? (
+              q.answers.map((a, idx) => (
+                <FormControlLabel 
+                  key={idx} 
+                  value={a.id} 
+                  control={<Radio />} 
+                  label={a.text} 
+                />
+              ))
+            ) : (
+              <Box>
+                <Typography color="error" sx={{ mb: 1 }}>لا توجد إجابات متاحة لهذا السؤال</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  يرجى التواصل مع المعلم لإضافة إجابات لهذا السؤال
+                </Typography>
+              </Box>
+            )}
           </RadioGroup>
         )}
         
@@ -149,14 +166,16 @@ const QuizStart = ({ onFinish }) => {
             value={answers[current]?.selected_answer || ''} 
             onChange={e => handleChange({ ...answers[current], selected_answer: e.target.value })}
           >
-            {q.answers?.map((a, idx) => (
-              <FormControlLabel 
-                key={idx} 
-                value={a.id} 
-                control={<Radio />} 
-                label={a.text} 
-              />
-            ))}
+            <FormControlLabel 
+              value="true" 
+              control={<Radio />} 
+              label="صح" 
+            />
+            <FormControlLabel 
+              value="false" 
+              control={<Radio />} 
+              label="خطأ" 
+            />
           </RadioGroup>
         )}
         

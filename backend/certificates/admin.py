@@ -6,23 +6,24 @@ from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from .models import CertificateTemplate, PresetCertificateTemplate, Certificate, UserSignature
+from .models import CertificateTemplate, Certificate, UserSignature
 
 
-class TemplateTypeFilter(SimpleListFilter):
-    title = 'نوع القالب'
-    parameter_name = 'template_source'
+class TemplateStatusFilter(SimpleListFilter):
+    title = 'حالة القالب'
+    parameter_name = 'is_active'
 
     def lookups(self, request, model_admin):
         return (
-            ('custom', 'قالب مخصص'),
-            ('preset', 'قالب جاهز'),
-            ('imported', 'قالب مستورد'),
+            ('active', 'نشط'),
+            ('inactive', 'غير نشط'),
         )
 
     def queryset(self, request, queryset):
-        if self.value():
-            return queryset.filter(template_source=self.value())
+        if self.value() == 'active':
+            return queryset.filter(is_active=True)
+        elif self.value() == 'inactive':
+            return queryset.filter(is_active=False)
         return queryset
 
 
@@ -63,31 +64,26 @@ class VerificationStatusFilter(SimpleListFilter):
 @admin.register(CertificateTemplate)
 class CertificateTemplateAdmin(admin.ModelAdmin):
     list_display = (
-        'template_name', 'created_by', 'template_style', 'template_source',
-        'color_preview', 'usage_count', 'default_status', 'public_status', 'is_active'
+        'template_name', 'institution_name', 'template_file_preview',
+        'usage_count', 'default_status', 'is_active', 'created_at'
     )
     list_filter = (
-        TemplateTypeFilter, 'template_style', 'is_default', 'is_public', 
-        'is_active', 'created_at'
+        TemplateStatusFilter, 'is_default', 'is_active', 'created_at'
     )
-    search_fields = ('template_name', 'created_by__username', 'institution_name', 'certificate_text')
+    search_fields = ('template_name', 'institution_name', 'certificate_text')
     readonly_fields = ('created_at', 'updated_at', 'usage_count')
     
     fieldsets = (
         ('معلومات أساسية', {
-            'fields': ('template_name', 'created_by', 'template_style', 'template_source')
+            'fields': ('template_name', 'institution_name', 'institution_logo')
         }),
-        ('الألوان والتصميم', {
-            'fields': (
-                ('primary_color', 'secondary_color'),
-                ('background_pattern', 'border_style', 'font_family')
-            )
+        ('القالب الجاهز', {
+            'fields': ('template_file',)
         }),
-        ('معلومات المؤسسة', {
+        ('التوقيع', {
             'fields': (
-                'institution_name', 'institution_logo',
                 ('signature_name', 'signature_title'),
-                'signature_image', 'user_signature'
+                'signature_image'
             )
         }),
         ('محتوى الشهادة', {
@@ -99,9 +95,9 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
                 ('include_completion_date', 'include_course_duration')
             )
         }),
-        ('الحالة والصلاحيات', {
+        ('الحالة', {
             'fields': (
-                ('is_default', 'is_public', 'is_active')
+                ('is_default', 'is_active')
             )
         }),
         ('الإحصائيات', {
@@ -114,15 +110,20 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
         }),
     )
     
-    def color_preview(self, obj):
-        return format_html(
-            '<div style="display: flex; gap: 5px;">'
-            '<div style="width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; border-radius: 3px;" title="اللون الأساسي"></div>'
-            '<div style="width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; border-radius: 3px;" title="اللون الثانوي"></div>'
-            '</div>',
-            obj.primary_color, obj.secondary_color
-        )
-    color_preview.short_description = 'الألوان'
+    def template_file_preview(self, obj):
+        if obj.template_file:
+            if obj.template_file.name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                return format_html(
+                    '<img src="{}" width="50" height="30" style="border: 1px solid #ccc; object-fit: cover;" />',
+                    obj.template_file.url
+                )
+            else:
+                return format_html(
+                    '<span style="color: #007bff;">📄 {}</span>',
+                    obj.template_file.name.split('/')[-1]
+                )
+        return 'لا يوجد'
+    template_file_preview.short_description = 'القالب'
     
     def usage_count(self, obj):
         count = obj.certificate_set.count()
@@ -138,17 +139,12 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
         return '⚪ عادي'
     default_status.short_description = 'افتراضي'
     
-    def public_status(self, obj):
-        if obj.is_public:
-            return format_html('<span style="color: #007bff;">🌐 عام</span>')
-        return '🔒 خاص'
-    public_status.short_description = 'الخصوصية'
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('created_by').prefetch_related('certificate_set')
+        return queryset.prefetch_related('certificate_set')
     
-    actions = ['make_default', 'make_public', 'make_private', 'duplicate_template']
+    actions = ['make_default', 'duplicate_template']
     
     def make_default(self, request, queryset):
         if queryset.count() > 1:
@@ -162,89 +158,31 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
         self.message_user(request, f'تم تعيين "{template.template_name}" كقالب افتراضي.')
     make_default.short_description = "تعيين كقالب افتراضي"
     
-    def make_public(self, request, queryset):
-        updated = queryset.update(is_public=True)
-        self.message_user(request, f'تم جعل {updated} قالب عام.')
-    make_public.short_description = "جعل القوالب عامة"
-    
-    def make_private(self, request, queryset):
-        updated = queryset.update(is_public=False)
-        self.message_user(request, f'تم جعل {updated} قالب خاص.')
-    make_private.short_description = "جعل القوالب خاصة"
-    
     def duplicate_template(self, request, queryset):
         duplicated_count = 0
         for template in queryset:
             new_name = f"{template.template_name} - نسخة"
-            template.duplicate_template(new_name, request.user)
+            # إنشاء نسخة بسيطة من القالب
+            new_template = CertificateTemplate.objects.create(
+                template_name=new_name,
+                institution_name=template.institution_name,
+                institution_logo=template.institution_logo,
+                signature_name=template.signature_name,
+                signature_title=template.signature_title,
+                signature_image=template.signature_image,
+                template_file=template.template_file,
+                certificate_text=template.certificate_text,
+                include_qr_code=template.include_qr_code,
+                include_grade=template.include_grade,
+                include_completion_date=template.include_completion_date,
+                include_course_duration=template.include_course_duration,
+                is_default=False,
+                is_active=True
+            )
             duplicated_count += 1
         
         self.message_user(request, f'تم إنشاء {duplicated_count} نسخة من القوالب.')
     duplicate_template.short_description = "إنشاء نسخة من القوالب"
-
-
-@admin.register(PresetCertificateTemplate)
-class PresetCertificateTemplateAdmin(admin.ModelAdmin):
-    list_display = (
-        'name', 'template_style', 'category', 'color_preview',
-        'usage_count', 'featured_status', 'is_active'
-    )
-    list_filter = ('template_style', 'category', 'is_featured', 'is_active', 'created_at')
-    search_fields = ('name', 'description', 'category')
-    readonly_fields = ('created_at', 'updated_at', 'usage_count')
-    
-    fieldsets = (
-        ('معلومات أساسية', {
-            'fields': ('name', 'description', 'template_style', 'category')
-        }),
-        ('التصميم', {
-            'fields': (
-                ('primary_color', 'secondary_color'),
-                ('background_pattern', 'border_style', 'font_family'),
-                'preview_image'
-            )
-        }),
-        ('كود القالب', {
-            'fields': ('template_html',),
-            'classes': ('collapse',)
-        }),
-        ('الحالة', {
-            'fields': (('is_featured', 'is_active'),)
-        }),
-        ('الإحصائيات', {
-            'fields': ('usage_count',),
-            'classes': ('collapse',)
-        }),
-        ('التواريخ', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def color_preview(self, obj):
-        return format_html(
-            '<div style="display: flex; gap: 5px;">'
-            '<div style="width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; border-radius: 3px;"></div>'
-            '<div style="width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; border-radius: 3px;"></div>'
-            '</div>',
-            obj.primary_color, obj.secondary_color
-        )
-    color_preview.short_description = 'الألوان'
-    
-    def usage_count(self, obj):
-        # Count how many custom templates were created from this preset
-        count = CertificateTemplate.objects.filter(
-            template_style=obj.template_style,
-            template_source='preset'
-        ).count()
-        return f'{count} استخدام'
-    usage_count.short_description = 'عدد الاستخدامات'
-    
-    def featured_status(self, obj):
-        if obj.is_featured:
-            return format_html('<span style="color: #ffc107;">⭐ مميز</span>')
-        return '⚪ عادي'
-    featured_status.short_description = 'مميز'
 
 
 @admin.register(Certificate)

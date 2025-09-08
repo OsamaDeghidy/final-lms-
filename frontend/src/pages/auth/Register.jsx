@@ -576,7 +576,7 @@ const Register = () => {
                       <span>طالب</span>
                     </Box>
                   </MenuItem>
-                  <MenuItem value="Instructor">
+                  {/* <MenuItem value="Instructor">
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <WorkIcon sx={{ mr: 1, color: 'text.secondary' }} />
                       <span>مدرس</span>
@@ -587,7 +587,7 @@ const Register = () => {
                       <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />
                       <span>مؤسسة</span>
                     </Box>
-                  </MenuItem>
+                  </MenuItem> */}
                 </Select>
                 {errors.userType && <FormHelperText>{errors.userType}</FormHelperText>}
               </FormControl>

@@ -680,6 +680,7 @@
         <li class="menu-section">
             <span>إضافات</span>
         </li>
+  
         <li>
             <a href="{% url 'admin:extras_banner_changelist' %}" class="{% if '/admin/extras/banner/' in request.path %}active{% endif %}">
                 <i class="fas fa-image"></i>
@@ -692,7 +693,12 @@
                 <span>مجموعات الكورسات</span>
             </a>
         </li>
-
+        <li>
+            <a href="{% url 'admin:certificates_certificatetemplate_changelist' %}" class="{% if '/admin/certificates/certificatetemplate/' in request.path %}active{% endif %}">
+                <i class="fas fa-file-upload"></i>
+                <span>رفع قالب الشهادة</span>
+            </a>
+        </li>
         <!-- Store Section -->
         <li class="menu-section">
             <span>المتجر</span>

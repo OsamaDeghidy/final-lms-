@@ -30,23 +30,6 @@ const CreativeBanner = styled(Box)(({ theme, position = 'top' }) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  '&:before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 2px, transparent 2px),
-      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 2px, transparent 2px),
-      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 2px, transparent 2px),
-      radial-gradient(circle at 90% 20%, rgba(255,255,255,0.1) 2px, transparent 2px)
-    `,
-    backgroundSize: '60px 60px, 60px 60px, 60px 60px, 60px 60px',
-    backgroundPosition: '0 0, 30px 30px, 15px 45px, 45px 15px',
-    animation: position === 'top' ? 'float 6s ease-in-out infinite' : 'float 6s ease-in-out infinite reverse',
-  },
   '&:after': {
     content: '""',
     position: 'absolute',
@@ -214,12 +197,23 @@ const CourseCard = styled(Card)(({ theme }) => ({
   width: '100%',
   borderRadius: theme.shape.borderRadius,
   overflow: 'hidden',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
   position: 'relative',
+  transform: 'translateY(0) scale(1)',
   '&:hover': {
-    transform: 'translateY(-8px)',
-    boxShadow: theme.shadows[8],
-    border: '2px solid rgba(14, 81, 129, 0.3)',
+    transform: 'translateY(-12px) scale(1.03)',
+    boxShadow: '0 20px 40px rgba(14, 81, 129, 0.2)',
+    border: '2px solid rgba(14, 81, 129, 0.4)',
+    '& .play-button': {
+      opacity: 1,
+      transform: 'scale(1.2)',
+    },
+    '& .creative-corner': {
+      transform: 'scale(1.2) rotate(5deg)',
+    },
+    '& .creative-corner-2': {
+      transform: 'scale(1.2) rotate(-5deg)',
+    },
   },
   '&:before': {
     content: '""',
@@ -253,6 +247,8 @@ const CourseCard = styled(Card)(({ theme }) => ({
     borderRight: '2px solid #0e5181',
     borderTopRightRadius: '8px',
     zIndex: 3,
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    transform: 'scale(1) rotate(0deg)',
   },
   '& .creative-corner-2': {
     position: 'absolute',
@@ -264,28 +260,8 @@ const CourseCard = styled(Card)(({ theme }) => ({
     borderLeft: '2px solid #e5978b',
     borderBottomLeftRadius: '8px',
     zIndex: 3,
-  },
-  '& .floating-dots': {
-    position: 'absolute',
-    top: '15px',
-    left: '15px',
-    zIndex: 3,
-    '& .dot': {
-      width: '4px',
-      height: '4px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(14, 81, 129, 0.4)',
-      marginBottom: '4px',
-      animation: 'float 3s ease-in-out infinite',
-      '&:nth-child(2)': {
-        animationDelay: '0.5s',
-        backgroundColor: 'rgba(229, 151, 139, 0.4)',
-      },
-      '&:nth-child(3)': {
-        animationDelay: '1s',
-        backgroundColor: 'rgba(14, 81, 129, 0.3)',
-      },
-    },
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    transform: 'scale(1) rotate(0deg)',
   },
   '@keyframes float': {
     '0%, 100%': {
@@ -325,7 +301,7 @@ const PlayButton = styled(Box)(({ theme }) => ({
   position: 'absolute',
   top: '50%',
   left: '50%',
-  transform: 'translate(-50%, -50%)',
+  transform: 'translate(-50%, -50%) scale(1)',
   backgroundColor: 'rgba(255, 255, 255, 0.9)',
   width: 60,
   height: 60,
@@ -335,9 +311,13 @@ const PlayButton = styled(Box)(({ theme }) => ({
   justifyContent: 'center',
   cursor: 'pointer',
   opacity: 0,
-  transition: 'all 0.3s ease',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
   '&:hover': {
     backgroundColor: theme.palette.primary.main,
+    transform: 'translate(-50%, -50%) scale(1.1)',
+    boxShadow: '0 12px 40px rgba(14, 81, 129, 0.3)',
     '& .MuiSvgIcon-root': {
       color: theme.palette.primary.contrastText,
     },
@@ -435,10 +415,18 @@ const PromotionalBanner = styled(Box)(({ theme }) => ({
   borderRadius: 0,
   overflow: 'hidden',
   cursor: 'pointer',
-  transition: 'all 0.3s ease',
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  transform: 'translateY(0) scale(1)',
   '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[8],
+    transform: 'translateY(-8px) scale(1.02)',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+    '& .banner-content': {
+      transform: 'translateY(-5px)',
+    },
+    '& .floating-element': {
+      transform: 'translateY(-15px) scale(1.2)',
+      opacity: 1,
+    },
   },
   '&:before': {
     content: '""',
@@ -449,23 +437,6 @@ const PromotionalBanner = styled(Box)(({ theme }) => ({
     bottom: 0,
     background: 'linear-gradient(135deg, rgba(14, 81, 129, 0.6) 0%, rgba(229, 151, 139, 0.6) 100%)',
     zIndex: 1,
-  },
-  '&:after': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 2px, transparent 2px),
-      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 2px, transparent 2px),
-      radial-gradient(circle at 40% 80%, rgba(255,255,255,0.1) 2px, transparent 2px)
-    `,
-    backgroundSize: '40px 40px, 40px 40px, 40px 40px',
-    backgroundPosition: '0 0, 20px 20px, 10px 30px',
-    animation: 'float 8s ease-in-out infinite',
-    zIndex: 2,
   },
   '@keyframes float': {
     '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
@@ -506,6 +477,8 @@ const BannerContent = styled(Box)(({ theme }) => ({
   textAlign: 'center',
   color: '#fff',
   padding: theme.spacing(3),
+  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  transform: 'translateY(0)',
   '& .banner-title': {
     fontSize: '1.8rem',
     fontWeight: 700,
@@ -552,6 +525,8 @@ const FloatingElements = styled(Box)(({ theme }) => ({
     color: '#fff',
     fontSize: '1rem',
     animation: 'floatElement 6s ease-in-out infinite',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    opacity: 0.7,
     '&:nth-child(1)': {
       top: '15%',
       left: '10%',
@@ -782,7 +757,7 @@ const CourseCollections = () => {
             }}
           />
         )}
-        <BannerContent>
+        <BannerContent className="banner-content">
           <Typography variant="h4" className="banner-title">
             {banner.title}
           </Typography>

@@ -1,37 +1,64 @@
 from rest_framework import serializers
-from .models import Certificate, CertificateTemplate, PresetCertificateTemplate, UserSignature
+from .models import Certificate, CertificateTemplate, UserSignature
 from courses.models import Course
 from django.contrib.auth.models import User
 from users.models import Profile
+from django.utils import timezone
 
 
 class CertificateTemplateSerializer(serializers.ModelSerializer):
+    institution_logo = serializers.SerializerMethodField()
+    signature_image = serializers.SerializerMethodField()
+    template_file = serializers.SerializerMethodField()
+    
     class Meta:
         model = CertificateTemplate
         fields = [
-            'id', 'template_name', 'template_style', 'institution_name',
-            'is_active', 'created_at'
+            'id', 'template_name', 'institution_name', 'institution_logo',
+            'signature_name', 'signature_title', 'signature_image',
+            'template_file', 'certificate_text', 'include_qr_code', 'include_grade', 
+            'include_completion_date', 'include_course_duration',
+            'is_active', 'is_default', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+    
+    def get_institution_logo(self, obj):
+        if obj.institution_logo:
+            return obj.institution_logo.url
+        return None
+    
+    def get_signature_image(self, obj):
+        if obj.signature_image:
+            return obj.signature_image.url
+        return None
+    
+    def get_template_file(self, obj):
+        if obj.template_file:
+            return obj.template_file.url
+        return None
 
 
 class CertificationListSerializer(serializers.ModelSerializer):
-    course_name = serializers.CharField(source='course.name', read_only=True)
+    course_name = serializers.CharField(source='course.title', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
     student_name = serializers.CharField(source='user.get_full_name', read_only=True)
     template_name = serializers.CharField(source='template.template_name', read_only=True)
+    template = CertificateTemplateSerializer(read_only=True)
     
     class Meta:
         model = Certificate
         fields = [
-            'id', 'course', 'course_name', 'user', 'student_name',
+            'id', 'course', 'course_name', 'course_title', 'user', 'student_name',
             'template', 'template_name', 'date_issued', 'certificate_id',
-            'verification_status', 'verification_code'
+            'verification_status', 'verification_code', 'final_grade',
+            'institution_name', 'course_duration_hours'
         ]
         read_only_fields = ['id', 'user', 'date_issued', 'certificate_id']
 
 
 class CertificationDetailSerializer(serializers.ModelSerializer):
-    course_name = serializers.CharField(source='course.name', read_only=True)
+    course_name = serializers.CharField(source='course.title', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
     student_name = serializers.CharField(source='user.get_full_name', read_only=True)
     student_email = serializers.EmailField(source='user.email', read_only=True)
     template = CertificateTemplateSerializer(read_only=True)
@@ -39,9 +66,10 @@ class CertificationDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Certificate
         fields = [
-            'id', 'course', 'course_name', 'user', 'student_name',
+            'id', 'course', 'course_name', 'course_title', 'user', 'student_name',
             'student_email', 'template', 'date_issued', 'certificate_id',
-            'verification_status', 'verification_code', 'final_grade'
+            'verification_status', 'verification_code', 'final_grade',
+            'institution_name', 'course_duration_hours', 'completion_percentage'
         ]
         read_only_fields = ['id', 'user', 'date_issued', 'certificate_id']
 
@@ -68,22 +96,6 @@ class CertificateCreateSerializer(serializers.ModelSerializer):
         return data
 
 
-class PresetCertificateTemplateSerializer(serializers.ModelSerializer):
-    """Serializer for preset certificate templates"""
-    preview_url = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = PresetCertificateTemplate
-        fields = [
-            'id', 'name', 'template_style', 'description',
-            'primary_color', 'secondary_color', 'background_pattern',
-            'border_style', 'font_family', 'preview_url', 'is_active'
-        ]
-    
-    def get_preview_url(self, obj):
-        if obj.preview_image:
-            return obj.preview_image.url
-        return None
 
 
 class UserSignatureSerializer(serializers.ModelSerializer):
@@ -107,54 +119,38 @@ class UserSignatureSerializer(serializers.ModelSerializer):
 
 class CertificateTemplateBasicSerializer(serializers.ModelSerializer):
     """Serializer for basic certificate template information"""
-    created_by_name = serializers.CharField(source='created_by.profile.name', read_only=True)
     preview_url = serializers.SerializerMethodField()
     
     class Meta:
         model = CertificateTemplate
         fields = [
-            'id', 'template_name', 'template_style', 'template_source',
-            'created_by_name', 'preview_url', 'is_active', 'is_public',
+            'id', 'template_name', 'institution_name',
+            'preview_url', 'is_active', 'is_default',
             'created_at'
         ]
     
     def get_preview_url(self, obj):
-        if obj.preview_image:
-            return obj.preview_image.url
+        if obj.template_file:
+            return obj.template_file.url
         return None
 
 
 class CertificateTemplateDetailSerializer(serializers.ModelSerializer):
     """Serializer for detailed certificate template information"""
-    created_by = serializers.SerializerMethodField()
     institution_logo_url = serializers.SerializerMethodField()
     signature_image_url = serializers.SerializerMethodField()
-    user_signature_url = serializers.SerializerMethodField()
     preview_url = serializers.SerializerMethodField()
-    can_edit = serializers.SerializerMethodField()
-    can_delete = serializers.SerializerMethodField()
     
     class Meta:
         model = CertificateTemplate
         fields = [
-            'id', 'template_name', 'template_style', 'template_source',
-            'primary_color', 'secondary_color', 'background_pattern',
-            'border_style', 'font_family', 'institution_name',
+            'id', 'template_name', 'institution_name',
             'institution_logo_url', 'signature_name', 'signature_title',
-            'signature_image_url', 'user_signature_url', 'certificate_text',
+            'signature_image_url', 'certificate_text',
             'include_qr_code', 'include_grade', 'include_completion_date',
-            'include_course_duration', 'is_public', 'is_active',
-            'created_by', 'preview_url', 'can_edit', 'can_delete',
-            'created_at', 'updated_at'
+            'include_course_duration', 'is_default', 'is_active',
+            'preview_url', 'created_at', 'updated_at'
         ]
-    
-    def get_created_by(self, obj):
-        return {
-            'id': obj.created_by.id,
-            'name': obj.created_by.profile.name,
-            'email': obj.created_by.email,
-            'is_teacher': obj.created_by.profile.status == 'Teacher'
-        }
     
     def get_institution_logo_url(self, obj):
         if obj.institution_logo:
@@ -166,95 +162,22 @@ class CertificateTemplateDetailSerializer(serializers.ModelSerializer):
             return obj.signature_image.url
         return None
     
-    def get_user_signature_url(self, obj):
-        if obj.user_signature:
-            return obj.user_signature.url
-        return None
-    
     def get_preview_url(self, obj):
-        if obj.preview_image:
-            return obj.preview_image.url
+        if obj.template_file:
+            return obj.template_file.url
         return None
-    
-    def get_can_edit(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.created_by == request.user or request.user.profile.status in ['Admin', 'Manager']
-        return False
-    
-    def get_can_delete(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            return obj.created_by == request.user or request.user.profile.status in ['Admin', 'Manager']
-        return False
 
 
 class CertificateTemplateCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating certificate templates"""
     
-    TEMPLATE_CHOICES = [
-        ('modern', 'تصميم حديث'),
-        ('classic', 'تصميم كلاسيكي'),
-        ('elegant', 'تصميم أنيق'),
-        ('professional', 'تصميم مهني'),
-        ('creative', 'تصميم إبداعي'),
-        ('minimalist', 'تصميم بسيط'),
-        ('colorful', 'تصميم ملون'),
-        ('corporate', 'تصميم شركات'),
-    ]
-    
-    COLOR_CHOICES = [
-        ('#2a5a7c', 'أزرق'),
-        ('#28a745', 'أخضر'),
-        ('#dc3545', 'أحمر'),
-        ('#ffc107', 'أصفر'),
-        ('#6f42c1', 'بنفسجي'),
-        ('#fd7e14', 'برتقالي'),
-        ('#17a2b8', 'سماوي'),
-        ('#e83e8c', 'وردي'),
-        ('#6c757d', 'رمادي'),
-        ('#343a40', 'أسود'),
-    ]
-    
-    BACKGROUND_PATTERN_CHOICES = [
-        ('none', 'بدون نمط'),
-        ('dots', 'نقاط'),
-        ('lines', 'خطوط'),
-        ('waves', 'موجات'),
-        ('geometric', 'أشكال هندسية'),
-        ('floral', 'نباتي'),
-        ('abstract', 'تجريدي'),
-    ]
-    
-    BORDER_STYLE_CHOICES = [
-        ('classic', 'كلاسيكي'),
-        ('modern', 'حديث'),
-        ('ornate', 'مزخرف'),
-        ('simple', 'بسيط'),
-        ('double', 'مزدوج'),
-        ('dashed', 'متقطع'),
-        ('rounded', 'مدور'),
-    ]
-    
-    FONT_FAMILY_CHOICES = [
-        ('Arial', 'Arial'),
-        ('Helvetica', 'Helvetica'),
-        ('Times New Roman', 'Times New Roman'),
-        ('Georgia', 'Georgia'),
-        ('Verdana', 'Verdana'),
-        ('Tahoma', 'Tahoma'),
-        ('Calibri', 'Calibri'),
-        ('Trebuchet MS', 'Trebuchet MS'),
-    ]
-    
     class Meta:
         model = CertificateTemplate
         fields = [
-            'template_name', 'template_style', 'primary_color', 'secondary_color',
-            'background_pattern', 'border_style', 'font_family', 'institution_name',
-            'institution_logo', 'signature_name', 'signature_title', 'signature_image',
-            'user_signature', 'certificate_text', 'include_qr_code', 'include_grade',
-            'include_completion_date', 'include_course_duration', 'is_public'
+            'template_name', 'institution_name', 'institution_logo',
+            'signature_name', 'signature_title', 'signature_image',
+            'template_file', 'certificate_text', 'include_qr_code', 'include_grade',
+            'include_completion_date', 'include_course_duration', 'is_default'
         ]
     
     def validate_certificate_text(self, value):
@@ -268,15 +191,10 @@ class CertificateTemplateCreateSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        """Create certificate template with current user as creator"""
-        validated_data['created_by'] = self.context['request'].user
-        validated_data['template_source'] = 'custom'
-        
+        """Create certificate template"""
         # Auto-generate template name if not provided
         if not validated_data.get('template_name'):
-            user_name = self.context['request'].user.profile.name
-            style = validated_data.get('template_style', 'modern')
-            validated_data['template_name'] = f"قالب {user_name} - {style}"
+            validated_data['template_name'] = f"قالب جديد - {timezone.now().strftime('%Y-%m-%d')}"
         
         return super().create(validated_data)
 
@@ -287,11 +205,10 @@ class CertificateTemplateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CertificateTemplate
         fields = [
-            'template_name', 'template_style', 'primary_color', 'secondary_color',
-            'background_pattern', 'border_style', 'font_family', 'institution_name',
-            'institution_logo', 'signature_name', 'signature_title', 'signature_image',
-            'user_signature', 'certificate_text', 'include_qr_code', 'include_grade',
-            'include_completion_date', 'include_course_duration', 'is_public', 'is_active'
+            'template_name', 'institution_name', 'institution_logo',
+            'signature_name', 'signature_title', 'signature_image',
+            'template_file', 'certificate_text', 'include_qr_code', 'include_grade',
+            'include_completion_date', 'include_course_duration', 'is_default', 'is_active'
         ]
     
     def validate_certificate_text(self, value):
@@ -333,39 +250,8 @@ class UserSignatureCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class PresetTemplateSelectionSerializer(serializers.Serializer):
-    """Serializer for creating template from preset"""
-    preset_template_id = serializers.IntegerField()
-    institution_name = serializers.CharField(max_length=255)
-    signature_name = serializers.CharField(max_length=255)
-    signature_title = serializers.CharField(max_length=255)
-    user_signature_id = serializers.IntegerField(required=False)
-    institution_logo = serializers.ImageField(required=False)
-    is_public = serializers.BooleanField(default=False)
-    
-    def validate_preset_template_id(self, value):
-        """Validate preset template exists and is active"""
-        try:
-            preset = PresetCertificateTemplate.objects.get(id=value, is_active=True)
-        except PresetCertificateTemplate.DoesNotExist:
-            raise serializers.ValidationError("القالب المحدد غير موجود أو غير نشط")
-        return value
-    
-    def validate_user_signature_id(self, value):
-        """Validate user signature belongs to current user"""
-        if value:
-            user = self.context['request'].user
-            try:
-                signature = UserSignature.objects.get(id=value, user=user)
-            except UserSignature.DoesNotExist:
-                raise serializers.ValidationError("التوقيع المحدد غير موجود")
-        return value
-
-
 class CertificateTemplateFilterSerializer(serializers.Serializer):
     """Serializer for filtering certificate templates"""
-    template_style = serializers.CharField(required=False, allow_blank=True)
-    template_source = serializers.CharField(required=False, allow_blank=True)
-    is_public = serializers.BooleanField(required=False)
-    created_by = serializers.IntegerField(required=False)
+    is_default = serializers.BooleanField(required=False)
+    is_active = serializers.BooleanField(required=False)
     search = serializers.CharField(required=False, allow_blank=True) 

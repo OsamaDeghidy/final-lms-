@@ -25,11 +25,13 @@ from .serializers import (
     QuizQuestionSerializer, QuizQuestionForTeacherSerializer, QuizQuestionCreateSerializer, QuizQuestionUpdateSerializer,
     QuizAnswerSerializer, QuizAnswerForTeacherSerializer, QuizAnswerCreateSerializer, QuizAnswerUpdateSerializer,
     QuizAttemptSerializer, QuizAttemptCreateSerializer, QuizAttemptDetailSerializer,
-    QuizUserAnswerSerializer, QuizUserAnswerCreateSerializer, QuizUserAnswerDetailSerializer,
+    QuizUserAnswerSerializer, QuizUserAnswerCreateSerializer, QuizUserAnswerDetailSerializer, QuizUserAnswerResultSerializer,
     QuizQuestionWithAnswersSerializer, QuizAnswersSubmitSerializer,
     ExamBasicSerializer, ExamDetailSerializer, ExamCreateSerializer, ExamQuestionSerializer, ExamAnswerSerializer,
-    ExamQuestionWithAnswersSerializer, ExamQuestionDetailSerializer, ExamQuestionCreateSerializer,
-    ExamAnswerCreateSerializer, UserExamAttemptSerializer, UserExamAnswerSerializer, UserExamAttemptDetailSerializer,
+    ExamAnswerForTeacherSerializer, ExamQuestionWithAnswersSerializer, ExamQuestionWithAnswersForTeacherSerializer, 
+    ExamQuestionDetailSerializer, ExamQuestionCreateSerializer, ExamAnswerCreateSerializer, UserExamAttemptSerializer, 
+    UserExamAttemptCreateSerializer, UserExamAnswerSerializer, UserExamAttemptDetailSerializer, UserExamAnswerCreateSerializer, UserExamAnswerDetailSerializer,
+    ExamAnswerForResultSerializer, ExamQuestionForResultSerializer, UserExamAnswerResultSerializer,
     AssignmentBasicSerializer, AssignmentDetailSerializer, AssignmentCreateSerializer, 
     AssignmentQuestionSerializer, AssignmentSubmissionSerializer, AssignmentAnswerSerializer,
     AssignmentQuestionWithAnswersSerializer, AssignmentSubmissionGradeSerializer, 
@@ -275,6 +277,7 @@ def get_exam_data(request, exam_id):
             'can_take': can_take,
             'previous_attempts': [
                 {
+                    'id': attempt.id,
                     'attempt_number': attempt.attempt_number,
                     'score': attempt.score,
                     'passed': attempt.passed,
@@ -809,7 +812,13 @@ class AssignmentSubmissionViewSet(ModelViewSet):
         if existing_submission:
             raise ValidationError('لقد قمت بتقديم هذا الواجب مسبقاً')
         
-        serializer.save(user=user)
+        # Create the submission
+        submission = serializer.save(user=user)
+        
+        # Handle question responses if present
+        question_responses_data = serializer.validated_data.get('question_responses', '[]')
+        if question_responses_data and question_responses_data != '[]':
+            serializer.create_question_responses(submission, question_responses_data)
     
     @action(detail=True, methods=['patch'])
     def grade(self, request, pk=None):
@@ -1143,6 +1152,14 @@ class ExamQuestionViewSet(ModelViewSet):
         if self.action == 'create':
             return ExamQuestionCreateSerializer
         elif self.action in ['retrieve', 'list']:
+            # Check if user is teacher/instructor
+            user = self.request.user
+            try:
+                profile = user.profile
+                if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                    return ExamQuestionWithAnswersForTeacherSerializer
+            except:
+                pass
             return ExamQuestionDetailSerializer
         return ExamQuestionSerializer
 
@@ -1272,6 +1289,16 @@ class ExamAnswerViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'create':
             return ExamAnswerCreateSerializer
+        
+        # Check if user is teacher/instructor
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                return ExamAnswerForTeacherSerializer
+        except:
+            pass
+        
         return ExamAnswerSerializer
 
     def get_queryset(self):
@@ -1923,19 +1950,19 @@ class QuizAttemptViewSet(ModelViewSet):
         if not enrollment:
             raise PermissionDenied("You must be enrolled in the course to take this quiz")
         
-        # Check if user has already taken the quiz (if multiple attempts not allowed)
-        if not quiz.allow_multiple_attempts:
-            existing_attempts = QuizAttempt.objects.filter(user=user, quiz=quiz)
-            if existing_attempts.exists():
-                raise PermissionDenied("Multiple attempts are not allowed for this quiz")
+        # Check if user has already taken the quiz (allow multiple attempts by default)
+        # Note: Quiz model doesn't have allow_multiple_attempts field, so we allow multiple attempts
+        existing_attempts = QuizAttempt.objects.filter(user=user, quiz=quiz)
         
-        # Check max attempts
-        if quiz.max_attempts:
-            existing_attempts = QuizAttempt.objects.filter(user=user, quiz=quiz)
-            if existing_attempts.count() >= quiz.max_attempts:
-                raise PermissionDenied(f"You have reached the maximum number of attempts ({quiz.max_attempts})")
+        # Calculate the next attempt number
+        next_attempt_number = existing_attempts.count() + 1
         
-        serializer.save(user=user)
+        # For now, we allow unlimited attempts since the model doesn't have max_attempts field
+        # This can be customized later if needed
+        
+        # Create the attempt with the calculated attempt_number
+        attempt = serializer.save(user=user, attempt_number=next_attempt_number)
+        return attempt
 
     @action(detail=True, methods=['patch'])
     def finish(self, request, pk=None):
@@ -1962,8 +1989,8 @@ class QuizUserAnswerViewSet(ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['attempt', 'question', 'is_correct']
-    ordering_fields = ['created_at']
-    ordering = ['created_at']
+    ordering_fields = ['id', 'question__order']
+    ordering = ['id']
     http_method_names = ['get', 'post', 'put', 'patch', 'delete']
 
     def get_serializer_class(self):
@@ -2018,14 +2045,20 @@ class QuizUserAnswerViewSet(ModelViewSet):
     @action(detail=False, methods=['post'])
     def submit_answers(self, request):
         """Submit multiple answers at once"""
+        print(f"🔍 submit_answers called with data: {request.data}")
+        
         attempt_id = request.data.get('attempt')
         answers_data = request.data.get('answers', [])
+        
+        print(f"🔍 attempt_id: {attempt_id}")
+        print(f"🔍 answers_data: {answers_data}")
         
         if not attempt_id:
             return Response({'error': 'Attempt ID is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             attempt = QuizAttempt.objects.get(id=attempt_id, user=request.user)
+            print(f"🔍 Found attempt: {attempt.id}")
         except QuizAttempt.DoesNotExist:
             return Response({'error': 'Attempt not found'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -2035,18 +2068,295 @@ class QuizUserAnswerViewSet(ModelViewSet):
         
         # Create answers
         created_answers = []
-        for answer_data in answers_data:
+        for i, answer_data in enumerate(answers_data):
+            print(f"🔍 Processing answer {i}: {answer_data}")
             answer_data['attempt'] = attempt_id
             serializer = QuizUserAnswerCreateSerializer(data=answer_data)
             if serializer.is_valid():
                 answer = serializer.save()
+                print(f"✅ Created answer: {answer.id}")
                 created_answers.append(answer)
             else:
+                print(f"❌ Serializer errors: {serializer.errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        print(f"🔍 Total created answers: {len(created_answers)}")
         
         # Return created answers
         serializer = QuizUserAnswerDetailSerializer(created_answers, many=True)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def result_answers(self, request):
+        """Get quiz attempt answers with correct answers for results"""
+        attempt_id = request.query_params.get('attempt')
+        
+        print(f"🔍 result_answers called with attempt_id: {attempt_id}")
+        
+        if not attempt_id:
+            return Response({'error': 'Attempt ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            attempt = QuizAttempt.objects.get(id=attempt_id, user=request.user)
+            print(f"🔍 Found attempt: {attempt.id}")
+        except QuizAttempt.DoesNotExist:
+            return Response({'error': 'Attempt not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get answers with correct answer info
+        answers = QuizUserAnswer.objects.filter(attempt=attempt).select_related('question', 'selected_answer').prefetch_related('question__answers')
+        print(f"🔍 Found {answers.count()} answers for attempt {attempt_id}")
+        
+        for answer in answers:
+            print(f"🔍 Answer {answer.id}: question={answer.question.id}, selected_answer={answer.selected_answer_id}, text_answer={answer.text_answer}, is_correct={answer.is_correct}")
+        
+        serializer = QuizUserAnswerResultSerializer(answers, many=True)
+        print(f"🔍 Serialized data: {serializer.data}")
+        return Response(serializer.data)
+
+
+class ExamAttemptViewSet(ModelViewSet):
+    """ViewSet for UserExamAttempt model"""
+    queryset = UserExamAttempt.objects.select_related('user', 'exam').all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['exam', 'user', 'passed']
+    ordering_fields = ['start_time', 'end_time', 'score']
+    ordering = ['-start_time']
+    http_method_names = ['get', 'post', 'patch']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserExamAttemptCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return UserExamAttemptDetailSerializer
+        return UserExamAttemptSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by exam if provided
+        exam_id = self.request.query_params.get('exam')
+        if exam_id:
+            queryset = queryset.filter(exam_id=exam_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own attempts
+                queryset = queryset.filter(user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see attempts from their course students
+                queryset = queryset.filter(exam__course__instructors__profile=profile)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'student'):
+                queryset = queryset.filter(user=user)
+            elif hasattr(user, 'instructor'):
+                queryset = queryset.filter(exam__course__instructors=user.instructor)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        print(f"ExamAttemptViewSet.perform_create called")
+        print(f"User: {self.request.user}")
+        print(f"Validated data: {serializer.validated_data}")
+        
+        # The create method in the serializer handles user assignment
+        attempt = serializer.save()
+        print(f"Created attempt: {attempt.id}")
+        return attempt
+
+    @action(detail=True, methods=['patch'])
+    def finish(self, request, pk=None):
+        """Finish an exam attempt"""
+        print(f"finish method called for attempt {pk}")
+        print(f"User: {request.user}")
+        
+        attempt = self.get_object()
+        print(f"Found attempt: {attempt.id}")
+        
+        # Check if user owns this attempt
+        if attempt.user != request.user:
+            print("User doesn't own this attempt")
+            raise PermissionDenied("You can only finish your own attempts")
+        
+        # Check if attempt is already finished
+        if attempt.end_time:
+            print("Attempt already finished")
+            return Response({'error': 'Attempt is already finished'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set end time and calculate score
+        attempt.end_time = timezone.now()
+        print(f"Set end time: {attempt.end_time}")
+        
+        attempt.calculate_score()
+        print(f"Calculated score: {attempt.score}")
+        
+        serializer = UserExamAttemptDetailSerializer(attempt)
+        print(f"Returning attempt data: {serializer.data}")
+        return Response(serializer.data)
+
+
+class ExamUserAnswerViewSet(ModelViewSet):
+    """ViewSet for UserExamAnswer model"""
+    queryset = UserExamAnswer.objects.select_related('attempt', 'question', 'selected_answer').all()
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['attempt', 'question', 'is_correct']
+    ordering_fields = ['id', 'question__order']
+    ordering = ['id']
+    http_method_names = ['get', 'post']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return UserExamAnswerCreateSerializer
+        elif self.action in ['retrieve', 'list']:
+            return UserExamAnswerDetailSerializer
+        return UserExamAnswerSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        
+        # Filter by attempt if provided
+        attempt_id = self.request.query_params.get('attempt')
+        if attempt_id:
+            queryset = queryset.filter(attempt_id=attempt_id)
+        
+        # Filter by user role
+        user = self.request.user
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # Students can only see their own answers
+                queryset = queryset.filter(attempt__user=user)
+            elif profile.status == 'Instructor' or profile.status == 'Admin' or user.is_superuser:
+                # Instructors can see answers from their course students
+                queryset = queryset.filter(attempt__exam__course__instructors__profile=profile)
+        except AttributeError:
+            # Fallback to old method if no profile
+            if hasattr(user, 'student'):
+                queryset = queryset.filter(attempt__user=user)
+            elif hasattr(user, 'instructor'):
+                queryset = queryset.filter(attempt__exam__course__instructors=user.instructor)
+        
+        return queryset
+
+    def perform_create(self, serializer):
+        # Check if user has permission to create answers for this attempt
+        user = self.request.user
+        attempt = serializer.validated_data['attempt']
+        
+        # Check if user owns this attempt
+        if attempt.user != user:
+            raise PermissionDenied("You can only submit answers for your own attempts")
+        
+        # Check if attempt is still active
+        if attempt.end_time:
+            raise PermissionDenied("Cannot submit answers to a finished attempt")
+        
+        serializer.save()
+
+    @action(detail=False, methods=['post'])
+    def submit_answers(self, request):
+        """Submit multiple exam answers at once"""
+        print(f"submit_answers called with data: {request.data}")
+        print(f"User: {request.user}")
+        
+        attempt_id = request.data.get('attempt')
+        answers_data = request.data.get('answers', [])
+        
+        print(f"Attempt ID: {attempt_id}")
+        print(f"Answers data: {answers_data}")
+        
+        if not attempt_id:
+            print("No attempt ID provided")
+            return Response({'error': 'Attempt ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            attempt = UserExamAttempt.objects.get(id=attempt_id, user=request.user)
+            print(f"Found attempt: {attempt.id}")
+        except UserExamAttempt.DoesNotExist:
+            print("Attempt not found")
+            return Response({'error': 'Attempt not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if attempt is still active
+        if attempt.end_time:
+            print("Attempt already finished")
+            return Response({'error': 'Cannot submit answers to a finished attempt'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create answers with auto marking
+        created_answers = []
+        for i, answer_data in enumerate(answers_data):
+            print(f"Processing answer {i}: {answer_data}")
+            answer_data['attempt'] = attempt_id
+            serializer = UserExamAnswerCreateSerializer(data=answer_data)
+            if serializer.is_valid():
+                answer = serializer.save()
+                
+                # Apply auto marking
+                self._apply_auto_marking(answer)
+                
+                created_answers.append(answer)
+                print(f"Created answer: {answer.id}, is_correct: {answer.is_correct}, points_earned: {answer.points_earned}")
+            else:
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Return created answers
+        serializer = UserExamAnswerDetailSerializer(created_answers, many=True)
+        print(f"Returning {len(created_answers)} answers")
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def _apply_auto_marking(self, user_answer):
+        """Apply automatic marking to a user answer"""
+        question = user_answer.question
+        
+        print(f"Applying auto marking for question {question.id} (type: {question.question_type})")
+        
+        is_correct = False
+        points_earned = 0
+        
+        if question.question_type in ['multiple_choice', 'true_false']:
+            if user_answer.selected_answer:
+                is_correct = user_answer.selected_answer.is_correct
+                points_earned = question.points if is_correct else 0
+                print(f"Selected answer: {user_answer.selected_answer.id}, is_correct: {is_correct}")
+        elif question.question_type == 'short_answer' and user_answer.text_answer:
+            # For short answer questions, check against correct answers
+            correct_answers = ExamAnswer.objects.filter(question=question, is_correct=True)
+            is_correct = any(
+                user_answer.text_answer.lower().strip() == correct.text.lower().strip()
+                for correct in correct_answers
+            )
+            points_earned = question.points if is_correct else 0
+            print(f"Text answer: '{user_answer.text_answer}', is_correct: {is_correct}")
+        
+        # Update the user answer
+        user_answer.is_correct = is_correct
+        user_answer.points_earned = points_earned
+        user_answer.save(update_fields=['is_correct', 'points_earned'])
+        
+        print(f"Updated answer: is_correct={is_correct}, points_earned={points_earned}")
+
+    @action(detail=False, methods=['get'])
+    def result_answers(self, request):
+        """Get exam attempt answers with correct answers for results"""
+        attempt_id = request.query_params.get('attempt')
+        
+        if not attempt_id:
+            return Response({'error': 'Attempt ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            attempt = UserExamAttempt.objects.get(id=attempt_id, user=request.user)
+        except UserExamAttempt.DoesNotExist:
+            return Response({'error': 'Attempt not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get answers with correct answer info
+        answers = UserExamAnswer.objects.filter(attempt=attempt).select_related('question', 'selected_answer').prefetch_related('question__answers')
+        serializer = UserExamAnswerResultSerializer(answers, many=True)
+        return Response(serializer.data)
 
 
  

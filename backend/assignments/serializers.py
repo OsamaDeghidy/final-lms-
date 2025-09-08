@@ -205,7 +205,11 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
 class QuizAttemptCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizAttempt
-        fields = ['quiz']
+        fields = ['id', 'quiz', 'attempt_number', 'start_time']
+    
+    def create(self, validated_data):
+        # attempt_number will be set in perform_create
+        return super().create(validated_data)
 
 
 class QuizUserAnswerSerializer(serializers.ModelSerializer):
@@ -215,9 +219,103 @@ class QuizUserAnswerSerializer(serializers.ModelSerializer):
 
 
 class QuizUserAnswerCreateSerializer(serializers.ModelSerializer):
+    question_id = serializers.IntegerField(write_only=True)
+    selected_answer_id = serializers.CharField(write_only=True, required=False, allow_null=True, allow_blank=True)
+    
     class Meta:
         model = QuizUserAnswer
-        fields = ['question', 'selected_answer', 'text_answer']
+        fields = ['attempt', 'question_id', 'selected_answer_id', 'text_answer']
+    
+    def validate_selected_answer_id(self, value):
+        """Validate that selected_answer belongs to the question"""
+        if value:
+            question_id = self.initial_data.get('question_id')
+            if question_id:
+                from .models import Question, Answer
+                try:
+                    question = Question.objects.get(id=question_id)
+                    if question.question_type == 'true_false':
+                        # For true/false questions, value should be "true" or "false"
+                        if value not in ['true', 'false']:
+                            raise serializers.ValidationError("For true/false questions, value must be 'true' or 'false'")
+                    else:
+                        # For other question types, value should be an answer ID (can be string or int)
+                        try:
+                            # Convert to int if it's a string number
+                            answer_id = int(value) if str(value).isdigit() else value
+                            answer = Answer.objects.get(id=answer_id, question_id=question_id)
+                        except (Answer.DoesNotExist, ValueError):
+                            raise serializers.ValidationError("Selected answer must belong to the question")
+                except Question.DoesNotExist:
+                    raise serializers.ValidationError("Question not found")
+        return value
+    
+    def create(self, validated_data):
+        """Create user answer and calculate correctness"""
+        print(f"🔍 QuizUserAnswerCreateSerializer.create called with: {validated_data}")
+        
+        question_id = validated_data.pop('question_id')
+        selected_answer_id = validated_data.pop('selected_answer_id', None)
+        
+        print(f"🔍 question_id: {question_id}, selected_answer_id: {selected_answer_id}")
+        
+        # Get question and selected answer objects
+        from .models import Question, Answer
+        question = Question.objects.get(id=question_id)
+        selected_answer = None
+        
+        print(f"🔍 Found question: {question.id} - {question.text[:50]}...")
+        
+        # Handle different question types
+        if question.question_type == 'true_false':
+            # For true/false questions, selected_answer_id contains "true" or "false"
+            if selected_answer_id in ['true', 'false']:
+                # Find the correct answer object for this true/false value
+                answer_text = 'صح' if selected_answer_id == 'true' else 'خطأ'
+                try:
+                    selected_answer = Answer.objects.get(question=question, text=answer_text)
+                except Answer.DoesNotExist:
+                    # If answer doesn't exist, create it
+                    selected_answer = Answer.objects.create(
+                        question=question,
+                        text=answer_text,
+                        is_correct=False,  # Will be determined below
+                        order=0
+                    )
+        elif question.question_type == 'multiple_choice' and selected_answer_id:
+            # Convert string to int if needed
+            answer_id = int(selected_answer_id) if str(selected_answer_id).isdigit() else selected_answer_id
+            selected_answer = Answer.objects.get(id=answer_id)
+        
+        # Create user answer
+        user_answer = QuizUserAnswer.objects.create(
+            attempt=validated_data['attempt'],
+            question=question,
+            selected_answer=selected_answer,
+            text_answer=validated_data.get('text_answer')
+        )
+        
+        # Calculate correctness and points
+        is_correct = False
+        if question.question_type == 'multiple_choice' and selected_answer:
+            is_correct = selected_answer.is_correct
+        elif question.question_type == 'true_false' and selected_answer:
+            # For true/false, check if the selected answer is marked as correct
+            is_correct = selected_answer.is_correct
+        elif question.question_type == 'short_answer' and user_answer.text_answer:
+            correct_answers = Answer.objects.filter(question=question, is_correct=True)
+            is_correct = any(
+                user_answer.text_answer.lower().strip() == correct.text.lower().strip()
+                for correct in correct_answers
+            )
+        
+        user_answer.is_correct = is_correct
+        user_answer.points_earned = question.points if is_correct else 0
+        user_answer.save()
+        
+        print(f"✅ Created QuizUserAnswer: id={user_answer.id}, is_correct={is_correct}, points_earned={user_answer.points_earned}")
+        
+        return user_answer
 
 
 class QuizAnswersSubmitSerializer(serializers.Serializer):
@@ -335,6 +433,40 @@ class QuizUserAnswerDetailSerializer(serializers.ModelSerializer):
         ]
 
 
+class QuizAnswerForResultSerializer(serializers.ModelSerializer):
+    """Answer serializer with correct answer info for quiz results"""
+    class Meta:
+        model = Answer
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
+
+
+class QuizQuestionForResultSerializer(serializers.ModelSerializer):
+    """Question serializer with answers for quiz results"""
+    answers = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Question
+        fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order', 'answers']
+    
+    def get_answers(self, obj):
+        """Get answers for the question with correct answer info"""
+        answers = obj.answers.all()
+        return QuizAnswerForResultSerializer(answers, many=True).data
+
+
+class QuizUserAnswerResultSerializer(serializers.ModelSerializer):
+    """User answer serializer for quiz results with correct answers"""
+    question = QuizQuestionForResultSerializer(read_only=True)
+    selected_answer = QuizAnswerForResultSerializer(read_only=True)
+    
+    class Meta:
+        model = QuizUserAnswer
+        fields = [
+            'id', 'attempt', 'question', 'selected_answer', 'text_answer',
+            'is_correct', 'points_earned'
+        ]
+
+
 class ExamBasicSerializer(serializers.ModelSerializer):
     course = serializers.SerializerMethodField()
     module = serializers.SerializerMethodField()
@@ -427,6 +559,13 @@ class ExamAnswerSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'explanation', 'order']
 
 
+class ExamAnswerForTeacherSerializer(serializers.ModelSerializer):
+    """Answer serializer with correct answer info for teachers"""
+    class Meta:
+        model = ExamAnswer
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
+
+
 class ExamAnswerCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamAnswer
@@ -445,6 +584,20 @@ class ExamQuestionWithAnswersSerializer(serializers.ModelSerializer):
         """Get answers for the question"""
         answers = obj.answers.all()
         return ExamAnswerSerializer(answers, many=True).data
+
+
+class ExamQuestionWithAnswersForTeacherSerializer(serializers.ModelSerializer):
+    """Question serializer with answers for teachers"""
+    answers = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ExamQuestion
+        fields = ['id', 'text', 'question_type', 'points', 'explanation', 'image', 'order', 'answers']
+    
+    def get_answers(self, obj):
+        """Get answers for the question with correct answer info for teachers"""
+        answers = obj.answers.all()
+        return ExamAnswerForTeacherSerializer(answers, many=True).data
 
 
 class ExamQuestionDetailSerializer(serializers.ModelSerializer):
@@ -652,17 +805,19 @@ class AssignmentSubmissionSerializer(serializers.ModelSerializer):
 
 
 class AssignmentSubmissionCreateSerializer(serializers.ModelSerializer):
-    question_responses = serializers.CharField(required=False, write_only=True)
+    question_responses = serializers.CharField(required=False, write_only=True, allow_blank=True)
     
     class Meta:
         model = AssignmentSubmission
         fields = ['assignment', 'submission_text', 'submitted_file', 'question_responses']
     
     def create(self, validated_data):
-        question_responses_data = validated_data.pop('question_responses', '[]')
-        submission = AssignmentSubmission.objects.create(**validated_data)
-        
-        # Parse question responses from JSON string
+        # This method will be called after the submission is created in the view
+        # We'll handle question responses in a separate method
+        return validated_data
+    
+    def create_question_responses(self, submission, question_responses_data):
+        """Create question responses for the submission"""
         try:
             import json
             responses = json.loads(question_responses_data) if isinstance(question_responses_data, str) else question_responses_data
@@ -759,8 +914,6 @@ class AssignmentSubmissionCreateSerializer(serializers.ModelSerializer):
                         pass  # Skip if question doesn't exist
         except (json.JSONDecodeError, TypeError):
             pass  # Skip if JSON parsing fails
-        
-        return submission
 
 
 class AssignmentSubmissionGradeSerializer(serializers.ModelSerializer):
@@ -837,6 +990,48 @@ class AssignmentSubmissionWithResponsesSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UserExamAttemptCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating UserExamAttempt"""
+    class Meta:
+        model = UserExamAttempt
+        fields = ['id', 'exam', 'attempt_number', 'start_time']
+    
+    def create(self, validated_data):
+        print(f"UserExamAttemptCreateSerializer.create called")
+        print(f"Validated data: {validated_data}")
+        
+        user = self.context['request'].user
+        exam = validated_data['exam']
+        
+        print(f"User: {user}")
+        print(f"Exam: {exam.id} - {exam.title}")
+        
+        # Check if user can take the exam
+        attempts = UserExamAttempt.objects.filter(user=user, exam=exam)
+        print(f"Existing attempts: {attempts.count()}")
+        
+        if not exam.allow_multiple_attempts and attempts.exists():
+            print("Multiple attempts not allowed and attempt exists")
+            raise serializers.ValidationError("لا يمكنك تقديم هذا الامتحان مرة أخرى")
+        
+        if exam.max_attempts and attempts.count() >= exam.max_attempts:
+            print(f"Max attempts reached: {attempts.count()}/{exam.max_attempts}")
+            raise serializers.ValidationError("لقد استنفذت عدد المحاولات المسموحة")
+        
+        # Create attempt
+        attempt_number = attempts.count() + 1
+        print(f"Creating attempt number: {attempt_number}")
+        
+        attempt = UserExamAttempt.objects.create(
+            user=user,
+            exam=exam,
+            attempt_number=attempt_number
+        )
+        
+        print(f"Created attempt: {attempt.id}")
+        return attempt
+
+
 class UserExamAttemptSerializer(serializers.ModelSerializer):
     """Serializer for UserExamAttempt model"""
     user_name = serializers.SerializerMethodField()
@@ -892,3 +1087,165 @@ class UserExamAttemptDetailSerializer(serializers.ModelSerializer):
     
     def get_exam_title(self, obj):
         return obj.exam.title
+
+
+class UserExamAnswerCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating UserExamAnswer"""
+    question_id = serializers.IntegerField(write_only=True)
+    selected_answer_id = serializers.CharField(write_only=True, required=False, allow_null=True)
+    
+    class Meta:
+        model = UserExamAnswer
+        fields = ['attempt', 'question_id', 'selected_answer_id', 'text_answer']
+    
+    def validate_selected_answer_id(self, value):
+        print(f"validate_selected_answer_id called with value: {value} (type: {type(value)})")
+        
+        if value is None:
+            print("Value is None, returning None")
+            return value
+        
+        # Handle array values (take first element)
+        if isinstance(value, list):
+            print(f"Value is array: {value}, taking first element")
+            if len(value) > 0:
+                value = value[0]
+                print(f"New value after array processing: {value}")
+            else:
+                print("Array is empty, returning None")
+                return None
+        
+        question_id = self.initial_data.get('question_id')
+        print(f"Question ID: {question_id}")
+        if not question_id:
+            raise serializers.ValidationError("question_id is required")
+        
+        try:
+            question = ExamQuestion.objects.get(id=question_id)
+        except ExamQuestion.DoesNotExist:
+            raise serializers.ValidationError("Question not found")
+        
+        # For true_false questions, expect "true" or "false" strings
+        if question.question_type == 'true_false':
+            if value not in ['true', 'false']:
+                raise serializers.ValidationError("For true/false questions, value must be 'true' or 'false'")
+        else:
+            # For other question types, expect integer ID
+            try:
+                answer = ExamAnswer.objects.get(id=value, question=question)
+            except ExamAnswer.DoesNotExist:
+                raise serializers.ValidationError("Answer not found for this question")
+        
+        return value
+    
+    def create(self, validated_data):
+        question_id = validated_data.pop('question_id')
+        selected_answer_id = validated_data.pop('selected_answer_id', None)
+        
+        try:
+            question = ExamQuestion.objects.get(id=question_id)
+        except ExamQuestion.DoesNotExist:
+            raise serializers.ValidationError("Question not found")
+        
+        # Handle true_false questions
+        if question.question_type == 'true_false' and selected_answer_id in ['true', 'false']:
+            # Find or create the corresponding answer
+            answer_text = 'صح' if selected_answer_id == 'true' else 'خطأ'
+            answer, created = ExamAnswer.objects.get_or_create(
+                question=question,
+                text=answer_text,
+                defaults={'is_correct': answer_text == 'صح', 'order': 1}
+            )
+            selected_answer = answer
+        elif selected_answer_id:
+            try:
+                selected_answer = ExamAnswer.objects.get(id=selected_answer_id, question=question)
+            except ExamAnswer.DoesNotExist:
+                raise serializers.ValidationError("Answer not found for this question")
+        else:
+            selected_answer = None
+        
+        # Create the user answer
+        user_answer = UserExamAnswer.objects.create(
+            question=question,
+            selected_answer=selected_answer,
+            **validated_data
+        )
+        
+        # Calculate correctness and points
+        if question.question_type == 'true_false':
+            if selected_answer:
+                user_answer.is_correct = selected_answer.is_correct
+                user_answer.points_earned = question.points if selected_answer.is_correct else 0
+        elif question.question_type == 'multiple_choice':
+            if selected_answer:
+                user_answer.is_correct = selected_answer.is_correct
+                user_answer.points_earned = question.points if selected_answer.is_correct else 0
+        elif question.question_type == 'short_answer':
+            # Auto marking for short answer questions
+            if user_answer.text_answer:
+                correct_answers = ExamAnswer.objects.filter(question=question, is_correct=True)
+                is_correct = any(
+                    user_answer.text_answer.lower().strip() == correct.text.lower().strip()
+                    for correct in correct_answers
+                )
+                user_answer.is_correct = is_correct
+                user_answer.points_earned = question.points if is_correct else 0
+            else:
+                user_answer.is_correct = False
+                user_answer.points_earned = 0
+        
+        user_answer.save()
+        return user_answer
+
+
+class UserExamAnswerDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for UserExamAnswer"""
+    question_text = serializers.SerializerMethodField()
+    selected_answer_text = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserExamAnswer
+        fields = [
+            'id', 'attempt', 'question', 'question_text', 'selected_answer', 
+            'selected_answer_text', 'text_answer', 'is_correct', 'points_earned'
+        ]
+    
+    def get_question_text(self, obj):
+        return obj.question.text
+    
+    def get_selected_answer_text(self, obj):
+        return obj.selected_answer.text if obj.selected_answer else None
+
+
+class ExamAnswerForResultSerializer(serializers.ModelSerializer):
+    """Serializer for exam answers in results with is_correct field"""
+    class Meta:
+        model = ExamAnswer
+        fields = ['id', 'text', 'is_correct', 'explanation', 'order']
+
+
+class ExamQuestionForResultSerializer(serializers.ModelSerializer):
+    """Serializer for exam questions in results with answers"""
+    answers = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ExamQuestion
+        fields = ['id', 'text', 'question_type', 'points', 'answers']
+    
+    def get_answers(self, obj):
+        answers = obj.answers.all().order_by('order')
+        return ExamAnswerForResultSerializer(answers, many=True).data
+
+
+class UserExamAnswerResultSerializer(serializers.ModelSerializer):
+    """Serializer for exam user answers in results with correct answer info"""
+    question = ExamQuestionForResultSerializer(read_only=True)
+    selected_answer = ExamAnswerForResultSerializer(read_only=True)
+    
+    class Meta:
+        model = UserExamAnswer
+        fields = [
+            'id', 'question', 'selected_answer', 'text_answer', 
+            'is_correct', 'points_earned'
+        ]

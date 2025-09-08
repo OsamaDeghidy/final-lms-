@@ -274,7 +274,7 @@ const AssignmentQuestions = () => {
       <Box sx={{ 
         mb: 4, 
         p: 3, 
-        background: 'linear-gradient(135deg, #e5978b 0%, #2e7d32 100%)',
+         background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
         borderRadius: 3,
         color: 'white',
         position: 'relative',
@@ -327,9 +327,9 @@ const AssignmentQuestions = () => {
             startIcon={<AddIcon />}
             onClick={handleAddQuestion}
             sx={{
-              background: 'linear-gradient(135deg, #e5978b 0%, #2e7d32 100%)',
+               background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
               '&:hover': {
-                background: 'linear-gradient(135deg, #388e3c 0%, #1b5e20 100%)',
+                 background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
               }
             }}
           >
@@ -338,34 +338,34 @@ const AssignmentQuestions = () => {
         </Box>
 
         {questions.length === 0 ? (
-          <Alert severity="info">
+          <Alert severity="info" sx={{ direction: 'rtl', textAlign: 'right' }}>
             لا توجد أسئلة لهذا الواجب. اضغط على "إضافة سؤال جديد" لبدء إضافة الأسئلة.
           </Alert>
         ) : (
-          <List>
+          <List sx={{ direction: 'rtl' }}>
             {questions.map((question, index) => (
               <ListItem key={question.id} sx={{ mb: 2, p: 0 }}>
-                <Card sx={{ width: '100%', p: 3 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Card sx={{ width: '100%', p: 3, direction: 'rtl' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, direction: 'rtl' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, direction: 'rtl' }}>
                       {getQuestionIcon(question.question_type)}
-                      <Typography variant="h6" fontWeight={600}>
+                      <Typography variant="h6" fontWeight={600} sx={{ textAlign: 'right' }}>
                         السؤال {index + 1}
                       </Typography>
                       <Chip
                         label={questionTypes.find(t => t.value === question.question_type)?.label || question.question_type}
                         size="small"
                         variant="outlined"
-                        sx={{ ml: 1 }}
+                        sx={{ mr: 1 }}
                       />
                       <Chip
                         label={`${question.points} نقطة`}
                         size="small"
                         color="primary"
-                        sx={{ ml: 1 }}
+                        sx={{ mr: 1 }}
                       />
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, direction: 'rtl' }}>
                       <IconButton
                         size="small"
                         onClick={() => handleEditQuestion(question)}
@@ -383,26 +383,26 @@ const AssignmentQuestions = () => {
                     </Box>
                   </Box>
                   
-                  <Typography variant="body1" sx={{ mb: 2 }}>
+                  <Typography variant="body1" sx={{ mb: 2, textAlign: 'right', direction: 'rtl' }}>
                     {question.text}
                   </Typography>
                   
                   {question.explanation && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'right', direction: 'rtl' }}>
                       <strong>شرح:</strong> {question.explanation}
                     </Typography>
                   )}
 
                   {/* Answers for multiple choice questions */}
                   {(question.question_type === 'multiple_choice' || question.question_type === 'true_false') && question.answers && question.answers.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                    <Box sx={{ mt: 2, direction: 'rtl' }}>
+                      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1, textAlign: 'right' }}>
                         الإجابات:
                       </Typography>
-                      <List dense>
+                      <List dense sx={{ direction: 'rtl' }}>
                         {question.answers.map((answer, aIndex) => (
-                          <ListItem key={answer.id} sx={{ py: 0.5 }}>
-                            <ListItemIcon sx={{ minWidth: 30 }}>
+                          <ListItem key={answer.id} sx={{ py: 0.5, direction: 'rtl' }}>
+                            <ListItemIcon sx={{ minWidth: 30, mr: 1, ml: 0 }}>
                               {answer.is_correct ? (
                                 <CheckBoxIcon color="success" fontSize="small" />
                               ) : (
@@ -412,6 +412,7 @@ const AssignmentQuestions = () => {
                             <ListItemText
                               primary={answer.text}
                               secondary={answer.explanation}
+                              sx={{ textAlign: 'right', direction: 'rtl' }}
                             />
                           </ListItem>
                         ))}
@@ -431,11 +432,20 @@ const AssignmentQuestions = () => {
         onClose={() => setOpenQuestionDialog(false)}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(14, 81, 129, 0.1)',
+            direction: 'rtl',
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, color: '#0e5181' }}>
           {editingQuestion ? 'تعديل السؤال' : 'إضافة سؤال جديد'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ direction: 'rtl' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2 }}>
             <TextField
               fullWidth
@@ -446,16 +456,36 @@ const AssignmentQuestions = () => {
               value={questionForm.text}
               onChange={(e) => setQuestionForm(prev => ({ ...prev, text: e.target.value }))}
               required
+              sx={{
+                '& .MuiInputBase-input': {
+                  textAlign: 'right',
+                  direction: 'rtl'
+                },
+                '& .MuiInputLabel-root': {
+                  right: 14,
+                  left: 'auto',
+                  transformOrigin: 'right',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(-14px, -9px) scale(0.75)',
+                  },
+                }
+              }}
             />
             
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth>
-                  <InputLabel>نوع السؤال</InputLabel>
+                  <InputLabel sx={{ right: 14, left: 'auto', transformOrigin: 'right' }}>نوع السؤال</InputLabel>
                   <Select
                     value={questionForm.question_type}
                     onChange={(e) => setQuestionForm(prev => ({ ...prev, question_type: e.target.value }))}
                     label="نوع السؤال"
+                    sx={{
+                      '& .MuiSelect-select': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
+                    }}
                   >
                     {questionTypes.map((type) => (
                       <MenuItem key={type.value} value={type.value}>
@@ -477,6 +507,20 @@ const AssignmentQuestions = () => {
                   value={questionForm.points}
                   onChange={(e) => setQuestionForm(prev => ({ ...prev, points: Number(e.target.value) }))}
                   inputProps={{ min: 1 }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      textAlign: 'right',
+                      direction: 'rtl'
+                    },
+                    '& .MuiInputLabel-root': {
+                      right: 14,
+                      left: 'auto',
+                      transformOrigin: 'right',
+                      '&.MuiInputLabel-shrink': {
+                        transform: 'translate(-14px, -9px) scale(0.75)',
+                      },
+                    }
+                  }}
                 />
               </Grid>
             </Grid>
@@ -489,6 +533,20 @@ const AssignmentQuestions = () => {
               rows={2}
               value={questionForm.explanation}
               onChange={(e) => setQuestionForm(prev => ({ ...prev, explanation: e.target.value }))}
+              sx={{
+                '& .MuiInputBase-input': {
+                  textAlign: 'right',
+                  direction: 'rtl'
+                },
+                '& .MuiInputLabel-root': {
+                  right: 14,
+                  left: 'auto',
+                  transformOrigin: 'right',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(-14px, -9px) scale(0.75)',
+                  },
+                }
+              }}
             />
             
             <TextField
@@ -499,6 +557,20 @@ const AssignmentQuestions = () => {
               value={questionForm.order}
               onChange={(e) => setQuestionForm(prev => ({ ...prev, order: Number(e.target.value) }))}
               inputProps={{ min: 1 }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  textAlign: 'right',
+                  direction: 'rtl'
+                },
+                '& .MuiInputLabel-root': {
+                  right: 14,
+                  left: 'auto',
+                  transformOrigin: 'right',
+                  '&.MuiInputLabel-shrink': {
+                    transform: 'translate(-14px, -9px) scale(0.75)',
+                  },
+                }
+              }}
             />
             
             <FormControlLabel
@@ -509,17 +581,18 @@ const AssignmentQuestions = () => {
                 />
               }
               label="سؤال إجباري"
+              sx={{ direction: 'rtl', justifyContent: 'flex-end' }}
             />
 
             {/* Answers for multiple choice questions */}
             {(questionForm.question_type === 'multiple_choice' || questionForm.question_type === 'true_false') && (
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="subtitle1" fontWeight={600}>
+              <Accordion sx={{ direction: 'rtl' }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ direction: 'rtl' }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ textAlign: 'right' }}>
                     الإجابات ({questionForm.answers.length})
                   </Typography>
                 </AccordionSummary>
-                <AccordionDetails>
+                <AccordionDetails sx={{ direction: 'rtl' }}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {questionForm.answers.map((answer, index) => (
                       <Box key={index} sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
@@ -530,6 +603,20 @@ const AssignmentQuestions = () => {
                           size="small"
                           value={answer.text}
                           onChange={(e) => handleUpdateAnswer(index, 'text', e.target.value)}
+                          sx={{
+                            '& .MuiInputBase-input': {
+                              textAlign: 'right',
+                              direction: 'rtl'
+                            },
+                            '& .MuiInputLabel-root': {
+                              right: 14,
+                              left: 'auto',
+                              transformOrigin: 'right',
+                              '&.MuiInputLabel-shrink': {
+                                transform: 'translate(-14px, -9px) scale(0.75)',
+                              },
+                            }
+                          }}
                         />
                         <FormControlLabel
                           control={
@@ -539,6 +626,7 @@ const AssignmentQuestions = () => {
                             />
                           }
                           label="صحيحة"
+                          sx={{ direction: 'rtl', justifyContent: 'flex-end' }}
                         />
                         <IconButton
                           size="small"
@@ -563,14 +651,37 @@ const AssignmentQuestions = () => {
             )}
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenQuestionDialog(false)}>
+        <DialogActions sx={{ direction: 'rtl', justifyContent: 'flex-start', flexDirection: 'row-reverse' }}>
+          <Button 
+            onClick={() => setOpenQuestionDialog(false)}
+            sx={{
+              borderColor: '#0e5181',
+              color: '#0e5181',
+              '&:hover': {
+                borderColor: '#e5978b',
+                color: '#e5978b',
+              },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+          >
             إلغاء
           </Button>
           <Button
             variant="contained"
             onClick={handleSaveQuestion}
             startIcon={<SaveIcon />}
+            sx={{
+              background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+              },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+            }}
           >
             {editingQuestion ? 'حفظ التعديلات' : 'إضافة السؤال'}
           </Button>

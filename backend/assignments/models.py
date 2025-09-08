@@ -375,7 +375,7 @@ def update_progress_on_quiz_completion(sender, instance, created, **kwargs):
     """Update module progress when quiz is completed"""
     if instance.end_time and instance.quiz.module:
         try:
-            from courses.models import ModuleProgress
+            from content.models import ModuleProgress
             progress = ModuleProgress.objects.get(
                 user=instance.user,
                 module=instance.quiz.module

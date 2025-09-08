@@ -15,6 +15,8 @@ const ExamDetail = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState(null);
   const [addQuestionDialogOpen, setAddQuestionDialogOpen] = useState(false);
+  const [editQuestionDialogOpen, setEditQuestionDialogOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
   const [newQuestion, setNewQuestion] = useState({
     text: '',
     question_type: 'multiple_choice',
@@ -55,7 +57,23 @@ const ExamDetail = () => {
   const fetchQuestions = async () => {
     try {
       const questionsData = await examAPI.getExamQuestions(examId);
-      setQuestions(questionsData.results || questionsData);
+      const questionsList = questionsData.results || questionsData;
+      
+      // Fetch answers for each question
+      const questionsWithAnswers = await Promise.all(
+        questionsList.map(async (question) => {
+          try {
+            const answersData = await examAPI.getExamQuestionAnswers(question.id);
+            const answers = Array.isArray(answersData?.results) ? answersData.results : (Array.isArray(answersData) ? answersData : []);
+            return { ...question, answers };
+          } catch (error) {
+            console.error(`Error fetching answers for question ${question.id}:`, error);
+            return { ...question, answers: [] };
+          }
+        })
+      );
+      
+      setQuestions(questionsWithAnswers);
     } catch (err) {
       console.error('Error fetching questions:', err);
       setError('حدث خطأ في تحميل الأسئلة');
@@ -116,7 +134,28 @@ const ExamDetail = () => {
         points: parseInt(newQuestion.points)
       };
       
-      await examAPI.addQuestion(examId, questionData);
+      // Create the question first
+      const createdQuestion = await examAPI.addQuestion(examId, questionData);
+      
+      // Create answers if the question type requires them
+      if (newQuestion.question_type === 'multiple_choice' || 
+          newQuestion.question_type === 'true_false' || 
+          newQuestion.question_type === 'short_answer') {
+        
+        for (let i = 0; i < newQuestion.answers.length; i++) {
+          const answer = newQuestion.answers[i];
+          if (answer.text.trim()) {
+            await examAPI.createExamAnswer({
+              question: createdQuestion.id,
+              text: answer.text,
+              is_correct: answer.is_correct,
+              explanation: answer.explanation || '',
+              order: i
+            });
+          }
+        }
+      }
+      
       setAddQuestionDialogOpen(false);
       setError(null); // Clear any previous errors
       setNewQuestion({
@@ -143,10 +182,134 @@ const ExamDetail = () => {
     setDeleteDialogOpen(true);
   };
 
+  const openEditDialog = (question) => {
+    setEditingQuestion(question);
+    setNewQuestion({
+      text: question.text || '',
+      question_type: question.question_type || 'multiple_choice',
+      points: question.points || 1,
+      explanation: question.explanation || '',
+      answers: question.answers || [
+        { text: '', is_correct: false },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false }
+      ]
+    });
+    setEditQuestionDialogOpen(true);
+  };
+
+  const handleEditQuestion = async () => {
+    try {
+      if (!newQuestion.text.trim()) {
+        setError('يجب إدخال نص السؤال');
+        return;
+      }
+
+      if (newQuestion.question_type === 'multiple_choice') {
+        const correctAnswers = newQuestion.answers.filter(answer => answer.is_correct);
+        if (correctAnswers.length === 0) {
+          setError('يجب اختيار إجابة صحيحة واحدة على الأقل');
+          return;
+        }
+      }
+
+      if (newQuestion.question_type === 'true_false') {
+        const correctAnswers = newQuestion.answers.filter(answer => answer.is_correct);
+        if (correctAnswers.length === 0) {
+          setError('يجب اختيار إجابة صحيحة');
+          return;
+        }
+      }
+
+      if (newQuestion.question_type === 'short_answer') {
+        if (!newQuestion.answers[0]?.text.trim()) {
+          setError('يجب إدخال الإجابة الصحيحة');
+          return;
+        }
+      }
+
+      const questionData = {
+        ...newQuestion,
+        points: parseInt(newQuestion.points)
+      };
+      
+      // Update the question first
+      await examAPI.updateQuestion(editingQuestion.id, questionData);
+      
+      // Update answers if the question type requires them
+      if (newQuestion.question_type === 'multiple_choice' || 
+          newQuestion.question_type === 'true_false' || 
+          newQuestion.question_type === 'short_answer') {
+        
+        // Get existing answers
+        const existingAnswers = editingQuestion.answers || [];
+        
+        // Update or create answers
+        for (let i = 0; i < newQuestion.answers.length; i++) {
+          const answer = newQuestion.answers[i];
+          if (answer.text.trim()) {
+            if (existingAnswers[i] && existingAnswers[i].id) {
+              // Update existing answer
+              await examAPI.updateExamAnswer(existingAnswers[i].id, {
+                text: answer.text,
+                is_correct: answer.is_correct,
+                explanation: answer.explanation || '',
+                order: i
+              });
+            } else {
+              // Create new answer
+              await examAPI.createExamAnswer({
+                question: editingQuestion.id,
+                text: answer.text,
+                is_correct: answer.is_correct,
+                explanation: answer.explanation || '',
+                order: i
+              });
+            }
+          }
+        }
+        
+        // Delete any extra existing answers
+        for (let i = newQuestion.answers.length; i < existingAnswers.length; i++) {
+          if (existingAnswers[i] && existingAnswers[i].id) {
+            await examAPI.deleteExamAnswer(existingAnswers[i].id);
+          }
+        }
+      }
+      
+      setEditQuestionDialogOpen(false);
+      setEditingQuestion(null);
+      setError(null);
+      fetchQuestions(); // Refresh questions list
+    } catch (err) {
+      console.error('Error updating question:', err);
+      setError('حدث خطأ في تحديث السؤال');
+    }
+  };
+
   const handleAnswerChange = (index, field, value) => {
     const updatedAnswers = [...newQuestion.answers];
     updatedAnswers[index] = { ...updatedAnswers[index], [field]: value };
     setNewQuestion({ ...newQuestion, answers: updatedAnswers });
+  };
+
+  const openAddDialog = () => {
+    // Reset form to initial state
+    setNewQuestion({
+      text: '',
+      question_type: 'multiple_choice',
+      points: 1,
+      explanation: '',
+      answers: [
+        { text: '', is_correct: false },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false },
+        { text: '', is_correct: false }
+      ]
+    });
+    setError(null);
+    setAddQuestionDialogOpen(true);
   };
 
   const handleCorrectAnswerChange = (index) => {
@@ -485,7 +648,7 @@ const ExamDetail = () => {
                   background: 'linear-gradient(135deg, #0a3d5f 0%, #d17a6f 100%)',
                 }
               }}
-            onClick={() => setAddQuestionDialogOpen(true)}
+            onClick={openAddDialog}
           >
             إضافة سؤال
           </Button>
@@ -509,7 +672,7 @@ const ExamDetail = () => {
               <Button 
                 variant="contained" 
                 startIcon={<Add />}
-                onClick={() => setAddQuestionDialogOpen(true)}
+                onClick={openAddDialog}
                 sx={{ 
                   background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
                   '&:hover': {
@@ -560,7 +723,7 @@ const ExamDetail = () => {
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Tooltip title="تعديل">
                         <IconButton 
-                          onClick={() => navigate(`/teacher/exams/${examId}/questions/${question.id}/edit`)}
+                          onClick={() => openEditDialog(question)}
                           sx={{ 
                             color: 'primary.main',
                             '&:hover': { bgcolor: 'primary.light' }
@@ -592,47 +755,126 @@ const ExamDetail = () => {
                       )}
                   
                       {question.answers && question.answers.length > 0 && (
-                    <Box>
-                      <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                            الإجابات:
+                    <Box sx={{ mt: 3 }}>
+                      <Typography 
+                        variant="h6" 
+                        color="text.primary" 
+                        fontWeight={600} 
+                        mb={2}
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1 
+                        }}
+                      >
+                        <Box sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: 'primary.main'
+                        }} />
+                        الإجابات المتاحة:
                           </Typography>
-                      <Box sx={{ display: 'grid', gap: 1 }}>
-                        {question.answers.map((answer, answerIndex) => (
-                          <Box 
+                      
+                      <Box sx={{ 
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                        gap: 2
+                      }}>
+                        {question.answers.map((answer, answerIndex) => {
+                          // Ensure is_correct is boolean
+                          const isCorrect = answer.is_correct === true || answer.is_correct === 'true' || answer.is_correct === 1;
+                          return (
+                          <Paper
                             key={answerIndex}
                             sx={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: 1,
-                              p: 1.5,
-                              bgcolor: answer.is_correct ? 'success.light' : 'grey.50',
-                              borderRadius: 1,
-                              border: answer.is_correct ? '2px solid' : '1px solid',
-                              borderColor: answer.is_correct ? 'success.main' : 'grey.300'
+                              p: 2.5,
+                              borderRadius: 3,
+                              border: '2px solid',
+                              borderColor: isCorrect ? 'success.main' : 'grey.300',
+                              bgcolor: isCorrect ? 'rgba(76, 175, 80, 0.15)' : 'grey.50',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                              }
                             }}
                           >
-                            <Box sx={{ 
-                              width: 20, 
-                              height: 20, 
-                              borderRadius: '50%',
-                              bgcolor: answer.is_correct ? 'success.main' : 'grey.400',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontSize: '0.75rem',
-                              fontWeight: 'bold'
-                            }}>
-                              {answerIndex + 1}
-                            </Box>
-                            <Typography variant="body2" sx={{ flex: 1 }}>
-                              {answer.text}
-                            </Typography>
-                            {answer.is_correct && (
-                              <Chip label="إجابة صحيحة" size="small" color="success" />
+                            {/* Correct Answer Indicator */}
+                            {isCorrect && (
+                              <Box sx={{
+                                position: 'absolute',
+                                top: 0,
+                                right: 0,
+                                width: 0,
+                                height: 0,
+                                borderStyle: 'solid',
+                                borderWidth: '0 30px 30px 0',
+                                borderColor: 'transparent success.main transparent transparent'
+                              }} />
                             )}
-                          </Box>
-                          ))}
+                            
+                            <Box sx={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 2 
+                            }}>
+                              <Box sx={{
+                                minWidth: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                bgcolor: isCorrect ? 'success.main' : 'grey.400',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 700,
+                                fontSize: '0.9rem',
+                                position: 'relative',
+                                boxShadow: isCorrect ? '0 2px 8px rgba(76, 175, 80, 0.3)' : 'none'
+                              }}>
+                                {String.fromCharCode(65 + answerIndex)}
+                              </Box>
+                              <Typography 
+                                variant="body1" 
+                                fontWeight={isCorrect ? 700 : 500}
+                                sx={{ 
+                                  color: isCorrect ? '#2e7d32' : 'text.primary',
+                                  lineHeight: 1.4,
+                                  fontSize: isCorrect ? '1.1rem' : '1rem'
+                                }}
+                              >
+                                {answer.text}
+                              </Typography>
+                            </Box>
+                            
+                            {/* Correct Answer Badge - Single Checkmark */}
+                            {isCorrect && (
+                              <Box sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                bgcolor: 'success.main',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                boxShadow: '0 3px 12px rgba(76, 175, 80, 0.4)',
+                                border: '3px solid white'
+                              }}>
+                                ✓
+                              </Box>
+                            )}
+                          </Paper>
+                          );
+                        })}
                         </Box>
                     </Box>
                   )}
@@ -823,6 +1065,202 @@ const ExamDetail = () => {
             disabled={!newQuestion.text.trim()}
           >
             إضافة
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Question Dialog */}
+      <Dialog 
+        open={editQuestionDialogOpen} 
+        onClose={() => setEditQuestionDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        dir="rtl"
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(14, 81, 129, 0.1)',
+            direction: 'rtl',
+          }
+        }}
+      >
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 700, color: '#0e5181' }}>
+          تعديل السؤال
+        </DialogTitle>
+        <DialogContent sx={{ direction: 'rtl' }}>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2, direction: 'rtl', textAlign: 'right' }}>
+              {error}
+            </Alert>
+          )}
+          
+          <TextField
+            label="نص السؤال"
+            value={newQuestion.text}
+            onChange={(e) => setNewQuestion({ ...newQuestion, text: e.target.value })}
+            fullWidth
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+            inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+          />
+
+          <TextField
+            select
+            label="نوع السؤال"
+            value={newQuestion.question_type}
+            onChange={(e) => setNewQuestion({ ...newQuestion, question_type: e.target.value })}
+            fullWidth
+            sx={{ mb: 2 }}
+          >
+            <MenuItem value="multiple_choice">اختيار من متعدد</MenuItem>
+            <MenuItem value="true_false">صح أو خطأ</MenuItem>
+            <MenuItem value="short_answer">إجابة قصيرة</MenuItem>
+            <MenuItem value="essay">مقال</MenuItem>
+          </TextField>
+
+          <TextField
+            label="النقاط"
+            type="number"
+            value={newQuestion.points}
+            onChange={(e) => setNewQuestion({ ...newQuestion, points: e.target.value })}
+            fullWidth
+            sx={{ mb: 2 }}
+            inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+          />
+
+          <TextField
+            label="شرح السؤال (اختياري)"
+            value={newQuestion.explanation}
+            onChange={(e) => setNewQuestion({ ...newQuestion, explanation: e.target.value })}
+            fullWidth
+            multiline
+            rows={2}
+            sx={{ mb: 2 }}
+            inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+          />
+
+          {newQuestion.question_type === 'multiple_choice' && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'right' }}>
+                الإجابات:
+              </Typography>
+              {newQuestion.answers.map((answer, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1, direction: 'rtl' }}>
+                  <TextField
+                    label={`الإجابة ${index + 1}`}
+                    value={answer.text}
+                    onChange={(e) => handleAnswerChange(index, 'text', e.target.value)}
+                    fullWidth
+                    sx={{ ml: 1 }}
+                    inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={answer.is_correct}
+                        onChange={() => handleCorrectAnswerChange(index)}
+                      />
+                    }
+                    label="صحيح"
+                    sx={{ direction: 'rtl' }}
+                  />
+                  {newQuestion.answers.length > 2 && (
+                    <IconButton 
+                      onClick={() => removeAnswer(index)}
+                      color="error"
+                      size="small"
+                    >
+                      <Delete />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+              <Button 
+                variant="outlined" 
+                onClick={addAnswer}
+                startIcon={<Add />}
+                sx={{ mt: 1, direction: 'rtl' }}
+              >
+                إضافة إجابة
+              </Button>
+            </Box>
+          )}
+
+          {newQuestion.question_type === 'true_false' && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'right' }}>
+                اختر الإجابة الصحيحة:
+              </Typography>
+              {newQuestion.answers.map((answer, index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1, direction: 'rtl' }}>
+                  <Typography sx={{ minWidth: 60, ml: 2 }}>
+                    {answer.text}
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={answer.is_correct}
+                        onChange={() => handleCorrectAnswerChange(index)}
+                      />
+                    }
+                    label="صحيح"
+                    sx={{ direction: 'rtl' }}
+                  />
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {newQuestion.question_type === 'short_answer' && (
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'right' }}>
+                الإجابة الصحيحة:
+              </Typography>
+              <TextField
+                label="الإجابة الصحيحة"
+                value={newQuestion.answers[0]?.text || ''}
+                onChange={(e) => handleAnswerChange(0, 'text', e.target.value)}
+                fullWidth
+                inputProps={{ dir: 'rtl', style: { textAlign: 'right' } }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ direction: 'rtl', justifyContent: 'flex-start', flexDirection: 'row-reverse' }}>
+          <Button 
+            onClick={() => setEditQuestionDialogOpen(false)}
+            sx={{
+              borderColor: '#0e5181',
+              color: '#0e5181',
+              '&:hover': {
+                borderColor: '#e5978b',
+                color: '#e5978b',
+              },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+            }}
+          >
+            إلغاء
+          </Button>
+          <Button 
+            onClick={handleEditQuestion}
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+              },
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+            }}
+          >
+            حفظ التعديلات
           </Button>
         </DialogActions>
       </Dialog>

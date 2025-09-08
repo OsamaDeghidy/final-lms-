@@ -347,7 +347,9 @@ const FloatingCard = styled(Box)(({ theme, position, delay = 0 }) => ({
   ...position,
 }));
 
-const FloatingIcon = styled(Box)(({ theme, bgColor = '#f5f5f5', iconColor = '#666' }) => ({
+const FloatingIcon = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'bgColor' && prop !== 'iconColor',
+})(({ theme, bgColor = '#f5f5f5', iconColor = '#666' }) => ({
   width: '32px',
   height: '32px',
   borderRadius: '8px',
@@ -377,7 +379,9 @@ const FloatingText = styled(Box)(({ theme }) => ({
   },
 }));
 
-const FloatingBadge = styled(Box)(({ theme, bgColor = '#0e5181', color = '#fff' }) => ({
+const FloatingBadge = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'bgColor' && prop !== 'color',
+})(({ theme, bgColor = '#0e5181', color = '#fff' }) => ({
   width: '24px',
   height: '24px',
   borderRadius: '50%',
