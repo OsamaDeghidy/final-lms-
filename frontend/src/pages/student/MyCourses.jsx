@@ -167,6 +167,9 @@ const CourseCard = ({ course, onClick }) => {
   const completedLessons = calculatedData.completedLessons || course.completedLessons || Math.floor((progress / 100) * totalLessons);
   const totalRuntime = calculatedData.duration || course.duration || course.total_duration || "0د";
   
+  // Ensure progress is properly calculated from enrollment data
+  const actualProgress = course.progress !== undefined ? course.progress : progress;
+  
   // Debug logging
   console.log('Course data:', {
     id: course.id,
@@ -599,20 +602,30 @@ const CourseCard = ({ course, onClick }) => {
             
             {/* Progress Bar */}
             <Box sx={{ mb: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                <Typography variant="caption" sx={{ color: '#666', fontSize: '12px', fontWeight: 500 }}>
+                  التقدم
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#0e5181', fontSize: '12px', fontWeight: 600 }}>
+                  {Math.round(actualProgress)}%
+                </Typography>
+              </Box>
               <LinearProgress 
                 variant="determinate" 
-                value={progress} 
-              sx={{ 
-                  height: 4, 
-                  borderRadius: 2,
+                value={actualProgress} 
+                sx={{ 
+                  height: 6, 
+                  borderRadius: 3,
                   bgcolor: '#f0f0f0',
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: '#4caf50',
-                    borderRadius: 2
-                }
-              }} 
-            />
-          </Box>
+                    background: actualProgress >= 100 
+                      ? 'linear-gradient(90deg, #4caf50, #66bb6a)' 
+                      : 'linear-gradient(90deg, #0e5181, #1a6ba8)',
+                    borderRadius: 3
+                  }
+                }} 
+              />
+            </Box>
             
             <Typography variant="body2" sx={{ 
               color: '#666', 
@@ -625,6 +638,9 @@ const CourseCard = ({ course, onClick }) => {
                   • الدرجة: {course.grade}
                 </span>
               )}
+              <span style={{ marginLeft: '8px', color: '#0e5181', fontWeight: 'bold' }}>
+                • التقدم: {Math.round(actualProgress)}%
+              </span>
             </Typography>
             
             
@@ -765,8 +781,9 @@ const CourseCard = ({ course, onClick }) => {
             {!expanded && courseContent.length > 0 && (
               <Box sx={{ mt: 0.5 }}>
                 <Typography variant="caption" sx={{ 
-                  color: '#666', 
-                  fontSize: '10px'
+                  color: '#0e5181', 
+                  fontSize: '10px',
+                  fontWeight: 500
                 }}>
                   التقدم: {Math.round((courseContent.filter(item => item.completed).length / courseContent.length) * 100)}% مكتمل
                 </Typography>
@@ -815,7 +832,7 @@ const CourseCard = ({ course, onClick }) => {
             onClick(course.id);
           }}
         >
-            {course.status === 'completed' ? 'مراجعة' : progress > 0 ? 'متابعة' : 'ابدأ'}
+            {course.status === 'completed' ? 'مراجعة' : actualProgress > 0 ? 'متابعة' : 'ابدأ'}
         </Button>
         </Box>
         
@@ -1041,6 +1058,14 @@ const CompletedCourseCard = ({ course }) => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
           <Box sx={{ flexGrow: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ color: '#666', fontSize: '12px', fontWeight: 500 }}>
+                التقدم
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#e5978b', fontSize: '12px', fontWeight: 600 }}>
+                {Math.round(progress)}%
+              </Typography>
+            </Box>
             <Box sx={{ 
               height: 12, 
               bgcolor: 'rgba(229, 151, 139, 0.1)', 
@@ -1072,22 +1097,6 @@ const CompletedCourseCard = ({ course }) => {
             </Box>
           </Box>
           <CheckCircleIcon sx={{ color: '#e5978b', fontSize: 28 }} />
-          <Typography 
-            variant="body2" 
-            fontWeight={700} 
-            color="#e5978b" 
-            sx={{ 
-              fontSize: 16,
-              minWidth: '45px',
-              textAlign: 'center',
-              background: 'rgba(229, 151, 139, 0.1)',
-              borderRadius: 2,
-              px: 1,
-              py: 0.5
-            }}
-          >
-            {Math.round(progress)}%
-          </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
           <Typography variant="body2" fontWeight={700} color="#e5978b" sx={{ fontSize: 16 }}>
@@ -1143,8 +1152,25 @@ const MyCourses = () => {
       
       const response = await courseAPI.getMyEnrolledCourses();
       
-      setEnrolledCourses(response.enrolled_courses || []);
-      setCompletedCourses(response.completed_courses || []);
+      // Process and validate course data
+      const processedEnrolledCourses = (response.enrolled_courses || []).map(course => ({
+        ...course,
+        progress: Math.min(Math.max(course.progress || 0, 0), 100),
+        totalLessons: course.totalLessons || course.total_lessons || 0,
+        completedLessons: course.completedLessons || Math.floor(((course.progress || 0) / 100) * (course.totalLessons || course.total_lessons || 0)),
+        duration: course.duration || course.total_duration || "0د"
+      }));
+      
+      const processedCompletedCourses = (response.completed_courses || []).map(course => ({
+        ...course,
+        progress: 100, // Completed courses should always show 100%
+        totalLessons: course.totalLessons || course.total_lessons || 0,
+        completedLessons: course.totalLessons || course.total_lessons || 0,
+        duration: course.duration || course.total_duration || "0د"
+      }));
+      
+      setEnrolledCourses(processedEnrolledCourses);
+      setCompletedCourses(processedCompletedCourses);
       
     } catch (err) {
       console.error('Error fetching courses:', err);

@@ -237,6 +237,7 @@ def teacher_recent_activity(request):
             })
         
         # واجبات جديدة
+        instructor_courses = Course.objects.filter(instructors=instructor)
         recent_assignments = Assignment.objects.filter(
             course__in=instructor_courses
         ).select_related('course').order_by('-created_at')[:5]
@@ -536,7 +537,7 @@ def student_recent_activity(request):
         
         # واجبات مكتملة
         recent_submissions = AssignmentSubmission.objects.filter(
-            student=user
+            user=user
         ).select_related('assignment', 'assignment__course').order_by('-submitted_at')[:5]
         
         for submission in recent_submissions:
@@ -594,7 +595,7 @@ def student_upcoming_assignments(request):
             # التحقق من حالة التسليم
             submission = AssignmentSubmission.objects.filter(
                 assignment=assignment,
-                student=user
+                user=user
             ).first()
             
             assignments_data.append({

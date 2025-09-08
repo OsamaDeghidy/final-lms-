@@ -111,6 +111,18 @@ class QuizAttempt(models.Model):
         
         self.passed = self.score >= self.quiz.pass_mark
         self.save(update_fields=['score', 'passed'])
+        
+        # Update module progress if quiz is associated with a module
+        if hasattr(self.quiz, 'module') and self.quiz.module:
+            from content.models import ModuleProgress
+            try:
+                module_progress = ModuleProgress.objects.get(
+                    user=self.user,
+                    module=self.quiz.module
+                )
+                module_progress.mark_quiz_completed(score=self.score)
+            except ModuleProgress.DoesNotExist:
+                pass
 
 
 class QuizUserAnswer(models.Model):
@@ -215,6 +227,18 @@ class UserExamAttempt(models.Model):
         
         self.passed = self.score >= self.exam.pass_mark
         self.save(update_fields=['score', 'passed'])
+        
+        # Update module progress if exam is associated with a module
+        if hasattr(self.exam, 'module') and self.exam.module:
+            from content.models import ModuleProgress
+            try:
+                module_progress = ModuleProgress.objects.get(
+                    user=self.user,
+                    module=self.exam.module
+                )
+                module_progress.mark_quiz_completed(score=self.score)
+            except ModuleProgress.DoesNotExist:
+                pass
 
 
 class UserExamAnswer(models.Model):

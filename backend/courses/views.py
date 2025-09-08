@@ -635,20 +635,53 @@ def my_enrolled_courses(request):
         completed_courses = []
         
         for enrollment in enrollments:
+            # Get actual progress from UserProgress model
+            from content.models import UserProgress, ModuleProgress
+            
+            try:
+                user_progress = UserProgress.objects.get(
+                    user=user,
+                    course=enrollment.course
+                )
+                actual_progress = user_progress.overall_progress
+            except UserProgress.DoesNotExist:
+                actual_progress = enrollment.progress
+            
+            # Count total and completed modules
+            total_modules = enrollment.course.modules.filter(
+                status='published',
+                is_active=True
+            ).count()
+            
+            completed_modules = ModuleProgress.objects.filter(
+                user=user,
+                module__course=enrollment.course,
+                is_completed=True
+            ).count()
+            
+            # Calculate total lessons from modules
+            total_lessons = 0
+            for module in enrollment.course.modules.filter(status='published', is_active=True):
+                total_lessons += module.lessons.filter(is_active=True).count()
+            
             course_data = {
                 'id': enrollment.course.id,
                 'title': enrollment.course.title,
                 'description': enrollment.course.short_description or enrollment.course.description,
                 'image': request.build_absolute_uri(enrollment.course.image.url) if enrollment.course.image else None,
                 'instructor': enrollment.course.instructors.first().profile.name if enrollment.course.instructors.exists() and hasattr(enrollment.course.instructors.first(), 'profile') else 'غير محدد',
-                'progress': enrollment.progress,
-                'totalLessons': enrollment.course.modules.count() if hasattr(enrollment.course, 'modules') else 0,
-                'completedLessons': int((enrollment.progress / 100) * (enrollment.course.modules.count() if hasattr(enrollment.course, 'modules') else 0)),
+                'progress': actual_progress,
+                'totalLessons': total_lessons,
+                'total_lessons': total_lessons,  # Alternative field name
+                'completedLessons': int((actual_progress / 100) * total_lessons) if total_lessons > 0 else 0,
+                'completed_lessons': int((actual_progress / 100) * total_lessons) if total_lessons > 0 else 0,  # Alternative field name
+                'totalModules': total_modules,
+                'completedModules': completed_modules,
                 'category': enrollment.course.category.name if enrollment.course.category else 'غير محدد',
                 'enrollment_date': enrollment.enrollment_date,
                 'completion_date': enrollment.completion_date,
                 'status': enrollment.status,
-                'grade': 'A' if enrollment.progress >= 90 else 'B' if enrollment.progress >= 80 else 'C' if enrollment.progress >= 70 else 'D' if enrollment.progress >= 60 else 'F'
+                'grade': 'A' if actual_progress >= 90 else 'B' if actual_progress >= 80 else 'C' if actual_progress >= 70 else 'D' if actual_progress >= 60 else 'F'
             }
             
             if enrollment.status == 'completed':

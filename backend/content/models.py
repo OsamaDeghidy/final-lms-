@@ -740,13 +740,22 @@ class ModuleProgress(models.Model):
         
         super().save(*args, **kwargs)
         
-        # Update parent UserProgress
+        # Update parent UserProgress and Enrollment
         try:
             user_progress = UserProgress.objects.get(
                 user=self.user,
                 course=self.module.course
             )
             user_progress.update_progress()
+            
+            # Update enrollment progress as well
+            from courses.models import Enrollment
+            enrollment = Enrollment.objects.filter(
+                student=self.user,
+                course=self.module.course
+            ).first()
+            if enrollment:
+                enrollment.update_progress(user_progress.overall_progress)
         except UserProgress.DoesNotExist:
             pass
 

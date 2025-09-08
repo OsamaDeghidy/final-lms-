@@ -45,9 +45,11 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { 
   PlayCircleOutline, 
   PlayArrow,
+  Close as CloseIcon,
   Pause,
   Fullscreen,
   FullscreenExit,
@@ -101,6 +103,17 @@ import {
   Forum,
   ChevronRight,
   ChevronLeft,
+  PictureAsPdf,
+  Image,
+  TableChart,
+  TextSnippet,
+  Code,
+  AudioFile,
+  VideoFile,
+  Archive,
+  InsertDriveFile,
+  Visibility,
+  OpenInNew,
 } from '@mui/icons-material';
 import { Quiz as QuizIcon } from '@mui/icons-material';
 import QuizStart from './quiz/QuizStart';
@@ -111,10 +124,52 @@ import ExamResult from './exam/ExamResult';
 import FinalExamModal from './FinalExamModal';
 import { courseAPI } from '../../services/api.service';
 import certificateAPI from '../../services/certificate.service';
+import Header from '../../components/layout/Header.jsx';
+// Force reload
 
 // Simple video player component to replace ReactPlayer
-const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, width, height, style }) => {
+const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, width, height, style, lessonData }) => {
   const videoRef = React.useRef(null);
+
+  // Process URL to ensure it's absolute (for videos)
+  const processVideoUrl = (videoUrl) => {
+    if (!videoUrl) return null;
+    
+    // If it's already a full URL, return as is
+    if (videoUrl.startsWith('http://') || videoUrl.startsWith('https://')) {
+      return videoUrl;
+    }
+    
+    // If it starts with /media/ or /static/, make it absolute
+    if (videoUrl.startsWith('/media/') || videoUrl.startsWith('/static/')) {
+      return `http://127.0.0.1:8000${videoUrl}`;
+    }
+    
+    // If it's a relative path, assume it's in media
+    if (!videoUrl.startsWith('/')) {
+      return `http://127.0.0.1:8000/media/${videoUrl}`;
+    }
+    
+    return videoUrl;
+  };
+  
+  const processedUrl = processVideoUrl(url);
+  
+  // Debug logging
+  console.log('VideoPlayer - Original URL:', url);
+  console.log('VideoPlayer - Processed URL:', processedUrl);
+  console.log('VideoPlayer - isValidVideoUrl:', processedUrl && (
+    processedUrl.includes('.mp4') || 
+    processedUrl.includes('.webm') || 
+    processedUrl.includes('.ogg') || 
+    processedUrl.includes('.avi') ||
+    processedUrl.includes('.mov') ||
+    processedUrl.includes('.wmv') ||
+    processedUrl.includes('.flv') ||
+    processedUrl.includes('blob:') ||
+    processedUrl.startsWith('http://') ||
+    processedUrl.startsWith('https://')
+  ));
 
   React.useEffect(() => {
     const video = videoRef.current;
@@ -161,13 +216,19 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
   }, [playing]);
 
   // Check if URL is valid
-  const isValidVideoUrl = url && (
-    url.includes('.mp4') || 
-    url.includes('.webm') || 
-    url.includes('.ogg') || 
-    url.includes('blob:') ||
-    url.includes('http') && (url.includes('video') || url.includes('media'))
+  const isValidVideoUrl = processedUrl && (
+    processedUrl.includes('.mp4') || 
+    processedUrl.includes('.webm') || 
+    processedUrl.includes('.ogg') || 
+    processedUrl.includes('.avi') ||
+    processedUrl.includes('.mov') ||
+    processedUrl.includes('.wmv') ||
+    processedUrl.includes('.flv') ||
+    processedUrl.includes('blob:') ||
+    processedUrl.startsWith('http://') ||
+    processedUrl.startsWith('https://')
   );
+
 
   if (!isValidVideoUrl) {
     return (
@@ -186,15 +247,89 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
         gap: 2,
         padding: 2
       }}>
-        <Typography variant="h6" sx={{ color: 'white', textAlign: 'center' }}>
-          لا يوجد فيديو متاح
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'white', textAlign: 'center', opacity: 0.7 }}>
-          {url ? `رابط الفيديو غير صحيح أو غير مدعوم` : 'لم يتم توفير رابط الفيديو'}
-        </Typography>
+        {/* عرض محتوى الدرس مباشرة */}
+        {lessonData?.content ? (
+          <Box sx={{ 
+            width: '100%',
+            height: '100%',
+            p: 3,
+            overflow: 'auto',
+            bgcolor: 'rgba(255,255,255,0.95)',
+            color: 'text.primary'
+          }}>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                textAlign: 'right',
+                lineHeight: 1.8,
+                fontSize: '1.1rem',
+                '& h1, & h2, & h3, & h4, & h5, & h6': {
+                  color: 'primary.main',
+                  fontWeight: 'bold',
+                  mb: 2
+                },
+                '& p': {
+                  mb: 2
+                },
+                '& ul, & ol': {
+                  pr: 2,
+                  mb: 2
+                },
+                '& li': {
+                  mb: 1
+                },
+                '& img': {
+                  maxWidth: '100%',
+                  height: 'auto',
+                  borderRadius: 1,
+                  boxShadow: 2
+                },
+                '& blockquote': {
+                  borderLeft: 4,
+                  borderColor: 'primary.main',
+                  pl: 2,
+                  fontStyle: 'italic',
+                  bgcolor: 'grey.50',
+                  p: 2,
+                  borderRadius: 1,
+                  mb: 2
+                },
+                '& code': {
+                  bgcolor: 'grey.100',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 0.5,
+                  fontFamily: 'monospace'
+                },
+                '& pre': {
+                  bgcolor: 'grey.100',
+                  p: 2,
+                  borderRadius: 1,
+                  overflow: 'auto',
+                  mb: 2
+                }
+              }}
+              dangerouslySetInnerHTML={{ __html: lessonData.content }}
+            />
+          </Box>
+        ) : (
+          <>
+            <Typography variant="h6" sx={{ color: 'white', textAlign: 'center' }}>
+              لا يوجد محتوى متاح
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'white', textAlign: 'center', opacity: 0.7 }}>
+              {url ? `رابط الفيديو غير صحيح أو غير مدعوم` : 'لم يتم توفير رابط الفيديو أو محتوى'}
+            </Typography>
+          </>
+        )}
         {url && (
           <Typography variant="caption" sx={{ color: 'white', textAlign: 'center', opacity: 0.5, wordBreak: 'break-all' }}>
-            {url}
+            الرابط الأصلي: {url}
+          </Typography>
+        )}
+        {processedUrl && processedUrl !== url && (
+          <Typography variant="caption" sx={{ color: 'white', textAlign: 'center', opacity: 0.5, wordBreak: 'break-all' }}>
+            الرابط المعالج: {processedUrl}
           </Typography>
         )}
       </div>
@@ -202,30 +337,41 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
   }
 
   return (
-    <video
-      ref={videoRef}
-      src={url}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#000',
-        ...style
-      }}
-      controls
-      playsInline
-      preload="metadata"
-    />
+    <>
+      <video
+        ref={videoRef}
+        src={processedUrl}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#000',
+          ...style
+        }}
+        controls
+        playsInline
+        preload="metadata"
+        onError={(e) => {
+          console.error('Video error:', e);
+          console.error('Video src (original):', url);
+          console.error('Video src (processed):', processedUrl);
+          console.error('Video error details:', e.target.error);
+        }}
+        onLoadStart={() => {
+          console.log('Video load started for URL:', processedUrl);
+        }}
+        onLoadedData={() => {
+          console.log('Video data loaded for URL:', processedUrl);
+        }}
+        onCanPlay={() => {
+          console.log('Video can play for URL:', processedUrl);
+        }}
+      />
+    </>
   );
 };
-import { styled } from '@mui/material/styles';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
-import Header from '../../components/layout/Header';
-import Footer from '../../components/layout/Footer';
-import { toggleDarkMode } from '../../store/slices/uiSlice';
 
 
 
@@ -381,7 +527,251 @@ const getLessonIcon = (type) => {
   }
 };
 
-const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, currentLessonId, setActiveQuizId, setOpenQuiz, setShowQuizResult, showFinalExamButton, onFinalExamClick, assignments, quizzes, exams }) => {
+// Get file icon based on file type
+const getFileIcon = (fileName, fileType) => {
+  const extension = fileName ? fileName.split('.').pop().toLowerCase() : '';
+  
+  // Check by file type first
+  if (fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return <PictureAsPdf sx={{ color: '#d32f2f' }} />;
+      case 'image':
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'bmp':
+      case 'webp':
+        return <Image sx={{ color: '#1976d2' }} />;
+      case 'video':
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'wmv':
+      case 'flv':
+      case 'webm':
+        return <VideoFile sx={{ color: '#388e3c' }} />;
+      case 'audio':
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+      case 'aac':
+        return <AudioFile sx={{ color: '#f57c00' }} />;
+      case 'document':
+      case 'doc':
+      case 'docx':
+        return <TextSnippet sx={{ color: '#1976d2' }} />;
+      case 'excel':
+      case 'xls':
+      case 'xlsx':
+        return <TableChart sx={{ color: '#388e3c' }} />;
+      case 'powerpoint':
+      case 'ppt':
+      case 'pptx':
+        return <DescriptionOutlined sx={{ color: '#d32f2f' }} />;
+      case 'code':
+      case 'txt':
+      case 'js':
+      case 'html':
+      case 'css':
+      case 'py':
+      case 'java':
+      case 'cpp':
+      case 'c':
+        return <Code sx={{ color: '#7b1fa2' }} />;
+      case 'archive':
+      case 'zip':
+      case 'rar':
+      case '7z':
+      case 'tar':
+      case 'gz':
+        return <Archive sx={{ color: '#5d4037' }} />;
+      default:
+        return <InsertDriveFile sx={{ color: '#757575' }} />;
+    }
+  }
+  
+  // Check by file extension
+  switch (extension) {
+    case 'pdf':
+      return <PictureAsPdf sx={{ color: '#d32f2f' }} />;
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+    case 'webp':
+    case 'svg':
+      return <Image sx={{ color: '#1976d2' }} />;
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+    case 'wmv':
+    case 'flv':
+    case 'webm':
+    case 'mkv':
+      return <VideoFile sx={{ color: '#388e3c' }} />;
+    case 'mp3':
+    case 'wav':
+    case 'ogg':
+    case 'aac':
+    case 'flac':
+      return <AudioFile sx={{ color: '#f57c00' }} />;
+    case 'doc':
+    case 'docx':
+      return <TextSnippet sx={{ color: '#1976d2' }} />;
+    case 'xls':
+    case 'xlsx':
+      return <TableChart sx={{ color: '#388e3c' }} />;
+    case 'ppt':
+    case 'pptx':
+      return <DescriptionOutlined sx={{ color: '#d32f2f' }} />;
+    case 'txt':
+    case 'js':
+    case 'html':
+    case 'css':
+    case 'py':
+    case 'java':
+    case 'cpp':
+    case 'c':
+    case 'php':
+    case 'json':
+    case 'xml':
+      return <Code sx={{ color: '#7b1fa2' }} />;
+    case 'zip':
+    case 'rar':
+    case '7z':
+    case 'tar':
+    case 'gz':
+      return <Archive sx={{ color: '#5d4037' }} />;
+    default:
+      return <InsertDriveFile sx={{ color: '#757575' }} />;
+  }
+};
+
+// Get file type color
+const getFileTypeColor = (fileName, fileType) => {
+  const extension = fileName ? fileName.split('.').pop().toLowerCase() : '';
+  
+  if (fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return '#d32f2f';
+      case 'image':
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+      case 'bmp':
+      case 'webp':
+        return '#1976d2';
+      case 'video':
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+      case 'wmv':
+      case 'flv':
+      case 'webm':
+        return '#388e3c';
+      case 'audio':
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+      case 'aac':
+        return '#f57c00';
+      case 'document':
+      case 'doc':
+      case 'docx':
+        return '#1976d2';
+      case 'excel':
+      case 'xls':
+      case 'xlsx':
+        return '#388e3c';
+      case 'powerpoint':
+      case 'ppt':
+      case 'pptx':
+        return '#d32f2f';
+      case 'code':
+      case 'txt':
+      case 'js':
+      case 'html':
+      case 'css':
+      case 'py':
+      case 'java':
+      case 'cpp':
+      case 'c':
+        return '#7b1fa2';
+      case 'archive':
+      case 'zip':
+      case 'rar':
+      case '7z':
+      case 'tar':
+      case 'gz':
+        return '#5d4037';
+      default:
+        return '#757575';
+    }
+  }
+  
+  switch (extension) {
+    case 'pdf':
+      return '#d32f2f';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+    case 'webp':
+    case 'svg':
+      return '#1976d2';
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+    case 'wmv':
+    case 'flv':
+    case 'webm':
+    case 'mkv':
+      return '#388e3c';
+    case 'mp3':
+    case 'wav':
+    case 'ogg':
+    case 'aac':
+    case 'flac':
+      return '#f57c00';
+    case 'doc':
+    case 'docx':
+      return '#1976d2';
+    case 'xls':
+    case 'xlsx':
+      return '#388e3c';
+    case 'ppt':
+    case 'pptx':
+      return '#d32f2f';
+    case 'txt':
+    case 'js':
+    case 'html':
+    case 'css':
+    case 'py':
+    case 'java':
+    case 'cpp':
+    case 'c':
+    case 'php':
+    case 'json':
+    case 'xml':
+      return '#7b1fa2';
+    case 'zip':
+    case 'rar':
+    case '7z':
+    case 'tar':
+    case 'gz':
+      return '#5d4037';
+    default:
+      return '#757575';
+  }
+};
+
+const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, currentLessonId, setActiveQuizId, setOpenQuiz, setShowQuizResult, showFinalExamButton, onFinalExamClick, assignments, quizzes, exams, onAssignmentClick }) => {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState('lessons');
   
@@ -654,15 +1044,23 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
                         </Typography>
                       }
                       secondary={
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', mt: 0.5, gap: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            {getLessonIcon(lesson.type)}
-                            <span style={{ marginRight: '4px' }}>
-                              {lesson.type === 'video' ? 'فيديو' : lesson.type === 'quiz' ? 'اختبار' : 'تمرين'}
-                            </span>
-                          </Box>
-                          <span>{lesson.duration}</span>
-                        </Typography>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', mt: 0.5, gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              {getLessonIcon(lesson.type)}
+                              <span style={{ marginRight: '4px' }}>
+                                {lesson.type === 'video' ? 'فيديو' : lesson.type === 'quiz' ? 'اختبار' : 'تمرين'}
+                              </span>
+                            </Box>
+                            <span>{lesson.duration}</span>
+                          </Typography>
+                          {lesson.resources && lesson.resources.length > 0 && (
+                            <Typography variant="caption" color="primary.main" sx={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                              <NoteAlt sx={{ fontSize: 12, ml: 0.5 }} />
+                              {lesson.resources.length} مرفق
+                            </Typography>
+                          )}
+                        </Box>
                       }
                     />
                     <IconButton size="small" edge="end">
@@ -762,6 +1160,12 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
                           </>
                         )}
                       </Box>
+                      {assignment.attachments && assignment.attachments.length > 0 && (
+                        <Typography variant="caption" color="primary.main" sx={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', mt: 0.5, justifyContent: 'flex-end' }}>
+                          <NoteAlt sx={{ fontSize: 12, ml: 0.5 }} />
+                          {assignment.attachments.length} مرفق
+                        </Typography>
+                      )}
                     </Box>
                   }
                 />
@@ -777,8 +1181,8 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
                     minWidth: 'auto'
                   }}
                   onClick={() => {
-                    // Navigate to assignment or open assignment modal
-                    console.log('Open assignment:', assignment.id);
+                    // Navigate to assignment submission page
+                    onAssignmentClick && onAssignmentClick(assignment.id);
                   }}
                 >
                   عرض الواجب
@@ -855,6 +1259,12 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
                           </>
                         )}
                       </Box>
+                      {quiz.attachments && quiz.attachments.length > 0 && (
+                        <Typography variant="caption" color="primary.main" sx={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', mt: 0.5, justifyContent: 'flex-end' }}>
+                          <NoteAlt sx={{ fontSize: 12, ml: 0.5 }} />
+                          {quiz.attachments.length} مرفق
+                        </Typography>
+                      )}
                     </Box>
                   }
                 />
@@ -950,6 +1360,12 @@ const CourseContent = ({ modules, expandedModule, onModuleClick, onLessonClick, 
                           </>
                         )}
                       </Box>
+                      {exam.attachments && exam.attachments.length > 0 && (
+                        <Typography variant="caption" color="primary.main" sx={{ fontSize: '0.65rem', display: 'flex', alignItems: 'center', mt: 0.5, justifyContent: 'flex-end' }}>
+                          <NoteAlt sx={{ fontSize: 12, ml: 0.5 }} />
+                          {exam.attachments.length} مرفق
+                        </Typography>
+                      )}
                     </Box>
                   }
                 />
@@ -1022,6 +1438,7 @@ const CourseTracking = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('info');
   const [courseCompletionStatus, setCourseCompletionStatus] = useState(null);
   const [isGeneratingCertificate, setIsGeneratingCertificate] = useState(false);
+  const [imagePreview, setImagePreview] = useState({ open: false, url: '', title: '' });
   
   // Fetch course data on component mount
   useEffect(() => {
@@ -1057,6 +1474,10 @@ const CourseTracking = () => {
       
       const response = await courseAPI.getCourseTrackingData(courseId);
       
+      // Debug: Log the full response
+      console.log('Full API Response:', response);
+      console.log('Course modules:', response?.course?.modules);
+      
       // Check if response has required data
       if (!response || !response.course) {
         setError('بيانات الدورة غير متاحة');
@@ -1091,16 +1512,44 @@ const CourseTracking = () => {
           progress: module.progress,
           totalLessons: module.total_lessons,
           completedLessons: module.completed_lessons,
-          lessons: (module.lessons || []).map(lesson => ({
-            id: lesson.id,
-            title: lesson.title,
-            duration: `${Math.floor(lesson.duration_minutes / 60)}:${(lesson.duration_minutes % 60).toString().padStart(2, '0')}`,
-            type: lesson.lesson_type,
-            completed: lesson.completed,
-            videoUrl: lesson.video_url,
-            content: lesson.content,
-            resources: lesson.resources || []
-          }))
+          lessons: (module.lessons || []).map(lesson => {
+            // Debug: Log lesson data
+            console.log('Lesson data:', lesson);
+            console.log('Lesson video_url:', lesson.video_url);
+            console.log('Lesson video_file:', lesson.video_file);
+            console.log('Lesson file_url:', lesson.file_url);
+            console.log('Lesson resources:', lesson.resources);
+            
+            // Find video resource if no direct video_url
+            let videoUrl = lesson.video_url;
+            if (!videoUrl && lesson.resources) {
+              const videoResource = lesson.resources.find(resource => 
+                resource.resource_type === 'video' || 
+                (resource.file_url && (
+                  resource.file_url.includes('.mp4') || 
+                  resource.file_url.includes('.webm') || 
+                  resource.file_url.includes('.mov') ||
+                  resource.file_url.includes('.avi')
+                ))
+              );
+              if (videoResource) {
+                videoUrl = videoResource.file_url || videoResource.url;
+              }
+            }
+            
+            console.log('Final videoUrl for lesson:', lesson.id, ':', videoUrl);
+            
+            return {
+              id: lesson.id,
+              title: lesson.title,
+              duration: `${Math.floor(lesson.duration_minutes / 60)}:${(lesson.duration_minutes % 60).toString().padStart(2, '0')}`,
+              type: lesson.lesson_type,
+              completed: lesson.completed,
+              videoUrl: videoUrl,
+              content: lesson.content,
+              resources: lesson.resources || []
+            };
+          })
         })),
         assignments: response.assignments || [],
         exams: response.exams || [],
@@ -1108,6 +1557,9 @@ const CourseTracking = () => {
         final_exam: response.final_exam || null
       };
       
+      // Debug: Log transformed data
+      console.log('Transformed course data:', transformedData);
+      console.log('First module lessons:', transformedData.modules?.[0]?.lessons);
       
       setCourseData(transformedData);
       
@@ -1120,6 +1572,8 @@ const CourseTracking = () => {
       if (transformedData.modules && transformedData.modules.length > 0 && 
           transformedData.modules[0].lessons && transformedData.modules[0].lessons.length > 0) {
         const firstLesson = transformedData.modules[0].lessons[0];
+        console.log('Setting current lesson:', firstLesson);
+        console.log('Current lesson videoUrl:', firstLesson.videoUrl);
         setCurrentLesson({
           moduleId: transformedData.modules[0].id,
           lessonId: firstLesson.id,
@@ -1307,26 +1761,99 @@ const CourseTracking = () => {
     }
   };
 
+  // Process file URL to ensure it's absolute
+  const processFileUrl = (fileUrl) => {
+    if (!fileUrl) return null;
+    
+    // If it's already a full URL, return as is
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      return fileUrl;
+    }
+    
+    // If it starts with /media/ or /static/, make it absolute
+    if (fileUrl.startsWith('/media/') || fileUrl.startsWith('/static/')) {
+      return `http://127.0.0.1:8000${fileUrl}`;
+    }
+    
+    // If it's a relative path, assume it's in media
+    if (!fileUrl.startsWith('/')) {
+      return `http://127.0.0.1:8000/media/${fileUrl}`;
+    }
+    
+    return fileUrl;
+  };
+
   // Download resource
   const downloadResource = async (resource) => {
     try {
-      if (resource.file_url) {
-        // Direct download for file resources
-        const link = document.createElement('a');
-        link.href = resource.file_url;
-        link.download = resource.title;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showSnackbar('تم بدء تحميل الملف', 'success');
-      } else if (resource.url) {
-        // Open external link
-        window.open(resource.url, '_blank');
-        showSnackbar('تم فتح الرابط في نافذة جديدة', 'info');
+      const fileUrl = resource.file_url || resource.url;
+      if (!fileUrl) {
+        showSnackbar('رابط الملف غير متوفر', 'error');
+        return;
       }
+
+      const processedUrl = processFileUrl(fileUrl);
+      const fileName = resource.title || resource.name || 'ملف';
+      
+      // Direct download for file resources
+      const link = document.createElement('a');
+      link.href = processedUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showSnackbar('تم بدء تحميل الملف', 'success');
     } catch (error) {
       console.error('Error downloading resource:', error);
       showSnackbar('حدث خطأ أثناء تحميل الملف', 'error');
+    }
+  };
+
+  // Preview resource
+  const previewResource = (resource) => {
+    try {
+      const fileUrl = resource.file_url || resource.url;
+      if (!fileUrl) {
+        showSnackbar('رابط الملف غير متوفر', 'error');
+        return;
+      }
+
+      const processedUrl = processFileUrl(fileUrl);
+      const fileName = resource.title || resource.name || 'ملف';
+      const extension = fileName.split('.').pop().toLowerCase();
+      
+      // For images, show in modal preview
+      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension)) {
+        setImagePreview({
+          open: true,
+          url: processedUrl,
+          title: fileName
+        });
+        return;
+      }
+      
+      // For PDFs, open in new tab
+      if (extension === 'pdf') {
+        window.open(processedUrl, '_blank');
+        showSnackbar('تم فتح ملف PDF في نافذة جديدة', 'info');
+        return;
+      }
+      
+      // For videos, open in new tab
+      if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'].includes(extension)) {
+        window.open(processedUrl, '_blank');
+        showSnackbar('تم فتح الفيديو في نافذة جديدة', 'info');
+        return;
+      }
+      
+      // For other files, try to open in new tab
+      window.open(processedUrl, '_blank');
+      showSnackbar('تم فتح الملف في نافذة جديدة', 'info');
+      
+    } catch (error) {
+      console.error('Error previewing resource:', error);
+      showSnackbar('حدث خطأ أثناء معاينة الملف', 'error');
     }
   };
 
@@ -1359,6 +1886,11 @@ const CourseTracking = () => {
   // Toggle sidebar on mobile
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
+  };
+
+  // Handle assignment click
+  const handleAssignmentClick = (assignmentId) => {
+    navigate(`/student/assignments/${assignmentId}/submit`);
   };
 
   const toggleSidebarExpand = () => {
@@ -1470,6 +2002,29 @@ const CourseTracking = () => {
 
   // Course Stats Component
   const CourseStats = ({ stats }) => {
+    // Add safety check for stats
+    if (!stats) {
+      return (
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 2, 
+            borderRadius: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+            mb: 2,
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
+            إحصائيات الدورة
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            جاري تحميل الإحصائيات...
+          </Typography>
+        </Paper>
+      );
+    }
+
     return (
       <Paper 
         elevation={0} 
@@ -1491,12 +2046,12 @@ const CourseTracking = () => {
               التقدم
             </Typography>
             <Typography variant="body2" color="primary.main" sx={{ fontWeight: 'bold' }}>
-              {stats.completionPercentage}%
+              {stats.completionPercentage || 0}%
             </Typography>
           </Box>
           <LinearProgress 
             variant="determinate" 
-            value={stats.completionPercentage} 
+            value={stats.completionPercentage || 0} 
             sx={{ 
               height: 8, 
               borderRadius: 4,
@@ -1532,7 +2087,7 @@ const CourseTracking = () => {
                   مكتمل
                 </Typography>
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                  {stats.completedLessons} دروس
+                  {stats.completedLessons || 0} دروس
                 </Typography>
               </Box>
             </Box>
@@ -1559,7 +2114,7 @@ const CourseTracking = () => {
                   المتبقي
                 </Typography>
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                  {stats.remainingLessons} دروس
+                  {stats.remainingLessons || 0} دروس
                 </Typography>
               </Box>
             </Box>
@@ -1729,7 +2284,8 @@ const CourseTracking = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      <Header />
+      {/* <Header /> */}
+      <Box sx={{ height: 64, bgcolor: 'primary.main' }} />
       
       {/* Mobile App Bar */}
       <AppBar 
@@ -1919,6 +2475,7 @@ const CourseTracking = () => {
                     assignments={courseData.assignments}
                     quizzes={courseData.quizzes}
                     exams={courseData.exams}
+                    onAssignmentClick={handleAssignmentClick}
                   />
                 </Box>
                 
@@ -1959,28 +2516,49 @@ const CourseTracking = () => {
                   borderColor: 'divider',
                 }}
               >
-                <Box sx={{ position: 'relative', pt: '56.25%', bgcolor: 'black' }}>
-                  {currentLesson ? (
-                    <VideoPlayer
-                      ref={playerRef}
-                      url={currentLesson?.videoUrl}
-                      width="100%"
-                      height="100%"
-                      playing={isPlaying}
-                      onPlay={() => setIsPlaying(true)}
-                      onPause={() => setIsPlaying(false)}
-                      onProgress={handleProgressWithTracking}
-                      onDuration={handleDuration}
-                      onEnded={handleVideoEnd}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        borderRadius: theme.shape.borderRadius * 2,
-                        overflow: 'hidden',
-                      }}
-                    />
-                  ) : (
+                  <Box sx={{ position: 'relative', pt: '56.25%', bgcolor: 'black' }}>
+                    {currentLesson ? (
+                      <>
+                        {/* Debug info */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <Box sx={{ 
+                            position: 'absolute', 
+                            top: 8, 
+                            left: 8, 
+                            zIndex: 10, 
+                            bgcolor: 'rgba(0,0,0,0.7)', 
+                            color: 'white', 
+                            p: 1, 
+                            borderRadius: 1,
+                            fontSize: '10px'
+                          }}>
+                            <div>Lesson ID: {currentLesson.id}</div>
+                            <div>Video URL: {currentLesson.videoUrl || 'None'}</div>
+                            <div>Lesson Type: {currentLesson.type}</div>
+                          </Box>
+                        )}
+                        <VideoPlayer
+                          ref={playerRef}
+                          url={currentLesson?.videoUrl}
+                          width="100%"
+                          height="100%"
+                          playing={isPlaying}
+                          onPlay={() => setIsPlaying(true)}
+                          onPause={() => setIsPlaying(false)}
+                          onProgress={handleProgressWithTracking}
+                          onDuration={handleDuration}
+                          onEnded={handleVideoEnd}
+                          lessonData={currentLesson}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            borderRadius: theme.shape.borderRadius * 2,
+                            overflow: 'hidden',
+                          }}
+                        />
+                      </>
+                    ) : (
                     <Box 
                       sx={{ 
                         position: 'absolute', 
@@ -2127,77 +2705,146 @@ const CourseTracking = () => {
                   {/* Resources */}
                   {currentLesson?.resources && currentLesson.resources.length > 0 && (
                     <Box sx={{ mt: 3 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                        المرفقات والموارد
+                      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 2, display: 'flex', alignItems: 'center' }}>
+                        <NoteAlt sx={{ ml: 1, color: 'primary.main' }} />
+                        المرفقات والموارد ({currentLesson.resources.length})
                       </Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        {(currentLesson.resources || []).map((resource, index) => (
-                          <Paper 
-                            key={index}
-                            elevation={0}
-                            sx={{
-                              p: 1.5,
-                              borderRadius: 2,
-                              display: 'flex',
-                              alignItems: 'center',
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              width: { xs: '100%', sm: 'calc(50% - 16px)', md: 'calc(33.333% - 16px)' },
-                              transition: 'all 0.2s',
-                              '&:hover': {
-                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                                transform: 'translateY(-2px)',
-                              },
-                            }}
-                          >
-                            <Box 
+                        {(currentLesson.resources || []).map((resource, index) => {
+                          const fileName = resource.title || resource.name || `ملف ${index + 1}`;
+                          const fileType = resource.resource_type;
+                          const fileIcon = getFileIcon(fileName, fileType);
+                          const fileColor = getFileTypeColor(fileName, fileType);
+                          
+                          return (
+                            <Paper 
+                              key={index}
+                              elevation={0}
                               sx={{
-                                width: 48,
-                                height: 48,
-                                borderRadius: 1.5,
-                                bgcolor: 'primary.light',
+                                p: 2,
+                                borderRadius: 2,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                mr: 2,
-                                flexShrink: 0,
-                                color: 'primary.contrastText'
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                width: { xs: '100%', sm: 'calc(50% - 16px)', md: 'calc(33.333% - 16px)' },
+                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)',
+                                  transform: 'translateY(-4px)',
+                                  borderColor: fileColor,
+                                },
                               }}
+                              onClick={() => previewResource(resource)}
                             >
-                              {resource.resource_type === 'document' ? <DescriptionOutlined /> : 
-                               resource.resource_type === 'video' ? <VideoLibrary /> :
-                               resource.resource_type === 'link' ? <Link /> : <NoteAlt />}
-                            </Box>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Typography 
-                                variant="subtitle2" 
-                                sx={{ 
-                                  fontWeight: 'bold',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
-                                }}
-                              >
-                                {resource.title}
-                              </Typography>
-                              <Typography 
-                                variant="caption" 
-                                color="text.secondary"
+                              <Box 
                                 sx={{
-                                  display: 'block',
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis'
+                                  width: 56,
+                                  height: 56,
+                                  borderRadius: 2,
+                                  bgcolor: `${fileColor}15`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  mr: 2,
+                                  flexShrink: 0,
+                                  border: `2px solid ${fileColor}30`,
+                                  transition: 'all 0.3s ease',
+                                  '&:hover': {
+                                    bgcolor: `${fileColor}25`,
+                                    borderColor: fileColor,
+                                    transform: 'scale(1.1)',
+                                  }
                                 }}
                               >
-                                {resource.resource_type}
-                              </Typography>
-                            </Box>
-                            <IconButton size="small" sx={{ ml: 1 }} onClick={() => downloadResource(resource)}>
-                              <Download />
-                            </IconButton>
-                          </Paper>
-                        ))}
+                                {fileIcon}
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography 
+                                  variant="subtitle2" 
+                                  sx={{ 
+                                    fontWeight: 'bold',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    color: 'text.primary',
+                                    mb: 0.5
+                                  }}
+                                >
+                                  {fileName}
+                                </Typography>
+                                <Typography 
+                                  variant="caption" 
+                                  color="text.secondary"
+                                  sx={{
+                                    display: 'block',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    textTransform: 'capitalize'
+                                  }}
+                                >
+                                  {fileType || 'ملف'}
+                                </Typography>
+                                {resource.description && (
+                                  <Typography 
+                                    variant="caption" 
+                                    color="text.secondary"
+                                    sx={{
+                                      display: 'block',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      mt: 0.5,
+                                      fontSize: '0.7rem'
+                                    }}
+                                  >
+                                    {resource.description}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Tooltip title="معاينة الملف">
+                                  <IconButton 
+                                    size="small" 
+                                    sx={{ 
+                                      color: fileColor,
+                                      '&:hover': {
+                                        bgcolor: `${fileColor}20`,
+                                        transform: 'scale(1.1)'
+                                      }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      previewResource(resource);
+                                    }}
+                                  >
+                                    <Visibility sx={{ fontSize: 18 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="تحميل الملف">
+                                  <IconButton 
+                                    size="small" 
+                                    sx={{ 
+                                      color: fileColor,
+                                      '&:hover': {
+                                        bgcolor: `${fileColor}20`,
+                                        transform: 'scale(1.1)'
+                                      }
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      downloadResource(resource);
+                                    }}
+                                  >
+                                    <Download sx={{ fontSize: 18 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Paper>
+                          );
+                        })}
                       </Box>
                     </Box>
                   )}
@@ -2207,7 +2854,8 @@ const CourseTracking = () => {
           </Box>
         </Box>
       </Container>
-      <Footer />
+      {/* <Footer /> */}
+      <Box sx={{ height: 100, bgcolor: 'grey.100' }} />
       
       {/* Quiz Modal */}
       <Modal
@@ -2370,6 +3018,119 @@ const CourseTracking = () => {
                 onClose={handleExamClose}
               />
             )}
+          </Box>
+        </Fade>
+      </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal
+        open={imagePreview.open}
+        onClose={() => setImagePreview({ open: false, url: '', title: '' })}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{ timeout: 500 }}
+      >
+        <Fade in={imagePreview.open}>
+          <Box sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: { xs: '95vw', sm: '80vw', md: '70vw' },
+            height: { xs: '80vh', sm: '70vh', md: '60vh' },
+            maxWidth: '1200px',
+            maxHeight: '800px',
+            bgcolor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 24,
+            outline: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Header */}
+            <Box sx={{
+              p: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', flex: 1, textAlign: 'center' }}>
+                {imagePreview.title}
+              </Typography>
+              <IconButton
+                onClick={() => setImagePreview({ open: false, url: '', title: '' })}
+                sx={{ ml: 2 }}
+              >
+                <Close />
+              </IconButton>
+            </Box>
+            
+            {/* Image Content */}
+            <Box sx={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              p: 2,
+              overflow: 'hidden'
+            }}>
+              <img
+                src={processFileUrl(imagePreview.url)}
+                alt={imagePreview.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                }}
+                onError={(e) => {
+                  console.error('Error loading image:', e);
+                  showSnackbar('حدث خطأ أثناء تحميل الصورة', 'error');
+                }}
+              />
+            </Box>
+            
+            {/* Footer Actions */}
+            <Box sx={{
+              p: 2,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 2
+            }}>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={() => {
+                  const processedUrl = processFileUrl(imagePreview.url);
+                  const link = document.createElement('a');
+                  link.href = processedUrl;
+                  link.download = imagePreview.title;
+                  link.target = '_blank';
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  showSnackbar('تم بدء تحميل الصورة', 'success');
+                }}
+              >
+                تحميل الصورة
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<OpenInNew />}
+                onClick={() => {
+                  const processedUrl = processFileUrl(imagePreview.url);
+                  window.open(processedUrl, '_blank');
+                  showSnackbar('تم فتح الصورة في نافذة جديدة', 'info');
+                }}
+              >
+                فتح في نافذة جديدة
+              </Button>
+            </Box>
           </Box>
         </Fade>
       </Modal>

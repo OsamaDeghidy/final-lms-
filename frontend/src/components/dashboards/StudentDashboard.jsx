@@ -98,8 +98,14 @@ const StudentDashboard = () => {
 
       setStats(statsData);
       
-      // إضافة بيانات وهمية للمقررات إذا لم تكن موجودة
-      const mockCourses = coursesData.length > 0 ? coursesData : [
+      // Process and validate course data from API
+      const processedCourses = coursesData.length > 0 ? coursesData.map(course => ({
+        ...course,
+        progress: Math.min(Math.max(course.progress || 0, 0), 100),
+        total_lessons: course.total_lessons || course.totalLessons || 0,
+        completed_lessons: course.completed_lessons || course.completedLessons || Math.floor(((course.progress || 0) / 100) * (course.total_lessons || course.totalLessons || 0)),
+        duration: course.duration || course.total_duration || "0د"
+      })) : [
         {
           id: 1,
           title: 'الجزيئات وأساسيات علم الأحياء',
@@ -122,7 +128,7 @@ const StudentDashboard = () => {
         }
       ];
       
-      setCourses(mockCourses);
+      setCourses(processedCourses);
       
       // إضافة بيانات وهمية للإنجازات إذا لم تكن موجودة
       const mockAchievements = achievementsData.length > 0 ? achievementsData : [
@@ -679,6 +685,14 @@ const StudentDashboard = () => {
                          
                          {/* Progress bar */}
                          <Box sx={{ mb: 1.5 }}>
+                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                             <Typography variant="caption" sx={{ color: '#666', fontSize: '11px', fontWeight: 500 }}>
+                               التقدم
+                             </Typography>
+                             <Typography variant="caption" sx={{ color: '#0e5181', fontSize: '11px', fontWeight: 600 }}>
+                               {Math.round(course.progress || 0)}%
+                             </Typography>
+                           </Box>
                            <LinearProgress 
                              variant="determinate" 
                              value={course.progress || 0} 
@@ -687,7 +701,9 @@ const StudentDashboard = () => {
                                borderRadius: 4,
                                backgroundColor: '#f0f0f0',
                                '& .MuiLinearProgress-bar': {
-                                 background: 'linear-gradient(45deg, #0e5181, #1a6ba8)',
+                                 background: (course.progress || 0) >= 100 
+                                   ? 'linear-gradient(45deg, #4caf50, #66bb6a)' 
+                                   : 'linear-gradient(45deg, #0e5181, #1a6ba8)',
                                  borderRadius: 4
                                }
                              }} 
@@ -701,6 +717,9 @@ const StudentDashboard = () => {
                            </Typography>
                            <Typography variant="body2" color="text.secondary">
                              {course.duration || '1س 34د 44ث'} مدة التشغيل
+                           </Typography>
+                           <Typography variant="body2" sx={{ color: '#0e5181', fontWeight: 500 }}>
+                             التقدم: {Math.round(course.progress || 0)}%
                            </Typography>
                          </Box>
                        </Box>
@@ -730,7 +749,7 @@ const StudentDashboard = () => {
                          }}
                          onClick={() => handleCourseContinue(course.id)}
                        >
-                         ابدأ
+                         {(course.progress || 0) > 0 ? 'متابعة' : 'ابدأ'}
                        </Button>
                      </Box>
                    </Box>

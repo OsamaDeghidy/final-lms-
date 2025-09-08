@@ -99,6 +99,42 @@ class ModuleViewSet(ModelViewSet):
             'details': serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'])
+    def update_video_progress(self, request, pk=None):
+        """تحديث تقدم مشاهدة الفيديو"""
+        module = self.get_object()
+        course = module.course
+        
+        # Check if user is enrolled
+        if not course.enrollments.filter(student=request.user, status__in=['active', 'completed']).exists():
+            return Response({
+                'error': 'يجب أن تكون مسجلاً في الدورة'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        video_progress = request.data.get('video_progress', 0)
+        video_last_position = request.data.get('video_last_position', 0)
+        
+        # Get or create module progress
+        progress, created = ModuleProgress.objects.get_or_create(
+            user=request.user,
+            module=module,
+            defaults={'status': ModuleProgress.ProgressStatus.NOT_STARTED}
+        )
+        
+        # Update video progress
+        progress.mark_video_watched(
+            progress=video_progress,
+            last_position=video_last_position,
+            commit=True
+        )
+        
+        return Response({
+            'message': 'تم تحديث تقدم الفيديو بنجاح',
+            'video_progress': progress.video_progress,
+            'video_watched': progress.video_watched,
+            'completion_percentage': progress.get_completion_percentage()
+        }, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         """Create a new module with better error handling"""
         try:

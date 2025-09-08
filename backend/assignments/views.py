@@ -568,6 +568,20 @@ def submit_assignment(request, assignment_id):
             submitted_file=request.FILES.get('submitted_file')
         )
         
+        # Update module progress if assignment is associated with a module
+        if hasattr(assignment, 'module') and assignment.module:
+            from content.models import ModuleProgress
+            try:
+                module_progress = ModuleProgress.objects.get(
+                    user=request.user,
+                    module=assignment.module
+                )
+                # Mark assignment as completed (you might want to add an assignment_completed field)
+                # For now, we'll just update the completion status
+                module_progress.update_completion_status()
+            except ModuleProgress.DoesNotExist:
+                pass
+        
         # Process question responses if assignment has questions
         if assignment.has_questions:
             question_responses = request.data.get('question_responses', [])
