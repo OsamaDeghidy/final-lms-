@@ -126,6 +126,7 @@ import { courseAPI } from '../../services/api.service';
 import certificateAPI from '../../services/certificate.service';
 import Header from '../../components/layout/Header.jsx';
 import Footer from '../../components/layout/Footer.jsx';
+import { API_CONFIG } from '../../config/api.config';
 // Force reload
 
 // Simple video player component to replace ReactPlayer
@@ -143,12 +144,12 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
     
     // If it starts with /media/ or /static/, make it absolute
     if (videoUrl.startsWith('/media/') || videoUrl.startsWith('/static/')) {
-      return `http://127.0.0.1:8000${videoUrl}`;
+      return `${API_CONFIG.baseURL}${videoUrl}`;
     }
     
     // If it's a relative path, assume it's in media
     if (!videoUrl.startsWith('/')) {
-      return `http://127.0.0.1:8000/media/${videoUrl}`;
+      return `${API_CONFIG.baseURL}/media/${videoUrl}`;
     }
     
     return videoUrl;
@@ -1773,12 +1774,12 @@ const CourseTracking = () => {
     
     // If it starts with /media/ or /static/, make it absolute
     if (fileUrl.startsWith('/media/') || fileUrl.startsWith('/static/')) {
-      return `http://127.0.0.1:8000${fileUrl}`;
+      return `${API_CONFIG.baseURL}${fileUrl}`;
     }
     
     // If it's a relative path, assume it's in media
     if (!fileUrl.startsWith('/')) {
-      return `http://127.0.0.1:8000/media/${fileUrl}`;
+      return `${API_CONFIG.baseURL}/media/${fileUrl}`;
     }
     
     return fileUrl;

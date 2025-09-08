@@ -46,6 +46,7 @@ import Footer from '../../components/layout/Footer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
 import { courseAPI, cartAPI } from '../../services/courseService';
+import { API_CONFIG } from '../../config/api.config';
 
 // Helper: truncate text to a fixed number of characters and append ellipsis
 const truncateText = (text, maxChars = 30) => {
@@ -639,7 +640,7 @@ const Courses = () => {
 
   const getCourseImage = (course) => {
     if (course.image) {
-      return course.image.startsWith('http') ? course.image : `http://127.0.0.1:8000${course.image}`;
+      return course.image.startsWith('http') ? course.image : `${API_CONFIG.baseURL}${course.image}`;
     }
     // Fallback to a default image
     return 'https://source.unsplash.com/random/800x450?course,education';

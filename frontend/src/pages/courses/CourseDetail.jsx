@@ -112,6 +112,7 @@ import { assignmentsAPI } from '../../services/assignment.service';
 import { examAPI } from '../../services/exam.service';
 import { reviewsAPI } from '../../services/reviews.service';
 import api from '../../services/api.service';
+import { API_CONFIG } from '../../config/api.config';
 
 // Animation keyframes - تحسين الأنيميشن
 const gradientAnimation = keyframes`
@@ -1465,7 +1466,7 @@ const CourseDetail = () => {
         // Check if it's already a full URL
         if (imageField.startsWith('http')) return imageField;
         // If it's a relative path, prepend the base URL
-        return `http://127.0.0.1:8000${imageField}`;
+        return `${API_CONFIG.baseURL}${imageField}`;
       }
       if (imageField.url) return imageField.url;
       return 'https://source.unsplash.com/random/1600x500?programming,react';
@@ -1476,7 +1477,7 @@ const CourseDetail = () => {
       if (!fileField) return null;
       if (typeof fileField === 'string') {
         if (fileField.startsWith('http')) return fileField;
-        return `http://127.0.0.1:8000${fileField}`;
+        return `${API_CONFIG.baseURL}${fileField}`;
       }
       if (fileField.url) return fileField.url;
       return null;
