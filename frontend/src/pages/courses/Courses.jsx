@@ -495,18 +495,20 @@ const Courses = () => {
         setCourses(coursesData);
         setCategories(categoriesData);
         
-        // Load cart items
-        try {
-          const cartResponse = await cartAPI.getCart();
-          const cartItemsMap = {};
-          if (cartResponse.items) {
-            cartResponse.items.forEach(item => {
-              cartItemsMap[item.course.id] = true;
-            });
+        // Load cart items (only for authenticated users)
+        if (localStorage.getItem('token')) {
+          try {
+            const cartResponse = await cartAPI.getCart();
+            const cartItemsMap = {};
+            if (cartResponse.items) {
+              cartResponse.items.forEach(item => {
+                cartItemsMap[item.course.id] = true;
+              });
+            }
+            setCartItems(cartItemsMap);
+          } catch (cartError) {
+            console.log('Cart not available:', cartError);
           }
-          setCartItems(cartItemsMap);
-        } catch (cartError) {
-          console.log('Cart not available:', cartError);
         }
         
       } catch (err) {
@@ -577,6 +579,12 @@ const Courses = () => {
   const toggleCartItem = async (courseId, e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Check if user is authenticated
+    if (!localStorage.getItem('token')) {
+      setSnackbar({ open: true, message: 'يجب تسجيل الدخول لإضافة الدورات إلى السلة', severity: 'warning' });
+      return;
+    }
     
     try {
       if (cartItems[courseId]) {

@@ -53,6 +53,19 @@ class CourseViewSet(ModelViewSet):
     ordering_fields = ['created_at', 'updated_at', 'title', 'price', 'average_rating']
     ordering = ['-created_at']
     
+    def get_permissions(self):
+        """
+        Allow public (unauthenticated) access for safe reads of published courses:
+        - list: course listing (published courses only)
+        - retrieve: course details
+        - related: related courses
+        - modules: course modules (with limited info for anonymous users)
+        Keep authentication required for all other actions.
+        """
+        if getattr(self, 'action', None) in ['list', 'retrieve', 'related', 'modules']:
+            return [AllowAny()]
+        return [permission() for permission in self.permission_classes]
+    
     def get_serializer_class(self):
         if self.action == 'create':
             return CourseCreateSerializer
@@ -313,6 +326,35 @@ class CourseViewSet(ModelViewSet):
     def modules(self, request, pk=None):
         """جلب وحدات الدورة"""
         course = self.get_object()
+        
+        # For anonymous users, return basic module info without content
+        if not request.user.is_authenticated:
+            try:
+                modules = course.modules.filter(status='published', is_active=True).order_by('order')
+                # Return only basic module information for anonymous users
+                basic_modules_data = []
+                for module in modules:
+                    basic_modules_data.append({
+                        'id': module.id,
+                        'name': module.name,
+                        'description': module.description,
+                        'order': module.order,
+                        'duration_minutes': getattr(module, 'duration_minutes', 0),
+                        'lesson_count': module.lessons.filter(is_active=True).count() if hasattr(module, 'lessons') else 0,
+                        'is_locked': True,  # Indicate that content is locked for anonymous users
+                        'preview_available': True
+                    })
+                
+                return Response({
+                    'modules': basic_modules_data,
+                    'message': 'يجب تسجيل الدخول للوصول إلى محتوى الدورة'
+                }, status=status.HTTP_200_OK)
+            except Exception as e:
+                # If there's an error accessing modules, return empty list
+                return Response({
+                    'modules': [],
+                    'message': 'لا توجد وحدات متاحة لهذه الدورة'
+                }, status=status.HTTP_200_OK)
         
         # Check if user is enrolled or is the teacher/admin
         user = request.user

@@ -1,0 +1,270 @@
+### نظرة عامة سريعة على المشروع
+- العربية: المشروع عبارة عن LMS متكامل. الباك إند مبني على Django 4.1.7 وDjango REST Framework مع JWT. يوجد تطبيقات: `users`, `courses`, `content`, `assignments`, `store`, `certificates`, `meetings`, `notifications`, `articles`, `extras`, `custom_permissions`. قاعدة البيانات الافتراضية `sqlite3`. محرر محتوى `django-ckeditor-5`. بعض حزم (Celery/Redis/Allauth) مثبّتة لكن غير مفعّلة فعليًا. الفرونت إند React 19 + Vite 7، يستخدم Axios وMUI/Ant Design، مع بروكسي Vite إلى `http://localhost:8000` وتهيئة `baseURL` عبر `VITE_API_BASE_URL`.
+- English: Full LMS. Backend is Django 4.1.7 + DRF with JWT. Apps: `users`, `courses`, `content`, `assignments`, `store`, `certificates`, `meetings`, `notifications`, `articles`, `extras`, `custom_permissions`. Default DB is `sqlite3`. Uses `django-ckeditor-5`. Some packages (Celery/Redis/Allauth) are installed but mostly not wired. Frontend is React 19 + Vite 7, Axios + MUI/AntD, proxies to `http://localhost:8000`, API base via `VITE_API_BASE_URL`.
+
+### توافق الواجهات (Endpoints)
+- العربية: معظم مسارات الفرونت متوافقة مع الباك إند (مثل `api/courses/*`, `api/assignments/*`, `api/content/*`). هناك نقاط حرجة: بعض مسارات لوحة التحكم تحت `core/views.py` تستخدم `login_required` (جلسات) وليست DRF، بينما الفرونت يرسل JWT فقط؛ وأيضًا بعض مسارات مستخدمة في الفرونت غير موجودة (مثل تنزيل موارد الدروس).
+- English: Most endpoints line up, but dashboard routes in `core/views.py` are Django views using session `login_required` rather than DRF auth, while frontend uses Bearer JWT. Also, a few client endpoints don’t exist (e.g., lesson resource download).
+
+### أخطاء حرجة ستسبب فشل تشغيل/وظائف (Critical)
+- العربية: مفتاح سرّي مكشوف و`DEBUG=True` و`ALLOWED_HOSTS` محلي فقط. هذا خطر أمني وسيكسر النشر على نطاق عام.
+```23:29:backend/core/settings.py
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-%9l()dc43djrz=dnah3&#5vxtc7#z2fmh=e$-7m)r*(_svbc2n'
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+```
+- English: SECRET_KEY exposed; DEBUG=True; ALLOWED_HOSTS local only. Security risk and breaks production.
+
+- العربية: تسجيل بيانات الطلب الخام في تسجيل الدخول (قد تتضمّن كلمة المرور) — تسرّب خطير.
+```70:75:backend/authentication/views.py
+# Log the raw request body for debugging
+try:
+    logger.debug(f'Request body: {request.body.decode("utf-8")})
+except Exception as e:
+    logger.warning(f'Could not decode request body: {str(e)}')
+```
+- English: Raw request body (potentially passwords) logged on login. Severe data leak.
+
+- العربية: تكامل Moyasar يعتمد على `settings.MOYASAR_SETTINGS` غير معرّفة (معلّقة في `settings.py`) => إستدعاءات الدفع ستفشل بـ AttributeError.
+```312:327:backend/store/views.py
+currency = settings.MOYASAR_SETTINGS.get('CURRENCY', 'SAR')
+
+callback_url = settings.MOYASAR_SETTINGS.get('PUBLIC_BASE_URL', '') + '/store/payment/moyasar/callback/'
+
+...
+auth = settings.MOYASAR_SETTINGS.get('SECRET_KEY', '') + ':'
+auth_header = 'Basic ' + base64.b64encode(auth.encode()).decode()
+```
+- English: Payments will break because `MOYASAR_SETTINGS` is commented out; code tries to access it.
+
+- العربية: استيراد خاطئ لـ `User` في المتجر — سيكسر الاستيراد.
+```16:18:backend/store/views.py
+from courses.models import Course
+from users.models import User
+from .models import Cart, CartItem, Wishlist, Order, OrderItem, Coupon
+```
+- English: Wrong import of User from `users.models` (no such class). Use `django.contrib.auth.get_user_model()`.
+
+- العربية: نقاط كثيرة في `core/views.py` تفترض وجود `course.lessons` و`Lesson.views` — غير موجودة في النماذج الحالية، ما يؤدي لأخطاء ORM.
+```142:149:backend/core/views.py
+# حساب التقدم
+total_lessons = course.lessons.count()
+completed_lessons = course.lessons.filter(
+    views__student=student
+).count()
+progress = (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0
+```
+```282:295:backend/core/views.py
+recent_lessons = Lesson.objects.filter(
+    views__student=user.student
+).order_by('-views__viewed_at')[:5]
+
+for lesson in recent_lessons:
+    activities.append({
+        'id': f'lesson_{lesson.id}',
+        'type': 'lesson',
+        'title': f'شاهد درس: {lesson.title}',
+        'description': f'مقرر: {lesson.course.title}',
+        'time': lesson.views.filter(student=user.student).first().viewed_at.strftime('%Y-%m-%d %H:%M'),
+```
+- English: Code assumes `Course.lessons` and a `Lesson views` relation that don’t exist; will error.
+
+- العربية: مسارات الملف الشخصي في `authentication` تستخدم `int` بينما `Profile.id` UUID => خطأ.
+```12:16:backend/authentication/urls.py
+# الملف الشخصي
+path('profile/', views.profile_view, name='profile'),
+path('profile/update/', views.update_profile, name='update_profile'),
+path('profile/<int:profile_id>/', views.ProfileDetailView.as_view(), name='profile_detail'),
+```
+- English: Profile URL expects int but model uses UUID primary key.
+
+- العربية: التحقق من البريد الإلكتروني يعدّل خاصية غير موجودة في `User` (`email_verified`) + إعدادات بريد وقوالب غير معرفة (`FRONTEND_URL`, `DEFAULT_FROM_EMAIL`، قوالب `emails/...`).
+```111:116:backend/users/views_auth.py
+user = serializer.user
+
+# Mark email as verified
+user.email_verified = True
+user.save()
+```
+- English: Uses `user.email_verified` which doesn’t exist; email settings/templates also missing.
+
+- العربية: بحث الدورات يستخدم حقول غير موجودة (`name`, `small_description`) => FieldError.
+```406:411:backend/courses/views.py
+if data.get('query'):
+    queryset = queryset.filter(
+        Q(name__icontains=data['query']) |
+        Q(description__icontains=data['query']) |
+        Q(small_description__icontains=data['query'])
+    )
+```
+- English: Wrong field names in course search; should be `title`, `short_description`.
+
+### مشكلات عالية الأهمية (High)
+- العربية: مسارات لوحة التحكم في `core/views.py` تستخدم `@login_required` (جلسات) وليس DRF؛ مع JWT فقط ستفشل المصادقة (403/302).
+```18:23:backend/core/views.py
+@login_required
+def student_dashboard_stats(request):
+    """إحصائيات لوحة تحكم الطالب"""
+```
+- English: Dashboard endpoints use session auth; should be DRF with JWT.
+
+- العربية: نقطة واجهة أمامية غير موجودة: تنزيل موارد الدروس (`/api/content/resources/{id}/download/`) غير معرّف في ViewSet الحالي.
+- English: Missing download action on `LessonResourceViewSet` while frontend expects it.
+
+- العربية: تناقض تسميات الأدوار: يستخدم "Teacher" في مكان و"Instructor" في مكان آخر => صلاحيات خاطئة.
+```584:588:backend/users/views.py
+profile = request.user.profile
+if profile.status not in ['Teacher', 'Admin'] and not request.user.is_staff:
+    return Response({
+        'error': 'ليس لديك صلاحية للوصول لهذه البيانات'
+```
+- English: Role name mismatch (“Teacher” vs “Instructor”) causing wrong permission checks.
+
+- العربية: `Lesson.get_absolute_url` يستخدم `module.slug` بينما `Module` لا يملك slug.
+```329:334:backend/content/models.py
+return reverse('lesson-detail', kwargs={
+    'course_slug': self.module.course.slug,
+    'module_slug': self.module.slug,
+    'lesson_slug': self.slug
+})
+```
+- English: Module has no `slug`; URL builder will fail.
+
+- العربية: نسخة `django-allauth` غير واقعية ستفشل التثبيت عبر pip.
+```44:51:backend/requirements.txt
+djangorestframework-simplejwt==5.2.2
+django-oauth-toolkit==1.7.0
+celery==5.3.1
+redis==4.6.0
+django-celery-beat==2.5.0
+django-celery-results==2.5.1
+django-allauth==65.9.0
+```
+- English: Likely invalid version for `django-allauth`; pip install will fail.
+
+### مشكلات متوسطة/منخفضة (Medium/Low)
+- العربية: إعدادات أمان: `CORS_ALLOW_ALL_ORIGINS=True`, `CSRF_COOKIE_HTTPONLY=False`, جلسات غير آمنة في الإنتاج، أعمار توكن طويلة (30 يوم)، استخدام `sqlite3` بدل Postgres، قيم OAuth (GitHub) مكشوفة في `settings.py`.
+- English: Security hardening needed: CORS wide-open, CSRF token readable by JS, long JWT lifetime, sqlite in prod, OAuth client secrets committed.
+
+- العربية: لوجات تصحيح كثيرة (طباعة كلمات مرور/طلبات/موديلات) يجب تعطيلها في الإنتاج (مثال في `reviews.models.save`).
+```37:44:backend/reviews/models.py
+def save(self, *args, **kwargs):
+    print(f"=== MODEL SAVE DEBUG ===")
+    print(f"Review ID: {getattr(self, 'id', 'NEW')}")
+    print(f"Rating: {self.rating}")
+    print(f"Review Text: '{self.review_text}'")
+    print(f"User: {self.user}")
+    print(f"Course: {self.course}")
+```
+- English: Excessive debug prints/logging in production.
+
+- العربية: إعدادات Allauth موجودة لكن غير مفعلة (لا `allauth` URLs/Backend). Celery/Redis مثبتة بلا إعداد.
+- English: Allauth/Celery installed but not wired.
+
+- العربية: قيم `ADMIN_REORDER` تشير إلى موديلات في `courses` بينما هي في `content/reviews` — غير مستخدمة عمليًا لكن إشارة لعدم اتساق.
+- English: ADMIN_REORDER lists wrong app labels (not used anyway).
+
+- العربية: مجلد `venv` و`db.sqlite3` داخل الريبو — يجب استبعادها.
+- English: venv and sqlite DB committed; remove from repo.
+
+### احتمالات الأعطال عند التشغيل الأول (Most likely runtime failures)
+- العربية:
+  - فشل تثبيت الحزم بسبب `django-allauth==65.9.0`.
+  - فشل مسارات الدفع مع Moyasar (غياب `MOYASAR_SETTINGS`).
+  - أخطاء ORM في `core/views.py` (عدم وجود `course.lessons`/`Lesson.views`).
+  - بحث الدورات يفشل بـ FieldError.
+  - استيراد `User` الخاطئ في `store/views.py`.
+  - مسار `authentication` لملف شخصي UUID مكسور (`<int:profile_id>`).
+  - مسارات لوحة التحكم ترجع 403/302 بسبب `login_required` مع JWT.
+  - تنزيل موارد الدروس 404 (لا `download`).
+  - تحقق البريد الإلكتروني يفشل (`email_verified` + إعدادات البريد مفقودة).
+- English:
+  - Pip install fails on invalid allauth version.
+  - Payment endpoints error due to missing `MOYASAR_SETTINGS`.
+  - ORM errors from `core/views.py` assumptions.
+  - Course search FieldErrors.
+  - Wrong User import in store.
+  - Auth profile route using int vs UUID.
+  - Dashboard endpoints unauthorized with JWT.
+  - Lesson resource download missing.
+  - Email verification breaks (missing fields/settings/templates).
+
+### توصياتي السريعة للإصلاح (ترتيب أولويات)
+- العربية:
+  1) أمان/إعدادات الإنتاج: اخفِ `SECRET_KEY`, عطل DEBUG، حدّث `ALLOWED_HOSTS`، شدد CORS/CSRF، انقل لقاعدة Postgres.
+  2) الحزم: صحّح `django-allauth` (مثلاً 0.63.x)، نظّف `venv` و`db.sqlite3` من الريبو.
+  3) الدفع: عرّف `MOYASAR_SETTINGS` في `settings.py` من المتغيرات البيئية، أو عطّل المسارات مؤقتًا إن لم تُستخدم.
+  4) `core/views.py`: حوّل الدوال إلى DRF (`@api_view`/`APIView` + `IsAuthenticated`) واستبدل منطق `course.lessons` إلى عبر `modules -> lessons` أو اجلب التقدم من `content.UserProgress/ModuleProgress`.
+  5) البحث عن الدورات: غيّر الحقول إلى `title` و`short_description`.
+  6) `store/views.py`: استخدم `from django.contrib.auth import get_user_model` أو `from django.contrib.auth.models import User`.
+  7) مسارات/أنواع المعرف: اجعل `authentication/urls.py` يستخدم `<uuid:profile_id>` وحدث الـ view، ووحّد تسميات الدور إلى "Instructor".
+  8) البريد والتحقق: أزل `email_verified` أو أضف حقلًا مخصصًا لمستخدم ممتد، وعرّف `FRONTEND_URL` و`DEFAULT_FROM_EMAIL` وقوالب البريد.
+  9) `LessonResource` تنزيل: أضف `@action(detail=True, methods=['get']) download` يعيد ملفًا.
+  10) أزل/قلل لوجات الحساسة (خصوصًا في تسجيل الدخول والموديلات).
+
+- English:
+  1) Security/prod settings: hide SECRET_KEY, disable DEBUG, set ALLOWED_HOSTS, tighten CORS/CSRF, move to Postgres.
+  2) Dependencies: fix django-allauth version, remove venv/db from repo.
+  3) Payments: define MOYASAR_SETTINGS via env or temporarily disable endpoints.
+  4) Core dashboards: convert to DRF endpoints and compute progress via `content` models, not `course.lessons`.
+  5) Course search: use correct fields `title` and `short_description`.
+  6) Store: fix User import to Django auth user.
+  7) IDs/Routes: use UUID in `authentication/urls.py` for profile; unify role name to “Instructor”.
+  8) Email verify: drop `email_verified` or add proper custom user; set `FRONTEND_URL`, `DEFAULT_FROM_EMAIL`, templates.
+  9) LessonResource download action.
+  10) Remove sensitive logs.
+
+### ملاحظات على تجربة النشر والتشغيل (Run/Deploy)
+- العربية:
+  - باك إند (محلي): Python 3.11، `pip install -r backend/requirements.txt` (بعد تصحيح allauth)، `python manage.py migrate && createsuperuser && runserver`.
+  - فرونت: Node 18، `npm ci && npm run dev`، اضبط `VITE_API_BASE_URL=http://127.0.0.1:8000`.
+  - الإنتاج: Postgres + Redis (إن أردت Celery)، اضبط `ALLOWED_HOSTS`، CORS/CSRF على النطاقات الفعلية، عيّن مفاتيح Moyasar وبريد SMTP.
+- English:
+  - Backend (local): Python 3.11; install reqs (after fixing allauth), migrate, create superuser, runserver.
+  - Frontend: Node 18; `npm ci`, `npm run dev`, set `VITE_API_BASE_URL`.
+  - Production: Postgres, proper ALLOWED_HOSTS, CORS/CSRF, Moyasar keys, SMTP.
+
+### ملاحظات جودة/تحسينات
+- العربية: استخدام `select_related/prefetch_related` جيد في عدة مواضع. النماذج في `content` منظّمة ومفهرسة. اقترح توحيد أنماط المصادقة بالكامل على JWT عبر DRF، وتفعيل اختبار وحدات للأجزاء الحساسة (المدفوعات/التقدّم).
+- English: Good queryset optimization in many places; content models are well-structured. Recommend standardizing on DRF/JWT everywhere and adding tests around payments/progress.
+
+### أمثلة مقتضبة لإصلاحات سريعة (نماذج)
+- العربية: غيّر بحث الدورات:
+  - من `Q(name__icontains=...) | Q(small_description__icontains=...)`
+  - إلى `Q(title__icontains=...) | Q(short_description__icontains=...)`
+- English: Fix course search fields to `title`/`short_description`.
+
+- العربية: في `store/views.py`:
+  - استخدم: `from django.contrib.auth import get_user_model; User = get_user_model()`
+- English: Use Django’s user model via `get_user_model()`.
+
+- العربية: أضف أكشن تنزيل مورد درس:
+  - `@action(detail=True, methods=['get']) def download(self, request, pk=None): return FileResponse(...)`
+- English: Add `download` action on `LessonResourceViewSet`.
+
+- العربية: حوّل دوال لوحة التحكم في `core/views.py` إلى DRF واستخرج التقدم من `UserProgress/ModuleProgress`.
+- English: Convert core dashboard views to DRF and compute progress from content progress models.
+
+### ما الذي سأقيّمه كمخاطر رئيسية قبل الاستلام؟
+- العربية: أمان (مفاتيح/DEBUG/CORS/CSRF)، مدفوعات Moyasar، عدم اتساق المخططات بين النماذج والفيـوز، ومصداقية مسارات لوحة التحكم مع JWT.
+- English: Security posture, Moyasar readiness, ORM/view-model mismatches, and dashboard auth consistency.
+
+- - -
+
+- تم التقييم الشامل مع تجاهل ملفات README كما طلبت. إذا رغبت، أستطيع تنفيذ إصلاحات سريعة (PR) على النقاط الحرجة (بحث الدورات، الاستيراد الخاطئ، تفعيل DRF للوحة التحكم، إضافة مسار تنزيل مورد، إيقاف لوج كلمات المرور) في جلسة واحدة.
+
+- I completed a full review while ignoring READMEs as requested. If you want, I can apply quick edits for the critical items (course search, wrong import, DRF-ify dashboard, add resource download, remove sensitive logs) in one go.
+
+- تغييرات مقترحة للبيئة (Environment):
+  - العربية: أضف متغيرات: `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `CSRF_TRUSTED_ORIGINS`, `MOYASAR_PUBLISHABLE_KEY`, `MOYASAR_SECRET_KEY`, `MOYASAR_API_BASE_URL`, `PUBLIC_BASE_URL`, `DEFAULT_FROM_EMAIL`, `FRONTEND_URL`, إعدادات SMTP.
+  - English: Provide env vars for SECRET_KEY, ALLOWED_HOSTS, CORS/CSRF, Moyasar keys/URL, DEFAULT_FROM_EMAIL, FRONTEND_URL, SMTP.
+
+- ألوان وRTL: واجهات الإدمن بالعربية والـRTL مدعومة عمومًا؛ عند تعديل الواجهة، سنراعي تفضيلاتك للألوان وخلوّها من اللون البنفسجي كما ذكرت سابقًا.
+- Colors/RTL: Admin is Arabic/RTL-friendly; when touching the UI we’ll respect your color preferences (no purple).
+
+مختصر نقاط مهمّة:
+- إصلاحات حرجة: مفاتيح/DEBUG، Moyasar، استيراد User، بحث الدورات، تحويل مسارات لوحة التحكم لـ DRF، تصحيح UUID، إزالة لوج كلمات المرور.
+- توافق واجهات: أضف `download` لموارد الدروس، راجع نقاط مقالات/معلّم قد لا توجد، وحسّن صلاحيات الأدوار.
+- أمان وإنتاج: شدّد CORS/CSRF، انقل إلى Postgres، أخفِ الأسرار، واستخدم قيم بيئية.

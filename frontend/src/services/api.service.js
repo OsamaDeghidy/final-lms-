@@ -44,8 +44,23 @@ api.interceptors.response.use(
     console.log('Response interceptor - Error:', error.response?.status, error.response?.data, error.config?.url);
     
     if (error.response?.status === 401) {
-      console.log('Unauthorized access - redirecting to login');
-      // Handle unauthorized access
+      console.log('Unauthorized access detected');
+      
+      // Check if this is a public endpoint that should be accessible without authentication
+      const url = error.config?.url || '';
+      const isPublicEndpoint = url.includes('/api/courses/courses/') && 
+                              (url.includes('/related/') || 
+                               url.includes('/modules/') ||
+                               url.match(/\/api\/courses\/courses\/\d+\/$/)); // Course detail endpoint
+      
+      if (isPublicEndpoint) {
+        console.log('Public endpoint detected - not redirecting to login');
+        // For public endpoints, just reject the promise without redirecting
+        return Promise.reject(error);
+      }
+      
+      console.log('Protected endpoint - redirecting to login');
+      // Handle unauthorized access for protected endpoints
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');

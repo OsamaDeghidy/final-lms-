@@ -68,10 +68,10 @@ def login_view(request):
         logger.debug(f'Request data: {request.data}')
         
         # Log the raw request body for debugging
-        try:
-            logger.debug(f'Request body: {request.body.decode("utf-8")}')
-        except Exception as e:
-            logger.warning(f'Could not decode request body: {str(e)}')
+        #try:
+          #  logger.debug(f'Request body: {request.body.decode("utf-8")}')
+        #except Exception as e:
+        #    logger.warning(f'Could not decode request body: {str(e)}')
         
         serializer = UserLoginSerializer(data=request.data)
         if not serializer.is_valid():
