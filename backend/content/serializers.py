@@ -252,27 +252,61 @@ class LessonCreateUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate(self, attrs):
-        # Ensure slug uniqueness per module is handled by model constraint; we can add extra checks if needed
+        # Set default lesson_type if not provided
+        if 'lesson_type' not in attrs or not attrs['lesson_type']:
+            attrs['lesson_type'] = 'article'
+        
+        # Debug logging
+        print(f"Validating lesson data: {attrs}")
+        
+        # Ensure module is provided
+        if 'module' not in attrs or not attrs['module']:
+            raise serializers.ValidationError({'module': 'Module is required'})
+        
         return attrs
 
     def create(self, validated_data):
-        # Auto-assign order if not provided
-        if 'order' not in validated_data or validated_data.get('order') in [None, 0]:
-            module = validated_data['module']
-            max_order = module.lessons.aggregate(max_o=Max('order')).get('max_o') or 0
-            validated_data['order'] = max_order + 1
-        
-        # Set default values for optional fields
-        if 'description' not in validated_data or validated_data['description'] is None:
-            validated_data['description'] = ""
-        if 'is_active' not in validated_data:
-            validated_data['is_active'] = True
-        if 'is_free' not in validated_data:
-            validated_data['is_free'] = False
-        if 'difficulty' not in validated_data:
-            validated_data['difficulty'] = 'beginner'
-        
-        return super().create(validated_data)
+        try:
+            # Auto-assign order if not provided
+            if 'order' not in validated_data or validated_data.get('order') in [None, 0]:
+                module = validated_data['module']
+                max_order = module.lessons.aggregate(max_o=Max('order')).get('max_o') or 0
+                validated_data['order'] = max_order + 1
+            
+            # Set default values for optional fields
+            if 'description' not in validated_data or validated_data['description'] is None:
+                validated_data['description'] = ""
+            if 'is_active' not in validated_data:
+                validated_data['is_active'] = True
+            if 'is_free' not in validated_data:
+                validated_data['is_free'] = False
+            if 'difficulty' not in validated_data:
+                validated_data['difficulty'] = 'beginner'
+            
+            # Set default lesson_type if not provided
+            if 'lesson_type' not in validated_data or not validated_data['lesson_type']:
+                validated_data['lesson_type'] = 'article'
+            
+            # Debug logging
+            print(f"Creating lesson with data: {validated_data}")
+            
+            # Ensure module is provided
+            if 'module' not in validated_data or not validated_data['module']:
+                raise serializers.ValidationError({'module': 'Module is required'})
+            
+            # Create the lesson
+            lesson = super().create(validated_data)
+            
+            # Debug logging
+            print(f"Created lesson with ID: {lesson.id}")
+            
+            # Note: Lesson model doesn't have a direct video field, only video_url
+            # The video upload is handled through LessonResource if needed
+            
+            return lesson
+        except Exception as e:
+            print(f"Error in LessonCreateUpdateSerializer.create: {e}")
+            raise
 
 
 class LessonResourceSerializer(serializers.ModelSerializer):

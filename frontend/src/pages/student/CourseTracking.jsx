@@ -152,6 +152,11 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
       return `${API_CONFIG.baseURL}/media/${videoUrl}`;
     }
     
+    // If it's a Django media URL, make it absolute
+    if (videoUrl.startsWith('/media/')) {
+      return `${API_CONFIG.baseURL}${videoUrl}`;
+    }
+    
     return videoUrl;
   };
   
@@ -160,6 +165,7 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
   // Debug logging
   console.log('VideoPlayer - Original URL:', url);
   console.log('VideoPlayer - Processed URL:', processedUrl);
+  console.log('VideoPlayer - Lesson Data:', lessonData);
   console.log('VideoPlayer - isValidVideoUrl:', processedUrl && (
     processedUrl.includes('.mp4') || 
     processedUrl.includes('.webm') || 
@@ -226,11 +232,61 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
     processedUrl.includes('.mov') ||
     processedUrl.includes('.wmv') ||
     processedUrl.includes('.flv') ||
+    processedUrl.includes('.mkv') ||
     processedUrl.includes('blob:') ||
     processedUrl.startsWith('http://') ||
     processedUrl.startsWith('https://')
   );
 
+  // Handle YouTube URLs
+  const isYouTubeUrl = processedUrl && (
+    processedUrl.includes('youtube.com') || 
+    processedUrl.includes('youtu.be')
+  );
+
+  // Handle Vimeo URLs
+  const isVimeoUrl = processedUrl && processedUrl.includes('vimeo.com');
+
+  // Handle YouTube and Vimeo embeds
+  if (isYouTubeUrl || isVimeoUrl) {
+    let embedUrl = '';
+    
+    if (isYouTubeUrl) {
+      // Extract video ID from YouTube URL
+      const videoId = processedUrl.includes('youtu.be/') 
+        ? processedUrl.split('youtu.be/')[1].split('?')[0]
+        : processedUrl.split('v=')[1]?.split('&')[0];
+      
+      if (videoId) {
+        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      }
+    } else if (isVimeoUrl) {
+      // Extract video ID from Vimeo URL
+      const videoId = processedUrl.split('vimeo.com/')[1]?.split('?')[0];
+      
+      if (videoId) {
+        embedUrl = `https://player.vimeo.com/video/${videoId}`;
+      }
+    }
+
+    if (embedUrl) {
+      return (
+        <iframe
+          src={embedUrl}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none'
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+  }
 
   if (!isValidVideoUrl) {
     return (
@@ -334,6 +390,16 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
             الرابط المعالج: {processedUrl}
           </Typography>
         )}
+        <Typography variant="caption" sx={{ color: 'white', textAlign: 'center', opacity: 0.5 }}>
+          isValidVideoUrl: {isValidVideoUrl ? 'true' : 'false'} | 
+          isYouTubeUrl: {isYouTubeUrl ? 'true' : 'false'} | 
+          isVimeoUrl: {isVimeoUrl ? 'true' : 'false'}
+        </Typography>
+        {lessonData && (
+          <Typography variant="caption" sx={{ color: 'white', textAlign: 'center', opacity: 0.5 }}>
+            Lesson Content Available: {lessonData.content ? 'Yes' : 'No'}
+          </Typography>
+        )}
       </div>
     );
   }
@@ -369,6 +435,12 @@ const VideoPlayer = ({ url, playing, onPlay, onPause, onProgress, onDuration, wi
         }}
         onCanPlay={() => {
           console.log('Video can play for URL:', processedUrl);
+        }}
+        onLoadedMetadata={() => {
+          console.log('Video metadata loaded for URL:', processedUrl);
+        }}
+        onCanPlayThrough={() => {
+          console.log('Video can play through for URL:', processedUrl);
         }}
       />
     </>
@@ -1531,7 +1603,15 @@ const CourseTracking = () => {
                   resource.file_url.includes('.mp4') || 
                   resource.file_url.includes('.webm') || 
                   resource.file_url.includes('.mov') ||
-                  resource.file_url.includes('.avi')
+                  resource.file_url.includes('.avi') ||
+                  resource.file_url.includes('.mkv') ||
+                  resource.file_url.includes('.wmv') ||
+                  resource.file_url.includes('.flv')
+                )) ||
+                (resource.url && (
+                  resource.url.includes('youtube.com') ||
+                  resource.url.includes('youtu.be') ||
+                  resource.url.includes('vimeo.com')
                 ))
               );
               if (videoResource) {

@@ -23,10 +23,22 @@ def validate_file_size(value):
 
 def module_video_upload_path(instance, filename):
     """Generate upload path for module videos"""
+    import uuid
+    print(f"module_video_upload_path - instance: {instance}, instance.id: {getattr(instance, 'id', None)}")
+    if instance.id is None:
+        # If instance doesn't have an ID yet, use a temporary path with UUID
+        temp_id = str(uuid.uuid4())[:8]
+        return f'courses/{instance.course.id}/modules/temp_{temp_id}/videos/{filename}'
     return f'courses/{instance.course.id}/modules/{instance.id}/videos/{filename}'
 
 def module_pdf_upload_path(instance, filename):
     """Generate upload path for module PDFs"""
+    import uuid
+    print(f"module_pdf_upload_path - instance: {instance}, instance.id: {getattr(instance, 'id', None)}")
+    if instance.id is None:
+        # If instance doesn't have an ID yet, use a temporary path with UUID
+        temp_id = str(uuid.uuid4())[:8]
+        return f'courses/{instance.course.id}/modules/temp_{temp_id}/pdfs/{filename}'
     return f'courses/{instance.course.id}/modules/{instance.id}/pdfs/{filename}'
 
 
@@ -571,6 +583,12 @@ class UserProgress(models.Model):
 
 def lesson_resource_upload_path(instance, filename):
     """Generate upload path for lesson resources"""
+    import uuid
+    print(f"lesson_resource_upload_path - instance: {instance}, lesson.id: {getattr(instance.lesson, 'id', None)}")
+    if instance.lesson.id is None:
+        # If lesson doesn't have an ID yet, use a temporary path with UUID
+        temp_id = str(uuid.uuid4())[:8]
+        return f'courses/{instance.lesson.module.course.id}/modules/{instance.lesson.module.id}/lessons/temp_{temp_id}/resources/{filename}'
     return f'courses/{instance.lesson.module.course.id}/modules/{instance.lesson.module.id}/lessons/{instance.lesson.id}/resources/{filename}'
 
 
