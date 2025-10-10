@@ -1,11 +1,21 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse, path
 from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Q
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
+from datetime import datetime
+import io
+try:
+    from openpyxl import load_workbook, Workbook
+except Exception:  # Graceful fallback if openpyxl missing at runtime
+    load_workbook = None
+    Workbook = None
 from .models import CertificateTemplate, Certificate, UserSignature
 
 
@@ -62,7 +72,7 @@ class VerificationStatusFilter(SimpleListFilter):
 
 
 @admin.register(CertificateTemplate)
-class CertificateTemplateAdmin(admin.ModelAdmin):
+class CertificateTemplateAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'template_name', 'institution_name', 'template_file_preview',
         'usage_count', 'default_status', 'is_active', 'created_at'
@@ -187,8 +197,9 @@ class CertificateTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(Certificate)
 class CertificateAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/certificates/certificate/change_list.html'
     list_display = (
-        'certificate_id', 'student_name', 'course_title', 'final_grade_display',
+        'certificate_id', 'student_name', 'national_id', 'course_title', 'final_grade_display',
         'status_display', 'verification_display', 'date_issued', 'actions_column'
     )
     list_filter = (
@@ -212,8 +223,10 @@ class CertificateAdmin(admin.ModelAdmin):
         }),
         ('بيانات الطالب والدورة', {
             'fields': (
-                'student_name', 'course_title', 'institution_name',
-                'completion_date', 'course_duration_hours'
+                'student_name', 'national_id', 'course_title', 'institution_name',
+                'duration_days', 'course_duration_hours',
+                ('start_date', 'end_date'), ('start_date_hijri', 'end_date_hijri'),
+                'completion_date'
             )
         }),
         ('الدرجات والأداء', {
@@ -243,6 +256,299 @@ class CertificateAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    # --- Excel Import Utilities ---
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='certificates_certificate_import_excel'),
+            path('import-excel/template/', self.admin_site.admin_view(self.download_excel_template), name='certificates_certificate_import_excel_template'),
+            path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='certificates_certificate_export_excel'),
+        ]
+        return custom_urls + urls
+
+    def _parse_date(self, value):
+        """Parse date cell (datetime or string) into datetime or return None."""
+        if value is None or value == '':
+            return None
+        if isinstance(value, datetime):
+            return value
+        # Try common formats
+        for fmt in ('%Y/%m/%d', '%Y-%m-%d', '%d/%m/%Y', '%d-%m-%Y'):
+            try:
+                return datetime.strptime(str(value).strip(), fmt)
+            except ValueError:
+                continue
+        return None
+
+    def download_excel_template(self, request):
+        """Provide a simple Excel template with expected headers.
+        Supports update by `certificate_id` or creation by `email` + (`course_id` or `course_title`).
+        """
+        headers = [
+            # Update existing by certificate_id (preferred)
+            'certificate_id',
+            # Create or resolve user
+            'email', 'student_name', 'national_id',
+            # Resolve course
+            'course_id', 'course_title',
+            # Certificate content fields
+            'duration_days', 'course_duration_hours', 'start_date', 'end_date',
+            'start_date_hijri', 'end_date_hijri', 'completion_date',
+            'final_grade', 'completion_percentage', 'status', 'verification_status',
+            # Optional template resolution
+            'template_id'
+        ]
+
+        if Workbook:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Certificates'
+            ws.append(headers)
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response = HttpResponse(
+                output.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="certificates_import_template.xlsx"'
+            return response
+        else:
+            # Fallback CSV template
+            csv_content = ','.join(headers) + '\n'
+            return HttpResponse(csv_content, content_type='text/csv')
+
+    def export_excel_view(self, request):
+        """Export current certificates queryset to an Excel file with headers aligned to the import template."""
+        headers = [
+            'certificate_id', 'email', 'student_name', 'national_id',
+            'course_id', 'course_title',
+            'duration_days', 'course_duration_hours',
+            'start_date', 'end_date', 'start_date_hijri', 'end_date_hijri', 'completion_date',
+            'final_grade', 'completion_percentage', 'status', 'verification_status',
+            'template_id'
+        ]
+
+        queryset = self.get_queryset(request)
+
+        if Workbook:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Certificates'
+            ws.append(headers)
+
+            for cert in queryset:
+                ws.append([
+                    cert.certificate_id,
+                    cert.user.email if cert.user else '',
+                    cert.student_name or '',
+                    cert.national_id or '',
+                    cert.course.id if cert.course else '',
+                    cert.course_title or (cert.course.title if cert.course and hasattr(cert.course, 'title') else ''),
+                    cert.duration_days if cert.duration_days is not None else '',
+                    cert.course_duration_hours if cert.course_duration_hours is not None else '',
+                    cert.start_date.isoformat() if cert.start_date else '',
+                    cert.end_date.isoformat() if cert.end_date else '',
+                    cert.start_date_hijri or '',
+                    cert.end_date_hijri or '',
+                    cert.completion_date.isoformat() if cert.completion_date else '',
+                    cert.final_grade if cert.final_grade is not None else '',
+                    cert.completion_percentage if cert.completion_percentage is not None else '',
+                    cert.status or '',
+                    cert.verification_status or '',
+                    cert.template.id if cert.template else ''
+                ])
+
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response = HttpResponse(
+                output.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="certificates_export.xlsx"'
+            return response
+        else:
+            # Fallback CSV export
+            rows = []
+            rows.append(','.join(headers))
+            for cert in queryset:
+                row = [
+                    str(cert.certificate_id or ''),
+                    str(cert.user.email if cert.user else ''),
+                    str(cert.student_name or ''),
+                    str(cert.national_id or ''),
+                    str(cert.course.id if cert.course else ''),
+                    str(cert.course_title or (cert.course.title if cert.course and hasattr(cert.course, 'title') else '')),
+                    str(cert.duration_days if cert.duration_days is not None else ''),
+                    str(cert.course_duration_hours if cert.course_duration_hours is not None else ''),
+                    str(cert.start_date.isoformat() if cert.start_date else ''),
+                    str(cert.end_date.isoformat() if cert.end_date else ''),
+                    str(cert.start_date_hijri or ''),
+                    str(cert.end_date_hijri or ''),
+                    str(cert.completion_date.isoformat() if cert.completion_date else ''),
+                    str(cert.final_grade if cert.final_grade is not None else ''),
+                    str(cert.completion_percentage if cert.completion_percentage is not None else ''),
+                    str(cert.status or ''),
+                    str(cert.verification_status or ''),
+                    str(cert.template.id if cert.template else '')
+                ]
+                rows.append(','.join(row))
+            csv_content = '\n'.join(rows)
+            return HttpResponse(csv_content, content_type='text/csv')
+
+    def import_excel_view(self, request):
+        """Handle Excel upload to update or create certificate records.
+        - If `certificate_id` exists: update that certificate.
+        - Else if `email` exists: create/update for that user (optionally linking course by `course_id` or `course_title`).
+        """
+        base_ctx = self.admin_site.each_context(request)
+        context = {
+            **base_ctx,
+            'title': 'استيراد بيانات الشهادات من ملف إكسل',
+            'app_label': 'certificates',
+            'model_name': 'certificate',
+            'opts': self.model._meta,
+            'template_url': reverse('admin:certificates_certificate_import_excel_template'),
+            'changelist_url': reverse('admin:certificates_certificate_changelist'),
+        }
+
+        if request.method == 'POST':
+            file = request.FILES.get('excel_file')
+            if not file:
+                messages.error(request, 'يرجى اختيار ملف إكسل.')
+                return redirect('admin:certificates_certificate_import_excel')
+
+            if not load_workbook:
+                messages.error(request, 'حزمة openpyxl غير متاحة. يرجى تثبيتها أو استخدام قالب CSV.')
+                return redirect('admin:certificates_certificate_import_excel')
+
+            try:
+                wb = load_workbook(filename=file, data_only=True)
+                ws = wb.active
+            except Exception as e:
+                messages.error(request, f'فشل قراءة الملف: {e}')
+                return redirect('admin:certificates_certificate_import_excel')
+
+            # Map headers
+            headers = [str(cell.value).strip() if cell.value is not None else '' for cell in ws[1]]
+            header_index = {h: i for i, h in enumerate(headers)}
+
+            # Allow either update-by-certificate_id or create-by-email
+            if 'certificate_id' not in header_index and 'email' not in header_index:
+                messages.error(request, 'يجب أن يحتوي الصف الأول على "certificate_id" للتحديث أو "email" للإنشاء.')
+                return redirect('admin:certificates_certificate_import_excel')
+
+            updated_count = 0
+            created_count = 0
+            skipped_count = 0
+
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                cert = None
+                cert_id = row[header_index['certificate_id']] if 'certificate_id' in header_index else None
+                # Try update by certificate_id
+                if cert_id:
+                    cert = Certificate.objects.filter(certificate_id=str(cert_id).strip()).first()
+                
+                # Else try create by email
+                if not cert:
+                    email = row[header_index['email']] if 'email' in header_index else None
+                    if not email:
+                        skipped_count += 1
+                        continue
+
+                    # Resolve or create user by email
+                    from django.contrib.auth import get_user_model
+                    UserModel = get_user_model()
+                    user = UserModel.objects.filter(email=str(email).strip()).first()
+                    if not user:
+                        # Create a minimal user
+                        username_base = str(email).split('@')[0]
+                        username = username_base
+                        suffix = 1
+                        while UserModel.objects.filter(username=username).exists():
+                            username = f"{username_base}{suffix}"
+                            suffix += 1
+                        user = UserModel.objects.create(
+                            username=username,
+                            email=str(email).strip(),
+                            first_name=str(row[header_index['student_name']]).strip() if 'student_name' in header_index and row[header_index['student_name']] else '',
+                            last_name=''  # يمكن تخصيص التقسيم لاحقاً إذا لزم
+                        )
+
+                    # Resolve course by id or title (optional)
+                    course = None
+                    try:
+                        from courses.models import Course
+                        if 'course_id' in header_index and row[header_index['course_id']]:
+                            course_id_value = row[header_index['course_id']]
+                            course = Course.objects.filter(id=int(str(course_id_value))).first()
+                        elif 'course_title' in header_index and row[header_index['course_title']]:
+                            course_title_value = str(row[header_index['course_title']]).strip()
+                            course = Course.objects.filter(title__iexact=course_title_value).first()
+                    except Exception:
+                        course = None
+
+                    # Resolve template if provided, else default
+                    template = None
+                    try:
+                        from .models import CertificateTemplate
+                        if 'template_id' in header_index and row[header_index['template_id']]:
+                            template_id_value = row[header_index['template_id']]
+                            template = CertificateTemplate.objects.filter(id=int(str(template_id_value))).first()
+                        if not template:
+                            template = CertificateTemplate.get_default_template() if hasattr(CertificateTemplate, 'get_default_template') else None
+                    except Exception:
+                        template = None
+
+                    # Create certificate skeleton
+                    cert = Certificate(
+                        user=user,
+                        course=course,
+                        template=template,
+                    )
+
+                # Optional setters
+                def set_field(name, transformer=lambda v: v):
+                    if name in header_index:
+                        value = row[header_index[name]]
+                        if value is not None and value != '':
+                            try:
+                                setattr(cert, name, transformer(value))
+                            except Exception:
+                                pass
+
+                set_field('student_name', str)
+                set_field('national_id', str)
+                set_field('course_title', str)
+                set_field('duration_days', lambda v: int(str(v)))
+                set_field('course_duration_hours', lambda v: int(str(v)))
+                set_field('start_date', self._parse_date)
+                set_field('end_date', self._parse_date)
+                set_field('start_date_hijri', str)
+                set_field('end_date_hijri', str)
+                set_field('completion_date', self._parse_date)
+                set_field('final_grade', lambda v: float(str(v)))
+                set_field('completion_percentage', lambda v: float(str(v)))
+                set_field('status', str)
+                set_field('verification_status', str)
+
+                try:
+                    # Decide created vs updated
+                    is_new = cert.pk is None
+                    cert.save()
+                    if is_new:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+                except Exception:
+                    skipped_count += 1
+
+            messages.success(request, f'تم تحديث {updated_count} شهادة، وإنشاء {created_count} شهادة جديدة. تم تجاوز {skipped_count} صفوف.')
+            return redirect('admin:certificates_certificate_changelist')
+
+        return TemplateResponse(request, 'admin/import_export/upload.html', context)
     
     def final_grade_display(self, obj):
         if obj.final_grade is not None:
@@ -262,9 +568,10 @@ class CertificateAdmin(admin.ModelAdmin):
                 color = '#dc3545'
                 grade_text = 'ضعيف'
             
+            grade_value = f"{obj.final_grade:.1f}%"
             return format_html(
-                '<span style="color: {}; font-weight: bold;">{:.1f}% ({})</span>',
-                color, obj.final_grade, grade_text
+                '<span style="color: {}; font-weight: bold;">{} ({})</span>',
+                color, grade_value, grade_text
             )
         return 'غير محدد'
     final_grade_display.short_description = 'الدرجة النهائية'
@@ -406,4 +713,4 @@ class UserSignatureAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('user') 
+        return queryset.select_related('user')

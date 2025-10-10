@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .upload-wrapper {
+    max-width: 880px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .upload-header {
+    padding: 18px 22px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .upload-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .upload-body { padding: 22px; }
+  .upload-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; text-decoration: none; border: none; cursor: pointer; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-secondary { background: var(--secondary); color: #fff; }
+  .btn-outline { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .btn:hover { filter: brightness(1.05); box-shadow: var(--box-shadow-hover); }
+  .field { margin: 16px 0; }
+  .field label { display: block; margin-bottom: 8px; color: var(--gray-700); font-weight: 600; }
+  .field input[type=file] { width: 100%; padding: 10px; border: 1px solid var(--gray-300); border-radius: 8px; background: #fafafa; }
+  .help { color: var(--gray-600); font-size: 0.92rem; }
+  .footer-actions { display: flex; gap: 10px; margin-top: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="upload-wrapper">
+    <div class="upload-header">
+      <h2>{{ title }}</h2>
+      {% if opts %}
+        <span style="opacity:.9">{{ opts.app_label }} / {{ opts.verbose_name_plural }}</span>
+      {% endif %}
+    </div>
+    <div class="upload-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="messagelist">
+            <div class="{{ message.tags }}">{{ message }}</div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="upload-actions" style="margin-bottom:14px">
+        {% if template_url %}
+          <a class="btn btn-outline" href="{{ template_url }}"><i class="fa fa-download"></i> تحميل القالب</a>
+        {% endif %}
+        {% if changelist_url %}
+          <a class="btn btn-secondary" href="{{ changelist_url }}"><i class="fa fa-list"></i> الرجوع للقائمة</a>
+        {% endif %}
+      </div>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="field">
+          <label>ملف الإكسل (.xlsx / .xls)</label>
+          <input type="file" name="excel_file" accept=".xlsx,.xls" required />
+          <p class="help">اختر ملف القالب أو ملفاً بنفس ترتيب الأعمدة.</p>
+        </div>
+        <div class="footer-actions">
+          <button type="submit" class="btn btn-primary"><i class="fa fa-file-import"></i> استيراد</button>
+          {% if changelist_url %}
+            <a class="btn btn-outline" href="{{ changelist_url }}">إلغاء</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

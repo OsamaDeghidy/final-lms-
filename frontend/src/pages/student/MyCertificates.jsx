@@ -341,6 +341,14 @@ const MyCertificates = () => {
     }
   };
 
+  // Helper to format grade consistently with one decimal and %
+  const formatGrade = (value) => {
+    if (value === null || value === undefined) return null;
+    const num = Number(value);
+    if (Number.isNaN(num)) return value; // if backend sent a string, use as-is
+    return `${num.toFixed(1)}%`;
+  };
+
   // Helper function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (url) => {
     console.log('getAbsoluteUrl called with:', url);
@@ -661,16 +669,16 @@ const MyCertificates = () => {
                       </Typography>
                       </TableCell>
                       <TableCell>
-                        {certificate.final_grade ? (
+                        {certificate.final_grade || certificate.final_grade === 0 ? (
                           <Chip 
-                            label={`${certificate.final_grade}%`}
-                            color={certificate.final_grade >= 80 ? 'success' : certificate.final_grade >= 60 ? 'warning' : 'error'}
+                            label={formatGrade(certificate.final_grade)}
+                            color={Number(certificate.final_grade) >= 80 ? 'success' : Number(certificate.final_grade) >= 60 ? 'warning' : 'error'}
                             size="small"
                           />
                         ) : (
-                        <Typography variant="body2" color="text.secondary">
+                          <Typography variant="body2" color="text.secondary">
                             غير محدد
-                        </Typography>
+                          </Typography>
                         )}
                       </TableCell>
                       <TableCell>
@@ -874,7 +882,9 @@ const MyCertificates = () => {
                        textAlign: 'center',
                        maxWidth: '700px',
                        mx: 'auto',
-                       py: 4
+                       pt: 6,
+                       pb: 4,
+                       mt: '80px'
                      }}>
                        {/* Use template text if available, otherwise use default */}
                        {selectedCertificate.template?.certificate_text ? (
@@ -884,24 +894,32 @@ const MyCertificates = () => {
                          }}>
                            {selectedCertificate.template.certificate_text
                              .replace('{student_name}', selectedCertificate.student_name || 'اسم الطالب')
+                             .replace(/اسم الطالب/g, selectedCertificate.student_name || 'اسم الطالب')
+                             .replace('{national_id}', selectedCertificate.national_id || 'غير متوفر')
                              .replace('{course_name}', selectedCertificate.course_title || selectedCertificate.course_name || 'اسم الدورة')
-                             .replace('{completion_date}', formatDate(selectedCertificate.date_issued))
-                             .replace('{institution_name}', selectedCertificate.template.institution_name || 'أكاديمية التعلم الإلكتروني')
-                             .replace('{final_grade}', selectedCertificate.final_grade && selectedCertificate.final_grade > 0 ? selectedCertificate.final_grade : 'غير محدد')
-                             .replace('{course_duration}', selectedCertificate.course_duration_hours || 'غير محدد')
+                             .replace('{duration_days}', selectedCertificate.duration_days ?? 'غير محدد')
+                             .replace('{duration_hours}', selectedCertificate.course_duration_hours ?? 'غير محدد')
+                             .replace('{start_date}', selectedCertificate.start_date ? formatDate(selectedCertificate.start_date) : 'غير محدد')
+                             .replace('{end_date}', selectedCertificate.end_date ? formatDate(selectedCertificate.end_date) : 'غير محدد')
+                             .replace('{start_date_hijri}', selectedCertificate.start_date_hijri || 'غير محدد')
+                             .replace('{end_date_hijri}', selectedCertificate.end_date_hijri || 'غير محدد')
+                             .replace('{completion_date}', selectedCertificate.completion_date ? formatDate(selectedCertificate.completion_date) : formatDate(selectedCertificate.date_issued))
+                             .replace('{institution_name}', selectedCertificate.institution_name || '')
+                             .replace('{final_grade}', (selectedCertificate.final_grade || selectedCertificate.final_grade === 0) ? formatGrade(selectedCertificate.final_grade) : 'غير محدد')
+                             .replace('{course_duration}', selectedCertificate.course_duration_hours ?? 'غير محدد')
                              .split('\n').map((line, index) => (
                                <Typography 
-                                 key={index}
-                                 variant={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "h4" : "body1"}
-                                 fontWeight={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "bold" : "normal"}
-                                 sx={{ 
-                                   mb: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 3 : 1.5, 
-                                   fontSize: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? '2rem' : '1.3rem',
-                                   lineHeight: 1.6,
-                                   color: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
-                                     '#0e5181' : '#2c3e50',
-                                   textAlign: 'center',
-                                   fontFamily: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
+                                  key={index}
+                                  variant={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "h4" : "body1"}
+                                  fontWeight={line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? "bold" : "normal"}
+                                  sx={{ 
+                              mb: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 2.2 : 1.0, 
+                              fontSize: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? '1.2rem' : '0.9rem',
+                              lineHeight: 1.6,
+                              color: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
+                                '#0e5181' : '#2c3e50',
+                                  textAlign: 'center',
+                                  fontFamily: line.includes(selectedCertificate.student_name) || line.includes(selectedCertificate.course_title) ? 
                                      '"Cairo", "Arial", sans-serif' : '"Cairo", "Arial", sans-serif'
                                  }}
                                >
@@ -919,8 +937,8 @@ const MyCertificates = () => {
                              variant="body1" 
                              sx={{ 
                                mb: 2, 
-                               fontSize: '1.5rem', 
-                               lineHeight: 1.8,
+                               fontSize: '1.1rem', 
+                               lineHeight: 1.7,
                                color: '#2c3e50',
                                textAlign: 'center',
                                fontFamily: '"Cairo", "Arial", sans-serif'
@@ -933,8 +951,8 @@ const MyCertificates = () => {
                              variant="h4" 
                              fontWeight="bold" 
                              sx={{ 
-                               mb: 3, 
-                               fontSize: '2.2rem',
+                               mb: 2.2, 
+                               fontSize: '1.4rem',
                                color: '#0e5181',
                                textAlign: 'center',
                                fontFamily: '"Cairo", "Arial", sans-serif'
@@ -946,9 +964,9 @@ const MyCertificates = () => {
                            <Typography 
                              variant="body1" 
                              sx={{ 
-                               mb: 2, 
-                               fontSize: '1.5rem', 
-                               lineHeight: 1.8,
+                               mb: 1.6, 
+                               fontSize: '1.0rem', 
+                               lineHeight: 1.6,
                                color: '#2c3e50',
                                textAlign: 'center',
                                fontFamily: '"Cairo", "Arial", sans-serif'
@@ -961,8 +979,8 @@ const MyCertificates = () => {
                              variant="h5" 
                              fontWeight="bold" 
                              sx={{ 
-                               mb: 3, 
-                               fontSize: '1.8rem',
+                               mb: 2.2, 
+                               fontSize: '1.2rem',
                                color: '#0e5181',
                                textAlign: 'center',
                                fontFamily: '"Cairo", "Arial", sans-serif'
@@ -974,9 +992,9 @@ const MyCertificates = () => {
                            <Typography 
                              variant="body1" 
                              sx={{ 
-                               mb: 2, 
-                               fontSize: '1.3rem', 
-                               lineHeight: 1.8,
+                               mb: 1.6, 
+                               fontSize: '0.95rem', 
+                               lineHeight: 1.6,
                                color: '#666',
                                textAlign: 'center',
                                fontFamily: '"Cairo", "Arial", sans-serif'
@@ -999,7 +1017,7 @@ const MyCertificates = () => {
                                color: '#2e7d32', 
                                fontWeight: 'bold',
                                textAlign: 'center',
-                               fontSize: '1.4rem',
+                               fontSize: '1.2rem',
                                fontFamily: '"Cairo", "Arial", sans-serif'
                              }}
                            >
@@ -1038,6 +1056,7 @@ const MyCertificates = () => {
                       alignItems: 'flex-end'
                     }}>
                        {/* Institution Info */}
+                       {false && (
                        <Box sx={{ textAlign: 'center', flex: 1 }}>
                          <Typography 
                            variant="h6" 
@@ -1062,8 +1081,10 @@ const MyCertificates = () => {
                            {selectedCertificate.template?.institution_description || 'مؤسسة تعليمية معتمدة'}
                          </Typography>
                        </Box>
+                       )}
 
                        {/* Signature */}
+                       {false && (
                        <Box sx={{ textAlign: 'center', flex: 1 }}>
                          <Box sx={{ 
                            height: 70, 
@@ -1118,57 +1139,70 @@ const MyCertificates = () => {
                            {selectedCertificate.template?.signature_title || 'مدير التعليم'}
                          </Typography>
                        </Box>
+                      )}
+                    </Box>
+                    {/* Bottom corners: email and national id above certificate id (right), verification code (left) */}
+                    <Box sx={{ position: 'absolute', bottom: 8, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                      {selectedCertificate.student_email && (
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', mb: 0.5 }}
+                        >
+                          {selectedCertificate.student_email}
+                        </Typography>
+                      )}
+                      {selectedCertificate.national_id && (
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', mb: 0.5 }}
+                        >
+                          رقم الهوية: {selectedCertificate.national_id}
+                        </Typography>
+                      )}
+                      <Typography 
+                        variant="caption" 
+                        sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', fontWeight: 'bold' }}
+                      >
+                        رقم الشهادة: {selectedCertificate.certificate_id}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ position: 'absolute', bottom: 8, left: 16 }}>
+                      {selectedCertificate.verification_code && (
+                        <>
+                          {/* QR Code above verification code */}
+                          <Box 
+                            sx={{ 
+                              mb: 0.5, 
+                              p: 0.5, 
+                              bgcolor: 'rgba(255,255,255,0.9)', 
+                              borderRadius: 1, 
+                              border: '1px solid #ddd',
+                              display: 'inline-block'
+                            }}
+                          >
+                            <img 
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(certificateAPI.getVerificationUrl(selectedCertificate.verification_code))}`}
+                              alt="رمز QR للتحقق من الشهادة"
+                              style={{ width: 82, height: 82 }}
+                            />
+                          </Box>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', fontWeight: 'bold' }}
+                          >
+                            رمز التحقق: {selectedCertificate.verification_code}
+                          </Typography>
+                        </>
+                      )}
                     </Box>
                   </Box>
 
-                   {/* Certificate ID and QR Code */}
-                   <Box sx={{ 
-                     position: 'absolute', 
-                     bottom: 70, // زيادة المسافة من الأسفل
-                     left: 60, 
-                     right: 120,
-                     display: 'flex',
-                     justifyContent: 'space-between',
-                     alignItems: 'center'
-                   }}>
-                     <Typography 
-                       variant="caption" 
-                       sx={{ 
-                         color: '#666', 
-                         fontFamily: '"Cairo", "Arial", sans-serif',
-                         fontSize: '0.8rem',
-                         fontWeight: 'bold'
-                       }}
-                     >
-                       رقم الشهادة: {selectedCertificate.certificate_id}
-                     </Typography>
-                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                       {selectedCertificate.verification_code && (
-                         <Typography 
-                           variant="caption" 
-                           sx={{ 
-                             color: '#666', 
-                             fontFamily: '"Cairo", "Arial", sans-serif',
-                             fontSize: '0.8rem',
-                             fontWeight: 'bold'
-                           }}
-                         >
-                           رمز التحقق: {selectedCertificate.verification_code}
-                         </Typography>
-                       )}
-                       {selectedCertificate.template?.include_qr_code && selectedCertificate.qr_code_image && (
-                         <Box sx={{ width: 25, height: 25 }}>
-                           <img 
-                             src={selectedCertificate.qr_code_image} 
-                             alt="QR Code"
-                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                           />
-                         </Box>
-                       )}
-                     </Box>
-                   </Box>
+                   {/* Certificate ID and QR Code moved below template */}
 
                 </Paper>
+                {false && (
+                  <Box sx={{ mt: 2 }} />
+                )}
               </Box>
             </DialogContent>
             <DialogActions className="no-print" sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>

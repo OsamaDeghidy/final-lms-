@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.contrib.admin import AdminSite
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
@@ -99,7 +100,7 @@ for model in app_models:
         pass
 
 
-class BannerAdmin(admin.ModelAdmin):
+class BannerAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ('title', 'banner_type', 'is_active', 'start_date', 'end_date', 'display_order')
     list_filter = ('banner_type', 'is_active')
     search_fields = ('title', 'description')
@@ -123,7 +124,7 @@ class BannerAdmin(admin.ModelAdmin):
     )
 
 
-class CourseCollectionAdmin(admin.ModelAdmin):
+class CourseCollectionAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'slug', 'is_featured', 'display_order', 'course_count')
     list_filter = ('is_featured',)
     search_fields = ('name', 'description')

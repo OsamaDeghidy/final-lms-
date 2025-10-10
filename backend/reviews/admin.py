@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from .models import CourseReview, ReviewReply, Comment, CommentLike
 
@@ -11,7 +12,7 @@ class ReviewReplyInline(admin.StackedInline):
 
 
 @admin.register(CourseReview)
-class CourseReviewAdmin(admin.ModelAdmin):
+class CourseReviewAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = [
         'id', 'course', 'user', 'rating_stars', 'is_approved',
         'created_at', 'updated_at'

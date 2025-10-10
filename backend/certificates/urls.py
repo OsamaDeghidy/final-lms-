@@ -27,7 +27,8 @@ urlpatterns = [
     path('generate/<int:course_id>/', views.generate_certificate, name='generate-certificate'),
     path('get-my-certificates/', views.get_my_certificates, name='get-my-certificates'),
     path('detail/<int:certificate_id>/', views.get_certificate_detail, name='certificate-detail'),
+    # Public verification via API (JSON)
     path('verify-code/<str:verification_code>/', views.verify_certificate, name='verify-certificate-code'),
     path('download/<int:certificate_id>/', views.download_certificate_pdf, name='download-certificate'),
     path('check-completion/<int:course_id>/', views.check_course_completion, name='check-course-completion'),
-] 
+]

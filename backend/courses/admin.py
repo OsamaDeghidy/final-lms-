@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib.admin import SimpleListFilter
@@ -51,7 +52,7 @@ class PublishedFilter(SimpleListFilter):
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'is_default', 'course_count', 'created_at')
     list_filter = ('is_default', 'created_at')
     search_fields = ('name', 'description')
@@ -89,7 +90,7 @@ class TagsAdmin(admin.ModelAdmin):
     course_count.short_description = 'عدد الدورات'
 
 @admin.register(Course)
-class CourseAdmin(admin.ModelAdmin):
+class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'title', 'get_instructors', 'get_category_name', 'level', 'status', 'get_course_type', 'price', 
         'enrollment_count_display', 'created_at'
@@ -180,7 +181,7 @@ class CourseAdmin(admin.ModelAdmin):
     average_rating.short_description = 'Average Rating'
 
 @admin.register(Enrollment)
-class EnrollmentAdmin(admin.ModelAdmin):
+class EnrollmentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ('course', 'student', 'status', 'enrollment_date', 'last_accessed')
     list_filter = ('status', 'enrollment_date', 'course')
     search_fields = ('course__name', 'student__username', 'student__first_name', 'student__last_name')

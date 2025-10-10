@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -35,7 +36,7 @@ class ModuleProgressInline(admin.StackedInline):
 
 
 @admin.register(Module)
-class ModuleAdmin(admin.ModelAdmin):
+class ModuleAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = [
         'name', 'course', 'status', 'is_active', 'order',
         'lesson_count', 'created_at'
@@ -85,7 +86,7 @@ class LessonResourceInline(admin.TabularInline):
 
 
 @admin.register(Lesson)
-class LessonAdmin(admin.ModelAdmin):
+class LessonAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = [
         'title', 'module', 'lesson_type', 'difficulty', 'order',
         'is_active', 'is_free', 'requires_completion', 'resource_count', 'created_at'

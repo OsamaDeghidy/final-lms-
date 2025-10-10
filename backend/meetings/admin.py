@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -69,7 +70,7 @@ class NotificationInline(admin.TabularInline):
 
 
 @admin.register(Meeting)
-class MeetingAdmin(admin.ModelAdmin):
+class MeetingAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'title', 'meeting_type', 'creator', 'start_time', 'duration_display',
         'status_display', 'participants_count', 'attendance_rate_display', 'is_active'
@@ -370,4 +371,4 @@ class MeetingChatAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('meeting', 'user') 
+        return queryset.select_related('meeting', 'user')

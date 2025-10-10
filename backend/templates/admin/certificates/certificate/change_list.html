@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  <li>
+    <a href="{% url 'admin:certificates_certificate_import_excel' %}" class="button">استيراد إكسل</a>
+  </li>
+  <li>
+    <a href="{% url 'admin:certificates_certificate_export_excel' %}" class="button">تصدير إكسل</a>
+  </li>
+  <li>
+    <a href="{% url 'admin:certificates_certificate_import_excel_template' %}" class="button">تحميل القالب</a>
+  </li>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
@@ -9,6 +10,17 @@ from django.db.models import Count
 from django.conf import settings
 from .models import Profile, Organization, Instructor, Student
 from django.utils import timezone
+from django.http import HttpResponse
+from django.template.response import TemplateResponse
+from django.urls import path
+from django.contrib import messages
+from django.shortcuts import redirect
+import io
+try:
+    from openpyxl import Workbook, load_workbook
+except Exception:
+    Workbook = None
+    load_workbook = None
 
 class StatusFilter(SimpleListFilter):
     title = 'حالة المستخدم'
@@ -81,6 +93,7 @@ admin.site.unregister(User)
 
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
+    change_list_template = 'admin/auth/user/change_list.html'
     inlines = (ProfileInline, InstructorInline, StudentInline) if hasattr(settings, 'SHOW_ALL_INLINES') else (ProfileInline,)
     list_display = (
         'username', 'email', 'first_name', 'last_name', 
@@ -91,6 +104,185 @@ class CustomUserAdmin(BaseUserAdmin):
         StatusFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
     )
     search_fields = ('username', 'first_name', 'last_name', 'email', 'profile__name')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='auth_user_import_excel'),
+            path('import-excel/template/', self.admin_site.admin_view(self.download_excel_template), name='auth_user_import_excel_template'),
+            path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='auth_user_export_excel'),
+        ]
+        return custom_urls + urls
+
+    def download_excel_template(self, request):
+        headers = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_active', 'is_staff', 'is_superuser', 'password'
+        ]
+        if Workbook:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Users'
+            ws.append(headers)
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response = HttpResponse(
+                output.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="users_import_template.xlsx"'
+            return response
+        else:
+            csv_content = ','.join(headers) + '\n'
+            return HttpResponse(csv_content, content_type='text/csv')
+
+    def import_excel_view(self, request):
+        base_ctx = self.admin_site.each_context(request)
+        context = {
+            **base_ctx,
+            'title': 'استيراد المستخدمين من ملف إكسل',
+            'app_label': 'auth',
+            'model_name': 'user',
+            'opts': self.model._meta,
+            'template_url': reverse('admin:auth_user_import_excel_template'),
+            'changelist_url': reverse('admin:auth_user_changelist'),
+        }
+
+        if request.method == 'POST':
+            file = request.FILES.get('excel_file')
+            if not file:
+                messages.error(request, 'يرجى اختيار ملف إكسل.')
+                return redirect('admin:auth_user_import_excel')
+            if not load_workbook:
+                messages.error(request, 'حزمة openpyxl غير متاحة. يرجى تثبيتها أو استخدام قالب CSV.')
+                return redirect('admin:auth_user_import_excel')
+
+            try:
+                wb = load_workbook(filename=file, data_only=True)
+                ws = wb.active
+            except Exception as e:
+                messages.error(request, f'فشل قراءة الملف: {e}')
+                return redirect('admin:auth_user_import_excel')
+
+            # Map headers
+            header_row = None
+            for row in ws.iter_rows(values_only=True):
+                header_row = row
+                break
+            if not header_row:
+                messages.error(request, 'الملف لا يحتوي على صف رؤوس.')
+                return redirect('admin:auth_user_import_excel')
+
+            header_index = {str(h).strip(): i for i, h in enumerate(header_row) if h is not None}
+            required = ['email']
+            if not any(col in header_index for col in ['id', 'email', 'username']):
+                messages.error(request, 'يجب أن يحتوي الملف على عمود واحد على الأقل للتعرف على المستخدم: id أو email أو username.')
+                return redirect('admin:auth_user_import_excel')
+
+            created, updated = 0, 0
+            for r_idx, row in enumerate(ws.iter_rows(values_only=True)):
+                if r_idx == 0:
+                    continue
+                if not any(row):
+                    continue
+
+                user_obj = None
+                # Resolve by id
+                if 'id' in header_index and row[header_index['id']]:
+                    try:
+                        user_obj = User.objects.filter(id=int(str(row[header_index['id']]))).first()
+                    except Exception:
+                        user_obj = None
+
+                # Else by email
+                if not user_obj and 'email' in header_index and row[header_index['email']]:
+                    email_val = str(row[header_index['email']]).strip().lower()
+                    user_obj = User.objects.filter(email__iexact=email_val).first()
+
+                # Else by username
+                if not user_obj and 'username' in header_index and row[header_index['username']]:
+                    username_val = str(row[header_index['username']]).strip()
+                    user_obj = User.objects.filter(username__iexact=username_val).first()
+
+                # Create if not exists
+                if not user_obj:
+                    username_val = str(row[header_index['username']]).strip() if 'username' in header_index and row[header_index['username']] else None
+                    email_val = str(row[header_index['email']]).strip().lower() if 'email' in header_index and row[header_index['email']] else None
+                    if not username_val:
+                        username_val = (email_val.split('@')[0] if email_val else f'user_{timezone.now().strftime("%Y%m%d%H%M%S")}')
+                    user_obj = User(username=username_val, email=email_val)
+                    created += 1
+                else:
+                    updated += 1
+
+                # Set attributes
+                if 'first_name' in header_index and row[header_index['first_name']]:
+                    user_obj.first_name = str(row[header_index['first_name']]).strip()
+                if 'last_name' in header_index and row[header_index['last_name']]:
+                    user_obj.last_name = str(row[header_index['last_name']]).strip()
+                if 'email' in header_index and row[header_index['email']]:
+                    user_obj.email = str(row[header_index['email']]).strip().lower()
+                if 'is_active' in header_index and row[header_index['is_active']] is not None:
+                    user_obj.is_active = str(row[header_index['is_active']]).strip().lower() in ['1', 'true', 'yes']
+                if 'is_staff' in header_index and row[header_index['is_staff']] is not None:
+                    user_obj.is_staff = str(row[header_index['is_staff']]).strip().lower() in ['1', 'true', 'yes']
+                if 'is_superuser' in header_index and row[header_index['is_superuser']] is not None:
+                    user_obj.is_superuser = str(row[header_index['is_superuser']]).strip().lower() in ['1', 'true', 'yes']
+
+                # Set password if provided
+                if 'password' in header_index and row[header_index['password']]:
+                    user_obj.set_password(str(row[header_index['password']]))
+
+                user_obj.save()
+
+            messages.success(request, f'تم الاستيراد بنجاح: تم إنشاء {created} مستخدم وتحديث {updated} مستخدم.')
+            return redirect('admin:auth_user_changelist')
+
+        return TemplateResponse(request, 'admin/import_export/upload.html', context)
+
+    def export_excel_view(self, request):
+        headers = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_active', 'is_staff', 'is_superuser', 'date_joined', 'last_login'
+        ]
+        queryset = self.get_queryset(request)
+
+        if Workbook:
+            wb = Workbook()
+            ws = wb.active
+            ws.title = 'Users'
+            ws.append(headers)
+            for u in queryset:
+                ws.append([
+                    u.id, u.username, u.email or '', u.first_name or '', u.last_name or '',
+                    u.is_active, u.is_staff, u.is_superuser,
+                    u.date_joined.isoformat() if u.date_joined else '',
+                    u.last_login.isoformat() if u.last_login else ''
+                ])
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            response = HttpResponse(
+                output.read(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = 'attachment; filename="users_export.xlsx"'
+            return response
+        else:
+            rows = []
+            rows.append(','.join(headers))
+            for u in queryset:
+                row = [
+                    str(u.id), u.username,
+                    str(u.email or ''), str(u.first_name or ''), str(u.last_name or ''),
+                    '1' if u.is_active else '0', '1' if u.is_staff else '0', '1' if u.is_superuser else '0',
+                    str(u.date_joined.isoformat() if u.date_joined else ''),
+                    str(u.last_login.isoformat() if u.last_login else '')
+                ]
+                rows.append(','.join(row))
+            csv_content = '\n'.join(rows)
+            return HttpResponse(csv_content, content_type='text/csv')
     
     def user_status(self, obj):
         try:
@@ -256,7 +448,7 @@ class OrganizationAdmin(admin.ModelAdmin):
         return queryset.select_related('profile').prefetch_related('instructor_set')
 
 @admin.register(Instructor)
-class InstructorAdmin(admin.ModelAdmin):
+class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'profile_name', 'organization', 'department', 'qualification', 
         'courses_count', 'students_count', 'date_of_birth'
@@ -302,7 +494,7 @@ class InstructorAdmin(admin.ModelAdmin):
 
 
 @admin.register(Student)
-class StudentAdmin(admin.ModelAdmin):
+class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ('profile_name', 'department', 'date_of_birth', 'enrolled_courses', 'completed_courses')
     list_filter = ('department', 'date_of_birth')
     search_fields = ('profile__name', 'profile__user__username', 'department')

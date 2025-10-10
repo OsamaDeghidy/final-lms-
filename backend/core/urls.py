@@ -92,6 +92,10 @@ urlpatterns = [
     path('api/dashboard/upcoming-meetings/', views.upcoming_meetings, name='upcoming_meetings'),
     path('api/dashboard/achievements/', views.achievements, name='achievements'),
     path('api/dashboard/recent-announcements/', views.recent_announcements, name='recent_announcements'),
+    
+    # Public certificate verification pages (for QR codes)
+    path('certificates/verify/<str:verification_code>/', views.certificate_verify_page, name='certificate_verify_page'),
+    path('verify-certificate/<str:verification_code>/', views.certificate_verify_page, name='public_verify_certificate'),
 ]
 
 # Add debug toolbar in development

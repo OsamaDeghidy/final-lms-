@@ -3,6 +3,31 @@ import { API_CONFIG } from '../config/api.config';
 
 const api = axios.create(API_CONFIG);
 
+// Helper: decide if request is safe to retry
+function shouldRetry(error) {
+  const config = error.config || {};
+  const method = (config.method || 'get').toLowerCase();
+  const status = error.response?.status;
+  const isNetworkError = !error.response && !!error.request;
+  const isServerError = status && status >= 500;
+  const isGet = method === 'get';
+  return isGet && (isNetworkError || isServerError);
+}
+
+// Helper: perform exponential backoff retry
+async function retryRequest(error) {
+  const config = error.config;
+  if (!config) throw error;
+  const maxRetries = (API_CONFIG?.retry ?? 2);
+  config.__retryCount = (config.__retryCount || 0) + 1;
+  if (config.__retryCount > maxRetries) {
+    throw error;
+  }
+  const delayMs = Math.min(1000 * Math.pow(2, config.__retryCount - 1), 5000);
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  return api.request(config);
+}
+
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
@@ -42,6 +67,21 @@ api.interceptors.response.use(
   },
   (error) => {
     console.log('Response interceptor - Error:', error.response?.status, error.response?.data, error.config?.url);
+
+    // Retry transient GET failures (network/5xx)
+    try {
+      if (shouldRetry(error)) {
+        console.log('Transient error detected, attempting retry...', {
+          url: error.config?.url,
+          status: error.response?.status,
+          attempt: (error.config?.__retryCount || 0) + 1,
+        });
+        return retryRequest(error);
+      }
+    } catch (retryErr) {
+      console.log('Retry attempts exhausted:', retryErr);
+      // fall through to normal error handling
+    }
     
     if (error.response?.status === 401) {
       console.log('Unauthorized access detected');

@@ -1,9 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Count, Avg, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
+from django.core.cache import cache
 from courses.models import Course, Enrollment
 from assignments.models import Assignment, AssignmentSubmission
 from content.models import Lesson
@@ -15,6 +16,85 @@ from store.models_payment import Transaction
 from reviews.models import CourseReview
 from certificates.models import Certificate
 
+def _format_certificate_lines(certificate):
+    """تجهيز نص القالب بنفس منطق معاينة الواجهة الأمامية"""
+    try:
+        template = certificate.get_template_or_default()
+    except Exception:
+        template = certificate.template
+
+    # نص القالب أو نص افتراضي
+    default_text = (
+        "هذا يشهد بأن\n"
+        "{student_name}\n"
+        "قد أكمل(ت) برنامجًا تدريبيًا بعنوان\n"
+        "{course_name}\n"
+        "بتاريخ {completion_date}"
+    )
+    raw_text = (getattr(template, 'certificate_text', None) or default_text)
+
+    # تجهيز القيم
+    student_name = certificate.student_name or certificate.user.get_full_name()
+    course_name = certificate.course_title or certificate.course.title
+    mapping = {
+        'student_name': student_name or 'اسم الطالب',
+        'national_id': certificate.national_id or 'غير متوفر',
+        'course_name': course_name or 'اسم الدورة',
+        'duration_days': certificate.duration_days if certificate.duration_days is not None else 'غير محدد',
+        'duration_hours': certificate.course_duration_hours if certificate.course_duration_hours is not None else 'غير محدد',
+        'start_date': certificate.start_date.strftime('%Y-%m-%d') if certificate.start_date else 'غير محدد',
+        'end_date': certificate.end_date.strftime('%Y-%m-%d') if certificate.end_date else 'غير محدد',
+        'start_date_hijri': certificate.start_date_hijri or 'غير محدد',
+        'end_date_hijri': certificate.end_date_hijri or 'غير محدد',
+        'completion_date': (certificate.completion_date or certificate.date_issued).strftime('%Y-%m-%d'),
+        'institution_name': certificate.institution_name or (getattr(template, 'institution_name', '') or ''),
+        'final_grade': certificate.final_grade if certificate.final_grade is not None else '',
+        'course_duration': certificate.course_duration_hours if certificate.course_duration_hours is not None else ''
+    }
+
+    try:
+        formatted_text = raw_text.format(**mapping)
+    except Exception:
+        # في حال وجود متغيرات غير متوافقة، نستخدم استبدال بسيط
+        formatted_text = raw_text
+        for k, v in mapping.items():
+            formatted_text = formatted_text.replace(f'{{{k}}}', str(v))
+
+    lines = [line.strip() for line in formatted_text.split('\n') if line.strip()]
+    formatted_lines = []
+    for line in lines:
+        is_highlight = (student_name and student_name in line) or (course_name and course_name in line)
+        formatted_lines.append({'text': line, 'highlight': is_highlight})
+
+    # خلفية القالب والشعار
+    bg_image_url = getattr(template, 'template_file', None).url if getattr(template, 'template_file', None) else None
+    logo_url = getattr(template, 'institution_logo', None).url if getattr(template, 'institution_logo', None) else None
+
+    return {
+        'formatted_lines': formatted_lines,
+        'bg_image_url': bg_image_url,
+        'logo_url': logo_url,
+        'include_grade': getattr(template, 'include_grade', False),
+    }
+
+def certificate_verify_page(request, verification_code):
+    """صفحة عامة لعرض تفاصيل الشهادة عبر رمز التحقق"""
+    try:
+        certificate = get_object_or_404(Certificate, verification_code=verification_code)
+        # تجهيز النص والخلفية والشعار مثل صفحة المعاينة في الفرونت
+        fmt = _format_certificate_lines(certificate)
+        context = {
+            'certificate': certificate,
+            **fmt,
+        }
+        return render(request, 'certificates/verify.html', context)
+    except Exception:
+        # في حال حدوث خطأ غير متوقع
+        return render(request, 'certificates/verify.html', {
+            'certificate': None,
+            'error': 'حدث خطأ أثناء عرض الشهادة. الرجاء المحاولة لاحقًا.'
+        })
+
 @login_required
 def student_dashboard_stats(request):
     """إحصائيات لوحة تحكم الطالب"""
@@ -22,6 +102,12 @@ def student_dashboard_stats(request):
         return JsonResponse({'error': 'غير مصرح'}, status=403)
     
     student = request.user.student
+    
+    # Try cache first (user-scoped)
+    cache_key = f"student_dashboard_stats:{student.id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JsonResponse(cached)
     
     # المقررات المسجلة
     enrolled_courses = Enrollment.objects.filter(student=student, is_active=True).count()
@@ -56,7 +142,7 @@ def student_dashboard_stats(request):
     # الشهادات
     certificates = Certificate.objects.filter(student=student).count()
     
-    return JsonResponse({
+    data = {
         'enrolledCourses': enrolled_courses,
         'completedLessons': completed_lessons,
         'pendingAssignments': pending_assignments,
@@ -64,7 +150,10 @@ def student_dashboard_stats(request):
         'totalPoints': total_points,
         'learningStreak': learning_streak,
         'certificates': certificates
-    })
+    }
+    # Cache for 2 minutes
+    cache.set(cache_key, data, timeout=120)
+    return JsonResponse(data)
 
 @login_required
 def teacher_dashboard_stats(request):
@@ -73,6 +162,12 @@ def teacher_dashboard_stats(request):
         return JsonResponse({'error': 'غير مصرح'}, status=403)
     
     instructor = request.user.instructor
+    
+    # Try cache first (user-scoped)
+    cache_key = f"teacher_dashboard_stats:{instructor.id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JsonResponse(cached)
     
     # إجمالي المقررات
     total_courses = Course.objects.filter(instructor=instructor).count()
@@ -113,7 +208,7 @@ def teacher_dashboard_stats(request):
         enrolled_at__gte=week_ago
     ).count()
     
-    return JsonResponse({
+    data = {
         'totalCourses': total_courses,
         'totalStudents': total_students,
         'totalRevenue': total_revenue,
@@ -121,7 +216,10 @@ def teacher_dashboard_stats(request):
         'pendingAssignments': pending_assignments,
         'upcomingMeetings': upcoming_meetings,
         'recentEnrollments': recent_enrollments
-    })
+    }
+    # Cache for 2 minutes
+    cache.set(cache_key, data, timeout=120)
+    return JsonResponse(data)
 
 @login_required
 def student_courses(request):
@@ -130,10 +228,16 @@ def student_courses(request):
         return JsonResponse({'error': 'غير مصرح'}, status=403)
     
     student = request.user.student
+    
+    # Try cache first (user-scoped)
+    cache_key = f"student_courses:{student.id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JsonResponse(cached, safe=False)
     enrollments = Enrollment.objects.filter(
         student=student,
         is_active=True
-    ).select_related('course', 'course__instructor')
+    ).select_related('course', 'course__instructor').prefetch_related('course__lessons', 'course__meetings')
     
     courses_data = []
     for enrollment in enrollments:
@@ -160,6 +264,8 @@ def student_courses(request):
             'color': 'primary'
         })
     
+    # Cache for 3 minutes
+    cache.set(cache_key, courses_data, timeout=180)
     return JsonResponse(courses_data, safe=False)
 
 @login_required
@@ -169,7 +275,15 @@ def teacher_courses(request):
         return JsonResponse({'error': 'غير مصرح'}, status=403)
     
     instructor = request.user.instructor
-    courses = Course.objects.filter(instructor=instructor)
+    
+    # Try cache first (user-scoped)
+    cache_key = f"teacher_courses:{instructor.id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return JsonResponse(cached, safe=False)
+    courses = Course.objects.filter(instructor=instructor).prefetch_related(
+        'assignments', 'enrollments', 'meetings', 'lessons'
+    )
     
     courses_data = []
     for course in courses:
@@ -214,6 +328,8 @@ def teacher_courses(request):
             'color': 'primary'
         })
     
+    # Cache for 3 minutes
+    cache.set(cache_key, courses_data, timeout=180)
     return JsonResponse(courses_data, safe=False)
 
 @login_required
@@ -226,7 +342,7 @@ def student_progress(request):
     enrollments = Enrollment.objects.filter(
         course__instructor=instructor,
         is_active=True
-    ).select_related('student', 'student__user')
+    ).select_related('student', 'student__user', 'course').prefetch_related('course__lessons')
     
     students_data = []
     for enrollment in enrollments:

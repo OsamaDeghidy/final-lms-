@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=E:\projects\LMS-Osama\lms\backend\venv
+set VIRTUAL_ENV=D:\apps\lms\lmsjory\final-lms-\backend\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

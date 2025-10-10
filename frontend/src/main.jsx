@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import store from './store/store';
 import theme from './theme';
 import './index.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 console.log('Application is starting...');
 
@@ -19,6 +20,15 @@ if (!rootElement) {
   console.error('Failed to find the root element');
 } else {
   console.log('Root element found, rendering application...');
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+        staleTime: 60 * 1000,
+      },
+    },
+  });
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <ErrorBoundary>
@@ -27,7 +37,9 @@ if (!rootElement) {
             <CssBaseline />
             <BrowserRouter>
               <HelmetProvider>
-                <App />
+                <QueryClientProvider client={queryClient}>
+                  <App />
+                </QueryClientProvider>
               </HelmetProvider>
             </BrowserRouter>
           </ThemeProvider>

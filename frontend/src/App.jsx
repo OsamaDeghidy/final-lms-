@@ -287,6 +287,8 @@ const AppContent = () => {
                   <Route path="/articles" element={<ArticlesPage />} />
                   <Route path="/articles/:slug" element={<ArticleDetail />} />
                   <Route path="/certificates/verify/:verificationCode" element={<CertificateVerification />} />
+                  {/* Alternative verification path to match backend generated URLs */}
+                  <Route path="/verify-certificate/:verificationCode" element={<CertificateVerification />} />
                   {/* Store Routes */}
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/payment/:courseId" element={<PaymentPage />} />

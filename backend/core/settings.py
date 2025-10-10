@@ -98,15 +98,15 @@ INSTALLED_APPS = [
 ]
 
 # Moyasar settings (use environment variables in production)
-# MOYASAR_SETTINGS = {
-#     # Test keys by default; override with env vars in production
-#     'PUBLISHABLE_KEY': os.getenv('MOYASAR_PUBLISHABLE_KEY', 'pk_test_6Rn9APYpUxc1t7YZD2Mr9BuoUYGFtZNJKx5Yu8KM'),
-#     'SECRET_KEY': os.getenv('MOYASAR_SECRET_KEY', 'sk_test_jfeqPR4F9Xz2DLaq4p4etDkZLKWB81HHkT4HeB3Q'),
-#     'API_BASE_URL': os.getenv('MOYASAR_API_BASE_URL', 'https://api.moyasar.com/v1'),
-#     'CURRENCY': os.getenv('MOYASAR_CURRENCY', 'SAR'),
-#     # Public base URL for callbacks (set your domain in production)
-#     'PUBLIC_BASE_URL': os.getenv('PUBLIC_BASE_URL', 'http://127.0.0.1:8000'),
-# }
+MOYASAR_SETTINGS = {
+     # Test keys by default; override with env vars in production
+     'PUBLISHABLE_KEY': os.getenv('MOYASAR_PUBLISHABLE_KEY', 'pk_test_6Rn9APYpUxc1t7YZD2Mr9BuoUYGFtZNJKx5Yu8KM'),
+     'SECRET_KEY': os.getenv('MOYASAR_SECRET_KEY', 'sk_test_jfeqPR4F9Xz2DLaq4p4etDkZLKWB81HHkT4HeB3Q'),
+     'API_BASE_URL': os.getenv('MOYASAR_API_BASE_URL', 'https://api.moyasar.com/v1'),
+     'CURRENCY': os.getenv('MOYASAR_CURRENCY', 'SAR'),
+     # Public base URL for callbacks (set your domain in production)
+     'PUBLIC_BASE_URL': os.getenv('PUBLIC_BASE_URL', 'http://127.0.0.1:8000'),
+ }
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -93,7 +94,7 @@ class AssignmentAnswerInline(admin.TabularInline):
 
 
 @admin.register(Quiz)
-class QuizAdmin(admin.ModelAdmin):
+class QuizAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'title', 'quiz_type', 'course', 'module', 'questions_count', 
         'total_points', 'attempts_count', 'is_active', 'created_at'
@@ -263,7 +264,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
 
 
 @admin.register(Exam)
-class ExamAdmin(admin.ModelAdmin):
+class ExamAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
         'title', 'course', 'module', 'is_final', 'questions_count',
         'attempts_count', 'pass_rate', 'is_active', 'start_date'
@@ -584,4 +585,4 @@ class AssignmentQuestionResponseAdmin(admin.ModelAdmin):
 # Register remaining models with basic admin
 admin.site.register(QuizUserAnswer)
 admin.site.register(ExamAnswer)
-admin.site.register(UserExamAnswer) 
+admin.site.register(UserExamAnswer)

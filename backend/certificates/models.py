@@ -43,9 +43,22 @@ class CertificateTemplate(models.Model):
     
     # نص الشهادة
     certificate_text = models.TextField(
-        default="هذا يشهد بأن {student_name} قد أكمل بنجاح دورة {course_name} بتاريخ {completion_date}",
+        default=(
+            "يشهد مركز التطوير المهني للتدريب بأن المتدرب/ة\n"
+            "({student_name})\n"
+            "رقم الهوية: ({national_id})\n\n"
+            "قد حضر(ت) برنامجًا تدريبيًا بعنوان\n"
+            "{course_name}\n\n"
+            "لمدة ({duration_days}) أيام بمعدل ({duration_hours}) ساعة تدريبية وذلك في الفترة من\n"
+            "({start_date}) إلى ({end_date})\n"
+            "الموافق ({start_date_hijri}) إلى ({end_date_hijri})\n\n"
+            "وبناءً على ذلك تم منحه/ا الشهادة"
+        ),
         verbose_name="نص الشهادة",
-        help_text="يمكنك استخدام المتغيرات: {student_name}, {course_name}, {completion_date}, {institution_name}"
+        help_text=(
+            "يمكنك استخدام المتغيرات: {student_name}, {national_id}, {course_name}, {duration_days}, "
+            "{duration_hours}, {start_date}, {end_date}, {start_date_hijri}, {end_date_hijri}, {institution_name}, {completion_date}"
+        )
     )
     
     # خيارات إضافية
@@ -132,6 +145,16 @@ class Certificate(models.Model):
     final_grade = models.FloatField(null=True, blank=True, verbose_name="الدرجة النهائية")
     completion_percentage = models.FloatField(default=100.0, verbose_name="نسبة الإكمال")
     course_duration_hours = models.IntegerField(null=True, blank=True, verbose_name="مدة الدورة بالساعات")
+    # مدة الدورة بالأيام
+    duration_days = models.IntegerField(default=0, null=True, blank=True, verbose_name="مدة الدورة بالأيام")
+    # رقم الهوية الوطنية
+    national_id = models.CharField(max_length=30, default="", null=True, blank=True, verbose_name="رقم الهوية")
+    # فترة الدورة (ميلادي)
+    start_date = models.DateField(null=True, blank=True, default=None, verbose_name="تاريخ البداية")
+    end_date = models.DateField(null=True, blank=True, default=None, verbose_name="تاريخ النهاية")
+    # فترة الدورة (هجري) - نخزنها كنص يأتي من الإكسل
+    start_date_hijri = models.CharField(max_length=50, default="", null=True, blank=True, verbose_name="تاريخ البداية هجري")
+    end_date_hijri = models.CharField(max_length=50, default="", null=True, blank=True, verbose_name="تاريخ النهاية هجري")
     
     # Certificate status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="حالة الشهادة")
@@ -275,8 +298,13 @@ class Certificate(models.Model):
 
     def get_duration_display(self):
         """عرض مدة الدورة"""
+        parts = []
+        if self.duration_days:
+            parts.append(f"{self.duration_days} يوم")
         if self.course_duration_hours:
-            return f"{self.course_duration_hours} ساعة"
+            parts.append(f"{self.course_duration_hours} ساعة")
+        if parts:
+            return " و ".join(parts)
         return "غير محدد"
 
 

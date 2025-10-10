@@ -1,4 +1,5 @@
 from django.contrib import admin
+from core.admin_mixins import ImportExportAdminMixin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -61,7 +62,7 @@ class OrderItemInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = [
         'order_number', 'user', 'status', 'total', 'payment_method', 'created_at'
     ]
@@ -100,7 +101,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(Coupon)
-class CouponAdmin(admin.ModelAdmin):
+class CouponAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = ['code', 'discount_type', 'discount_value', 'is_active', 'is_valid', 'used_count', 'valid_until']
     list_filter = ['discount_type', 'is_active']
     search_fields = ['code', 'description']

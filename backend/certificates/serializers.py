@@ -39,39 +39,44 @@ class CertificateTemplateSerializer(serializers.ModelSerializer):
 
 
 class CertificationListSerializer(serializers.ModelSerializer):
-    course_name = serializers.CharField(source='course.title', read_only=True)
-    course_title = serializers.CharField(source='course.title', read_only=True)
-    student_name = serializers.CharField(source='user.get_full_name', read_only=True)
-    template_name = serializers.CharField(source='template.template_name', read_only=True)
+    # استخدم حقول النموذج مباشرة بدون مصادر بديلة
     template = CertificateTemplateSerializer(read_only=True)
+    student_email = serializers.EmailField(source='user.email', read_only=True)
     
     class Meta:
         model = Certificate
         fields = [
-            'id', 'course', 'course_name', 'course_title', 'user', 'student_name',
-            'template', 'template_name', 'date_issued', 'certificate_id',
-            'verification_status', 'verification_code', 'final_grade',
-            'institution_name', 'course_duration_hours'
+            'id',
+            'student_name', 'student_email', 'course_title', 'institution_name',
+            'final_grade', 'completion_percentage', 'course_duration_hours',
+            'duration_days', 'national_id',
+            'start_date', 'end_date', 'start_date_hijri', 'end_date_hijri',
+            'status', 'verification_status', 'verification_code',
+            'date_issued', 'certificate_id',
+            'template'
         ]
-        read_only_fields = ['id', 'user', 'date_issued', 'certificate_id']
+        read_only_fields = ['id', 'date_issued', 'certificate_id']
+
 
 
 class CertificationDetailSerializer(serializers.ModelSerializer):
-    course_name = serializers.CharField(source='course.title', read_only=True)
-    course_title = serializers.CharField(source='course.title', read_only=True)
-    student_name = serializers.CharField(source='user.get_full_name', read_only=True)
-    student_email = serializers.EmailField(source='user.email', read_only=True)
+    # استخدم حقول النموذج مباشرة بدون مصادر بديلة
     template = CertificateTemplateSerializer(read_only=True)
+    student_email = serializers.EmailField(source='user.email', read_only=True)
     
     class Meta:
         model = Certificate
         fields = [
-            'id', 'course', 'course_name', 'course_title', 'user', 'student_name',
-            'student_email', 'template', 'date_issued', 'certificate_id',
-            'verification_status', 'verification_code', 'final_grade',
-            'institution_name', 'course_duration_hours', 'completion_percentage'
+            'id',
+            'student_name', 'student_email', 'course_title', 'institution_name',
+            'final_grade', 'completion_percentage', 'course_duration_hours',
+            'duration_days', 'national_id',
+            'start_date', 'end_date', 'start_date_hijri', 'end_date_hijri',
+            'status', 'verification_status', 'verification_code',
+            'date_issued', 'certificate_id',
+            'template'
         ]
-        read_only_fields = ['id', 'user', 'date_issued', 'certificate_id']
+        read_only_fields = ['id', 'date_issued', 'certificate_id']
 
 
 class CertificateCreateSerializer(serializers.ModelSerializer):
@@ -254,4 +259,4 @@ class CertificateTemplateFilterSerializer(serializers.Serializer):
     """Serializer for filtering certificate templates"""
     is_default = serializers.BooleanField(required=False)
     is_active = serializers.BooleanField(required=False)
-    search = serializers.CharField(required=False, allow_blank=True) 
+    search = serializers.CharField(required=False, allow_blank=True)

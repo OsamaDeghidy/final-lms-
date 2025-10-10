@@ -80,3 +80,6 @@ backend/media/courses/syllabus/عقد_برمجة_خاصة_بمنصه_الكتر�
 backend/media/courses/syllabus/عقد_برمجة_خاصة_بمنصه_الكترونيه_.pdf
 .gitignore
 backend/db.sqlite3
+backend/venv
+.venv
+venv

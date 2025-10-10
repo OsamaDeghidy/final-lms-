@@ -141,6 +141,23 @@
                                 </a>
                             </li>
                         {% endif %}
+                        {% if import_export_enabled %}
+                            {% if template_url %}
+                            <li>
+                                <a href="{{ template_url }}" class="historylink">تحميل القالب</a>
+                            </li>
+                            {% endif %}
+                            {% if import_excel_url %}
+                            <li>
+                                <a href="{{ import_excel_url }}" class="viewsitelink">استيراد إكسل</a>
+                            </li>
+                            {% endif %}
+                            {% if export_excel_url %}
+                            <li>
+                                <a href="{{ export_excel_url }}" class="viewsitelink">تصدير إكسل</a>
+                            </li>
+                            {% endif %}
+                        {% endif %}
                     {% endblock %}
                 </ul>
             {% endblock %}

@@ -67,9 +67,14 @@ const certificateAPI = {
     }
   },
 
-  // Get certificate verification URL
+  // Get certificate verification URL (always point to backend verify page)
   getVerificationUrl: (verificationCode) => {
-    return `${window.location.origin}/certificates/verify/${verificationCode}`;
+    // Use backend base URL to render Django verification page with correct styling
+    // Ensure trailing slash to avoid redirects
+    const backendOrigin = (typeof window !== 'undefined' && window.__API_BASE_URL__) 
+      ? window.__API_BASE_URL__ 
+      : (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000');
+    return `${backendOrigin}/certificates/verify/${verificationCode}/`;
   },
 
   // Share certificate
