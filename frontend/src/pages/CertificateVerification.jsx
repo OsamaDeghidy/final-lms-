@@ -232,14 +232,7 @@ const CertificateVerification = () => {
                   تفاصيل الشهادة
                 </Typography>
                 <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      رقم الشهادة
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600} fontFamily="monospace">
-                      {certificate.certificate_id}
-                    </Typography>
-                  </Box>
+                  {/* تم إزالة عرض رقم الشهادة */}
                   
                   <Box>
                     <Typography variant="body2" color="text.secondary">
@@ -250,14 +243,7 @@ const CertificateVerification = () => {
                     </Typography>
                   </Box>
                   
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      رمز التحقق
-                    </Typography>
-                    <Typography variant="h6" fontWeight={600} fontFamily="monospace">
-                      {certificate.verification_code}
-                    </Typography>
-                  </Box>
+                  {/* تم إزالة عرض رمز التحقق */}
                 </Stack>
               </Grid>
             </Grid>
@@ -368,20 +354,7 @@ const CertificateVerification = () => {
           </CardContent>
         </Card>
 
-        {/* Verification Info */}
-        <Paper 
-          elevation={2} 
-          sx={{ 
-            p: 3, 
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'
-          }}
-        >
-          <Typography variant="body2" color="text.secondary">
-            تم التحقق من هذه الشهادة في {formatDate(new Date())} - 
-            رمز التحقق: <strong>{verificationCode}</strong>
-          </Typography>
-        </Paper>
+        {/* تم إزالة معلومات التحقق التي تعرض رمز التحقق */}
       </Container>
     </Box>
   );

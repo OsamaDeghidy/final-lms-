@@ -153,17 +153,7 @@
                 <div class="qr-box">
                   <img alt="رمز QR للتحقق" src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={{ request.build_absolute_uri }}" />
                 </div>
-                <div class="code">رمز التحقق: {{ certificate.verification_code }}</div>
               {% endif %}
-            </div>
-            <div class="right-info">
-              {% if certificate.user.email %}
-                <div class="row">{{ certificate.user.email }}</div>
-              {% endif %}
-              {% if certificate.national_id %}
-                <div class="row">رقم الهوية: {{ certificate.national_id }}</div>
-              {% endif %}
-              <div class="row" style="font-weight:700;">رقم الشهادة: {{ certificate.certificate_id }}</div>
             </div>
           </div>
         </div>

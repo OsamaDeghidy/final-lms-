@@ -1141,31 +1141,7 @@ const MyCertificates = () => {
                        </Box>
                       )}
                     </Box>
-                    {/* Bottom corners: email and national id above certificate id (right), verification code (left) */}
-                    <Box sx={{ position: 'absolute', bottom: 8, right: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                      {selectedCertificate.student_email && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', mb: 0.5 }}
-                        >
-                          {selectedCertificate.student_email}
-                        </Typography>
-                      )}
-                      {selectedCertificate.national_id && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', mb: 0.5 }}
-                        >
-                          رقم الهوية: {selectedCertificate.national_id}
-                        </Typography>
-                      )}
-                      <Typography 
-                        variant="caption" 
-                        sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', fontWeight: 'bold' }}
-                      >
-                        رقم الشهادة: {selectedCertificate.certificate_id}
-                      </Typography>
-                    </Box>
+                    {/* Bottom-left: QR only (removed email, national id, certificate number, and code text) */}
                     <Box sx={{ position: 'absolute', bottom: 8, left: 16 }}>
                       {selectedCertificate.verification_code && (
                         <>
@@ -1186,12 +1162,6 @@ const MyCertificates = () => {
                               style={{ width: 82, height: 82 }}
                             />
                           </Box>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ color: '#333', fontFamily: '"Cairo", "Arial", sans-serif', fontWeight: 'bold' }}
-                          >
-                            رمز التحقق: {selectedCertificate.verification_code}
-                          </Typography>
                         </>
                       )}
                     </Box>

@@ -231,8 +231,9 @@ class Certificate(models.Model):
 
     def get_verification_url(self):
         """الحصول على رابط التحقق من الشهادة"""
-        domain = getattr(settings, 'DOMAIN_NAME', 'localhost:8000')
-        return f"https://{domain}/verify-certificate/{self.verification_code}/"
+        domain = getattr(settings, 'DOMAIN_NAME', '127.0.0.1:8000')
+        # توحيد مسار صفحة التحقق ليتطابق مع صفحة الـ QR المستعملة في الواجهة
+        return f"https://{domain}/certificates/verify/{self.verification_code}/"
 
     def get_download_url(self):
         """الحصول على رابط تحميل الشهادة"""

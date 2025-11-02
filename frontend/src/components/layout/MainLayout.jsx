@@ -34,6 +34,8 @@ const drawerWidth = 270;
 const teacherNavItems = [
   { text: 'الرئيسية', icon: <HomeIcon />, path: '/', exact: true },
   { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/teacher/dashboard' },
+  { text: 'الشعب', icon: <GroupIcon />, path: '/teacher/divisions' },
+  { text: 'التعاميم', icon: <MessageIcon />, path: '/teacher/circulars' },
   { text: 'كورساتي', icon: <ClassIcon />, path: '/teacher/my-courses' },
   { text: 'الواجبات', icon: <AssignmentIcon />, path: '/teacher/assignments' },
   { text: 'الكويزات', icon: <QuizIcon />, path: '/teacher/quizzes' },
@@ -47,6 +49,8 @@ const teacherNavItems = [
 const studentNavItems = [
   { text: 'الرئيسية', icon: <HomeIcon />, path: '/', exact: true },
   { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/student/dashboard' },
+  { text: 'الشعب', icon: <GroupIcon />, path: '/student/divisions' },
+  { text: 'التعاميم', icon: <MessageIcon />, path: '/student/circulars' },
   { text: 'كورساتي', icon: <ClassIcon />, path: '/student/my-courses' },
   { text: 'واجباتي', icon: <AssignmentIcon />, path: '/student/assignments' },
   { text: 'محاضراتي', icon: <VideoCallIcon />, path: '/student/meetings' },

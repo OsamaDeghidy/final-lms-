@@ -101,6 +101,9 @@ import CreateArticle from './pages/teacher/articles/CreateArticle';
 import EditArticle from './pages/teacher/articles/EditArticle';
 import CartPage from './pages/cart/CartPage';
 import PaymentPage from './pages/payment/PaymentPage';
+import DivisionsPage from './pages/divisions/DivisionsPage';
+import CircularsPage from './pages/circulars/CircularsPage';
+import CircularDetail from './pages/circulars/CircularDetail';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -312,6 +315,9 @@ const AppContent = () => {
                           <Route path="certificates" element={<MyCertificates />} />
                           <Route path="meetings" element={<StudentMeetings />} />
                           <Route path="meetings/live/:meetingId" element={<StudentLiveMeeting />} />
+                          <Route path="divisions" element={<DivisionsPage />} />
+                          <Route path="circulars" element={<CircularsPage />} />
+                          <Route path="circulars/:id" element={<CircularDetail />} />
                           <Route path="settings" element={<Profile />} />
                         </Routes>
                       </MainLayout>
@@ -365,6 +371,9 @@ const AppContent = () => {
                           <Route path="exams/:examId/edit" element={<ExamForm isEdit />} />
                           <Route path="meetings" element={<TeacherMeetings />} />
                           <Route path="meetings/live/:meetingId" element={<LiveMeeting />} />
+                          <Route path="divisions" element={<DivisionsPage />} />
+                          <Route path="circulars" element={<CircularsPage />} />
+                          <Route path="circulars/:id" element={<CircularDetail />} />
                           {/* Articles routes */}
                           <Route path="articles" element={<ArticlesList />} />
                           <Route path="articles/create" element={<CreateArticle />} />

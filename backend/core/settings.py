@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-%9l()dc43djrz=dnah3&#5vxtc7#z2fmh=e$-7m)r*(_svbc2n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'pdt-admin.com', 'www.pdt-admin.com']
 
 SITE_ID = 1
 
@@ -95,6 +95,8 @@ INSTALLED_APPS = [
     'articles',
     'extras',
     'custom_permissions',
+    'divisions',
+    'circulars',
 ]
 
 # Moyasar settings (use environment variables in production)
@@ -530,3 +532,5 @@ ADMIN_REORDER = (
         'extras.CourseCollection',
     )},
 )
+# Public domain for building absolute verification URLs
+DOMAIN_NAME = os.getenv('DOMAIN_NAME', 'pdt-admin.com')

@@ -52,6 +52,8 @@ urlpatterns = [
     path('api/certificates/', include('certificates.urls')),
     path('api/meetings/', include('meetings.urls')),
     path('api/notifications/', include('notifications.urls')),
+    path('api/divisions/', include('divisions.urls')),
+    path('api/circulars/', include('circulars.urls')),
     path('api/articles/', include('articles.urls')),
     path('api/extras/', include('extras.urls')),
     path('api/content/', include('content.urls')),  # Content app URLs

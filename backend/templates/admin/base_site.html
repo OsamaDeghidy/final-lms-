@@ -675,6 +675,23 @@
                 <span>التقييمات</span>
             </a>
         </li>
+        
+        <!-- Divisions & Circulars Section -->
+        <li class="menu-section">
+            <span>الشعب والتعاميم</span>
+        </li>
+        <li>
+            <a href="{% url 'admin:divisions_division_changelist' %}" class="{% if '/admin/divisions/division/' in request.path %}active{% endif %}">
+                <i class="fas fa-sitemap"></i>
+                <span>الشعب</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'admin:circulars_circular_changelist' %}" class="{% if '/admin/circulars/circular/' in request.path %}active{% endif %}">
+                <i class="fas fa-bullhorn"></i>
+                <span>التعاميم</span>
+            </a>
+        </li>
        
         <!-- Extras Section -->
         <li class="menu-section">
