@@ -1,4 +1,5 @@
 {% extends "admin/change_list.html" %}
+{% load static %}
 
 {% block object-tools-items %}
   {{ block.super }}
@@ -11,4 +12,125 @@
   <li>
     <a href="{% url 'admin:auth_user_import_excel_template' %}" class="button">تحميل القالب</a>
   </li>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+// دالة للحصول على CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function updateUserStatus(selectElement) {
+    const userId = selectElement.getAttribute('data-user-id');
+    const url = selectElement.getAttribute('data-url');
+    const newStatus = selectElement.value;
+    const originalValue = selectElement.getAttribute('data-original-value') || selectElement.value;
+    
+    // حفظ القيمة الأصلية إذا لم تكن موجودة
+    if (!selectElement.getAttribute('data-original-value')) {
+        selectElement.setAttribute('data-original-value', originalValue);
+    }
+    
+    // تعطيل الـ dropdown أثناء التحديث
+    selectElement.disabled = true;
+    const originalColor = selectElement.style.color;
+    selectElement.style.color = '#999';
+    
+    // الحصول على CSRF token
+    const csrftoken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    // إرسال طلب AJAX
+    const formData = new FormData();
+    formData.append('status', newStatus);
+    if (csrftoken) {
+        formData.append('csrfmiddlewaretoken', csrftoken);
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrftoken || ''
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // تحديث الألوان حسب الحالة الجديدة
+            const statusColors = {
+                'Student': '#28a745',
+                'Instructor': '#007bff',
+                'Admin': '#dc3545',
+                'Organization': '#6f42c1'
+            };
+            selectElement.style.color = statusColors[newStatus] || '#6c757d';
+            
+            // تحديث القيمة الأصلية
+            selectElement.setAttribute('data-original-value', newStatus);
+            
+            // إظهار رسالة نجاح بصرياً
+            const successMsg = document.createElement('span');
+            successMsg.textContent = '✓ تم التحديث';
+            successMsg.style.cssText = 'color: #28a745; margin-right: 5px; font-size: 12px;';
+            selectElement.parentNode.insertBefore(successMsg, selectElement);
+            setTimeout(() => successMsg.remove(), 2000);
+        } else {
+            // إرجاع القيمة الأصلية في حالة الفشل
+            selectElement.value = originalValue;
+            alert('فشل تحديث الحالة: ' + (data.error || 'خطأ غير معروف'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // إرجاع القيمة الأصلية في حالة الخطأ
+        selectElement.value = originalValue;
+        alert('حدث خطأ أثناء تحديث الحالة');
+    })
+    .finally(() => {
+        // تفعيل الـ dropdown مرة أخرى
+        selectElement.disabled = false;
+    });
+}
+
+// تحديث الألوان عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    const statusDropdowns = document.querySelectorAll('.status-dropdown');
+    const statusColors = {
+        'Student': '#28a745',
+        'Instructor': '#007bff',
+        'Admin': '#dc3545',
+        'Organization': '#6f42c1'
+    };
+    
+    statusDropdowns.forEach(select => {
+        const currentValue = select.value;
+        select.style.color = statusColors[currentValue] || '#6c757d';
+        
+        // حفظ القيمة الأصلية
+        if (!select.getAttribute('data-original-value')) {
+            select.setAttribute('data-original-value', currentValue);
+        }
+    });
+});
+</script>
 {% endblock %}

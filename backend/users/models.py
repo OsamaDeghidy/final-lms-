@@ -110,6 +110,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     """
     Signal handler to create user profile when a new User is created.
     Only triggers for newly created users to avoid duplicates.
+    Note: Student/Instructor will be created automatically by manage_student_instructor signal.
     """
     if created:
         try:
@@ -122,6 +123,7 @@ def create_user_profile(sender, instance, created, **kwargs):
                     email=instance.email,
                     status=status
                 )
+                # Student/Instructor سيتم إنشاؤه تلقائياً بواسطة signal manage_student_instructor
         except Exception as e:
             # تسجيل الخطأ دون إيقاف العملية
             import logging
@@ -153,3 +155,48 @@ def update_user_profile(sender, instance, created, **kwargs):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error updating profile for user {instance.username}: {str(e)}")
+
+
+@receiver(post_save, sender=Profile)
+def manage_student_instructor(sender, instance, created, **kwargs):
+    """
+    Signal handler to automatically create/delete Student or Instructor 
+    based on Profile status changes.
+    """
+    try:
+        status = instance.status
+        
+        if status == 'Student':
+            # إنشاء Student إذا لم يكن موجوداً
+            Student.objects.get_or_create(profile=instance)
+            # حذف Instructor إذا كان موجوداً
+            Instructor.objects.filter(profile=instance).delete()
+            
+        elif status == 'Instructor':
+            # إنشاء Instructor إذا لم يكن موجوداً
+            Instructor.objects.get_or_create(profile=instance)
+            # حذف Student إذا كان موجوداً
+            Student.objects.filter(profile=instance).delete()
+            
+        elif status == 'Admin':
+            # إنشاء Instructor للأدمن إذا لم يكن موجوداً
+            Instructor.objects.get_or_create(
+                profile=instance,
+                defaults={
+                    'bio': 'Administrator with full instructor permissions',
+                    'qualification': 'System Administrator'
+                }
+            )
+            # حذف Student إذا كان موجوداً
+            Student.objects.filter(profile=instance).delete()
+            
+        elif status == 'Organization':
+            # حذف Student و Instructor إذا كانت الحالة Organization
+            Student.objects.filter(profile=instance).delete()
+            Instructor.objects.filter(profile=instance).delete()
+            
+    except Exception as e:
+        # تسجيل الخطأ دون إيقاف العملية
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error managing Student/Instructor for profile {instance.id}: {str(e)}")

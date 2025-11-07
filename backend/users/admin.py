@@ -94,16 +94,33 @@ admin.site.unregister(User)
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     change_list_template = 'admin/auth/user/change_list.html'
-    inlines = (ProfileInline, InstructorInline, StudentInline) if hasattr(settings, 'SHOW_ALL_INLINES') else (ProfileInline,)
+    inlines = (InstructorInline, StudentInline) if hasattr(settings, 'SHOW_ALL_INLINES') else ()
     list_display = (
         'username', 'email', 'first_name', 'last_name', 
-        'user_status', 'profile_image', 'is_active', 
+        'status_dropdown', 'profile_image', 'is_active', 
         'courses_count', 'date_joined'
     )
     list_filter = (
         StatusFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
     )
     search_fields = ('username', 'first_name', 'last_name', 'email', 'profile__name')
+    
+    # إزالة قسم الصلاحيات من fieldsets
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("المعلومات الشخصية", {"fields": ("first_name", "last_name", "email")}),
+        ("التواريخ المهمة", {"fields": ("last_login", "date_joined")}),
+    )
+    
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("username", "password1", "password2"),
+            },
+        ),
+    )
 
     def get_urls(self):
         urls = super().get_urls()
@@ -111,6 +128,7 @@ class CustomUserAdmin(BaseUserAdmin):
             path('import-excel/', self.admin_site.admin_view(self.import_excel_view), name='auth_user_import_excel'),
             path('import-excel/template/', self.admin_site.admin_view(self.download_excel_template), name='auth_user_import_excel_template'),
             path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='auth_user_export_excel'),
+            path('<int:user_id>/update-status/', self.admin_site.admin_view(self.update_user_status), name='auth_user_update_status'),
         ]
         return custom_urls + urls
 
@@ -284,23 +302,81 @@ class CustomUserAdmin(BaseUserAdmin):
             csv_content = '\n'.join(rows)
             return HttpResponse(csv_content, content_type='text/csv')
     
-    def user_status(self, obj):
+    def status_dropdown(self, obj):
+        """عرض dropdown قابل للتعديل للحالة"""
         try:
             profile = obj.profile
-            status_colors = {
-                'Student': '#28a745',
-                'Instructor': '#007bff',
-                'Admin': '#dc3545',
-                'Organization': '#6f42c1'
-            }
-            color = status_colors.get(profile.status, '#6c757d')
-            return format_html(
-                '<span style="color: {}; font-weight: bold;">{}</span>',
-                color, profile.get_status_display() if profile.status else 'غير محدد'
-            )
+            current_status = profile.status or 'Student'
         except Profile.DoesNotExist:
-            return format_html('<span style="color: #dc3545;">لا يوجد ملف شخصي</span>')
-    user_status.short_description = 'الحالة'
+            current_status = 'Student'
+        
+        status_choices = [
+            ('Student', 'طالب'),
+            ('Instructor', 'مدرب'),
+            ('Admin', 'مدير'),
+         
+        ]
+        
+        status_colors = {
+            'Student': '#28a745',
+            'Instructor': '#007bff',
+            'Admin': '#dc3545',
+           
+        }
+        
+        color = status_colors.get(current_status, '#6c757d')
+        
+        # بناء options HTML بشكل مباشر
+        options_html = ''
+        for value, label in status_choices:
+            selected = ' selected' if value == current_status else ''
+            options_html += f'<option value="{value}"{selected}>{label}</option>'
+        
+        update_url = reverse('admin:auth_user_update_status', args=[obj.id])
+        
+        # بناء HTML كامل باستخدام mark_safe
+        html = (
+            f'<select class="status-dropdown" data-user-id="{obj.id}" data-url="{update_url}" '
+            f'style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; '
+            f'background-color: white; color: {color}; font-weight: bold; cursor: pointer; '
+            f'min-width: 100px;" onchange="updateUserStatus(this)">'
+            f'{options_html}'
+            f'</select>'
+        )
+        
+        return mark_safe(html)
+    status_dropdown.short_description = 'الحالة'
+    
+    def update_user_status(self, request, user_id):
+        """تحديث حالة المستخدم"""
+        from django.http import JsonResponse
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+        
+        try:
+            user = User.objects.get(id=user_id)
+            new_status = request.POST.get('status')
+            
+            if new_status not in ['Student', 'Instructor', 'Admin', 'Organization']:
+                return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
+            
+            profile, created = Profile.objects.get_or_create(user=user)
+            profile.status = new_status
+            profile.save()
+            
+            # الحصول على النص المعروض للحالة
+            status_display = dict(Profile.status_choices).get(new_status, new_status)
+            
+            return JsonResponse({
+                'success': True,
+                'status': new_status,
+                'status_display': status_display
+            })
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
     
     def profile_image(self, obj):
         try:
