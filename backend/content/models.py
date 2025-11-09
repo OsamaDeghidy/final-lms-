@@ -153,6 +153,18 @@ class Module(models.Model):
             raise ValidationError({
                 'is_active': _('A published module must be active')
             })
+
+        course_category = getattr(self.course, 'category', None)
+        if course_category:
+            restricted_slugs = {'e-learning', 'diplomas'}
+            restricted_names = {'التدريب الإلكتروني', 'الدبلومات'}
+            if (
+                course_category.slug in restricted_slugs
+                or course_category.name in restricted_names
+            ):
+                raise ValidationError(
+                    _('Modules cannot be added to advertisement courses in the selected category.')
+                )
     
     def save(self, *args, **kwargs):
         """Override save to ensure clean is called.
@@ -314,6 +326,17 @@ class Lesson(models.Model):
         # Allow video lessons without a direct video_url to support file-based resources
         # Validation of having either a URL or a resource file can be handled at UI/workflow level
         # Remove invalid reference to non-existent 'status' field
+        course_category = getattr(self.module.course, 'category', None) if getattr(self, 'module', None) else None
+        if course_category:
+            restricted_slugs = {'e-learning', 'diplomas'}
+            restricted_names = {'التدريب الإلكتروني', 'الدبلومات'}
+            if (
+                course_category.slug in restricted_slugs
+                or course_category.name in restricted_names
+            ):
+                raise ValidationError(
+                    _('Lessons cannot be added to advertisement courses in the selected category.')
+                )
     
     def save(self, *args, **kwargs):
         """Override save to ensure clean is called and slug is generated"""

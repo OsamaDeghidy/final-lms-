@@ -25,6 +25,7 @@ import {
   AccordionDetails,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -44,7 +45,9 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
+import { courseAPI } from '../../../services/api.service';
 import contentAPI from '../../../services/content.service';
+import { isAdvertisementCategory } from '../../../utils/courseRestrictions';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -150,6 +153,9 @@ const CreateUnit = () => {
     message: '',
     severity: 'success'
   });
+  const [courseLoading, setCourseLoading] = useState(true);
+  const [isRestrictedCourse, setIsRestrictedCourse] = useState(false);
+  const [courseDetails, setCourseDetails] = useState(null);
   
   // Form state
   const [unitData, setUnitData] = useState({
@@ -189,6 +195,29 @@ const CreateUnit = () => {
       [`${type}File`]: file || null,
     }));
   };
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!courseId) return;
+      setCourseLoading(true);
+      try {
+        const data = await courseAPI.getCourse(courseId);
+        setCourseDetails(data);
+        const restricted = isAdvertisementCategory(data?.category);
+        setIsRestrictedCourse(restricted);
+        if (restricted) {
+          setSubmitError('لا يمكن إضافة وحدات لهذا التصنيف، فالدورة إعلانية فقط.');
+        }
+      } catch (error) {
+        console.error('Error loading course details:', error);
+        setSubmitError('تعذر تحميل بيانات الدورة، يرجى المحاولة لاحقاً.');
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [courseId]);
 
   // Preload next available order to avoid unique constraint (course, order)
   useEffect(() => {
@@ -252,6 +281,10 @@ const CreateUnit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isRestrictedCourse) {
+      setSubmitError('تم تعطيل إنشاء الوحدات لهذا النوع من الدورات.');
+      return;
+    }
     try {
       setSubmitting(true);
       setSubmitError(null);
@@ -306,6 +339,51 @@ const CreateUnit = () => {
   // لا يوجد رجوع بعد إزالة الsteps
 
   // النموذج: قسم واحد بدون مراجعة نهائية
+
+  if (courseLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (isRestrictedCourse) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+          <IconButton 
+            onClick={() => navigate(-1)} 
+            sx={{ 
+              mr: 2,
+              backgroundColor: theme.palette.background.paper,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              '&:hover': {
+                backgroundColor: theme.palette.action.hover,
+              },
+            }}
+          >
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+            إضافة وحدة جديدة
+          </Typography>
+        </Box>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          تم تصنيف هذه الدورة كإعلان ({courseDetails?.category?.name || 'بدون تصنيف معروف'}). تم إيقاف إضافة الوحدات والدروس لها.
+        </Alert>
+        <Button
+          variant="contained"
+          onClick={() => navigate(`/teacher/courses/${courseId}/units`)}
+          sx={{ borderRadius: 2 }}
+        >
+          العودة إلى الوحدات
+        </Button>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

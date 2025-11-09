@@ -10,8 +10,8 @@ class CategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
-        fields = ['id', 'name', 'description', 'image', 'courses_count']
-        read_only_fields = ['id']
+        fields = ['id', 'name', 'slug', 'description', 'image', 'courses_count']
+        read_only_fields = ['id', 'slug']
     
     def get_courses_count(self, obj):
         return obj.courses.filter(status='published').count()

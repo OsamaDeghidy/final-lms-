@@ -312,11 +312,21 @@ class Course(models.Model):
             self.price = 0
             self.discount_price = None
         
-        # Handle course announcements - they should be free and not certified
+        # Automatically treat certain categories as announcement-only
+        announcement_category_slugs = {'e-learning', 'diplomas'}
+        announcement_category_names = {'التدريب الإلكتروني', 'الدبلومات'}
+
+        if (
+            self.category
+            and (
+                self.category.slug in announcement_category_slugs
+                or self.category.name in announcement_category_names
+            )
+        ):
+            self.is_complete_course = False
+
+        # Handle course announcements - they should not grant certificates
         if not self.is_complete_course:
-            self.is_free = True
-            self.price = 0
-            self.discount_price = None
             self.is_certified = False
         
         super().save(*args, **kwargs)

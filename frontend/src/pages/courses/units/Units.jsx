@@ -72,7 +72,9 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
+import { courseAPI } from '../../../services/api.service';
 import contentAPI from '../../../services/content.service';
+import { isAdvertisementCategory } from '../../../utils/courseRestrictions';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -132,8 +134,34 @@ const Units = () => {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [courseDetails, setCourseDetails] = useState(null);
+  const [isRestrictedCourse, setIsRestrictedCourse] = useState(false);
+  const [courseLoading, setCourseLoading] = useState(true);
 
   // يتم الجلب من API بدلاً من البيانات الوهمية
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!courseId) return;
+      setCourseLoading(true);
+      try {
+        const data = await courseAPI.getCourse(courseId);
+        setCourseDetails(data);
+        setIsRestrictedCourse(isAdvertisementCategory(data?.category));
+      } catch (error) {
+        console.error('Error fetching course details:', error);
+        setSnackbar({
+          open: true,
+          message: 'تعذر تحميل بيانات الدورة',
+          severity: 'error',
+        });
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [courseId]);
 
   useEffect(() => {
     const fetchUnits = async () => {
@@ -225,6 +253,14 @@ const Units = () => {
   };
 
   const handleCreateUnit = () => {
+    if (isRestrictedCourse) {
+      setSnackbar({
+        open: true,
+        message: 'لا يمكن إضافة وحدات لهذا التصنيف، هذه الدورة إعلان فقط.',
+        severity: 'info',
+      });
+      return;
+    }
     navigate(`/teacher/courses/${courseId}/units/new`);
   };
 
@@ -348,31 +384,44 @@ const Units = () => {
         </Box>
         
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button
-            variant="contained"
-            startIcon={<AddCircle />}
-            onClick={handleCreateUnit}
-                sx={{ 
-                  background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
-                  color: 'white',
-                  borderRadius: '25px',
-                  px: 3,
-                  py: 1.5,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  fontSize: '0.95rem',
-                  boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
-                  border: 'none',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
-                    boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
-                    transform: 'translateY(-2px)',
-                  },
-                  transition: 'all 0.3s ease',
-                }}
-          >
-            إضافة وحدة جديدة
-              </Button>
+              <Tooltip
+                title={isRestrictedCourse ? 'تم تعطيل إضافة الوحدات لهذا النوع من الدورات.' : ''}
+                disableHoverListener={!isRestrictedCourse}
+              >
+                <span>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddCircle />}
+                    onClick={handleCreateUnit}
+                    disabled={isRestrictedCourse || courseLoading}
+                    sx={{ 
+                      background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
+                      color: 'white',
+                      borderRadius: '25px',
+                      px: 3,
+                      py: 1.5,
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      fontSize: '0.95rem',
+                      boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
+                      border: 'none',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
+                        boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
+                        transform: 'translateY(-2px)',
+                      },
+                      transition: 'all 0.3s ease',
+                      '&.Mui-disabled': {
+                        background: 'rgba(255,255,255,0.2)',
+                        color: 'rgba(255,255,255,0.7)',
+                        boxShadow: 'none',
+                      },
+                    }}
+              >
+                إضافة وحدة جديدة
+                  </Button>
+                </span>
+              </Tooltip>
           {selectedUnit && (
                 <Button
               variant="outlined"
@@ -405,6 +454,12 @@ const Units = () => {
           </Box>
         </Box>
       </Box>
+
+      {isRestrictedCourse && (
+        <Alert severity="info" sx={{ mt: 2 }}>
+          هذه الدورة مصنفة كإعلان، لذلك تم تعطيل إنشاء الوحدات والدروس لها.
+        </Alert>
+      )}
 
       {/* Filters and Search */}
       <StyledPaper elevation={0}>

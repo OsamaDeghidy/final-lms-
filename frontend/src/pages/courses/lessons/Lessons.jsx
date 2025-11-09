@@ -40,9 +40,10 @@ import {
   AddCircle,
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import LessonForm from './LessonForm';
 import LessonDetail from './LessonDetail';
+import { courseAPI } from '../../../services/api.service';
 import contentAPI from '../../../services/content.service';
+import { isAdvertisementCategory } from '../../../utils/courseRestrictions';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -76,6 +77,8 @@ const Lessons = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [lessonDetailOpen, setLessonDetailOpen] = useState(false);
   const [selectedLessonId, setSelectedLessonId] = useState(null);
+  const [isRestrictedCourse, setIsRestrictedCourse] = useState(false);
+  const [courseLoading, setCourseLoading] = useState(true);
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -92,6 +95,28 @@ const Lessons = () => {
     };
     if (unitId) fetchModule();
   }, [unitId]);
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!courseId) return;
+      setCourseLoading(true);
+      try {
+        const data = await courseAPI.getCourse(courseId);
+        setIsRestrictedCourse(isAdvertisementCategory(data?.category));
+      } catch (error) {
+        console.error('Error fetching course details:', error);
+        setSnackbar({
+          open: true,
+          message: 'تعذر تحميل بيانات الدورة',
+          severity: 'error',
+        });
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [courseId]);
 
   const lessons = Array.isArray(module?.lessons) ? module.lessons : [];
 
@@ -202,36 +227,64 @@ const Lessons = () => {
             </Typography>
           </Box>
         </Box>
-            <Button 
-              variant="contained" 
-              startIcon={<AddCircle />} 
-              size="large" 
-              onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/create`)}
-              sx={{ 
-                background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
-                color: 'white',
-                borderRadius: '25px',
-                px: 3,
-                py: 1.5,
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
-                border: 'none',
-                '&:hover': {
-                  background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
-                  boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.3s ease',
-              }}
+            <Tooltip
+              title={isRestrictedCourse ? 'تم تعطيل إضافة الدروس لهذه الدورة الإعلانية.' : ''}
+              disableHoverListener={!isRestrictedCourse}
             >
-          إضافة درس
-        </Button>
+              <span>
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddCircle />} 
+                  size="large" 
+                  onClick={() => {
+                    if (isRestrictedCourse) {
+                      setSnackbar({
+                        open: true,
+                        message: 'لا يمكن إضافة دروس لهذه الدورة لأنها إعلانية فقط.',
+                        severity: 'info',
+                      });
+                      return;
+                    }
+                    navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons/create`);
+                  }}
+                  disabled={isRestrictedCourse || courseLoading}
+                  sx={{ 
+                    background: 'linear-gradient(45deg, #0e5181 30%, #e5978b 90%)',
+                    color: 'white',
+                    borderRadius: '25px',
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 4px 15px rgba(14, 81, 129, 0.3)',
+                    border: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #0a3f66 30%, #d88a7e 90%)',
+                      boxShadow: '0 6px 20px rgba(14, 81, 129, 0.4)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease',
+                    '&.Mui-disabled': {
+                      background: 'rgba(255,255,255,0.2)',
+                      color: 'rgba(255,255,255,0.7)',
+                      boxShadow: 'none',
+                    },
+                  }}
+                >
+              إضافة درس
+            </Button>
+              </span>
+            </Tooltip>
           </Box>
         </Box>
       </Box>
 
+      {isRestrictedCourse && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          هذه الدورة مصنفة كإعلان، لذلك تم تعطيل إضافة الدروس لها.
+        </Alert>
+      )}
       <StyledPaper>
         {loading && (
           <Box sx={{ py: 3 }}>

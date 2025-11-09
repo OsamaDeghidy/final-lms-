@@ -21,10 +21,13 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Link,
+  CircularProgress,
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Save as SaveIcon, DeleteOutline as DeleteIcon, Edit as EditIcon, AttachFile as AttachFileIcon, Launch as LaunchIcon } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import { courseAPI } from '../../../services/api.service';
 import contentAPI from '../../../services/content.service';
+import { isAdvertisementCategory } from '../../../utils/courseRestrictions';
 
 const Wrapper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(3),
@@ -43,6 +46,7 @@ const LessonForm = ({ isEdit = false }) => {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [courseError, setCourseError] = useState(null);
   const [form, setForm] = useState({
     title: '',
     lesson_type: 'article',
@@ -64,6 +68,8 @@ const LessonForm = ({ isEdit = false }) => {
   const [resources, setResources] = useState([]);
   const [resLoading, setResLoading] = useState(false);
   const [resError, setResError] = useState(null);
+  const [isRestrictedCourse, setIsRestrictedCourse] = useState(false);
+  const [courseLoading, setCourseLoading] = useState(true);
 
   useEffect(() => {
     const fetchLesson = async () => {
@@ -113,6 +119,25 @@ const LessonForm = ({ isEdit = false }) => {
     fetchResources();
   }, [isEdit, lessonId]);
 
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!courseId) return;
+      setCourseLoading(true);
+      setCourseError(null);
+      try {
+        const data = await courseAPI.getCourse(courseId);
+        setIsRestrictedCourse(isAdvertisementCategory(data?.category));
+      } catch (e) {
+        console.error('Error loading course details:', e);
+        setCourseError('تعذر تحميل بيانات الدورة');
+      } finally {
+        setCourseLoading(false);
+      }
+    };
+
+    fetchCourseDetails();
+  }, [courseId]);
+
   const handleDeleteResource = async (resourceId) => {
     try {
       await contentAPI.deleteLessonResource(resourceId);
@@ -126,6 +151,10 @@ const LessonForm = ({ isEdit = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isEdit && isRestrictedCourse) {
+      setError('لا يمكن إضافة دروس لهذه الدورة لأنها إعلانية فقط.');
+      return;
+    }
     try {
       setSaving(true);
       setError(null);
@@ -175,6 +204,38 @@ const LessonForm = ({ isEdit = false }) => {
     }
   };
 
+  if (courseLoading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 240 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (!isEdit && isRestrictedCourse) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+          <IconButton onClick={() => navigate(-1)}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h5" fontWeight={700}>إضافة درس</Typography>
+        </Box>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          هذه الدورة مصنفة كإعلان، لذلك تم تعطيل إضافة الدروس الجديدة.
+        </Alert>
+        {courseError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {courseError}
+          </Alert>
+        )}
+        <Button variant="contained" onClick={() => navigate(`/teacher/courses/${courseId}/units/${unitId}/lessons`)}>
+          العودة إلى قائمة الدروس
+        </Button>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
@@ -186,6 +247,7 @@ const LessonForm = ({ isEdit = false }) => {
 
       <Wrapper component="form" onSubmit={handleSubmit}>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {courseError && <Alert severity="error" sx={{ mb: 2 }}>{courseError}</Alert>}
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <TextField

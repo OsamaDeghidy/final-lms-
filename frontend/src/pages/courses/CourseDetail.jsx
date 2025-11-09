@@ -849,7 +849,6 @@ const CourseDetail = () => {
   const [expandedModules, setExpandedModules] = useState({});
   const [isScrolled, setIsScrolled] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [shareAnchorEl, setShareAnchorEl] = useState(null);
   const [overviewSubTab, setOverviewSubTab] = useState(0);
   const courseContentRef = useRef(null);
@@ -923,8 +922,6 @@ const CourseDetail = () => {
   };
 
   // Preview dialog handlers
-  const handleOpenPreview = () => setIsPreviewOpen(true);
-  const handleClosePreview = () => setIsPreviewOpen(false);
   const handleOpenShare = (e) => setShareAnchorEl(e.currentTarget);
   const handleCloseShare = () => setShareAnchorEl(null);
   const handleOverviewSubTabChange = (e, v) => setOverviewSubTab(v);
@@ -966,202 +963,6 @@ const CourseDetail = () => {
     }
     return <DescriptionOutlined htmlColor="#0e5181" />;
   };
-
-  // Mock FAQ data
-  const mockFAQs = [
-    {
-      question: 'How do I access my course after purchasing?',
-      answer: 'After purchasing, you can access your course immediately by going to "My Learning" in your account. The course will be available there for lifetime access.'
-    },
-    {
-      question: 'Do you offer a certificate of completion?',
-      answer: 'Yes, you will receive a certificate of completion once you finish all the course content and pass any required assessments.'
-    },
-    {
-      question: 'Can I download the course videos?',
-      answer: 'For copyright and licensing reasons, we do not allow downloading of course videos. However, you can access them anytime through our platform with an internet connection.'
-    },
-    {
-      question: 'What if I need help during the course?',
-      answer: 'You can ask questions in the course discussion area where the instructor and other students can help. For technical issues, our support team is available 24/7.'
-    },
-    {
-      question: 'Is there a money-back guarantee?',
-      answer: 'Yes, we offer a 30-day money-back guarantee if you\'re not satisfied with the course for any reason.'
-    }
-  ];
-
-  // Mock data for the course with enhanced details
-  const mockCourse = {
-    id: id,
-    title: 'Advanced React and Redux',
-    subtitle: 'Master Modern React, Hooks, Context, Redux, and More',
-    instructor: 'Jane Smith',
-    instructorTitle: 'Senior Frontend Engineer at Tech Corp',
-    instructorBio: '10+ years of experience in building scalable web applications. Specialized in React, TypeScript, and state management solutions. Previously worked at Google and Facebook.',
-    instructorAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-    instructorRating: 4.9,
-    instructorStudents: 12500,
-    instructorCourses: 8,
-    bannerImage: 'https://source.unsplash.com/random/1600x500?programming,react',
-    thumbnail: 'https://source.unsplash.com/random/400x225?programming,react',
-    description: 'Take your React skills to the next level with advanced concepts and best practices for building scalable applications.',
-    longDescription: `This comprehensive course dives deep into advanced React patterns, modern state management with Redux Toolkit, performance optimization techniques, and testing strategies. You'll build real-world applications and learn from practical examples that you can apply immediately in your projects.
-    
-    What makes this course special:
-    • Hands-on projects that mirror real-world scenarios
-    • In-depth coverage of React 18+ features
-    • Performance optimization techniques used by industry experts
-    • Best practices for scalable application architecture`,
-    category: 'Web Development',
-    level: 'Advanced',
-    duration: '8 weeks',
-    totalHours: 35,
-    lectures: 125,
-    resources: 45,
-    students: 1542,
-    rating: 4.8,
-    reviewCount: 243,
-    price: 99.99,
-    originalPrice: 199.99,
-    discount: 50,
-    isBestseller: true,
-    lastUpdated: 'June 2023',
-    language: 'English',
-    captions: ['English', 'Spanish', 'French'],
-    features: [
-      'Full lifetime access',
-      'Access on mobile and TV',
-      'Certificate of completion',
-      '30-day money-back guarantee',
-      'Downloadable resources',
-      'Assignments & quizzes'
-    ],
-    isEnrolled: false,
-    modules: [
-      {
-        id: 1,
-        title: 'Getting Started with Advanced React',
-        description: 'Set up your development environment and understand the core concepts',
-        duration: '2h 45m',
-        lessons: [
-          { id: 1, title: 'Introduction to Advanced React', duration: '15:30', isPreview: true, completed: true, type: 'video' },
-          { id: 2, title: 'Setting Up Your Development Environment', duration: '12:45', isPreview: true, completed: true, type: 'video' },
-          { id: 3, title: 'React 18+ New Features Overview', duration: '18:20', isPreview: false, completed: false, type: 'video' },
-          { id: 4, title: 'Project Setup and Configuration', duration: '22:10', isPreview: false, completed: false, type: 'video' },
-          { id: 5, title: 'Course Resources and Tools', duration: '08:30', isPreview: true, completed: false, type: 'article' },
-        ],
-      },
-      {
-        id: 2,
-        title: 'Advanced React Patterns',
-        description: 'Master advanced React patterns and best practices',
-        duration: '4h 15m',
-        lessons: [
-          { id: 6, title: 'Render Props Pattern', duration: '22:10', isPreview: true, completed: false, type: 'video' },
-          { id: 7, title: 'Higher-Order Components (HOCs)', duration: '18:30', isPreview: true, completed: false, type: 'video' },
-          { id: 8, title: 'Context API Deep Dive', duration: '20:15', isPreview: false, completed: false, type: 'video' },
-          { id: 9, title: 'Compound Components Pattern', duration: '25:40', isPreview: false, completed: false, type: 'video' },
-          { id: 10, title: 'React Hooks Custom Hooks', duration: '28:20', isPreview: false, completed: false, type: 'video' },
-          { id: 11, title: 'Practical Exercise: Building a Modal Component', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
-        ],
-      },
-      {
-        id: 3,
-        title: 'State Management with Redux',
-        description: 'Master state management with Redux and Redux Toolkit',
-        duration: '5h 30m',
-        lessons: [
-          { id: 12, title: 'Redux Fundamentals', duration: '25:20', isPreview: true, completed: false, type: 'video' },
-          { id: 13, title: 'Redux Middleware and Async Logic', duration: '19:45', isPreview: false, completed: false, type: 'video' },
-          { id: 14, title: 'Redux Toolkit Essentials', duration: '21:30', isPreview: true, completed: false, type: 'video' },
-          { id: 15, title: 'RTK Query for Data Fetching', duration: '28:15', isPreview: false, completed: false, type: 'video' },
-          { id: 16, title: 'State Normalization', duration: '17:50', isPreview: false, completed: false, type: 'video' },
-          { id: 17, title: 'Project: Building a Shopping Cart', duration: '45:00', isPreview: false, completed: false, type: 'project' },
-        ],
-      },
-      {
-        id: 4,
-        title: 'Performance Optimization',
-        description: 'Learn how to optimize React applications for maximum performance',
-        duration: '3h 45m',
-        lessons: [
-          { id: 18, title: 'React.memo and useMemo', duration: '20:10', isPreview: true, completed: false, type: 'video' },
-          { id: 19, title: 'useCallback and useRef', duration: '18:30', isPreview: false, completed: false, type: 'video' },
-          { id: 20, title: 'Code Splitting and Lazy Loading', duration: '25:45', isPreview: false, completed: false, type: 'video' },
-          { id: 21, title: 'React Profiler and Performance Tools', duration: '22:15', isPreview: false, completed: false, type: 'video' },
-          { id: 22, title: 'Performance Optimization Case Study', duration: '30:00', isPreview: false, completed: false, type: 'case-study' },
-        ],
-      },
-    ],
-    curriculum: [
-      { title: 'Getting Started', duration: '2h 45m', lectures: 5, completed: 2 },
-      { title: 'Advanced React Patterns', duration: '4h 15m', lectures: 6, completed: 0 },
-      { title: 'State Management with Redux', duration: '5h 30m', lectures: 6, completed: 0 },
-      { title: 'Performance Optimization', duration: '3h 45m', lectures: 5, completed: 0 },
-      { title: 'Testing React Applications', duration: '3h 15m', lectures: 4, completed: 0 },
-      { title: 'Advanced Hooks and Custom Hooks', duration: '3h 00m', lectures: 5, completed: 0 },
-      { title: 'Server-Side Rendering with Next.js', duration: '4h 00m', lectures: 5, completed: 0 },
-      { title: 'Building a Full-Stack Application', duration: '6h 30m', lectures: 7, completed: 0 },
-    ],
-    reviews: [
-      {
-        id: 1,
-        user: 'Alex Johnson',
-        avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-        rating: 5,
-        date: '2 weeks ago',
-        title: 'Excellent course!',
-        content: 'This course took my React skills to the next level. The instructor explains complex concepts in a way that\'s easy to understand. The projects are challenging but rewarding.',
-        likes: 42,
-        isLiked: false,
-      },
-      {
-        id: 2,
-        user: 'Sarah Williams',
-        avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-        rating: 5,
-        date: '1 month ago',
-        title: 'Worth every penny!',
-        content: 'The Redux section alone is worth the price. The instructor breaks down complex topics into manageable chunks. I\'ve already implemented several techniques in my job.',
-        likes: 28,
-        isLiked: true,
-      },
-      {
-        id: 3,
-        user: 'Michael Chen',
-        avatar: 'https://randomuser.me/api/portraits/men/75.jpg',
-        rating: 4,
-        date: '2 months ago',
-        title: 'Great content, but could use more exercises',
-        content: 'The course content is top-notch, but I would have liked more hands-on exercises. The instructor is very knowledgeable and presents the material clearly.',
-        likes: 15,
-        isLiked: false,
-      },
-    ],
-  };
-
-  // Mock related courses
-  const mockRelatedCourses = [
-    {
-      id: 2,
-      title: 'React Hooks in Depth',
-      instructor: 'John Doe',
-      image: 'https://source.unsplash.com/random/400x200?react',
-      rating: 4.7,
-      students: 1245,
-      price: 79.99,
-    },
-    {
-      id: 3,
-      title: 'Mastering Redux',
-      instructor: 'Alex Johnson',
-      image: 'https://source.unsplash.com/random/400x200?javascript',
-      rating: 4.9,
-      students: 987,
-      price: 89.99,
-    },
-  ];
 
   // Initialize all modules as collapsed by default
   const initializeExpandedModules = (modules) => {
@@ -1533,48 +1334,15 @@ const CourseDetail = () => {
       lastUpdated: apiCourse.updated_at ? new Date(apiCourse.updated_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long' }) : 'مؤخراً',
       language: apiCourse.language || 'العربية',
       captions: apiCourse.captions || ['العربية', 'English'],
-      features: [
-        'وصول مدى الحياة',
-        'الوصول عبر الجوال والتلفاز',
-        'شهادة إتمام الدورة',
-        'ضمان استرداد الأموال خلال 30 يوم',
-        'موارد قابلة للتحميل',
-        'واجبات واختبارات'
-      ],
+      features: Array.isArray(apiCourse.features) ? apiCourse.features : [],
       isEnrolled: apiCourse.is_enrolled || false,
       planPdfUrl: getFileUrl(apiCourse.timeline_pdf || apiCourse.plan_pdf || apiCourse.plan || apiCourse.syllabus_pdf),
       enrichmentPdfUrl: getFileUrl(apiCourse.enrichment_pdf || apiCourse.resources_pdf || apiCourse.materials_pdf),
       requirements: apiCourse.requirements || apiCourse.prerequisites || [],
       whoIsThisFor: apiCourse.who_is_this_for || apiCourse.target_audience || apiCourse.audience || [],
       modules: transformModulesData(modulesData, apiCourse, isUserEnrolled),
-      curriculum: [
-        { title: 'البداية', duration: '2h 45m', lectures: 5, completed: 2 },
-        { title: 'أنماط React المتقدمة', duration: '4h 15m', lectures: 6, completed: 0 },
-        { title: 'إدارة الحالة مع Redux', duration: '5h 30m', lectures: 6, completed: 0 },
-        { title: 'تحسين الأداء', duration: '3h 45m', lectures: 5, completed: 0 },
-      ],
-      faqs: apiCourse.faqs || [
-        {
-          question: 'كيف يمكنني الوصول إلى دورتي بعد الشراء؟',
-          answer: 'بعد الشراء، يمكنك الوصول إلى دورتك فوراً عن طريق الذهاب إلى "تعلمي" في حسابك. ستكون الدورة متاحة هناك للوصول مدى الحياة.'
-        },
-        {
-          question: 'هل تقدمون شهادة إتمام؟',
-          answer: 'نعم، ستحصل على شهادة إتمام بمجرد إنهاء جميع محتوى الدورة واجتياز أي تقييمات مطلوبة.'
-        },
-        {
-          question: 'هل يمكنني تحميل فيديوهات الدورة؟',
-          answer: 'لأسباب حقوق النشر والترخيص، لا نسمح بتحميل فيديوهات الدورة. ومع ذلك، يمكنك الوصول إليها في أي وقت من خلال منصتنا مع اتصال بالإنترنت.'
-        },
-        {
-          question: 'ماذا لو احتجت إلى مساعدة أثناء الدورة؟',
-          answer: 'يمكنك طرح الأسئلة في منطقة مناقشة الدورة حيث يمكن للمدرب والطلاب الآخرين المساعدة. للمشكلات التقنية، فريق الدعم لدينا متاح على مدار الساعة طوال أيام الأسبوع.'
-        },
-        {
-          question: 'هل هناك ضمان استرداد الأموال؟',
-          answer: 'نعم، نقدم ضمان استرداد الأموال لمدة 30 يوماً إذا لم تكن راضياً عن الدورة لأي سبب.'
-        }
-      ]
+      curriculum: Array.isArray(apiCourse.curriculum) ? apiCourse.curriculum : [],
+      faqs: Array.isArray(apiCourse.faqs) ? apiCourse.faqs : []
     };
   };
 
@@ -1588,89 +1356,6 @@ const CourseDetail = () => {
       modulesData = [];
     }
     
-    // Check if modulesData is empty or has no lessons
-    const hasValidModules = modulesData.length > 0 && modulesData.some(module => {
-      const lessons = module.lessons || module.content || module.lectures || [];
-      return Array.isArray(lessons) && lessons.length > 0;
-    });
-    
-    // If user is not enrolled or no valid modules, show preview modules
-    if (!isUserEnrolled || !hasValidModules) {
-      console.log('User not enrolled or no valid modules, showing preview modules');
-      
-      // Get course title for better preview content
-      const courseTitle = courseData?.title || courseData?.name || 'الدورة';
-      const isReactCourse = courseTitle.toLowerCase().includes('react');
-      const isWebCourse = courseTitle.toLowerCase().includes('web') || courseTitle.toLowerCase().includes('frontend');
-      const isBackendCourse = courseTitle.toLowerCase().includes('backend') || courseTitle.toLowerCase().includes('django') || courseTitle.toLowerCase().includes('python');
-      
-      // Return preview modules based on course type
-      return [
-        {
-          id: 1,
-          title: `مقدمة إلى ${isReactCourse ? 'React' : isWebCourse ? 'تطوير الويب' : isBackendCourse ? 'تطوير الخلفية' : 'الدورة'}`,
-          description: 'إعداد بيئة التطوير وفهم المفاهيم الأساسية',
-          duration: '2h 45m',
-          lessons: [
-            { id: 1, title: `مقدمة إلى ${isReactCourse ? 'React' : isWebCourse ? 'تطوير الويب' : isBackendCourse ? 'تطوير الخلفية' : 'الدورة'}`, duration: '15:30', isPreview: true, completed: false, type: 'video' },
-            { id: 2, title: 'إعداد بيئة التطوير', duration: '12:45', isPreview: true, completed: false, type: 'video' },
-            { id: 3, title: 'المفاهيم الأساسية', duration: '18:20', isPreview: false, completed: false, type: 'video' },
-            { id: 4, title: 'إعداد المشروع والتهيئة', duration: '22:10', isPreview: false, completed: false, type: 'video' },
-            { id: 5, title: 'موارد الدورة والأدوات', duration: '08:30', isPreview: true, completed: false, type: 'article' },
-            { id: 6, title: 'واجب الوحدة الأولى: مشروع تطبيقي', duration: '45:00', isPreview: false, completed: false, type: 'assignment' },
-            { id: 7, title: 'كويز المفاهيم الأساسية', duration: '20:00', isPreview: false, completed: false, type: 'quiz' },
-          ],
-        },
-        {
-          id: 2,
-          title: 'المفاهيم المتقدمة',
-          description: 'إتقان المفاهيم المتقدمة وأفضل الممارسات',
-          duration: '4h 15m',
-          lessons: [
-            { id: 8, title: 'المفاهيم المتقدمة - الجزء الأول', duration: '22:10', isPreview: true, completed: false, type: 'video' },
-            { id: 9, title: 'المفاهيم المتقدمة - الجزء الثاني', duration: '18:30', isPreview: true, completed: false, type: 'video' },
-            { id: 10, title: 'التطبيق العملي', duration: '20:15', isPreview: false, completed: false, type: 'video' },
-            { id: 11, title: 'أفضل الممارسات', duration: '25:40', isPreview: false, completed: false, type: 'video' },
-            { id: 12, title: 'التطبيقات العملية', duration: '28:20', isPreview: false, completed: false, type: 'video' },
-            { id: 13, title: 'تمرين عملي: تطبيق المفاهيم', duration: '15:00', isPreview: false, completed: false, type: 'exercise' },
-            { id: 14, title: 'واجب الوحدة الثانية: مشروع متقدم', duration: '60:00', isPreview: false, completed: false, type: 'assignment' },
-            { id: 15, title: 'كويز المفاهيم المتقدمة', duration: '25:00', isPreview: false, completed: false, type: 'quiz' },
-          ],
-        },
-        {
-          id: 3,
-          title: 'المشاريع العملية',
-          description: 'تطبيق المفاهيم في مشاريع حقيقية',
-          duration: '5h 30m',
-          lessons: [
-            { id: 16, title: 'مقدمة المشاريع العملية', duration: '25:20', isPreview: true, completed: false, type: 'video' },
-            { id: 17, title: 'تطوير المشروع الأول', duration: '19:45', isPreview: false, completed: false, type: 'video' },
-            { id: 18, title: 'تطوير المشروع الثاني', duration: '21:30', isPreview: true, completed: false, type: 'video' },
-            { id: 19, title: 'اختبار وتحسين المشاريع', duration: '28:15', isPreview: false, completed: false, type: 'video' },
-            { id: 20, title: 'نشر المشاريع', duration: '17:50', isPreview: false, completed: false, type: 'video' },
-            { id: 21, title: 'مشروع نهائي شامل', duration: '45:00', isPreview: false, completed: false, type: 'project' },
-            { id: 22, title: 'واجب الوحدة الثالثة: مشروع شامل', duration: '90:00', isPreview: false, completed: false, type: 'assignment' },
-            { id: 23, title: 'امتحان منتصف الدورة', duration: '60:00', isPreview: false, completed: false, type: 'exam' },
-          ],
-        },
-        {
-          id: 4,
-          title: 'التحسين والتطوير',
-          description: 'تحسين الأداء والتطوير المستمر',
-          duration: '3h 45m',
-          lessons: [
-            { id: 24, title: 'تحسين الأداء', duration: '20:10', isPreview: true, completed: false, type: 'video' },
-            { id: 25, title: 'أدوات التطوير', duration: '18:30', isPreview: false, completed: false, type: 'video' },
-            { id: 26, title: 'اختبار الجودة', duration: '25:45', isPreview: false, completed: false, type: 'video' },
-            { id: 27, title: 'أدوات المراقبة', duration: '22:15', isPreview: false, completed: false, type: 'video' },
-            { id: 28, title: 'دراسة حالة شاملة', duration: '30:00', isPreview: false, completed: false, type: 'case-study' },
-            { id: 29, title: 'واجب الوحدة الرابعة: تحسين شامل', duration: '75:00', isPreview: false, completed: false, type: 'assignment' },
-            { id: 30, title: 'كويز التحسين والتطوير', duration: '30:00', isPreview: false, completed: false, type: 'quiz' },
-          ],
-        },
-      ];
-    }
-
     const result = modulesData.map((module, index) => {
       // Transform assignments
       const transformAssignments = (assignments) => {
@@ -1821,16 +1506,6 @@ const CourseDetail = () => {
         ...transformedQuizzes,
         ...transformedExams
       ].sort((a, b) => (a.order || 0) - (b.order || 0));
-
-      // If no content found, add some default content
-      if (allContent.length === 0) {
-        console.log(`No content found for module ${module.id || index + 1}, adding default content`);
-        allContent.push(
-          { id: 1, title: 'مقدمة إلى الوحدة', duration: '15:00', isPreview: true, completed: false, type: 'video', order: 1 },
-          { id: 2, title: 'واجب الوحدة', duration: '45:00', isPreview: false, completed: false, type: 'assignment', order: 2 },
-          { id: 3, title: 'كويز الوحدة', duration: '20:00', isPreview: false, completed: false, type: 'quiz', order: 3 }
-        );
-      }
 
       // Convert module duration from seconds to readable format
       const formatModuleDuration = (seconds) => {
@@ -2353,26 +2028,6 @@ const CourseDetail = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 2 }}>
                   <Button 
                     variant="outlined" 
-                    sx={{ 
-                      borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
-                      borderColor: 'rgba(255,255,255,0.8)', color: 'common.white', 
-                      background: 'rgba(255,255,255,0.1)',
-                      backdropFilter: 'blur(10px)',
-                      '&:hover': { 
-                        borderColor: 'common.white', 
-                        bgcolor: 'rgba(255,255,255,0.2)',
-                        transform: 'translateY(-2px)'
-                      },
-                      '& .MuiButton-startIcon': { ml: 1, mr: 0 }
-                    }} 
-                    onClick={handleOpenPreview} 
-                    startIcon={<PlayCircleOutline sx={{ color: 'common.white' }} />}
-                  >
-                    مشاهدة نبذة
-                  </Button>
-                  
-                  <Button 
-                    variant="outlined" 
                     disabled={isAddingToCart}
                     sx={{ 
                       borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
@@ -2421,29 +2076,6 @@ const CourseDetail = () => {
           </Container>
         </CourseHeader>
       </HeroSection>
-
-      {/* Preview Dialog */}
-      <Dialog open={isPreviewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ position: 'relative', paddingTop: '56.25%' }}>
-            <Box 
-              component="iframe"
-              src={course.previewUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ'}
-              title="Course Preview"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              sx={{
-                border: 0,
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%'
-              }}
-            />
-          </Box>
-        </DialogContent>
-      </Dialog>
 
       {/* Main Content */}
       <Container 
@@ -2544,9 +2176,18 @@ const CourseDetail = () => {
                   <SectionTitle variant="h5" component="h2" gutterBottom>
                     وصف الدورة
                   </SectionTitle>
-                  <Typography variant="body1" paragraph dir="rtl" sx={{ lineHeight: 1.8, fontSize: '1.1rem' }}>
-                    {course.longDescription}
-                  </Typography>
+                  <Box
+                    component="div"
+                    dir="rtl"
+                    sx={{
+                      lineHeight: 1.8,
+                      fontSize: '1.1rem',
+                      '& p': { marginBottom: 1.5 },
+                      '& ul': { paddingInlineStart: 3 },
+                      '& li': { marginBottom: 0.75 },
+                    }}
+                    dangerouslySetInnerHTML={{ __html: course.longDescription || '' }}
+                  />
 
                   {/* بطاقة معلومات سريعة */}
                   <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -3385,12 +3026,27 @@ const CourseDetail = () => {
             </Typography>
           </Box>
           
-          {/* Grid Container - 3 cards side by side */}
-          <Grid container spacing={3} justifyContent="center">
+          {/* Related courses cards */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '20px',
+            }}
+          >
             {Array.isArray(relatedCourses) ? relatedCourses.slice(0, 3).map((relatedCourse) => (
-              <Grid key={relatedCourse.id} xs={12} sm={6} lg={4}>
+              <Box
+                key={relatedCourse.id}
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
                 <Card 
                   sx={{ 
+                    width: 350,
+                    maxWidth: '100%',
                     height: '100%',
                     cursor: 'pointer',
                     borderRadius: 3,
@@ -3400,8 +3056,8 @@ const CourseDetail = () => {
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     background: 'linear-gradient(145deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%)',
                     backdropFilter: 'blur(10px)',
-                    maxWidth: '400px',
-                    mx: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
                     '&:hover': {
                       transform: 'translateY(-8px) scale(1.02)',
                       boxShadow: '0 15px 35px rgba(14, 81, 129, 0.15)',
@@ -3411,7 +3067,7 @@ const CourseDetail = () => {
                   onClick={() => navigate(`/courses/${relatedCourse.id}`)}
                 >
                   {/* Course Image with Overlay */}
-                  <Box sx={{ position: 'relative', overflow: 'hidden' }}>
+                  <Box sx={{ position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
                     <Box sx={{
                       width: '100%',
                       height: 180,
@@ -3485,7 +3141,7 @@ const CourseDetail = () => {
                   </Box>
                   
                   {/* Course Content */}
-                  <CardContent sx={{ p: 2.5 }}>
+                  <CardContent sx={{ p: 2.5, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
                     {/* Course Title */}
                     <Typography 
                       variant="h6" 
@@ -3581,7 +3237,7 @@ const CourseDetail = () => {
                     </Box>
                     
                     {/* Price */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
                       <Typography 
                         variant="h6" 
                         sx={{ 
@@ -3629,9 +3285,9 @@ const CourseDetail = () => {
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             )) : null}
-          </Grid>
+          </Box>
         </Container>
       )}
 

@@ -43,6 +43,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { keyframes } from '@mui/system';
 import { courseAPI } from '../../services/courseService';
+import { isAdvertisementCategory } from '../../utils/courseRestrictions';
 
 // Helper: truncate text to a fixed number of characters and append ellipsis
 const truncateText = (text, maxChars = 30) => {
@@ -624,7 +625,14 @@ const MyCourses = () => {
                 <TableBody>
                   {filteredCourses
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((course) => (
+                    .map((course) => {
+                      const categoryForCheck =
+                        (course.category && typeof course.category === 'object')
+                          ? course.category
+                          : (course.category_name || course.category || '');
+                      const isRestrictedCourse = isAdvertisementCategory(categoryForCheck);
+
+                    return (
                     <TableRow 
                       key={course.id}
                       hover
@@ -763,24 +771,26 @@ const MyCourses = () => {
                           
                           {/* الصف الثاني */}
                           <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="وحدات الكورس">
-                              <IconButton
-                                size="small"
-                                sx={{ 
-                                  bgcolor: 'rgba(231,76,60,0.1)', 
-                                  '&:hover': {
-                                    bgcolor: 'rgba(231,76,60,0.2)',
-                                    transform: 'scale(1.1)'
-                                  }
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/teacher/courses/${course.id}/units`);
-                                }}
-                              >
-                                <LibraryBooksIcon sx={{ color: '#e74c3c', fontSize: '1rem' }} />
-                              </IconButton>
-                            </Tooltip>
+                            {!isRestrictedCourse && (
+                              <Tooltip title="وحدات الكورس">
+                                <IconButton
+                                  size="small"
+                                  sx={{ 
+                                    bgcolor: 'rgba(231,76,60,0.1)', 
+                                    '&:hover': {
+                                      bgcolor: 'rgba(231,76,60,0.2)',
+                                      transform: 'scale(1.1)'
+                                    }
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/teacher/courses/${course.id}/units`);
+                                  }}
+                                >
+                                  <LibraryBooksIcon sx={{ color: '#e74c3c', fontSize: '1rem' }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             <Tooltip title="حذف الكورس">
                               <IconButton
                                 size="small"
@@ -803,7 +813,8 @@ const MyCourses = () => {
                         </Box>
                       </TableCell>
                     </TableRow>
-                  ))}
+                      );
+                    })}
                 </TableBody>
               </Table>
             </TableContainer>
