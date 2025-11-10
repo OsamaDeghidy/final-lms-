@@ -99,141 +99,27 @@ const StudentDashboard = () => {
       setStats(statsData);
       
       // Process and validate course data from API
-      const processedCourses = coursesData.length > 0 ? coursesData.map(course => ({
-        ...course,
-        progress: Math.min(Math.max(course.progress || 0, 0), 100),
-        total_lessons: course.total_lessons || course.totalLessons || 0,
-        completed_lessons: course.completed_lessons || course.completedLessons || Math.floor(((course.progress || 0) / 100) * (course.total_lessons || course.totalLessons || 0)),
-        duration: course.duration || course.total_duration || "0د"
-      })) : [
-        {
-          id: 1,
-          title: 'الجزيئات وأساسيات علم الأحياء',
-          progress: 0,
-          description: 'مقدمة في الجزيئات والأساسيات البيولوجية',
-          status: 'active',
-          total_lessons: 20,
-          completed_lessons: 0,
-          duration: '1س 34د 44ث'
-        },
-        {
-          id: 2,
-          title: 'الخلايا والعضيات',
-          progress: 0,
-          description: 'دراسة الخلايا والعضيات المختلفة',
-          status: 'active',
-          total_lessons: 16,
-          completed_lessons: 0,
-          duration: '49د 54ث'
-        }
-      ];
+      const processedCourses = Array.isArray(coursesData) && coursesData.length > 0
+        ? coursesData.map(course => ({
+            ...course,
+            progress: Math.min(Math.max(course.progress || 0, 0), 100),
+            total_lessons: course.total_lessons || course.totalLessons || 0,
+            completed_lessons:
+              course.completed_lessons ||
+              course.completedLessons ||
+              Math.floor(((course.progress || 0) / 100) * (course.total_lessons || course.totalLessons || 0)),
+            duration: course.duration || course.total_duration || '0د'
+          }))
+        : [];
       
       setCourses(processedCourses);
       
-      // إضافة بيانات وهمية للإنجازات إذا لم تكن موجودة
-      const mockAchievements = achievementsData.length > 0 ? achievementsData : [
-        {
-          id: 1,
-          title: 'أول درس',
-          description: 'أكمل أول درس في المقرر',
-          color: 'primary',
-          icon: <MenuBookIcon />,
-          progress: 100,
-          reward: '10 نقاط'
-        },
-        {
-          id: 2,
-          title: 'الطالب المثابر',
-          description: 'أكمل 5 دروس متتالية',
-          color: 'success',
-          icon: <CheckCircleIcon />,
-          progress: 60,
-          reward: '25 نقطة'
-        },
-        {
-          id: 3,
-          title: 'متفوق في الاختبارات',
-          description: 'احصل على 90% في الاختبار',
-          color: 'warning',
-          icon: <QuizIcon />,
-          progress: 0,
-          reward: '50 نقطة'
-        }
-      ];
-      
-      setAchievements(mockAchievements);
-      setRecentActivity(activityData);
-      setUpcomingAssignments(assignmentsData);
-      setUpcomingMeetings(meetingsData);
-      
-      // بيانات وهمية للمحاضرات والواجبات القادمة - للطالب
-      const mockLectures = [
-        {
-          id: 1,
-          title: 'كيمياء 3 - محاضرة',
-          time: '08:00 - 10:00',
-          date: '2024-01-10',
-          day: 'الثلاثاء',
-          color: '#0e5181',
-          type: 'lecture'
-        },
-        {
-          id: 2,
-          title: 'واجب كيمياء 1',
-          time: '10:00 - 11:35',
-          date: '2024-01-10',
-          day: 'الثلاثاء',
-          color: '#0e5181',
-          type: 'assignment'
-        },
-        {
-          id: 3,
-          title: 'اختبار كيمياء 2',
-          time: '11:00 - 15:00',
-          date: '2024-01-11',
-          day: 'الأربعاء',
-          color: '#0e5181',
-          type: 'exam'
-        },
-        {
-          id: 4,
-          title: 'كيمياء 2 - محاضرة',
-          time: '07:00 - 08:15',
-          date: '2024-01-12',
-          day: 'الخميس',
-          color: '#0e5181',
-          type: 'lecture'
-        },
-        {
-          id: 5,
-          title: 'واجب كيمياء 3',
-          time: '09:00 - 10:15',
-          date: '2024-01-12',
-          day: 'الخميس',
-          color: '#0e5181',
-          type: 'assignment'
-        },
-        {
-          id: 6,
-          title: 'كيمياء 2 - تدريب',
-          time: '09:00 - 10:15',
-          date: '2024-01-13',
-          day: 'الجمعة',
-          color: '#0e5181',
-          type: 'practice'
-        },
-        {
-          id: 7,
-          title: 'اختبار نهائي',
-          time: '12:00 - 13:15',
-          date: '2024-01-13',
-          day: 'الجمعة',
-          color: '#0e5181',
-          type: 'exam'
-        }
-      ];
-      
-      setUpcomingLectures(mockLectures);
+      const sanitizedAchievements = Array.isArray(achievementsData) ? achievementsData : [];
+      setAchievements(sanitizedAchievements);
+      setRecentActivity(Array.isArray(activityData) ? activityData : []);
+      setUpcomingAssignments(Array.isArray(assignmentsData) ? assignmentsData : []);
+      setUpcomingMeetings(Array.isArray(meetingsData) ? meetingsData : []);
+      setUpcomingLectures([]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
