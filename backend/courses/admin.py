@@ -122,7 +122,7 @@ class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
         }),
         ('Course Details', {
             'fields': (
-                'level', 'language', 'status', 'is_active', 'is_featured',
+                'level', 'status', 'is_active', 'is_featured',
                 'is_certified', 'is_free'
             )
         }),

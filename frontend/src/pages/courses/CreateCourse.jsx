@@ -128,12 +128,6 @@ const LEVEL_OPTIONS = [
   { value: 'advanced', label: 'متقدم' },
 ];
 
-const LANGUAGE_OPTIONS = [
-  { value: 'ar', label: 'العربية' },
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Français' },
-];
-
 const CreateCourse = () => {
   const theme = useTheme();
   const navigate = useNavigate();
@@ -152,8 +146,7 @@ const CreateCourse = () => {
     short_description: '',
     
     // Course Details
-    level: 'beginner',
-    language: 'ar',
+    level: '',
     category: '',
     tags: [],
     
@@ -245,8 +238,12 @@ const CreateCourse = () => {
       // This is the final step, handle form submission
       setLoading(true);
       try {
-        console.log('Submitting course data:', courseData);
-        const response = await courseAPI.createCourse(courseData);
+        const payload = {
+          ...courseData,
+          level: courseData.level || '',
+        };
+        console.log('Submitting course data:', payload);
+        const response = await courseAPI.createCourse(payload);
         console.log('Course created successfully:', response);
         
         // Show success message
@@ -388,29 +385,22 @@ const CreateCourse = () => {
                   <InputLabel>مستوى الصعوبة</InputLabel>
                   <Select
                     name="level"
-                    value={courseData.level}
+                    value={courseData.level || ''}
                     onChange={handleChange}
                     label="مستوى الصعوبة"
+                    displayEmpty
+                    renderValue={(selected) => {
+                      if (!selected) {
+                        return <span style={{ color: theme.palette.text.disabled }}>غير محدد</span>;
+                      }
+                      return LEVEL_OPTIONS.find(option => option.value === selected)?.label || selected;
+                    }}
                     sx={{ textAlign: 'right' }}
                   >
+                    <MenuItem value="">
+                      <em>غير محدد</em>
+                    </MenuItem>
                     {LEVEL_OPTIONS.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                  <InputLabel>اللغة</InputLabel>
-                  <Select
-                    name="language"
-                    value={courseData.language}
-                    onChange={handleChange}
-                    label="اللغة"
-                    sx={{ textAlign: 'right' }}
-                  >
-                    {LANGUAGE_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
                         {option.label}
                       </MenuItem>

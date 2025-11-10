@@ -9,12 +9,14 @@ from django.contrib.admin import SimpleListFilter
 from django.db.models import Count
 from django.conf import settings
 from .models import Profile, Organization, Instructor, Student
+from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.utils.translation import gettext_lazy as _
 import io
 try:
     from openpyxl import Workbook, load_workbook
@@ -94,6 +96,8 @@ admin.site.unregister(User)
 @admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     change_list_template = 'admin/auth/user/change_list.html'
+    add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
     inlines = (InstructorInline, StudentInline) if hasattr(settings, 'SHOW_ALL_INLINES') else ()
     list_display = (
         'username', 'email', 'first_name', 'last_name', 
@@ -117,7 +121,7 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("username", "password1", "password2"),
+                "fields": ("email", "first_name", "last_name", "username", "password1", "password2"),
             },
         ),
     )
@@ -412,6 +416,16 @@ class CustomUserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('profile').prefetch_related('course_enrollments')
+
+    def response_add(self, request, obj, post_url_continue=None):
+        """بعد حفظ المستخدم الجديد، العودة لقائمة المستخدمين مع رسالة نجاح."""
+        self.message_user(request, _("تم حفظ المستخدم بنجاح."), messages.SUCCESS)
+        return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
+
+    def response_change(self, request, obj):
+        """بعد تعديل المستخدم، العودة لقائمة المستخدمين مع رسالة نجاح."""
+        self.message_user(request, _("تم تحديث المستخدم بنجاح."), messages.SUCCESS)
+        return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
 
 
 @admin.register(Profile)

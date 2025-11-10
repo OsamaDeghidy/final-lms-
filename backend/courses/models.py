@@ -222,13 +222,9 @@ class Course(models.Model):
     level = models.CharField(
         max_length=20,
         choices=LEVEL_CHOICES,
-        default='beginner',
+        blank=True,
+        null=True,
         verbose_name=_('Difficulty Level')
-    )
-    language = models.CharField(
-        max_length=50,
-        default='en',
-        verbose_name=_('Language')
     )
     
     # Pricing

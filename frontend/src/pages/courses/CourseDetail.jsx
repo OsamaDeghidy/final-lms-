@@ -62,7 +62,6 @@ import {
   Check as CheckIcon,
   Article as ArticleIcon,
   Download as DownloadIcon,
-  Language as LanguageIcon,
   MobileFriendly as MobileFriendlyIcon,
   WorkspacePremium as WorkspacePremiumIcon,
   CheckCircle,
@@ -1332,7 +1331,6 @@ const CourseDetail = () => {
       discount: discount,
       isBestseller: apiCourse.is_featured || apiCourse.is_bestseller || false,
       lastUpdated: apiCourse.updated_at ? new Date(apiCourse.updated_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long' }) : 'مؤخراً',
-      language: apiCourse.language || 'العربية',
       captions: apiCourse.captions || ['العربية', 'English'],
       features: Array.isArray(apiCourse.features) ? apiCourse.features : [],
       isEnrolled: apiCourse.is_enrolled || false,
@@ -1935,10 +1933,16 @@ const CourseDetail = () => {
                     <AccessTime fontSize="small" sx={{ ml: 0.5 }} /> {course.duration}
                   </StatsPill>
                   <StatsPill>
-                    <TrendingUpIcon fontSize="small" sx={{ ml: 0.5 }} /> {course.level === 'Beginner' ? 'مبتدئ' : course.level === 'Intermediate' ? 'متوسط' : course.level === 'Advanced' ? 'متقدم' : course.level}
-                  </StatsPill>
-                  <StatsPill>
-                    <LanguageIcon fontSize="small" sx={{ ml: 0.5 }} /> {course.language}
+                    <TrendingUpIcon fontSize="small" sx={{ ml: 0.5 }} /> {(() => {
+                      if (!course.level) {
+                        return 'غير محدد';
+                      }
+                      const levelValue = typeof course.level === 'string' ? course.level.toLowerCase() : '';
+                      if (levelValue === 'beginner') return 'مبتدئ';
+                      if (levelValue === 'intermediate') return 'متوسط';
+                      if (levelValue === 'advanced') return 'متقدم';
+                      return course.level;
+                    })()}
                   </StatsPill>
                   <StatsPill>
                     <ClosedCaptionIcon fontSize="small" sx={{ ml: 0.5 }} /> CC: {Array.isArray(course.captions) ? course.captions.join(', ') : 'غير متوفر'}
@@ -2201,12 +2205,6 @@ const CourseDetail = () => {
                       <FeatureItem>
                         <VideoLibraryIcon />
                         <Typography variant="body2">المحاضرات: {totalLessons}</Typography>
-                      </FeatureItem>
-                    </Grid>
-                    <Grid xs={6} md={3}>
-                      <FeatureItem>
-                        <LanguageIcon />
-                        <Typography variant="body2">اللغة: {course.language}</Typography>
                       </FeatureItem>
                     </Grid>
                     <Grid xs={6} md={3}>

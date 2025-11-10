@@ -130,12 +130,6 @@ const LEVEL_OPTIONS = [
   { value: 'advanced', label: 'متقدم' },
 ];
 
-const LANGUAGE_OPTIONS = [
-  { value: 'ar', label: 'العربية' },
-  { value: 'en', label: 'English' },
-  { value: 'fr', label: 'Français' },
-];
-
 const steps = ['المعلومات الأساسية', 'الوسائط والمحتوى', 'الأسعار والخصومات', 'المراجعة والنشر'];
 
 const EditCourse = () => {
@@ -157,8 +151,7 @@ const EditCourse = () => {
     subtitle: '',
     description: '',
     shortDescription: '',
-    level: 'beginner',
-    language: 'ar',
+    level: '',
     category: '',
     tags: [],
     isFree: false,
@@ -202,8 +195,7 @@ const EditCourse = () => {
             subtitle: course.subtitle || '',
             description: course.description || '',
             shortDescription: course.short_description || '',
-            level: course.level || 'beginner',
-            language: course.language || 'ar',
+            level: course.level || '',
             category: course.category?.id || '',
             tags: course.tags?.map(tag => tag.name) || [],
             isFree: course.is_free || false,
@@ -332,8 +324,7 @@ const EditCourse = () => {
           subtitle: courseData.subtitle.trim(),
           description: courseData.description.trim(),
           short_description: courseData.shortDescription.trim(),
-          level: courseData.level,
-          language: courseData.language,
+          level: courseData.level ?? '',
           category: courseData.category || null,
           tags: courseData.tags,
           is_free: courseData.isFree,
@@ -482,29 +473,22 @@ const EditCourse = () => {
                   <InputLabel>مستوى الصعوبة</InputLabel>
                   <Select
                     name="level"
-                    value={courseData.level}
+                    value={courseData.level || ''}
                     onChange={handleChange}
                     label="مستوى الصعوبة"
+                    displayEmpty
+                    renderValue={(selected) => {
+                      if (!selected) {
+                        return <span style={{ color: theme.palette.text.disabled }}>غير محدد</span>;
+                      }
+                      return LEVEL_OPTIONS.find(option => option.value === selected)?.label || selected;
+                    }}
                     sx={{ textAlign: 'right' }}
                   >
+                    <MenuItem value="">
+                      <em>غير محدد</em>
+                    </MenuItem>
                     {LEVEL_OPTIONS.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                
-                <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
-                  <InputLabel>اللغة</InputLabel>
-                  <Select
-                    name="language"
-                    value={courseData.language}
-                    onChange={handleChange}
-                    label="اللغة"
-                    sx={{ textAlign: 'right' }}
-                  >
-                    {LANGUAGE_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
                         {option.label}
                       </MenuItem>

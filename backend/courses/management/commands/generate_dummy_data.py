@@ -151,7 +151,6 @@ class Command(BaseCommand):
                 is_active=True,
                 published_at=timezone.now() - timedelta(days=random.randint(1, 365)),
                 organization=org,
-                language='ar',
             )
             
             # Add tags (2-5 random tags per course)

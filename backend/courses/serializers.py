@@ -141,7 +141,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'id', 'title', 'subtitle', 'description', 'short_description', 'image', 'promotional_video',
             'price', 'discount_price', 'category', 'instructors', 'tags', 'level', 'status', 
             'is_complete_course', 'created_at', 'updated_at', 'is_enrolled', 'is_free', 
-            'is_featured', 'is_certified', 'total_enrollments', 'average_rating', 'language',
+            'is_featured', 'is_certified', 'total_enrollments', 'average_rating',
             'syllabus_pdf', 'materials_pdf', 'duration'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'total_enrollments', 'average_rating', 'duration']
@@ -231,12 +231,18 @@ class CourseCreateSerializer(serializers.ModelSerializer):
     syllabus_pdf = serializers.FileField(required=False, allow_null=True)
     materials_pdf = serializers.FileField(required=False, allow_null=True)
     tags = serializers.ListField(child=serializers.CharField(), required=False, write_only=True)
+    level = serializers.ChoiceField(
+        choices=Course.LEVEL_CHOICES,
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
     
     class Meta:
         model = Course
         fields = [
             'title', 'subtitle', 'description', 'short_description', 'category', 
-            'tags', 'level', 'status', 'language', 'price', 'discount_price', 'is_free', 
+            'tags', 'level', 'status', 'price', 'discount_price', 'is_free', 
             'is_complete_course', 'is_featured', 'is_certified', 'image', 
             'promotional_video', 'syllabus_pdf', 'materials_pdf'
         ]
@@ -246,6 +252,7 @@ class CourseCreateSerializer(serializers.ModelSerializer):
             'is_complete_course': {'default': True},
             'is_featured': {'default': False},
             'is_certified': {'default': False},
+            'level': {'required': False, 'allow_null': True, 'allow_blank': True},
         }
     
     def validate(self, data):
@@ -258,6 +265,9 @@ class CourseCreateSerializer(serializers.ModelSerializer):
         if data.get('discount_price') and data.get('price'):
             if data['discount_price'] >= data['price']:
                 raise serializers.ValidationError("Discount price must be less than regular price")
+        
+        if 'level' in data and not data['level']:
+            data['level'] = None
         
         return data
     
@@ -329,15 +339,26 @@ class CourseUpdateSerializer(serializers.ModelSerializer):
     syllabus_pdf = serializers.FileField(required=False, allow_null=True)
     materials_pdf = serializers.FileField(required=False, allow_null=True)
     tags = serializers.ListField(child=serializers.CharField(), required=False, write_only=True)
+    level = serializers.ChoiceField(
+        choices=Course.LEVEL_CHOICES,
+        required=False,
+        allow_blank=True,
+        allow_null=True
+    )
     
     class Meta:
         model = Course
         fields = [
             'title', 'subtitle', 'description', 'short_description', 'category', 
-            'tags', 'level', 'status', 'language', 'price', 'discount_price', 'is_free', 
+            'tags', 'level', 'status', 'price', 'discount_price', 'is_free', 
             'is_complete_course', 'is_featured', 'is_certified', 'image', 
             'promotional_video', 'syllabus_pdf', 'materials_pdf'
         ]
+    
+    def validate(self, data):
+        if 'level' in data and not data['level']:
+            data['level'] = None
+        return data
     
     def update(self, instance, validated_data):
         try:
