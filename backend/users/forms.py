@@ -12,6 +12,12 @@ class CustomUserCreationForm(UserCreationForm):
         label="رقم الهوية",
         help_text="أدخل رقم الهوية للمستخدم."
     )
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        label="رقم الهاتف",
+        help_text="اختياري"
+    )
     """
     Django admin add-user form override:
     - Rename username label to Arabic "البريد الإلكتروني".
@@ -21,10 +27,11 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "email", "first_name", "last_name", "national_id")
+        fields = ("username", "email", "first_name", "last_name", "national_id", "phone")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._save_profile_after_commit = False
 
         username_field = self.fields.get("username")
         if username_field:
@@ -52,6 +59,11 @@ class CustomUserCreationForm(UserCreationForm):
             national_id_field.label = "رقم الهوية"
             national_id_field.required = True
             national_id_field.help_text = "هذا الحقل إجباري ويجب أن يكون فريداً."
+
+        phone_field = self.fields.get("phone")
+        if phone_field:
+            phone_field.label = "رقم الهاتف"
+            phone_field.required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -94,14 +106,22 @@ class CustomUserCreationForm(UserCreationForm):
         if commit:
             user.save()
             self.save_m2m()
-
-        national_id = self.cleaned_data.get("national_id")
-        if national_id:
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.national_id = national_id.strip()
-            profile.save(update_fields=["national_id"])
+            self.save_profile(user)
+            self._save_profile_after_commit = False
+        else:
+            self._save_profile_after_commit = True
 
         return user
+
+    def save_profile(self, user):
+        national_id = self.cleaned_data.get("national_id")
+        phone = self.cleaned_data.get("phone")
+        if not user.pk:
+            user.save()
+        profile, _ = Profile.objects.get_or_create(user_id=user.pk)
+        profile.national_id = national_id.strip() if national_id else None
+        profile.phone = phone.strip() if phone else None
+        profile.save(update_fields=["national_id", "phone"])
 
 
 class CustomUserChangeForm(UserChangeForm):
@@ -110,6 +130,12 @@ class CustomUserChangeForm(UserChangeForm):
         required=True,
         label="رقم الهوية",
         help_text="أدخل رقم الهوية للمستخدم."
+    )
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        label="رقم الهاتف",
+        help_text="اختياري"
     )
     """
     Ensure consistent labelling when editing existing users inside the admin.
@@ -121,6 +147,7 @@ class CustomUserChangeForm(UserChangeForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._save_profile_after_commit = False
 
         username_field = self.fields.get("username")
         if username_field:
@@ -148,6 +175,13 @@ class CustomUserChangeForm(UserChangeForm):
             if self.instance and hasattr(self.instance, "profile"):
                 national_id_field.initial = self.instance.profile.national_id
 
+        phone_field = self.fields.get("phone")
+        if phone_field:
+            phone_field.label = "رقم الهاتف"
+            phone_field.required = False
+            if self.instance and hasattr(self.instance, "profile"):
+                phone_field.initial = self.instance.profile.phone
+
     def clean(self):
         cleaned_data = super().clean()
         email = cleaned_data.get("email")
@@ -166,7 +200,7 @@ class CustomUserChangeForm(UserChangeForm):
 
         queryset = Profile.objects.filter(national_id__iexact=national_id.strip())
         if self.instance and self.instance.pk:
-            queryset = queryset.exclude(user=self.instance)
+            queryset = queryset.exclude(user_id=self.instance.pk)
         if queryset.exists():
             raise forms.ValidationError("رقم الهوية مستخدم بالفعل.")
 
@@ -185,11 +219,22 @@ class CustomUserChangeForm(UserChangeForm):
         if commit:
             user.save()
             self.save_m2m()
+            self.save_profile(user)
+            self._save_profile_after_commit = False
+        else:
+            self._save_profile_after_commit = True
 
+        return user
+
+    def save_profile(self, user):
+        if not user.pk:
+            user.save()
         national_id = self.cleaned_data.get("national_id")
-        profile, _ = Profile.objects.get_or_create(user=user)
+        phone = self.cleaned_data.get("phone")
+        profile, _ = Profile.objects.get_or_create(user_id=user.pk)
         profile.national_id = national_id.strip() if national_id else None
-        profile.save(update_fields=["national_id"])
+        profile.phone = phone.strip() if phone else None
+        profile.save(update_fields=["national_id", "phone"])
 
         return user
 

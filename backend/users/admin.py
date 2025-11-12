@@ -116,7 +116,7 @@ class CustomUserAdmin(BaseUserAdmin):
     # إزالة قسم الصلاحيات من fieldsets
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        ("المعلومات الشخصية", {"fields": ("first_name", "last_name", "email", "national_id")}),
+        ("المعلومات الشخصية", {"fields": ("first_name", "last_name", "email", "national_id", "phone")}),
         ("التواريخ المهمة", {"fields": ("last_login", "date_joined")}),
     )
     
@@ -125,7 +125,7 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "first_name", "last_name", "national_id", "username", "password1", "password2"),
+                "fields": ("email", "first_name", "last_name", "national_id", "phone", "username", "password1", "password2"),
             },
         ),
     )
@@ -531,6 +531,12 @@ class CustomUserAdmin(BaseUserAdmin):
         )
         return True
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        save_profile = getattr(form, "save_profile", None)
+        if callable(save_profile):
+            save_profile(obj)
+
     def response_add(self, request, obj, post_url_continue=None):
         """بعد حفظ المستخدم الجديد، العودة لقائمة المستخدمين مع رسالة نجاح."""
         self.message_user(request, _("تم حفظ المستخدم بنجاح."), messages.SUCCESS)
@@ -671,12 +677,15 @@ class OrganizationAdmin(admin.ModelAdmin):
 @admin.register(Instructor)
 class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     list_display = (
-        'profile_name', 'organization', 'department', 'qualification', 
-        'courses_count', 'students_count', 'date_of_birth'
+        'profile_name', 'phone', 'email',
+        'courses_count', 'students_count'
     )
     list_filter = ('organization', 'department', 'date_of_birth')
-    search_fields = ('profile__name', 'profile__user__username', 'department', 'qualification')
-    
+    search_fields = (
+        'profile__name', 'profile__user__username',
+        'profile__email', 'profile__phone', 'department', 'qualification'
+    )
+
     fieldsets = (
         ('معلومات أساسية', {
             'fields': ('profile', 'organization', 'department', 'qualification', 'date_of_birth')
@@ -685,14 +694,22 @@ class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
             'fields': ('bio', 'research_interests')
         }),
     )
-    
+
     def profile_name(self, obj):
         if obj.profile:
             url = reverse('admin:users_profile_change', args=[obj.profile.id])
             return format_html('<a href="{}">{}</a>', url, obj.profile.name)
         return '-'
     profile_name.short_description = 'اسم المدرب'
-    
+
+    def phone(self, obj):
+        return getattr(obj.profile, 'phone', '-') if obj.profile else '-'
+    phone.short_description = 'رقم الهاتف'
+
+    def email(self, obj):
+        return obj.profile.email if obj.profile and obj.profile.email else '-'
+    email.short_description = 'البريد الإلكتروني'
+
     def courses_count(self, obj):
         count = obj.courses_taught.count()
         if count > 0:
@@ -700,7 +717,7 @@ class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
             return format_html('<a href="{}">{} دورة</a>', url, count)
         return '0 دورة'
     courses_count.short_description = 'الدورات'
-    
+
     def students_count(self, obj):
         from django.db.models import Count
         count = obj.courses_taught.aggregate(total=Count('enrollments'))['total'] or 0
@@ -709,30 +726,38 @@ class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
             return format_html('<a href="{}">{} طالب</a>', url, count)
         return '0 طالب'
     students_count.short_description = 'الطلاب'
-    
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('profile', 'organization').prefetch_related('courses_taught', 'courses_taught__enrollments')
 
 
 @admin.register(Student)
 class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    list_display = ('profile_name', 'department', 'date_of_birth', 'enrolled_courses', 'completed_courses')
+    list_display = ('profile_name', 'phone', 'email', 'enrolled_courses', 'completed_courses')
     list_filter = ('department', 'date_of_birth')
-    search_fields = ('profile__name', 'profile__user__username', 'department')
-    
+    search_fields = ('profile__name', 'profile__user__username', 'profile__email', 'profile__phone', 'department')
+
     fieldsets = (
         ('معلومات أساسية', {
             'fields': ('profile', 'department', 'date_of_birth')
         }),
     )
-    
+
     def profile_name(self, obj):
         if obj.profile:
             url = reverse('admin:users_profile_change', args=[obj.profile.id])
             return format_html('<a href="{}">{}</a>', url, obj.profile.name)
         return '-'
     profile_name.short_description = 'اسم الطالب'
-    
+
+    def phone(self, obj):
+        return getattr(obj.profile, 'phone', '-') if obj.profile else '-'
+    phone.short_description = 'رقم الهاتف'
+
+    def email(self, obj):
+        return obj.profile.email if obj.profile and obj.profile.email else '-'
+    email.short_description = 'البريد الإلكتروني'
+
     def enrolled_courses(self, obj):
         if obj.profile and obj.profile.user:
             count = obj.profile.user.course_enrollments.filter(status='active').count()
@@ -742,14 +767,14 @@ class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
             return '0 دورة'
         return '-'
     enrolled_courses.short_description = 'الدورات المسجلة'
-    
+
     def completed_courses(self, obj):
         if obj.profile and obj.profile.user:
             count = obj.profile.user.course_enrollments.filter(status='completed').count()
             return f'{count} دورة'
         return '0 دورة'
     completed_courses.short_description = 'الدورات المكتملة'
-    
+
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('profile__user').prefetch_related('profile__user__course_enrollments')
