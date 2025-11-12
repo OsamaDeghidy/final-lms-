@@ -131,6 +131,68 @@ document.addEventListener('DOMContentLoaded', function() {
             select.setAttribute('data-original-value', currentValue);
         }
     });
+
+    const modal = document.createElement('div');
+    modal.id = 'archive-modal';
+    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;'
+        + 'background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:10000;';
+    modal.innerHTML = `
+        <div style="background:white;border-radius:12px;max-width:420px;width:90%;padding:24px;text-align:right;font-family:\'Tajawal\',sans-serif;">
+            <h2 style="margin-top:0;margin-bottom:12px;color:#dc3545;">تأكيد المسح</h2>
+            <p id="archive-modal-message" style="margin-bottom:20px;color:#333;font-size:15px;">
+                هل أنت متأكد من مسح هذا المستخدم؟ سيتم إخفاؤه مع الاحتفاظ بجميع بياناته.
+            </p>
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button type="button" id="archive-cancel-btn" style="padding:8px 16px;border:none;border-radius:6px;background:#6c757d;color:white;cursor:pointer;">
+                    إلغاء
+                </button>
+                <button type="button" id="archive-confirm-btn" style="padding:8px 16px;border:none;border-radius:6px;background:#dc3545;color:white;cursor:pointer;">
+                    تأكيد المسح
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const archiveButtons = document.querySelectorAll('.archive-trigger');
+    let pendingArchiveUrl = null;
+
+    archiveButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            pendingArchiveUrl = this.getAttribute('data-archive-url');
+            const username = this.getAttribute('data-username') || 'المستخدم';
+            const message = document.getElementById('archive-modal-message');
+            if (message) {
+                message.textContent = `هل أنت متأكد من مسح المستخدم «${username}»؟ سيتم إخفاؤه مع الاحتفاظ بجميع بياناته.`;
+            }
+            modal.style.display = 'flex';
+        });
+    });
+
+    const cancelBtn = document.getElementById('archive-cancel-btn');
+    const confirmBtn = document.getElementById('archive-confirm-btn');
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+            pendingArchiveUrl = null;
+        });
+    }
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            if (pendingArchiveUrl) {
+                window.location.href = pendingArchiveUrl;
+            }
+        });
+    }
+
+    modal.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+            pendingArchiveUrl = null;
+        }
+    });
 });
 </script>
 {% endblock %}

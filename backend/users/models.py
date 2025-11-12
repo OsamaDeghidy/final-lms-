@@ -18,6 +18,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     email = models.CharField(max_length=2000, blank=True, null=True)
     phone = models.CharField(max_length=2000, blank=True, null=True)
+    national_id = models.CharField(max_length=100, blank=True, null=True, verbose_name=_('National ID'))
+    is_archived = models.BooleanField(default=False, verbose_name=_('Is Archived'))
     status_choices = (
         ('Admin', 'Admin'),
         ('Student', 'Student'),
@@ -70,6 +72,40 @@ class Profile(models.Model):
             )
             return instructor
         return None
+
+
+class ArchivedUser(models.Model):
+    original_user = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_entry'
+    )
+    username = models.CharField(max_length=150)
+    email = models.EmailField(blank=True, null=True)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    national_id = models.CharField(max_length=100, blank=True, null=True)
+    profile_data = models.JSONField(blank=True, null=True)
+    archived_at = models.DateTimeField(auto_now_add=True)
+    archived_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_users'
+    )
+
+    class Meta:
+        ordering = ['-archived_at']
+        verbose_name = _('Archived User')
+        verbose_name_plural = _('Archived Users')
+
+    def __str__(self):
+        if self.original_user:
+            return f"Archived: {self.original_user.get_full_name() or self.username}"
+        return f"Archived: {self.username}"
 
 
 class Organization(models.Model):

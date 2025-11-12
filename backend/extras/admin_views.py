@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.contrib.auth import get_user_model
 from courses.models import Course, Enrollment
 from certificates.models import Certificate
@@ -16,7 +16,9 @@ def is_admin_user(user):
 @user_passes_test(is_admin_user)
 def admin_dashboard(request):
     # Get basic statistics
-    total_users = User.objects.count()
+    total_users = User.objects.filter(
+        Q(profile__isnull=True) | Q(profile__is_archived=False)
+    ).distinct().count()
     total_students = User.objects.filter(groups__name='Students').count()
     total_teachers = User.objects.filter(groups__name='Teachers').count()
     total_courses = Course.objects.count()

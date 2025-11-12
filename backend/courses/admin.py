@@ -23,11 +23,6 @@ try:
 except Exception:
     pass
 
-try:
-    admin.site.unregister(Enrollment)
-except Exception:
-    pass
-
 
 
 class PublishedFilter(SimpleListFilter):
@@ -180,16 +175,24 @@ class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
         return 'N/A'
     average_rating.short_description = 'Average Rating'
 
+# Comment and SubComment admin classes moved to reviews app
+
+
 @admin.register(Enrollment)
 class EnrollmentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    list_display = ('course', 'student', 'status', 'enrollment_date', 'last_accessed')
-    list_filter = ('status', 'enrollment_date', 'course')
-    search_fields = ('course__name', 'student__username', 'student__first_name', 'student__last_name')
-    readonly_fields = ('enrollment_date',)
-    
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return queryset.select_related('course', 'student')
+    """Keep Enrollment registered for reverse() compatibility but hide from admin UI."""
 
+    def has_module_permission(self, request):
+        return False
 
-# Comment and SubComment admin classes moved to reviews app
+    def has_view_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

@@ -6,9 +6,9 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.conf import settings
-from .models import Profile, Organization, Instructor, Student
+from .models import Profile, Organization, Instructor, Student, ArchivedUser
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
@@ -48,6 +48,7 @@ class ProfileInline(admin.StackedInline):
     verbose_name_plural = 'الملف الشخصي'
     fields = (
         ('name', 'status'),
+        'national_id',
         ('email', 'phone'),
         'image_profile',
         'shortBio',
@@ -55,7 +56,9 @@ class ProfileInline(admin.StackedInline):
         ('github', 'youtube'),
         ('twitter', 'facebook'),
         ('instagram', 'linkedin'),
+        'is_archived',
     )
+    readonly_fields = ('is_archived',)
 
 
 class InstructorInline(admin.StackedInline):
@@ -99,20 +102,21 @@ class CustomUserAdmin(BaseUserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
     inlines = (InstructorInline, StudentInline) if hasattr(settings, 'SHOW_ALL_INLINES') else ()
+    actions = ['archive_selected_users']
     list_display = (
-        'username', 'email', 'first_name', 'last_name', 
+        'username', 'email', 'national_id_display', 'first_name', 'last_name', 
         'status_dropdown', 'profile_image', 'is_active', 
-        'courses_count', 'date_joined'
+        'courses_count', 'date_joined', 'archive_button'
     )
     list_filter = (
         StatusFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
     )
-    search_fields = ('username', 'first_name', 'last_name', 'email', 'profile__name')
+    search_fields = ('username', 'first_name', 'last_name', 'email', 'profile__name', 'profile__national_id')
     
     # إزالة قسم الصلاحيات من fieldsets
     fieldsets = (
         (None, {"fields": ("username", "password")}),
-        ("المعلومات الشخصية", {"fields": ("first_name", "last_name", "email")}),
+        ("المعلومات الشخصية", {"fields": ("first_name", "last_name", "email", "national_id")}),
         ("التواريخ المهمة", {"fields": ("last_login", "date_joined")}),
     )
     
@@ -121,7 +125,7 @@ class CustomUserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "first_name", "last_name", "username", "password1", "password2"),
+                "fields": ("email", "first_name", "last_name", "national_id", "username", "password1", "password2"),
             },
         ),
     )
@@ -133,6 +137,7 @@ class CustomUserAdmin(BaseUserAdmin):
             path('import-excel/template/', self.admin_site.admin_view(self.download_excel_template), name='auth_user_import_excel_template'),
             path('export-excel/', self.admin_site.admin_view(self.export_excel_view), name='auth_user_export_excel'),
             path('<int:user_id>/update-status/', self.admin_site.admin_view(self.update_user_status), name='auth_user_update_status'),
+            path('<int:user_id>/archive/', self.admin_site.admin_view(self.archive_user_view), name='auth_user_archive'),
         ]
         return custom_urls + urls
 
@@ -393,7 +398,34 @@ class CustomUserAdmin(BaseUserAdmin):
         except (Profile.DoesNotExist, ValueError):
             return '❌'
     profile_image.short_description = 'الصورة'
+
+    def national_id_display(self, obj):
+        try:
+            return obj.profile.national_id or '-'
+        except Profile.DoesNotExist:
+            return '-'
+    national_id_display.short_description = 'رقم الهوية'
     
+    def archive_button(self, obj):
+        try:
+            if obj.profile.is_archived:
+                return format_html('<span style="color:#6c757d;font-weight:bold;">مؤرشف</span>')
+        except Profile.DoesNotExist:
+            pass
+
+        archive_url = reverse('admin:auth_user_archive', args=[obj.pk])
+        return format_html(
+            '<button type="button" class="button archive-trigger" '
+            'style="background:transparent;border:none;color:#dc3545;cursor:pointer;'
+            'display:inline-flex;align-items:center;gap:6px;padding:4px 6px;" '
+            'data-archive-url="{}" data-username="{}" '
+            'title="مسح">'
+            '🗑️</button>',
+            archive_url,
+            obj.get_full_name() or obj.username
+        )
+    archive_button.short_description = 'مسح'
+
     def courses_count(self, obj):
         try:
             if obj.profile.status == 'Instructor':
@@ -415,7 +447,89 @@ class CustomUserAdmin(BaseUserAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('profile').prefetch_related('course_enrollments')
+        queryset = queryset.select_related('profile').prefetch_related('course_enrollments')
+        return queryset.filter(
+            Q(profile__isnull=True) | Q(profile__is_archived=False)
+        )
+
+    def delete_model(self, request, obj):
+        archived = self._archive_user(request, obj)
+        if archived:
+            self.message_user(request, f"تم أرشفة المستخدم {obj.get_full_name() or obj.username} بنجاح.", messages.SUCCESS)
+        else:
+            self.message_user(request, f"تعذرت أرشفة المستخدم {obj.get_full_name() or obj.username}.", messages.WARNING)
+
+    def delete_queryset(self, request, queryset):
+        archived_count = 0
+        for user in queryset:
+            if self._archive_user(request, user):
+                archived_count += 1
+        if archived_count:
+            self.message_user(request, f"تم أرشفة {archived_count} مستخدم.", messages.SUCCESS)
+        else:
+            self.message_user(request, "لم يتم أرشفة أي مستخدم.", messages.WARNING)
+
+    def archive_selected_users(self, request, queryset):
+        archived_count = 0
+        for user in queryset:
+            if self._archive_user(request, user):
+                archived_count += 1
+        if archived_count:
+            self.message_user(request, f"تم أرشفة {archived_count} مستخدم.", messages.SUCCESS)
+        else:
+            self.message_user(request, "لم يتم أرشفة أي مستخدم.", messages.WARNING)
+    archive_selected_users.short_description = "أرشفة المستخدمين المحددين"
+
+    def _archive_user(self, request, user_obj):
+        if not user_obj.pk:
+            return False
+
+        profile = getattr(user_obj, 'profile', None)
+        national_id = None
+        profile_payload = None
+
+        if profile:
+            if profile.is_archived:
+                return False
+            national_id = profile.national_id
+            profile_payload = {
+                'name': profile.name,
+                'status': profile.status,
+                'email': profile.email,
+                'phone': profile.phone,
+                'image_profile': profile.image_profile.url if profile.image_profile else None,
+                'shortBio': profile.shortBio,
+                'detail': profile.detail,
+                'social_links': {
+                    'github': profile.github,
+                    'youtube': profile.youtube,
+                    'twitter': profile.twitter,
+                    'facebook': profile.facebook,
+                    'instagram': profile.instagram,
+                    'linkedin': profile.linkedin,
+                },
+            }
+            profile.is_archived = True
+            profile.save(update_fields=['is_archived'])
+
+        user_obj.is_active = False
+        user_obj.save(update_fields=['is_active'])
+
+        archived_by = request.user if hasattr(request, 'user') and request.user.is_authenticated else None
+
+        ArchivedUser.objects.update_or_create(
+            original_user=user_obj,
+            defaults={
+                'username': user_obj.username,
+                'email': user_obj.email,
+                'first_name': user_obj.first_name,
+                'last_name': user_obj.last_name,
+                'national_id': national_id,
+                'profile_data': profile_payload,
+                'archived_by': archived_by,
+            }
+        )
+        return True
 
     def response_add(self, request, obj, post_url_continue=None):
         """بعد حفظ المستخدم الجديد، العودة لقائمة المستخدمين مع رسالة نجاح."""
@@ -427,20 +541,37 @@ class CustomUserAdmin(BaseUserAdmin):
         self.message_user(request, _("تم تحديث المستخدم بنجاح."), messages.SUCCESS)
         return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
 
+    def archive_user_view(self, request, user_id):
+        if not self.has_delete_permission(request):
+            self.message_user(request, "ليست لديك صلاحية لأرشفة المستخدمين.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
+
+        user = self.get_object(request, user_id)
+        if not user:
+            self.message_user(request, "المستخدم غير موجود.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
+
+        archived = self._archive_user(request, user)
+        if archived:
+            self.message_user(request, f"تم أرشفة المستخدم {user.get_full_name() or user.username}.", level=messages.SUCCESS)
+        else:
+            self.message_user(request, "المستخدم مؤرشف بالفعل أو تعذر الأرشفة.", level=messages.WARNING)
+        return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
+
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = (
-        'name', 'user_username', 'status', 'email', 'phone', 
+        'name', 'user_username', 'status', 'national_id', 'email', 'phone', 
         'profile_image', 'social_links', 'created_date'
     )
-    list_filter = ('status', 'user__date_joined')
-    search_fields = ('name', 'user__username', 'email', 'phone', 'shortBio')
-    readonly_fields = ('id', 'created_date')
+    list_filter = ('status', 'user__date_joined', 'is_archived')
+    search_fields = ('name', 'user__username', 'email', 'phone', 'shortBio', 'national_id')
+    readonly_fields = ('id', 'created_date', 'is_archived')
     
     fieldsets = (
         ('معلومات أساسية', {
-            'fields': ('user', 'name', 'status', 'email', 'phone')
+            'fields': ('user', 'name', 'status', 'national_id', 'email', 'phone', 'is_archived')
         }),
         ('الصورة والوصف', {
             'fields': ('image_profile', 'shortBio', 'detail')
@@ -622,3 +753,25 @@ class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('profile__user').prefetch_related('profile__user__course_enrollments')
+
+
+@admin.register(ArchivedUser)
+class ArchivedUserAdmin(admin.ModelAdmin):
+    list_display = ('username', 'email', 'archived_at', 'archived_by')
+    search_fields = ('username', 'email', 'first_name', 'last_name', 'national_id')
+    readonly_fields = ('original_user', 'username', 'email', 'first_name', 'last_name', 'national_id', 'profile_data', 'archived_at', 'archived_by')
+
+    def has_module_permission(self, request):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
