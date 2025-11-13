@@ -42,6 +42,24 @@ class StatusFilter(SimpleListFilter):
         return queryset
 
 
+class ArchivedFilter(SimpleListFilter):
+    title = 'الأرشفة'
+    parameter_name = 'archived'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('1', 'مؤرشف'),
+            ('0', 'نشط'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == '1':
+            return queryset.filter(profile__is_archived=True)
+        if self.value() == '0':
+            return queryset.filter(profile__is_archived=False)
+        return queryset
+
+
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
@@ -109,7 +127,7 @@ class CustomUserAdmin(BaseUserAdmin):
         'courses_count', 'date_joined', 'archive_button'
     )
     list_filter = (
-        StatusFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
+        StatusFilter, ArchivedFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
     )
     search_fields = ('username', 'first_name', 'last_name', 'email', 'profile__name', 'profile__national_id')
     
@@ -129,6 +147,11 @@ class CustomUserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_archived_link'] = True
+        return super().changelist_view(request, extra_context=extra_context)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -408,8 +431,18 @@ class CustomUserAdmin(BaseUserAdmin):
     
     def archive_button(self, obj):
         try:
-            if obj.profile.is_archived:
-                return format_html('<span style="color:#6c757d;font-weight:bold;">مؤرشف</span>')
+            profile = obj.profile
+            if profile.is_archived:
+                return format_html(
+                    '<div style="display:flex;gap:8px;">'
+                    '<button type="button" class="button archive-trigger" data-archive-url="{}" data-archive-action="restore" '
+                    'data-username="{}" title="استعادة" style="background:transparent;border:none;color:#28a745;padding:4px;cursor:pointer;">♻️</button>'
+                    '<button type="button" class="button archive-trigger" data-archive-url="{}" data-archive-action="delete" '
+                    'data-username="{}" title="حذف نهائي" style="background:transparent;border:none;color:#dc3545;padding:4px;cursor:pointer;">🗑️</button>'
+                    '</div>',
+                    reverse('admin:auth_user_archive', args=[obj.pk]) + '?action=restore', obj.get_full_name() or obj.username,
+                    reverse('admin:auth_user_archive', args=[obj.pk]) + '?action=delete', obj.get_full_name() or obj.username
+                )
         except Profile.DoesNotExist:
             pass
 
@@ -418,9 +451,8 @@ class CustomUserAdmin(BaseUserAdmin):
             '<button type="button" class="button archive-trigger" '
             'style="background:transparent;border:none;color:#dc3545;cursor:pointer;'
             'display:inline-flex;align-items:center;gap:6px;padding:4px 6px;" '
-            'data-archive-url="{}" data-username="{}" '
-            'title="مسح">'
-            '🗑️</button>',
+            'data-archive-url="{}" data-archive-action="archive" data-username="{}" '
+            'title="مسح">🗑️</button>',
             archive_url,
             obj.get_full_name() or obj.username
         )
@@ -448,9 +480,13 @@ class CustomUserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         queryset = queryset.select_related('profile').prefetch_related('course_enrollments')
-        return queryset.filter(
-            Q(profile__isnull=True) | Q(profile__is_archived=False)
-        )
+
+        archived_param = request.GET.get('archived')
+        if archived_param == '1':
+            return queryset.filter(profile__is_archived=True)
+        if archived_param == '0':
+            return queryset.filter(Q(profile__isnull=True) | Q(profile__is_archived=False))
+        return queryset.filter(Q(profile__isnull=True) | Q(profile__is_archived=False))
 
     def delete_model(self, request, obj):
         archived = self._archive_user(request, obj)
@@ -548,21 +584,77 @@ class CustomUserAdmin(BaseUserAdmin):
         return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
 
     def archive_user_view(self, request, user_id):
-        if not self.has_delete_permission(request):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Check permissions
+        has_perm = self.has_delete_permission(request) or request.user.is_staff or request.user.is_superuser
+        logger.info(f"Archive view called - User: {request.user.username}, is_staff: {request.user.is_staff}, is_superuser: {request.user.is_superuser}, has_perm: {has_perm}")
+        
+        if not has_perm:
             self.message_user(request, "ليست لديك صلاحية لأرشفة المستخدمين.", level=messages.ERROR)
             return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
 
-        user = self.get_object(request, user_id)
-        if not user:
+        try:
+            user = self.model._default_manager.select_related('profile').get(pk=user_id)
+        except self.model.DoesNotExist:
+            logger.error(f"User with id {user_id} not found or not accessible in admin queryset")
             self.message_user(request, "المستخدم غير موجود.", level=messages.ERROR)
             return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
 
-        archived = self._archive_user(request, user)
-        if archived:
-            self.message_user(request, f"تم أرشفة المستخدم {user.get_full_name() or user.username}.", level=messages.SUCCESS)
+        action = request.GET.get('action', 'archive')
+        logger.info(f"Action: {action} on user: {user.username}")
+
+        if action == 'restore':
+            try:
+                profile = getattr(user, 'profile', None)
+                logger.info(f"Profile exists: {profile is not None}, is_archived: {profile.is_archived if profile else 'N/A'}")
+                
+                if profile and profile.is_archived:
+                    profile.is_archived = False
+                    profile.save(update_fields=['is_archived'])
+                    logger.info(f"Profile unarchived for user {user.username}")
+                
+                user.is_active = True
+                user.save(update_fields=['is_active'])
+                
+                ArchivedUser.objects.filter(original_user=user).delete()
+                logger.info(f"User {user.username} restored successfully")
+                
+                self.message_user(request, f"تم استعادة المستخدم {user.get_full_name() or user.username}.", level=messages.SUCCESS)
+                redirect_url = reverse('admin:auth_user_changelist') + '?archived=1'
+            except Exception as e:
+                logger.error(f"Error restoring user: {e}")
+                self.message_user(request, f"خطأ في استعادة المستخدم: {str(e)}", level=messages.ERROR)
+                redirect_url = reverse('admin:auth_user_changelist') + '?archived=1'
+                
+        elif action == 'delete':
+            # Only superusers can permanently delete users
+            if not request.user.is_superuser:
+                logger.warning(f"Non-superuser {request.user.username} tried to delete user {user.username}")
+                self.message_user(request, "فقط المديرون يمكنهم حذف المستخدمين نهائياً.", level=messages.ERROR)
+                return HttpResponseRedirect(reverse('admin:auth_user_changelist') + '?archived=1')
+            
+            try:
+                username = user.username
+                ArchivedUser.objects.filter(original_user=user).delete()
+                user.delete()
+                logger.info(f"User {username} deleted permanently by {request.user.username}")
+                self.message_user(request, "تم حذف المستخدم نهائياً.", level=messages.SUCCESS)
+                redirect_url = reverse('admin:auth_user_changelist') + '?archived=1'
+            except Exception as e:
+                logger.error(f"Error deleting user: {e}")
+                self.message_user(request, f"خطأ في حذف المستخدم: {str(e)}", level=messages.ERROR)
+                redirect_url = reverse('admin:auth_user_changelist') + '?archived=1'
         else:
-            self.message_user(request, "المستخدم مؤرشف بالفعل أو تعذر الأرشفة.", level=messages.WARNING)
-        return HttpResponseRedirect(reverse('admin:auth_user_changelist'))
+            archived = self._archive_user(request, user)
+            if archived:
+                self.message_user(request, f"تم أرشفة المستخدم {user.get_full_name() or user.username}.", level=messages.SUCCESS)
+            else:
+                self.message_user(request, "المستخدم مؤرشف بالفعل أو تعذر الأرشفة.", level=messages.WARNING)
+            redirect_url = reverse('admin:auth_user_changelist')
+        
+        return HttpResponseRedirect(redirect_url)
 
 
 @admin.register(Profile)

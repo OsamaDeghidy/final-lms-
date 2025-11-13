@@ -3,6 +3,11 @@
 
 {% block object-tools-items %}
   {{ block.super }}
+  {% if show_archived_link %}
+  <li>
+    <a href="{% url 'admin:auth_user_changelist' %}?archived=1" class="button">المستخدمون المؤرشفون</a>
+  </li>
+  {% endif %}
   <li>
     <a href="{% url 'admin:auth_user_import_excel' %}" class="button">استيراد إكسل</a>
   </li>
@@ -154,23 +159,32 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.body.appendChild(modal);
 
+    // Get button references first, before attaching click handlers
+    const cancelBtn = document.getElementById('archive-cancel-btn');
+    const confirmBtn = document.getElementById('archive-confirm-btn');
+    
     const archiveButtons = document.querySelectorAll('.archive-trigger');
     let pendingArchiveUrl = null;
 
     archiveButtons.forEach(button => {
         button.addEventListener('click', function() {
             pendingArchiveUrl = this.getAttribute('data-archive-url');
+            const action = this.getAttribute('data-archive-action');
             const username = this.getAttribute('data-username') || 'المستخدم';
             const message = document.getElementById('archive-modal-message');
             if (message) {
-                message.textContent = `هل أنت متأكد من مسح المستخدم «${username}»؟ سيتم إخفاؤه مع الاحتفاظ بجميع بياناته.`;
+                if (action === 'restore') {
+                    message.textContent = `هل تريد استعادة المستخدم «${username}»؟ سيتم تفعيل الحساب مجدداً.`;
+                } else if (action === 'delete') {
+                    message.textContent = `هل أنت متأكد من حذف المستخدم «${username}» نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`;
+                } else {
+                    message.textContent = `هل أنت متأكد من مسح المستخدم «${username}»؟ سيتم إخفاؤه مع الاحتفاظ بجميع بياناته.`;
+                }
             }
+            confirmBtn.setAttribute('data-archive-url', pendingArchiveUrl);
             modal.style.display = 'flex';
         });
     });
-
-    const cancelBtn = document.getElementById('archive-cancel-btn');
-    const confirmBtn = document.getElementById('archive-confirm-btn');
 
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
@@ -181,8 +195,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (confirmBtn) {
         confirmBtn.addEventListener('click', () => {
-            if (pendingArchiveUrl) {
-                window.location.href = pendingArchiveUrl;
+            const url = confirmBtn.getAttribute('data-archive-url');
+            if (url) {
+                window.location.href = url;
             }
         });
     }
