@@ -65,9 +65,33 @@ class DivisionViewSet(viewsets.ModelViewSet):
         if not isinstance(student_ids, list):
             return Response({'error': 'student_ids يجب أن تكون قائمة'}, status=status.HTTP_400_BAD_REQUEST)
         students = Student.objects.filter(id__in=student_ids)
+        
         with transaction.atomic():
+            removed_from_other_divisions = []
+            for student in students:
+                # إزالة الطالب من جميع الشعب الأخرى
+                other_divisions = Division.objects.exclude(pk=division.pk).filter(students=student)
+                if other_divisions.exists():
+                    for other_division in other_divisions:
+                        other_division.students.remove(student)
+                        removed_from_other_divisions.append({
+                            'student': student.profile.name if student.profile else str(student),
+                            'division': other_division.name
+                        })
+            
+            # إضافة الطلاب للشعبة الحالية
             division.students.add(*students)
-        return Response({'message': 'تم إضافة الطلاب', 'added_count': students.count()})
+        
+        response_data = {
+            'message': 'تم إضافة الطلاب',
+            'added_count': students.count()
+        }
+        
+        if removed_from_other_divisions:
+            response_data['warning'] = 'تم إزالة بعض الطلاب من شعب أخرى لضمان أن كل طالب في شعبة واحدة فقط'
+            response_data['removed_from_other_divisions'] = removed_from_other_divisions
+        
+        return Response(response_data)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated, IsTeacherOrAdmin])
     def remove_students(self, request, pk=None):

@@ -6,7 +6,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch, Prefetch
 from django.conf import settings
 from .models import Profile, Organization, Instructor, Student, ArchivedUser
 from .forms import CustomUserCreationForm, CustomUserChangeForm
@@ -124,7 +124,7 @@ class CustomUserAdmin(BaseUserAdmin):
     list_display = (
         'username', 'email', 'national_id_display', 'first_name', 'last_name', 
         'status_dropdown', 'profile_image', 'is_active', 
-        'courses_count', 'date_joined', 'archive_button'
+        'division_display', 'courses_count', 'date_joined', 'archive_button'
     )
     list_filter = (
         StatusFilter, ArchivedFilter, 'is_active', 'is_staff', 'is_superuser', 'date_joined'
@@ -477,9 +477,47 @@ class CustomUserAdmin(BaseUserAdmin):
             return '-'
     courses_count.short_description = 'الدورات'
     
+    def division_display(self, obj):
+        """عرض الشعبة المسجل بها الطالب (شعبة واحدة فقط)"""
+        try:
+            if hasattr(obj, 'profile') and obj.profile and obj.profile.status == 'Student':
+                # محاولة الوصول للطالب من خلال profile
+                student = None
+                # جرب الوصول من خلال student_list (من prefetch)
+                if hasattr(obj.profile, 'student_list') and obj.profile.student_list:
+                    student = obj.profile.student_list[0]
+                else:
+                    # إذا لم يكن موجوداً في prefetch، حاول البحث عنه
+                    from .models import Student
+                    try:
+                        student = Student.objects.filter(profile=obj.profile).select_related('profile').prefetch_related('divisions').first()
+                    except Student.DoesNotExist:
+                        pass
+                
+                if student:
+                    division = student.divisions.first()  # احصل على الشعبة الأولى فقط
+                    if division:
+                        url = reverse('admin:divisions_division_change', args=[division.pk])
+                        return format_html('<a href="{}">{}</a>', url, division.name)
+            return '-'
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error displaying division for user {obj.username}: {str(e)}")
+            return '-'
+    division_display.short_description = 'الشعبة'
+    
     def get_queryset(self, request):
+        from .models import Student
         queryset = super().get_queryset(request)
-        queryset = queryset.select_related('profile').prefetch_related('course_enrollments')
+        queryset = queryset.select_related('profile').prefetch_related(
+            'course_enrollments',
+            Prefetch(
+                'profile__student_set',
+                queryset=Student.objects.prefetch_related('divisions'),
+                to_attr='student_list'
+            )
+        )
 
         archived_param = request.GET.get('archived')
         if archived_param == '1':
@@ -825,9 +863,9 @@ class InstructorAdmin(ImportExportAdminMixin, admin.ModelAdmin):
 
 @admin.register(Student)
 class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    list_display = ('profile_name', 'phone', 'email', 'enrolled_courses', 'completed_courses')
-    list_filter = ('department', 'date_of_birth')
-    search_fields = ('profile__name', 'profile__user__username', 'profile__email', 'profile__phone', 'department')
+    list_display = ('profile_name', 'phone', 'email', 'division_display', 'enrolled_courses', 'completed_courses')
+    list_filter = ('department', 'date_of_birth', 'divisions')
+    search_fields = ('profile__name', 'profile__user__username', 'profile__email', 'profile__phone', 'department', 'divisions__name')
 
     fieldsets = (
         ('معلومات أساسية', {
@@ -867,9 +905,23 @@ class StudentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
         return '0 دورة'
     completed_courses.short_description = 'الدورات المكتملة'
 
+    def division_display(self, obj):
+        """عرض الشعبة المسجل بها الطالب (شعبة واحدة فقط)"""
+        try:
+            division = obj.divisions.first()  # احصل على الشعبة الأولى فقط
+            if division:
+                url = reverse('admin:divisions_division_change', args=[division.pk])
+                return format_html('<a href="{}">{}</a>', url, division.name)
+            return '-'
+        except Exception:
+            return '-'
+    division_display.short_description = 'الشعبة'
+
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('profile__user').prefetch_related('profile__user__course_enrollments')
+        return queryset.select_related('profile__user').prefetch_related(
+            'profile__user__course_enrollments', 'divisions'
+        )
 
 
 @admin.register(ArchivedUser)
