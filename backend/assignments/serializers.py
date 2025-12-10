@@ -1070,12 +1070,20 @@ class UserExamAttemptDetailSerializer(serializers.ModelSerializer):
     answers = serializers.SerializerMethodField()
     user_name = serializers.SerializerMethodField()
     exam_title = serializers.SerializerMethodField()
+    final_score = serializers.SerializerMethodField()
+    is_grade_visible = serializers.BooleanField(read_only=True)
+    manual_grade = serializers.FloatField(read_only=True)
+    is_manually_graded = serializers.BooleanField(read_only=True)
+    graded_by_name = serializers.SerializerMethodField()
+    graded_at = serializers.DateTimeField(read_only=True)
     
     class Meta:
         model = UserExamAttempt
         fields = [
             'id', 'user', 'exam', 'attempt_number', 'start_time', 'end_time',
-            'score', 'passed', 'answers', 'user_name', 'exam_title'
+            'score', 'passed', 'answers', 'user_name', 'exam_title',
+            'final_score', 'is_grade_visible', 'manual_grade', 'is_manually_graded',
+            'graded_by_name', 'graded_at'
         ]
     
     def get_answers(self, obj):
@@ -1087,6 +1095,27 @@ class UserExamAttemptDetailSerializer(serializers.ModelSerializer):
     
     def get_exam_title(self, obj):
         return obj.exam.title
+    
+    def get_final_score(self, obj):
+        """إرجاع الدرجة النهائية (المعدلة يدوياً إن وجدت)"""
+        return obj.get_final_score()
+    
+    def get_graded_by_name(self, obj):
+        if obj.graded_by:
+            return f"{obj.graded_by.first_name} {obj.graded_by.last_name}".strip() or obj.graded_by.username
+        return None
+
+
+class UserExamAttemptGradeSerializer(serializers.ModelSerializer):
+    """Serializer لتعديل الدرجة من قبل المدرس"""
+    class Meta:
+        model = UserExamAttempt
+        fields = ['manual_grade', 'is_grade_visible']
+    
+    def validate_manual_grade(self, value):
+        if value is not None and (value < 0 or value > 100):
+            raise serializers.ValidationError("الدرجة يجب أن تكون بين 0 و 100")
+        return value
 
 
 class UserExamAnswerCreateSerializer(serializers.ModelSerializer):

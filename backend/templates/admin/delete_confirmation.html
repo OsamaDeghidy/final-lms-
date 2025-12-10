@@ -1,0 +1,250 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; {% translate 'Delete' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="delete-confirmation-container">
+    <div class="delete-confirmation-card">
+        <div class="delete-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        
+        <h1>{% blocktranslate %}Are you sure you want to delete "{{ object }}"?{% endblocktranslate %}</h1>
+        
+        {% if perms_lacking %}
+            <div class="errornote">
+                <i class="fas fa-lock"></i>
+                {% blocktranslate %}You don't have permission to delete this object.{% endblocktranslate %}
+            </div>
+            <ul class="errorlist">
+                {% for obj in perms_lacking %}
+                <li>{{ obj }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            {% if protected %}
+                <div class="errornote">
+                    <i class="fas fa-shield-alt"></i>
+                    {% blocktranslate %}This object is protected and cannot be deleted.{% endblocktranslate %}
+                </div>
+                <ul class="errorlist">
+                    {% for obj in protected %}
+                    <li>{{ obj }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="delete-warning">
+                    <p>{% translate "This action cannot be undone. All related data will be permanently deleted." %}</p>
+                </div>
+                
+                <h2>{% translate "Summary" %}</h2>
+                <ul class="deleted-objects-list">
+                    {% for deleted_object in deleted_objects %}
+                    <li>{{ deleted_object|unordered_list }}</li>
+                    {% endfor %}
+                </ul>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div>
+                        <input type="hidden" name="post" value="yes">
+                        {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+                        {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+                        <div class="submit-row delete-actions">
+                            <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">
+                                <i class="fas fa-times"></i>
+                                {% translate "No, take me back" %}
+                            </a>
+                            <input type="submit" value="{% translate 'Yes, I\'m sure' %}" class="default delete-button">
+                        </div>
+                    </div>
+                </form>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .delete-confirmation-container {
+        max-width: 700px;
+        margin: 30px auto;
+        padding: 20px;
+    }
+
+    .delete-confirmation-card {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 40px;
+        box-shadow: var(--box-shadow);
+        border: 1px solid var(--gray-200);
+    }
+
+    .delete-icon {
+        width: 80px;
+        height: 80px;
+        background: #fff5f5;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 30px;
+        border: 3px solid #fc8181;
+    }
+
+    .delete-icon i {
+        font-size: 2.5rem;
+        color: #dc3545;
+    }
+
+    .delete-confirmation-card h1 {
+        font-size: 1.5rem;
+        color: var(--gray-800);
+        margin-bottom: 20px;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    .delete-confirmation-card h2 {
+        font-size: 1.2rem;
+        color: var(--gray-800);
+        margin: 30px 0 15px;
+        font-weight: 600;
+        border-bottom: 2px solid var(--gray-200);
+        padding-bottom: 10px;
+    }
+
+    .delete-warning {
+        background: #fff5f5;
+        border-right: 4px solid #fc8181;
+        border-radius: var(--border-radius);
+        padding: 15px 20px;
+        margin: 25px 0;
+        color: #c53030;
+    }
+
+    .delete-warning p {
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .deleted-objects-list {
+        background: var(--gray-100);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin: 20px 0;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .deleted-objects-list li {
+        padding: 8px 0;
+        color: var(--gray-700);
+    }
+
+    .delete-actions {
+        margin-top: 30px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .cancel-link {
+        background: var(--gray-200);
+        color: var(--gray-700);
+        padding: 12px 24px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--gray-300);
+    }
+
+    .cancel-link:hover {
+        background: var(--gray-300);
+        color: var(--gray-800);
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .delete-button {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+    }
+
+    .delete-button:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .errornote {
+        background: #fff5f5;
+        color: #c53030;
+        padding: 16px 20px;
+        border-radius: var(--border-radius);
+        margin: 20px 0;
+        border-right: 4px solid #fc8181;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .errornote i {
+        font-size: 1.2rem;
+    }
+
+    .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 15px 0;
+    }
+
+    .errorlist li {
+        background: #fff5f5;
+        color: #c53030;
+        padding: 10px 15px;
+        border-radius: var(--border-radius);
+        margin-bottom: 8px;
+        border-right: 3px solid #fc8181;
+    }
+
+    @media (max-width: 768px) {
+        .delete-confirmation-card {
+            padding: 30px 20px;
+        }
+
+        .delete-actions {
+            flex-direction: column;
+        }
+
+        .cancel-link,
+        .delete-button {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+

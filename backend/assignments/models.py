@@ -88,12 +88,23 @@ class QuizAttempt(models.Model):
     score = models.FloatField(null=True, blank=True)
     passed = models.BooleanField(null=True, blank=True)
     attempt_number = models.PositiveIntegerField(default=1)
+    
+    # Manual grading fields
+    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس')
+    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟')
+    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟')
+    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_quiz_attempts', help_text='المدرس الذي عدل الدرجة')
+    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة')
 
     class Meta:
         unique_together = ['user', 'quiz', 'attempt_number']
 
     def __str__(self):
         return f"{self.user.username} - {self.quiz} - Attempt {self.attempt_number}"
+
+    def get_final_score(self):
+        """إرجاع الدرجة النهائية (المعدلة يدوياً إن وجدت، وإلا الدرجة المحسوبة)"""
+        return self.manual_grade if self.is_manually_graded and self.manual_grade is not None else self.score
 
     def calculate_score(self):
         """Calculate score based on correct answers"""
@@ -109,7 +120,10 @@ class QuizAttempt(models.Model):
         else:
             self.score = 0
         
-        self.passed = self.score >= self.quiz.pass_mark
+        # لا نعدل passed إذا كانت الدرجة معدلة يدوياً
+        if not self.is_manually_graded:
+            self.passed = self.score >= self.quiz.pass_mark
+        
         self.save(update_fields=['score', 'passed'])
         
         # Update module progress if quiz is associated with a module
@@ -120,7 +134,8 @@ class QuizAttempt(models.Model):
                     user=self.user,
                     module=self.quiz.module
                 )
-                module_progress.mark_quiz_completed(score=self.score)
+                final_score = self.get_final_score()
+                module_progress.mark_quiz_completed(score=final_score)
             except ModuleProgress.DoesNotExist:
                 pass
 
@@ -204,12 +219,23 @@ class UserExamAttempt(models.Model):
     score = models.FloatField(null=True, blank=True)
     passed = models.BooleanField(null=True, blank=True)
     attempt_number = models.PositiveIntegerField(default=1)
+    
+    # Manual grading fields
+    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس')
+    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟')
+    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟')
+    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_exam_attempts', help_text='المدرس الذي عدل الدرجة')
+    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة')
 
     class Meta:
         unique_together = ['user', 'exam', 'attempt_number']
 
     def __str__(self):
         return f"{self.user.username} - {self.exam.title} - Attempt {self.attempt_number}"
+
+    def get_final_score(self):
+        """إرجاع الدرجة النهائية (المعدلة يدوياً إن وجدت، وإلا الدرجة المحسوبة)"""
+        return self.manual_grade if self.is_manually_graded and self.manual_grade is not None else self.score
 
     def calculate_score(self):
         # حساب النتيجة بناءً على الإجابات
@@ -225,7 +251,10 @@ class UserExamAttempt(models.Model):
         else:
             self.score = 0
         
-        self.passed = self.score >= self.exam.pass_mark
+        # لا نعدل passed إذا كانت الدرجة معدلة يدوياً
+        if not self.is_manually_graded:
+            self.passed = self.score >= self.exam.pass_mark
+        
         self.save(update_fields=['score', 'passed'])
         
         # Update module progress if exam is associated with a module
@@ -236,7 +265,8 @@ class UserExamAttempt(models.Model):
                     user=self.user,
                     module=self.exam.module
                 )
-                module_progress.mark_quiz_completed(score=self.score)
+                final_score = self.get_final_score()
+                module_progress.mark_quiz_completed(score=final_score)
             except ModuleProgress.DoesNotExist:
                 pass
 

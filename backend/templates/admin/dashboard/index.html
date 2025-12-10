@@ -4,6 +4,21 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
+    :root {
+        --white: #FFFFFF;
+        --content-bg: #F7F8FA;
+        --blue-light: #EEF4FF;
+        --blue-dark: #1e3a8a;
+        --blue-medium: #3b82f6;
+        --gray-200: #e9ecef;
+        --gray-300: #dee2e6;
+        --gray-600: #6c757d;
+        --gray-700: #495057;
+        --gray-800: #343a40;
+        --border-radius: 8px;
+        --border-radius-lg: 12px;
+    }
+
     /* Modern and practical dashboard styles */
     .dashboard-container {
         max-width: 1400px;
@@ -18,37 +33,25 @@
 
     /* Welcome Section - Modern and clean */
     .welcome-section {
-        background: linear-gradient(135deg, #fff 0%, var(--gray-100) 100%);
+        background: var(--white);
         border: 1px solid var(--gray-200);
-        border-radius: 12px;
-        padding: 35px;
-        margin-bottom: 35px;
+        border-radius: var(--border-radius-lg);
+        padding: 30px;
+        margin-bottom: 30px;
         text-align: center;
         position: relative;
-        box-shadow: var(--box-shadow);
-        border-right: 4px solid var(--primary);
-    }
-
-    .welcome-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-        border-radius: 12px 12px 0 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
 
     .welcome-section h1 {
-        font-size: 2.2rem;
-        color: var(--primary);
+        font-size: 2rem;
+        color: var(--gray-800);
         margin-bottom: 15px;
         font-weight: 700;
     }
 
     .welcome-section p {
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: var(--gray-600);
         max-width: 700px;
         margin: 0 auto;
@@ -60,59 +63,49 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 25px;
-        margin-bottom: 35px;
+        margin-bottom: 30px;
     }
 
     .quick-action {
-        background: #fff;
+        background: var(--white);
         border: 1px solid var(--gray-200);
-        border-radius: 12px;
+        border-radius: var(--border-radius-lg);
         padding: 25px;
         text-align: center;
         text-decoration: none;
         color: var(--gray-700);
         transition: all 0.3s ease;
-        box-shadow: var(--box-shadow);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         position: relative;
         overflow: hidden;
     }
 
-    .quick-action::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-    }
-
     .quick-action:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--box-shadow-hover);
-        color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        color: var(--gray-800);
         text-decoration: none;
-        border-color: var(--primary);
+        border-color: var(--blue-medium);
     }
 
     .quick-action i {
         font-size: 2rem;
-        color: var(--primary);
+        color: #000000;
         margin-bottom: 15px;
         display: block;
         transition: all 0.3s ease;
     }
 
     .quick-action:hover i {
-        color: var(--secondary);
-        transform: scale(1.1);
+        color: #000000;
+        transform: scale(1.05);
     }
 
     .quick-action h3 {
         font-size: 1.1rem;
         margin-bottom: 10px;
         font-weight: 600;
-        color: var(--primary);
+        color: var(--gray-800);
     }
 
     .quick-action p {
@@ -122,120 +115,199 @@
         line-height: 1.5;
     }
 
-    /* Stats Grid - Modern and clean */
+    /* Stats Grid - Modern and clean - New Design */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 25px;
-        margin-bottom: 35px;
+        margin-bottom: 30px;
     }
 
     .stat-card {
-        background: #fff;
+        background: var(--white);
         border: 1px solid var(--gray-200);
-        border-radius: 12px;
-        padding: 30px;
+        border-radius: var(--border-radius-lg);
+        padding: 25px;
         display: flex;
-        align-items: center;
-        box-shadow: var(--box-shadow);
-        transition: all 0.3s ease;
+        flex-direction: column;
         position: relative;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
         overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 4px;
-        height: 100%;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        min-height: 180px;
     }
 
     .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--box-shadow-hover);
-        border-color: var(--primary);
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border-color: var(--blue-medium);
     }
 
+    /* Header Row - Icon and Title on one line */
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-direction: row-reverse;
+        padding: 7px;
+        padding-top: 5px;
+        margin-bottom: 15px;
+        gap: 15px;
+    }
+
+    /* Icon at right */
     .stat-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 12px;
+        width: 40px;
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-left: 25px;
-        font-size: 1.8rem;
-        color: #fff;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        box-shadow: 0 6px 20px rgba(14, 81, 129, 0.3);
-        transition: all 0.3s ease;
+        font-size: 1.3rem;
+        color: #000000;
+        flex-shrink: 0;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
-    .stat-card:hover .stat-icon {
-        background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
-        box-shadow: 0 8px 25px rgba(229, 151, 139, 0.4);
-        transform: scale(1.1);
+    .stat-icon i {
+        color: #000000;
     }
 
-    .stat-info h4 {
+    /* Title at left */
+    .stat-title {
+        flex: 1;
+        text-align: right;
         margin: 0;
-        font-size: 0.95rem;
-        color: var(--gray-600);
-        font-weight: 500;
-        margin-bottom: 8px;
+        padding-left: 10px;
     }
+
+    .stat-title h4 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #000000;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    /* Info section */
+    .stat-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 7px;
+        margin-top: 0;
+    }
+
 
     .stat-info h2 {
-        margin: 0;
-        font-size: 2.2rem;
-        color: var(--primary);
+        margin: 0 0 15px 0;
+        font-size: 2.5rem;
+        color: #1e3a8a;
         font-weight: 700;
+        line-height: 1;
+    }
+
+    /* Comparison section */
+    .stat-comparison {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin-top: auto;
+    }
+
+    .comparison-label {
+        font-size: 0.85rem;
+        color: #6B7280;
+        margin: 0;
+    }
+
+    .comparison-value {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .comparison-value.positive {
+        color: #10B981;
+    }
+
+    .comparison-value.negative {
+        color: #EF4444;
+    }
+
+    .comparison-value i {
+        font-size: 0.8rem;
+    }
+
+    /* Arrow icon at bottom-left */
+    .stat-arrow {
+        position: absolute;
+        bottom: 15px;
+        left: 15px;
+        width: 24px;
+        height: 24px;
+        color: #4A90E2;
+        opacity: 0.7;
+        font-size: 1.2rem;
+    }
+
+    .stat-arrow i {
+        transform: rotate(-45deg);
+    }
+
+    /* Special border for highlighted card */
+    .stat-card.highlighted {
+        border: 2px solid #4A90E2;
+        border-style: solid;
+        box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
     /* Recent Activity - Modern list */
     .activity-card {
-        background: #fff;
+        background: var(--white);
         border: 1px solid var(--gray-200);
-        border-radius: 12px;
-        box-shadow: var(--box-shadow);
+        border-radius: var(--border-radius-lg);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         margin-bottom: 25px;
         overflow: hidden;
     }
 
     .activity-header {
-        padding: 25px 30px;
+        padding: 20px 25px;
         border-bottom: 1px solid var(--gray-200);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: linear-gradient(135deg, var(--gray-100) 0%, #fff 100%);
+        background: var(--white);
     }
 
     .activity-header h3 {
         margin: 0;
-        font-size: 1.3rem;
-        color: var(--primary);
+        font-size: 1.2rem;
+        color: var(--gray-800);
         font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
     .activity-header h3 i {
-        color: var(--secondary);
+        color: #000000;
     }
 
     .activity-body {
-        padding: 25px 30px;
+        padding: 20px 25px;
     }
 
     .activity-item {
         display: flex;
         align-items: center;
-        padding: 18px 0;
+        padding: 15px 0;
         border-bottom: 1px solid var(--gray-200);
         transition: all 0.3s ease;
     }
@@ -246,24 +318,24 @@
 
     .activity-item:hover {
         background: var(--gray-100);
-        border-radius: 8px;
-        padding-right: 15px;
-        padding-left: 15px;
-        margin: 0 -15px;
+        border-radius: var(--border-radius);
+        padding-right: 10px;
+        padding-left: 10px;
+        margin: 0 -10px;
     }
 
     .activity-icon {
-        width: 45px;
-        height: 45px;
-        border-radius: 10px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-left: 20px;
-        color: #fff;
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        font-size: 1.1rem;
-        box-shadow: 0 4px 12px rgba(14, 81, 129, 0.3);
+        margin-left: 15px;
+        color: #000000;
+        background: none;
+        font-size: 1rem;
+        box-shadow: none;
     }
 
     .activity-content {
@@ -273,8 +345,8 @@
     .activity-content p {
         margin: 0 0 5px;
         font-weight: 500;
-        color: var(--primary);
-        font-size: 1rem;
+        color: var(--gray-800);
+        font-size: 0.95rem;
     }
 
     .activity-time {
@@ -289,42 +361,44 @@
     .btn {
         display: inline-flex;
         align-items: center;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 500;
         text-decoration: none;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         transition: all 0.3s ease;
-        border: 1px solid transparent;
-        gap: 10px;
+        border: 1px solid var(--gray-300);
+        gap: 8px;
+        background: transparent;
+        color: var(--blue-dark);
     }
 
     .btn-primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-        color: #fff;
-        box-shadow: 0 4px 15px rgba(14, 81, 129, 0.3);
+        color: var(--blue-dark);
+        border-color: var(--gray-300);
     }
 
     .btn-primary:hover {
-        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-        color: #fff;
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
         text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(14, 81, 129, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(30, 58, 138, 0.15);
     }
 
     .btn-secondary {
-        background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
-        color: #fff;
-        box-shadow: 0 4px 15px rgba(229, 151, 139, 0.3);
+        color: var(--gray-700);
+        border-color: var(--gray-300);
     }
 
     .btn-secondary:hover {
-        background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--secondary) 100%);
-        color: #fff;
+        background: var(--gray-100);
+        color: var(--gray-800);
+        border-color: var(--gray-400);
         text-decoration: none;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(229, 151, 139, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     /* Responsive design - Mobile First Approach */
@@ -359,23 +433,54 @@
         .stat-card {
             padding: 20px;
             flex-direction: column;
-            text-align: center;
+            text-align: right;
+            min-height: 160px;
+        }
+
+        .stat-header {
+            padding: 7px;
+            padding-top: 5px;
+            gap: 8px;
         }
 
         .stat-icon {
-            width: 60px;
-            height: 60px;
-            margin-left: 0;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
+            width: 35px;
+            height: 35px;
+            font-size: 1.1rem;
+        }
+
+        .stat-title h4 {
+            font-size: 1.1rem;
+        }
+
+        .stat-arrow {
+            bottom: 12px;
+            left: 12px;
+            width: 20px;
+            height: 20px;
+            font-size: 1rem;
         }
 
         .stat-info h4 {
             font-size: 0.85rem;
+            margin-bottom: 10px;
         }
 
         .stat-info h2 {
             font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .stat-comparison {
+            gap: 3px;
+        }
+
+        .comparison-label {
+            font-size: 0.75rem;
+        }
+
+        .comparison-value {
+            font-size: 0.8rem;
         }
         
         .quick-actions {
@@ -424,11 +529,11 @@
         }
 
         .activity-icon {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             margin-left: 0;
             margin-bottom: 10px;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .activity-content {
@@ -444,10 +549,11 @@
         }
 
         .btn {
-            padding: 10px 18px;
-            font-size: 0.85rem;
+            padding: 8px 16px;
+            font-size: 0.8rem;
             width: 100%;
             justify-content: center;
+            border-radius: 25px;
         }
     }
 
@@ -475,13 +581,23 @@
         }
         
         .stat-card {
-            padding: 25px;
+            padding: 22px;
+            min-height: 170px;
+        }
+
+        .stat-header {
+            padding: 7px;
+            padding-top: 5px;
         }
 
         .stat-icon {
-            width: 65px;
-            height: 65px;
-            margin-left: 20px;
+            width: 38px;
+            height: 38px;
+            font-size: 1.2rem;
+        }
+
+        .stat-title h4 {
+            font-size: 1.2rem;
         }
 
         .stat-info h2 {
@@ -511,8 +627,9 @@
         }
 
         .btn {
-            padding: 11px 20px;
-            font-size: 0.9rem;
+            padding: 9px 18px;
+            font-size: 0.85rem;
+            border-radius: 25px;
         }
     }
 
@@ -538,6 +655,16 @@
 
         .stat-card {
             padding: 28px;
+            min-height: 180px;
+        }
+
+        .stat-header {
+            padding: 7px;
+            padding-top: 5px;
+        }
+
+        .stat-title h4 {
+            font-size: 1.3rem;
         }
     }
 
@@ -605,7 +732,7 @@
     @keyframes fadeInUp {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(15px);
         }
         to {
             opacity: 1;
@@ -617,20 +744,20 @@
     .quick-action,
     .stat-card,
     .activity-card {
-        animation: fadeInUp 0.4s ease-out;
+        animation: fadeInUp 0.3s ease-out;
     }
 
-    .quick-action:nth-child(1) { animation-delay: 0.1s; }
-    .quick-action:nth-child(2) { animation-delay: 0.2s; }
-    .quick-action:nth-child(3) { animation-delay: 0.3s; }
-    .quick-action:nth-child(4) { animation-delay: 0.4s; }
-    .quick-action:nth-child(5) { animation-delay: 0.5s; }
+    .quick-action:nth-child(1) { animation-delay: 0.05s; }
+    .quick-action:nth-child(2) { animation-delay: 0.1s; }
+    .quick-action:nth-child(3) { animation-delay: 0.15s; }
+    .quick-action:nth-child(4) { animation-delay: 0.2s; }
+    .quick-action:nth-child(5) { animation-delay: 0.25s; }
 
-    .stat-card:nth-child(1) { animation-delay: 0.2s; }
-    .stat-card:nth-child(2) { animation-delay: 0.3s; }
-    .stat-card:nth-child(3) { animation-delay: 0.4s; }
-    .stat-card:nth-child(4) { animation-delay: 0.5s; }
-    .stat-card:nth-child(5) { animation-delay: 0.6s; }
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.15s; }
+    .stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .stat-card:nth-child(4) { animation-delay: 0.25s; }
+    .stat-card:nth-child(5) { animation-delay: 0.3s; }
 </style>
 {% endblock %}
 
@@ -671,39 +798,95 @@
     <!-- Stats Cards -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-certificate"></i>
+                </div>
+                <div class="stat-title">
+                    <h4>الشهادات الصادرة</h4>
+                </div>
+            </div>
+            <div class="stat-arrow">
+                <i class="fas fa-arrow-up-left"></i>
             </div>
             <div class="stat-info">
-                <h4>إجمالي المستخدمين</h4>
-                <h2>{{ stats.total_users }}</h2>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-book"></i>
-            </div>
-            <div class="stat-info">
-                <h4>إجمالي الدورات</h4>
-                <h2>{{ stats.total_courses }}</h2>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-user-graduate"></i>
-            </div>
-            <div class="stat-info">
-                <h4>إجمالي المسجلين</h4>
-                <h2>{{ stats.total_enrollments }}</h2>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-certificate"></i>
-            </div>
-            <div class="stat-info">
-                <h4>الشهادات الصادرة</h4>
                 <h2>{{ stats.total_certificates }}</h2>
+                <div class="stat-comparison">
+                    <p class="comparison-label">مقارنة بالشهر الماضي</p>
+                    <p class="comparison-value negative">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>18%</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-title">
+                    <h4>إجمالي المبيعات</h4>
+                </div>
+            </div>
+            <div class="stat-arrow">
+                <i class="fas fa-arrow-up-left"></i>
+            </div>
+            <div class="stat-info">
+                <h2>{{ stats.total_enrollments|default:287 }}</h2>
+                <div class="stat-comparison">
+                    <p class="comparison-label">مقارنة بالشهر الماضي</p>
+                    <p class="comparison-value positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>10%</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-title">
+                    <h4>إجمالي الدورات المباعة</h4>
+                </div>
+            </div>
+            <div class="stat-arrow">
+                <i class="fas fa-arrow-up-left"></i>
+            </div>
+            <div class="stat-info">
+                <h2>{{ stats.total_courses }}</h2>
+                <div class="stat-comparison">
+                    <p class="comparison-label">مقارنة بالشهر الماضي</p>
+                    <p class="comparison-value positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>15%</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card highlighted">
+            <div class="stat-header">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-title">
+                    <h4>إجمالي العملاء</h4>
+                </div>
+            </div>
+            <div class="stat-arrow">
+                <i class="fas fa-arrow-up-left"></i>
+            </div>
+            <div class="stat-info">
+                <h2>{{ stats.total_users }}</h2>
+                <div class="stat-comparison">
+                    <p class="comparison-label">مقارنة بالشهر الماضي</p>
+                    <p class="comparison-value positive">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>15%</span>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -732,9 +915,9 @@
             </div>
             {% empty %}
             <div style="text-align: center; color: var(--gray-600); padding: 40px 20px;">
-                <i class="fas fa-info-circle" style="font-size: 2rem; color: var(--secondary); margin-bottom: 15px; display: block;"></i>
-                <p style="margin: 0; font-size: 1.1rem;">لا توجد نشاطات حديثة</p>
-                <p style="margin: 10px 0 0; font-size: 0.9rem;">ستظهر هنا النشاطات الجديدة عند حدوثها</p>
+                <i class="fas fa-info-circle" style="font-size: 2rem; color: var(--blue-medium); margin-bottom: 15px; display: block;"></i>
+                <p style="margin: 0; font-size: 1.1rem; color: var(--gray-800);">لا توجد نشاطات حديثة</p>
+                <p style="margin: 10px 0 0; font-size: 0.9rem; color: var(--gray-600);">ستظهر هنا النشاطات الجديدة عند حدوثها</p>
             </div>
             {% endfor %}
         </div>
@@ -752,7 +935,7 @@
         const statCards = document.querySelectorAll('.stat-card');
         statCards.forEach(card => {
             card.addEventListener('mouseenter', function() {
-                this.style.transform = 'translateY(-8px)';
+                this.style.transform = 'translateY(-3px)';
             });
             
             card.addEventListener('mouseleave', function() {

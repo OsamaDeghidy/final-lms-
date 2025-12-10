@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Q, Prefetch, Prefetch
 from django.conf import settings
-from .models import Profile, Organization, Instructor, Student, ArchivedUser
+from .models import Profile, Organization, Instructor, Student, ArchivedUser, StudentGPA, GPAHistory
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
@@ -31,9 +31,13 @@ class StatusFilter(SimpleListFilter):
     def lookups(self, request, model_admin):
         return (
             ('Student', 'طالب'),
+            ('DiplomaStudent', 'طالب الدبلوم'),
             ('Instructor', 'مدرب'),
+            ('Teacher', 'المدرس (المنظمة)'),
             ('Admin', 'مدير'),
             ('Organization', 'منظمة'),
+            ('CustomerService', 'خدمة عملاء'),
+            ('CertificateStaff', 'موظفين شهادات'),
         )
 
     def queryset(self, request, queryset):
@@ -123,7 +127,7 @@ class CustomUserAdmin(BaseUserAdmin):
     actions = ['archive_selected_users']
     list_display = (
         'username', 'email', 'national_id_display', 'first_name', 'last_name', 
-        'status_dropdown', 'profile_image', 'is_active', 
+        'status_dropdown', 'is_active', 
         'division_display', 'courses_count', 'date_joined', 'archive_button'
     )
     list_filter = (
@@ -344,19 +348,39 @@ class CustomUserAdmin(BaseUserAdmin):
         
         status_choices = [
             ('Student', 'طالب'),
+            ('DiplomaStudent', 'طالب الدبلوم'),
             ('Instructor', 'مدرب'),
+            ('Organization', 'المدرس (المنظمة)'),
             ('Admin', 'مدير'),
-         
+           
+            ('CustomerService', 'خدمة عملاء'),
+            ('CertificateStaff', 'موظفين شهادات'),
         ]
         
         status_colors = {
-            'Student': '#28a745',
-            'Instructor': '#007bff',
-            'Admin': '#dc3545',
-           
+            'Student': '#10b981',  # Green - طالب
+            'DiplomaStudent': '#059669',  # Dark Green - طالب الدبلوم
+            'Instructor': '#3b82f6',  # Blue - مدرب
+            
+            'Admin': '#ef4444',  # Red - مدير
+            'Organization': '#8b5cf6',  # Purple - منظمة
+            'CustomerService': '#f59e0b',  # Amber - خدمة عملاء
+            'CertificateStaff': '#ec4899',  # Pink - موظفين شهادات
+        }
+        
+        status_bg_colors = {
+            'Student': 'rgba(16, 185, 129, 0.1)',
+            'DiplomaStudent': 'rgba(5, 150, 105, 0.1)',
+            'Instructor': 'rgba(59, 130, 246, 0.1)',
+            'Teacher': 'rgba(99, 102, 241, 0.1)',
+            'Admin': 'rgba(239, 68, 68, 0.1)',
+            'Organization': 'rgba(139, 92, 246, 0.1)',
+            'CustomerService': 'rgba(245, 158, 11, 0.1)',
+            'CertificateStaff': 'rgba(236, 72, 153, 0.1)',
         }
         
         color = status_colors.get(current_status, '#6c757d')
+        bg_color = status_bg_colors.get(current_status, 'rgba(108, 117, 125, 0.1)')
         
         # بناء options HTML بشكل مباشر
         options_html = ''
@@ -366,12 +390,17 @@ class CustomUserAdmin(BaseUserAdmin):
         
         update_url = reverse('admin:auth_user_update_status', args=[obj.id])
         
-        # بناء HTML كامل باستخدام mark_safe
+        # بناء HTML كامل باستخدام mark_safe مع شكل بيضاوي
         html = (
             f'<select class="status-dropdown" data-user-id="{obj.id}" data-url="{update_url}" '
-            f'style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; '
-            f'background-color: white; color: {color}; font-weight: bold; cursor: pointer; '
-            f'min-width: 100px;" onchange="updateUserStatus(this)">'
+            f'style="padding: 6px 16px; border: 1px solid {color}; border-radius: 25px; '
+            f'background: linear-gradient(135deg, {bg_color} 0%, {bg_color} 100%); '
+            f'color: {color}; font-weight: 600; cursor: pointer; font-size: 0.75rem; '
+            f'min-width: 140px; transition: all 0.3s ease; outline: none; '
+            f'box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);" '
+            f'onchange="updateUserStatus(this)" '
+            f'onmouseover="this.style.boxShadow=\'0 4px 12px rgba(0, 0, 0, 0.1)\'; this.style.transform=\'translateY(-1px)\';" '
+            f'onmouseout="this.style.boxShadow=\'0 2px 4px rgba(0, 0, 0, 0.05)\'; this.style.transform=\'translateY(0)\';">'
             f'{options_html}'
             f'</select>'
         )
@@ -390,7 +419,8 @@ class CustomUserAdmin(BaseUserAdmin):
             user = User.objects.get(id=user_id)
             new_status = request.POST.get('status')
             
-            if new_status not in ['Student', 'Instructor', 'Admin', 'Organization']:
+            valid_statuses = ['Student', 'DiplomaStudent', 'Instructor', 'Teacher', 'Admin', 'Organization', 'CustomerService', 'CertificateStaff']
+            if new_status not in valid_statuses:
                 return JsonResponse({'success': False, 'error': 'Invalid status'}, status=400)
             
             profile, created = Profile.objects.get_or_create(user=user)
@@ -942,5 +972,61 @@ class ArchivedUserAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
 
-    def has_delete_permission(self, request, obj=None):
+    def     has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(StudentGPA)
+class StudentGPAAdmin(ImportExportAdminMixin, admin.ModelAdmin):
+    list_display = ('student', 'course', 'gpa', 'semester', 'academic_year', 'created_by', 'created_at', 'updated_at')
+    list_filter = ('semester', 'academic_year', 'course', 'created_at')
+    search_fields = ('student__username', 'student__email', 'student__first_name', 'student__last_name', 'course__title')
+    readonly_fields = ('created_at', 'updated_at', 'created_by')
+    date_hierarchy = 'created_at'
+    
+    fieldsets = (
+        ('معلومات الطالب', {
+            'fields': ('student', 'course')
+        }),
+        ('معلومات GPA', {
+            'fields': ('gpa', 'semester', 'academic_year', 'notes')
+        }),
+        ('معلومات النظام', {
+            'fields': ('created_by', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # عند الإنشاء
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('student', 'course', 'created_by').prefetch_related('history')
+
+
+@admin.register(GPAHistory)
+class GPAHistoryAdmin(admin.ModelAdmin):
+    list_display = ('gpa', 'old_gpa', 'new_gpa', 'changed_by', 'changed_at', 'change_reason_preview')
+    list_filter = ('changed_at', 'changed_by')
+    search_fields = ('gpa__student__username', 'gpa__student__email', 'change_reason')
+    readonly_fields = ('gpa', 'old_gpa', 'new_gpa', 'changed_by', 'changed_at', 'change_reason')
+    date_hierarchy = 'changed_at'
+    
+    def change_reason_preview(self, obj):
+        if obj.change_reason:
+            return obj.change_reason[:50] + '...' if len(obj.change_reason) > 50 else obj.change_reason
+        return '-'
+    change_reason_preview.short_description = 'سبب التغيير'
+    
+    def has_add_permission(self, request):
+        return False  # لا يمكن إضافة سجلات يدوياً، يتم إنشاؤها تلقائياً
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # لا يمكن تعديل السجلات
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('gpa__student', 'gpa__course', 'changed_by')

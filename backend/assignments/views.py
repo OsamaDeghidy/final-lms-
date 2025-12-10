@@ -36,7 +36,7 @@ from .serializers import (
     AssignmentQuestionSerializer, AssignmentSubmissionSerializer, AssignmentAnswerSerializer,
     AssignmentQuestionWithAnswersSerializer, AssignmentSubmissionGradeSerializer, 
     AssignmentSubmissionCreateSerializer, AssignmentQuestionResponseSerializer,
-    AssignmentStudentSerializer
+    AssignmentStudentSerializer, UserExamAttemptGradeSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -2211,6 +2211,67 @@ class ExamAttemptViewSet(ModelViewSet):
         serializer = UserExamAttemptDetailSerializer(attempt)
         print(f"Returning attempt data: {serializer.data}")
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['patch'], url_path='grade')
+    def grade_attempt(self, request, pk=None):
+        """تعديل درجة الاختبار من قبل المدرس فقط"""
+        attempt = self.get_object()
+        user = request.user
+        
+        # التحقق من أن المستخدم هو مدرس أو أدمن
+        try:
+            profile = user.profile
+            is_instructor = profile.status in ['Instructor', 'Teacher', 'Organization']
+            is_admin = profile.status == 'Admin' or user.is_superuser
+            
+            if not (is_instructor or is_admin):
+                return Response(
+                    {'error': 'فقط المدرسون والأدمن يمكنهم تعديل الدرجات'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # التحقق من أن المدرس يدرس الكورس الذي يحتوي على هذا الاختبار
+            if is_instructor and not is_admin:
+                course = attempt.exam.course
+                if not course.instructors.filter(profile=profile).exists():
+                    return Response(
+                        {'error': 'ليس لديك صلاحية لتعديل درجات هذا الاختبار'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+        except AttributeError:
+            # Fallback للطريقة القديمة
+            if not (hasattr(user, 'instructor') or user.is_superuser):
+                return Response(
+                    {'error': 'فقط المدرسون والأدمن يمكنهم تعديل الدرجات'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            if hasattr(user, 'instructor') and not user.is_superuser:
+                course = attempt.exam.course
+                if not course.instructors.filter(id=user.instructor.id).exists():
+                    return Response(
+                        {'error': 'ليس لديك صلاحية لتعديل درجات هذا الاختبار'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+        
+        # تحديث الدرجة
+        serializer = UserExamAttemptGradeSerializer(attempt, data=request.data, partial=True)
+        if serializer.is_valid():
+            attempt.is_manually_graded = True
+            attempt.graded_by = user
+            attempt.graded_at = timezone.now()
+            
+            # تحديث حالة النجاح بناءً على الدرجة المعدلة
+            if attempt.manual_grade is not None:
+                attempt.passed = attempt.manual_grade >= attempt.exam.pass_mark
+            
+            serializer.save()
+            
+            # إرجاع البيانات المحدثة
+            detail_serializer = UserExamAttemptDetailSerializer(attempt)
+            return Response(detail_serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExamUserAnswerViewSet(ModelViewSet):

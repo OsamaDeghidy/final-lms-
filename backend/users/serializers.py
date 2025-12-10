@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
-from users.models import Profile, Student, Organization, Instructor
+from users.models import Profile, Student, Organization, Instructor, StudentGPA, GPAHistory
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -418,3 +418,68 @@ class CustomTokenObtainPairView(BaseTokenObtainPairView):
     Custom token obtain view that uses our custom serializer
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+
+# GPA Serializers
+class GPAHistorySerializer(serializers.ModelSerializer):
+    """Serializer لسجل تحديثات GPA"""
+    changed_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = GPAHistory
+        fields = [
+            'id', 'gpa', 'old_gpa', 'new_gpa', 'changed_by', 'changed_by_name',
+            'change_reason', 'changed_at'
+        ]
+        read_only_fields = ['id', 'changed_at']
+    
+    def get_changed_by_name(self, obj):
+        if obj.changed_by:
+            return f"{obj.changed_by.first_name} {obj.changed_by.last_name}".strip() or obj.changed_by.username
+        return None
+
+
+class StudentGPASerializer(serializers.ModelSerializer):
+    """Serializer لـ GPA الطالب"""
+    student_name = serializers.SerializerMethodField()
+    student_email = serializers.SerializerMethodField()
+    course_title = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    history = GPAHistorySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = StudentGPA
+        fields = [
+            'id', 'student', 'student_name', 'student_email', 'course', 'course_title',
+            'gpa', 'semester', 'academic_year', 'notes', 'created_by', 'created_by_name',
+            'created_at', 'updated_at', 'history'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'history']
+    
+    def get_student_name(self, obj):
+        return f"{obj.student.first_name} {obj.student.last_name}".strip() or obj.student.username
+    
+    def get_student_email(self, obj):
+        return obj.student.email
+    
+    def get_course_title(self, obj):
+        return obj.course.title if obj.course else 'عام'
+    
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.username
+        return None
+
+
+class StudentGPACreateSerializer(serializers.ModelSerializer):
+    """Serializer لإنشاء/تحديث GPA"""
+    class Meta:
+        model = StudentGPA
+        fields = [
+            'student', 'course', 'gpa', 'semester', 'academic_year', 'notes'
+        ]
+    
+    def validate_gpa(self, value):
+        if value < 0 or value > 4.0:
+            raise serializers.ValidationError("GPA يجب أن يكون بين 0 و 4.0")
+        return value

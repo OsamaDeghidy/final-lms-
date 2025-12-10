@@ -12,11 +12,9 @@ from .views_auth import (
 from django.conf import settings
 from django.conf.urls.static import static
 
-# Create router (temporarily disabled until ViewSets are created)
-# router = DefaultRouter()
-# router.register(r'profiles', views.ProfileViewSet)
-# router.register(r'teachers', views.TeacherViewSet)
-# router.register(r'students', views.StudentViewSet)
+# Create router for GPA
+router = DefaultRouter()
+router.register(r'gpa', views.StudentGPAViewSet, basename='student-gpa')
 
 app_name = 'users_api'
 
@@ -61,6 +59,6 @@ urlpatterns = [
     path('profile/picture/', views.ProfilePictureUploadView.as_view(), name='profile-picture-upload'),
     path('search/', views.UserSearchView.as_view(), name='user-search'),
     
-    # Include router URLs (temporarily disabled)
-    # path('', include(router.urls)),
+    # Include router URLs
+    path('', include(router.urls)),
 ]

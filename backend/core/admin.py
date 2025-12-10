@@ -19,7 +19,7 @@ from django import forms
 class LMSAdminSite(AdminSite):
     # Site headers
     site_header = "نظام إدارة التعلم - LMS"
-    site_title = "LMS Admin"
+    site_title = "LMS"
     index_title = "لوحة التحكم الرئيسية"
     
     def get_urls(self):

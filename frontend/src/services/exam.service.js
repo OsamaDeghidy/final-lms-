@@ -317,6 +317,30 @@ export const examAPI = {
       throw error;
     }
   },
+
+  // Get all exam attempts for a specific exam (for teachers)
+  getAllExamAttempts: async (examId) => {
+    try {
+      const response = await api.get('/api/assignments/exam-attempts/', {
+        params: { exam: examId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching all exam attempts:', error);
+      throw error;
+    }
+  },
+
+  // Grade exam attempt (for teachers only)
+  gradeExamAttempt: async (attemptId, gradeData) => {
+    try {
+      const response = await api.patch(`/api/assignments/exam-attempts/${attemptId}/grade/`, gradeData);
+      return response.data;
+    } catch (error) {
+      console.error('Error grading exam attempt:', error);
+      throw error;
+    }
+  },
 };
 
 export default examAPI;

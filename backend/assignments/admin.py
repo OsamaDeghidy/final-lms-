@@ -202,19 +202,26 @@ class AnswerAdmin(admin.ModelAdmin):
 @admin.register(QuizAttempt)
 class QuizAttemptAdmin(admin.ModelAdmin):
     list_display = (
-        'user', 'quiz', 'attempt_number', 'score_display', 
-        'passed_status', 'start_time', 'duration', 'answers_count'
+        'user', 'quiz', 'attempt_number', 'final_score_display',
+        'passed_status', 'is_manually_graded_display', 'is_grade_visible_display',
+        'graded_by_display', 'start_time', 'duration'
     )
-    list_filter = (PassedFilter, 'start_time', 'quiz__course', 'quiz__quiz_type')
+    list_filter = (PassedFilter, 'start_time', 'quiz__course', 'quiz__quiz_type', 'is_manually_graded', 'is_grade_visible')
     search_fields = ('user__username', 'quiz__title', 'user__first_name', 'user__last_name')
-    readonly_fields = ('start_time', 'duration', 'score_display', 'answers_count')
+    readonly_fields = ('start_time', 'duration', 'score_display', 'final_score_display', 'answers_count', 'graded_by', 'graded_at')
     
     fieldsets = (
         ('معلومات المحاولة', {
             'fields': ('user', 'quiz', 'attempt_number')
         }),
-        ('النتائج', {
+        ('النتائج التلقائية', {
             'fields': ('score', 'passed', 'score_display')
+        }),
+        ('التعديل اليدوي للدرجة', {
+            'fields': ('is_manually_graded', 'manual_grade', 'is_grade_visible', 'graded_by', 'graded_at')
+        }),
+        ('النتيجة النهائية', {
+            'fields': ('final_score_display',)
         }),
         ('التوقيت', {
             'fields': ('start_time', 'end_time', 'duration')
@@ -235,13 +242,50 @@ class QuizAttemptAdmin(admin.ModelAdmin):
                 score_text
             )
         return 'غير محسوب'
-    score_display.short_description = 'النتيجة'
+    score_display.short_description = 'النتيجة التلقائية'
+    
+    def final_score_display(self, obj):
+        final_score = obj.get_final_score()
+        if final_score is not None:
+            passed = final_score >= (obj.quiz.pass_mark if obj.quiz else 60)
+            color = '#28a745' if passed else '#dc3545'
+            score_text = f"{final_score:.1f}%"
+            if obj.is_manually_graded:
+                score_text += ' (معدلة)'
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color, 
+                score_text
+            )
+        return 'غير محسوب'
+    final_score_display.short_description = 'النتيجة النهائية'
+    
+    def is_manually_graded_display(self, obj):
+        if obj.is_manually_graded:
+            return format_html('<span style="color: #28a745;">✓ معدلة</span>')
+        return format_html('<span style="color: #6c757d;">تلقائية</span>')
+    is_manually_graded_display.short_description = 'نوع الدرجة'
+    
+    def is_grade_visible_display(self, obj):
+        if obj.is_grade_visible:
+            return format_html('<span style="color: #28a745;">✓ ظاهرة</span>')
+        return format_html('<span style="color: #dc3545;">✗ مخفية</span>')
+    is_grade_visible_display.short_description = 'ظاهرة للطالب'
+    
+    def graded_by_display(self, obj):
+        if obj.graded_by:
+            return f"{obj.graded_by.first_name} {obj.graded_by.last_name}".strip() or obj.graded_by.username
+        return '-'
+    graded_by_display.short_description = 'معدل بواسطة'
     
     def passed_status(self, obj):
-        if obj.passed is True:
-            return format_html('<span style="color: #28a745;">✅ ناجح</span>')
-        elif obj.passed is False:
-            return format_html('<span style="color: #dc3545;">❌ راسب</span>')
+        final_score = obj.get_final_score()
+        if final_score is not None:
+            passed = final_score >= (obj.quiz.pass_mark if obj.quiz else 60)
+            if passed:
+                return format_html('<span style="color: #28a745;">✅ ناجح</span>')
+            else:
+                return format_html('<span style="color: #dc3545;">❌ راسب</span>')
         return format_html('<span style="color: #6c757d;">⏳ قيد التقييم</span>')
     passed_status.short_description = 'حالة النجاح'
     
@@ -260,7 +304,7 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('user', 'quiz').prefetch_related('answers')
+        return queryset.select_related('user', 'quiz', 'graded_by').prefetch_related('answers')
 
 
 @admin.register(Exam)
@@ -355,12 +399,35 @@ class ExamQuestionAdmin(admin.ModelAdmin):
 @admin.register(UserExamAttempt)
 class UserExamAttemptAdmin(admin.ModelAdmin):
     list_display = (
-        'user', 'exam', 'attempt_number', 'score_display',
-        'passed_status', 'start_time', 'duration', 'answers_count'
+        'user', 'exam', 'attempt_number', 'final_score_display',
+        'passed_status', 'is_manually_graded_display', 'is_grade_visible_display',
+        'graded_by_display', 'start_time', 'duration'
     )
-    list_filter = (PassedFilter, 'start_time', 'exam__course', 'exam__is_final')
+    list_filter = (PassedFilter, 'start_time', 'exam__course', 'exam__is_final', 'is_manually_graded', 'is_grade_visible')
     search_fields = ('user__username', 'exam__title', 'user__first_name', 'user__last_name')
-    readonly_fields = ('start_time', 'duration', 'score_display', 'answers_count')
+    readonly_fields = ('start_time', 'duration', 'score_display', 'final_score_display', 'answers_count', 'graded_by', 'graded_at')
+    
+    fieldsets = (
+        ('معلومات المحاولة', {
+            'fields': ('user', 'exam', 'attempt_number')
+        }),
+        ('النتائج التلقائية', {
+            'fields': ('score', 'passed', 'score_display')
+        }),
+        ('التعديل اليدوي للدرجة', {
+            'fields': ('is_manually_graded', 'manual_grade', 'is_grade_visible', 'graded_by', 'graded_at')
+        }),
+        ('النتيجة النهائية', {
+            'fields': ('final_score_display',)
+        }),
+        ('التوقيت', {
+            'fields': ('start_time', 'end_time', 'duration')
+        }),
+        ('الإحصائيات', {
+            'fields': ('answers_count',),
+            'classes': ('collapse',)
+        }),
+    )
     
     def score_display(self, obj):
         if obj.score is not None:
@@ -372,13 +439,50 @@ class UserExamAttemptAdmin(admin.ModelAdmin):
                 score_text
             )
         return 'غير محسوب'
-    score_display.short_description = 'النتيجة'
+    score_display.short_description = 'النتيجة التلقائية'
+    
+    def final_score_display(self, obj):
+        final_score = obj.get_final_score()
+        if final_score is not None:
+            passed = final_score >= (obj.exam.pass_mark if obj.exam else 60)
+            color = '#28a745' if passed else '#dc3545'
+            score_text = f"{final_score:.1f}%"
+            if obj.is_manually_graded:
+                score_text += ' (معدلة)'
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">{}</span>',
+                color, 
+                score_text
+            )
+        return 'غير محسوب'
+    final_score_display.short_description = 'النتيجة النهائية'
+    
+    def is_manually_graded_display(self, obj):
+        if obj.is_manually_graded:
+            return format_html('<span style="color: #28a745;">✓ معدلة</span>')
+        return format_html('<span style="color: #6c757d;">تلقائية</span>')
+    is_manually_graded_display.short_description = 'نوع الدرجة'
+    
+    def is_grade_visible_display(self, obj):
+        if obj.is_grade_visible:
+            return format_html('<span style="color: #28a745;">✓ ظاهرة</span>')
+        return format_html('<span style="color: #dc3545;">✗ مخفية</span>')
+    is_grade_visible_display.short_description = 'ظاهرة للطالب'
+    
+    def graded_by_display(self, obj):
+        if obj.graded_by:
+            return f"{obj.graded_by.first_name} {obj.graded_by.last_name}".strip() or obj.graded_by.username
+        return '-'
+    graded_by_display.short_description = 'معدل بواسطة'
     
     def passed_status(self, obj):
-        if obj.passed is True:
-            return format_html('<span style="color: #28a745;">✅ ناجح</span>')
-        elif obj.passed is False:
-            return format_html('<span style="color: #dc3545;">❌ راسب</span>')
+        final_score = obj.get_final_score()
+        if final_score is not None:
+            passed = final_score >= (obj.exam.pass_mark if obj.exam else 60)
+            if passed:
+                return format_html('<span style="color: #28a745;">✅ ناجح</span>')
+            else:
+                return format_html('<span style="color: #dc3545;">❌ راسب</span>')
         return format_html('<span style="color: #6c757d;">⏳ قيد التقييم</span>')
     passed_status.short_description = 'حالة النجاح'
     
@@ -394,6 +498,10 @@ class UserExamAttemptAdmin(admin.ModelAdmin):
     def answers_count(self, obj):
         return obj.answers.count()
     answers_count.short_description = 'عدد الإجابات'
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('user', 'exam', 'graded_by').prefetch_related('answers')
 
 
 @admin.register(Assignment)

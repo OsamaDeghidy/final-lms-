@@ -4,124 +4,1222 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
+    :root {
+        --white: #FFFFFF;
+        --content-bg: #F7F8FA;
+        --blue-light: #EEF4FF;
+        --blue-dark: #1e3a8a;
+        --blue-medium: #3b82f6;
+        --gray-100: #f8f9fa;
+        --gray-200: #e9ecef;
+        --gray-300: #dee2e6;
+        --gray-600: #6c757d;
+        --gray-700: #495057;
+        --gray-800: #343a40;
+        --border-radius: 8px;
+        --border-radius-lg: 12px;
+    }
+
     /* Override the max-width constraint */
     .main.shifted > #nav-sidebar + .content {
         max-width: none !important;
         margin-right: 0 !important;
-        width: calc(100% - 250px) !important;
+        width: calc(100% - 280px) !important;
+    }
+
+    /* Full width content area */
+    #content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+    }
+
+    #content-main {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 20px !important;
+    }
+
+    /* Adjust for sidebar */
+    @media (min-width: 1201px) {
+        #content {
+            margin-right: 280px !important;
+            width: calc(100% - 280px) !important;
+            transition: margin-right 0.3s ease, width 0.3s ease;
+        }
+
+        body.sidebar-hidden #content {
+            margin-right: 0 !important;
+            width: 100% !important;
+        }
+    }
+
+    /* React to sidebar state */
+    body.sidebar-hidden .toolbar-wrapper,
+    body.sidebar-hidden .actions-filter-bar,
+    body.sidebar-hidden .table-container,
+    body.sidebar-hidden .xfull,
+    body.sidebar-hidden .paginator {
+        width: 100% !important;
+        max-width: 100% !important;
     }
     
-    /* Make the content area take full width */
-    #changelist #toolbar {
-        margin: 0 0 10px 0;
+    /* Changelist Container - Vertical Layout */
+    #changelist {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        width: 100%;
     }
-    
-    /* Style for the filter toggle button */
-    .filter-toggle {
-        background: #79aec8;
-        color: white;
+
+    /* Toolbar with search and buttons in one line - Part 1 */
+    .toolbar-wrapper {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 15px 20px;
+        margin-bottom: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        animation: fadeInUp 0.4s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .toolbar-search {
+        flex: 1;
+        min-width: 300px;
+        order: 1;
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    .toolbar-buttons {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        order: 2;
+        flex-shrink: 0;
+    }
+
+    .toolbar-buttons .addlink,
+    .toolbar-buttons .historylink,
+    .toolbar-buttons .viewsitelink,
+    .toolbar-buttons .button {
+        background: #f5f5f5;
+        color: var(--blue-dark);
+        border: 1px solid var(--gray-300);
+        padding: 8px 16px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        animation: fadeInUp 0.4s ease;
+    }
+
+    .toolbar-buttons .addlink:hover,
+    .toolbar-buttons .historylink:hover,
+    .toolbar-buttons .viewsitelink:hover,
+    .toolbar-buttons .button:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(30, 58, 138, 0.15);
+    }
+
+    .toolbar-search form,
+    #changelist-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: transparent;
         border: none;
-        padding: 8px 15px;
-        border-radius: 4px;
+        padding: 0;
+        margin: 0;
+        box-shadow: none;
+        width: 100%;
+        max-width: 500px;
+        justify-content: flex-start;
+        box-sizing: border-box;
+    }
+
+    .toolbar-search input[type="text"] {
+        flex: 1;
+        background: var(--white);
+        border: 1px solid var(--gray-300);
+        border-radius: var(--border-radius);
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        color: var(--gray-800);
+        transition: all 0.3s ease;
+        min-width: 200px;
+        box-sizing: border-box;
+    }
+
+    .toolbar-search input[type="text"]:focus {
+        border-color: var(--blue-medium);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .toolbar-search input[type="submit"] {
+        background: #f5f5f5;
+        color: var(--blue-dark);
+        border: 1px solid var(--gray-300);
+        padding: 10px 24px;
+        border-radius: 25px !important;
+        font-weight: 600;
         cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .toolbar-search input[type="submit"]:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.15);
+    }
+
+    /* Actions and Filter Bar - Part 2 */
+    .actions-filter-bar {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 15px 20px;
+        margin-bottom: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-200);
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+        animation: fadeInUp 0.5s ease;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .actions-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        flex-wrap: wrap;
+        order: 1;
+        justify-content: flex-start;
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    .filter-button {
+        background: #f5f5f5;
+        color: var(--blue-dark);
+        border: 1px solid var(--gray-300);
+        padding: 10px 24px;
+        border-radius: 25px !important;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        position: relative;
+        order: 2;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-button:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.15);
+    }
+
+    .filter-button.active {
+        background: var(--blue-light);
+        border-color: var(--blue-medium);
+        color: var(--blue-dark);
+        box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
+    }
+
+    .filter-button.active::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        width: 12px;
+        height: 12px;
+        background: var(--blue-medium);
+        border-radius: 50%;
+        border: 2px solid var(--white);
+        animation: pulse 2s infinite;
+    }
+
+    .actions-wrapper select {
+        background: var(--white);
+        border: 1px solid var(--gray-300);
+        border-radius: 25px !important;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        color: var(--gray-800);
+        min-width: 200px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+        max-width: 100%;
+    }
+
+    .actions-wrapper select:focus {
+        border-color: var(--blue-medium);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .actions-wrapper button {
+        background: #f5f5f5;
+        color: var(--blue-dark);
+        border: 1px solid var(--gray-300);
+        padding: 10px 24px;
+        border-radius: 25px !important;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .actions-wrapper button:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 58, 138, 0.15);
+    }
+
+    /* Filter Popup */
+    .filter-popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .filter-popup.active {
+        display: flex;
+    }
+
+    .filter-popup-content {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 25px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+
+    .filter-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .filter-popup-header h2 {
+        margin: 0;
+        color: var(--gray-800);
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .filter-popup-close {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray-600);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .filter-popup-close:hover {
+        background: var(--gray-100);
+        color: var(--gray-800);
+        transform: rotate(90deg);
+    }
+
+    .filter-popup-body {
+        margin-bottom: 20px;
+    }
+
+    .filter-popup-body h3 {
+        color: var(--gray-700);
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-top: 15px;
         margin-bottom: 10px;
     }
+
+    .filter-popup-body ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .filter-popup-body li {
+        margin-bottom: 6px;
+    }
+
+    .filter-popup-body a {
+        color: var(--gray-600);
+        text-decoration: none;
+        padding: 8px 12px;
+        display: block;
+        border-radius: var(--border-radius);
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+
+    .filter-popup-body a:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+    }
+
+    .filter-popup-body a.selected {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        font-weight: 600;
+        border-radius: 25px;
+    }
+
+    .filter-popup-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        padding-top: 15px;
+        border-top: 1px solid var(--gray-200);
+    }
+
+    .filter-popup-footer button {
+        padding: 10px 20px;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        border: none;
+    }
+
+    .filter-popup-footer .apply-btn {
+        background: var(--blue-medium);
+        color: white;
+    }
+
+    .filter-popup-footer .apply-btn:hover {
+        background: var(--blue-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(30, 58, 138, 0.15);
+    }
+
+    .filter-popup-footer .cancel-btn {
+        background: transparent;
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+    }
+
+    .filter-popup-footer .cancel-btn:hover {
+        background: var(--gray-100);
+        color: var(--gray-800);
+    }
+
+    /* Hide default filter sidebar */
+    #changelist-filter {
+        display: none !important;
+    }
     
-    .filter-toggle:hover {
-        background: #609ab6;
+    /* Table Container - Full Width - Part 3 */
+    .table-container {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--gray-200);
+        animation: fadeInUp 0.6s ease;
+        margin-bottom: 0;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        box-sizing: border-box;
     }
     
     /* Make the results table take full width */
     #changelist .results {
         width: 100%;
         overflow-x: auto;
+        overflow-y: visible;
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+        margin: 0;
+        padding: 0;
     }
     
     /* Adjust the changelist form container */
     #changelist-form {
-        width: 100%;
-        max-width: none;
+        width: 100% !important;
+        max-width: 100% !important;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+        border: none;
+        margin: 0;
     }
     
     /* Make the table use all available space */
     #result_list {
         width: 100% !important;
+        max-width: 100% !important;
         table-layout: auto;
+        background: transparent;
+        border-collapse: collapse;
+        margin: 0;
+        padding: 0;
+        display: table;
     }
-    
-    /* Adjust the filter layout */
-    @media (min-width: 1024px) {
-        #changelist {
-            display: flex;
-            flex-direction: row-reverse;
-            align-items: flex-start;
+
+    /* Enhanced Table Header Styling */
+    #result_list thead {
+        width: 100%;
+        display: table-header-group;
+    }
+
+    #result_list thead th {
+        background: linear-gradient(135deg, var(--gray-100) 0%, #f5f6fa 100%);
+        color: var(--gray-800);
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 16px 20px;
+        border: none;
+        text-align: right;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        border-radius: 25px;
+        margin: 4px 2px;
+    }
+
+    #result_list thead th:first-child {
+        border-top-right-radius: 25px;
+        border-bottom-right-radius: 25px;
+    }
+
+    #result_list thead th:last-child {
+        border-top-left-radius: 25px;
+        border-bottom-left-radius: 25px;
+    }
+
+    #result_list thead th:hover {
+        background: linear-gradient(135deg, var(--blue-light) 0%, #e0e7ff 100%);
+        color: var(--blue-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Enhanced Table Body Styling */
+    #result_list tbody {
+        width: 100%;
+        display: table-row-group;
+    }
+
+    #result_list tbody tr {
+        width: 100%;
+        display: table-row;
+        transition: all 0.3s ease;
+        animation: fadeInUp 0.4s ease;
+        border-radius: 25px;
+        margin: 4px 0;
+    }
+
+    #result_list tbody tr:nth-child(1) { animation-delay: 0.1s; }
+    #result_list tbody tr:nth-child(2) { animation-delay: 0.15s; }
+    #result_list tbody tr:nth-child(3) { animation-delay: 0.2s; }
+    #result_list tbody tr:nth-child(4) { animation-delay: 0.25s; }
+    #result_list tbody tr:nth-child(5) { animation-delay: 0.3s; }
+
+    #result_list tbody td {
+        padding: 16px 20px;
+        border: none;
+        color: var(--gray-800);
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        background: transparent;
+    }
+
+    #result_list tbody tr:hover {
+        background: linear-gradient(135deg, var(--blue-light) 0%, #e0e7ff 100%);
+        transform: translateX(-5px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+    }
+
+    #result_list tbody tr:hover td {
+        color: var(--blue-dark);
+    }
+
+    #result_list tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* Alternate row colors for better readability */
+    #result_list tbody tr:nth-child(even) {
+        background: rgba(247, 248, 250, 0.5);
+    }
+
+    #result_list tbody tr:nth-child(even):hover {
+        background: linear-gradient(135deg, var(--blue-light) 0%, #e0e7ff 100%);
+    }
+
+    /* Table Actions Column */
+    #result_list .action-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid var(--gray-300);
+    }
+
+    #result_list .action-checkbox:checked {
+        background: var(--blue-medium);
+        border-color: var(--blue-medium);
+    }
+
+    /* Status Dropdown Styling - Oval Shape */
+    #result_list .status-dropdown {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left 12px center;
+        padding-right: 35px !important;
+        padding-left: 18px !important;
+        text-align: right;
+        direction: rtl;
+    }
+
+    #result_list .status-dropdown:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+
+    #result_list .status-dropdown option {
+        padding: 8px 12px;
+        background: white;
+        color: var(--gray-800);
+    }
+
+    /* Table Action Links - Oval Shape */
+    #result_list tbody td .addlink,
+    #result_list tbody td .changelink,
+    #result_list tbody td .viewlink,
+    #result_list tbody td .deletelink {
+        background: transparent;
+        color: var(--blue-dark);
+        padding: 6px 14px;
+        border-radius: 25px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: 1px solid var(--gray-300);
+        white-space: nowrap;
+    }
+
+    #result_list tbody td .addlink:hover,
+    #result_list tbody td .changelink:hover,
+    #result_list tbody td .viewlink:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    #result_list tbody td .deletelink {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    #result_list tbody td .deletelink:hover {
+        background: #fee;
+        color: #c82333;
+        border-color: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    }
+
+    /* Pagination Styling */
+    .paginator {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 15px 20px;
+        margin-top: 20px;
+        margin-bottom: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--gray-200);
+        text-align: center;
+        animation: fadeInUp 0.7s ease;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .paginator a {
+        color: var(--blue-medium);
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        display: inline-block;
+        margin: 0 3px;
+        border: 1px solid var(--gray-300);
+        background: transparent;
+        font-weight: 500;
+    }
+
+    .paginator a:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        border-color: var(--blue-medium);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+
+    .paginator .this-page {
+        background: var(--primary-dark);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-weight: 600;
+        display: inline-block;
+        margin: 0 3px;
+        border: none;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Date Hierarchy Styling */
+    .xfull {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 15px 20px;
+        margin-bottom: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--gray-200);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .xfull a {
+        color: var(--blue-medium);
+        text-decoration: none;
+        padding: 4px 8px;
+        border-radius: var(--border-radius);
+        transition: all 0.3s ease;
+    }
+
+    .xfull a:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+        transform: translateY(-2px);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
         }
-        
-        #changelist-filter {
-            width: 280px;
-            margin-left: 20px;
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    /* Add animation to toolbar buttons */
+    .toolbar-buttons .addlink,
+    .toolbar-buttons .historylink,
+    .toolbar-buttons .viewsitelink,
+    .toolbar-buttons .button {
+        animation: fadeInUp 0.4s ease;
+    }
+
+    .toolbar-buttons .addlink:nth-child(1) { animation-delay: 0.1s; }
+    .toolbar-buttons .addlink:nth-child(2) { animation-delay: 0.15s; }
+    .toolbar-buttons .addlink:nth-child(3) { animation-delay: 0.2s; }
+    .toolbar-buttons .addlink:nth-child(4) { animation-delay: 0.25s; }
+    .toolbar-buttons .addlink:nth-child(5) { animation-delay: 0.3s; }
+
+    /* Desktop Design - All parts in column (stacked vertically) */
+    @media (min-width: 769px) {
+        /* Part 1: Toolbar with search and buttons */
+        .toolbar-wrapper {
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 0;
+            display: flex;
+        }
+
+        .toolbar-search {
+            flex: 1;
+            min-width: 300px;
+            max-width: 500px;
+            order: 1;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .toolbar-buttons {
+            flex-shrink: 0;
+            order: 2;
+        }
+
+        /* Part 2: Actions and Filter Bar */
+        .actions-filter-bar {
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 0;
+            display: flex;
+        }
+
+        .actions-wrapper {
+            order: 1;
+            justify-content: flex-start;
+        }
+
+        .filter-button {
+            order: 2;
             flex-shrink: 0;
         }
-        
-        #changelist #changelist-form {
-            flex: 1;
-            min-width: 0;
-        }
-    }
-    
-    /* Hide the filter by default on small screens */
-    @media (max-width: 767px) {
-        #changelist-filter {
-            display: none;
-        }
-        #changelist-filter.visible {
+
+        /* Part 3: Table Container */
+        .table-container {
+            width: 100%;
+            margin-bottom: 0;
             display: block;
         }
     }
-    
-    /* Adjust the layout for the change list */
-    #changelist {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    #changelist .actions {
-        margin: 0 0 15px 0;
-    }
-    
-    @media (min-width: 768px) {
-        #changelist {
-            flex-direction: row-reverse;
-            flex-wrap: wrap;
-            align-items: flex-start;
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        /* Full width on mobile */
+        .main.shifted > #nav-sidebar + .content {
+            width: 100% !important;
         }
-        
-        #changelist .actions {
+
+        #content {
+            margin-right: 0 !important;
+            width: 100% !important;
+        }
+
+        #content-main {
+            padding: 15px !important;
+        }
+
+        /* Part 1: Toolbar - Mobile */
+        .toolbar-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 0;
+            gap: 15px;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 15px !important;
+        }
+
+        .toolbar-search {
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
             order: 1;
-            width: 100%;
+            flex: 1 1 100%;
         }
-        
-        #changelist #toolbar {
+
+        .toolbar-buttons {
+            width: 100% !important;
+            max-width: 100% !important;
+            justify-content: flex-start;
             order: 2;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .toolbar-buttons .addlink,
+        .toolbar-buttons .historylink,
+        .toolbar-buttons .viewsitelink,
+        .toolbar-buttons .button {
+            max-width: 100%;
+            box-sizing: border-box;
+            word-wrap: break-word;
+        }
+
+        .toolbar-search form,
+        #changelist-search {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .toolbar-search input[type="text"] {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            flex: 1 1 auto;
+            box-sizing: border-box;
+        }
+
+        .toolbar-search input[type="submit"] {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* Part 2: Actions and Filter - Mobile */
+        .actions-filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 0;
+            gap: 15px;
+            box-sizing: border-box;
+            overflow: hidden;
+            padding: 15px !important;
+        }
+
+        .actions-wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+            order: 1;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .filter-button {
             width: 100%;
+            order: 2;
+            justify-content: center;
         }
-        
-        #changelist #changelist-filter {
-            order: 3;
-            width: 280px;
-            margin-left: 20px;
-            margin-right: 0;
+
+        .actions-wrapper select {
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            margin: 0;
         }
-        
-        #changelist #changelist-form {
-            order: 4;
-            flex: 1;
-            min-width: 0;
-            max-width: none;
+
+        .actions-wrapper button {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            margin-top: 10px;
         }
-        
-        .filter-toggle {
-            display: none;
+
+        .filter-popup-content {
+            width: 95%;
+            max-height: 90vh;
+        }
+
+        /* Part 3: Table - Mobile */
+        .table-container {
+            padding: 15px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        #result_list {
+            font-size: 0.85rem;
+            min-width: 600px;
+        }
+
+        #result_list thead th {
+            padding: 12px 15px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            margin: 2px 1px;
+        }
+
+        #result_list tbody td {
+            padding: 12px 15px;
+            font-size: 0.85rem;
+        }
+
+        #result_list tbody tr {
+            margin: 3px 0;
+        }
+
+        #result_list tbody td .addlink,
+        #result_list tbody td .changelink,
+        #result_list tbody td .viewlink,
+        #result_list tbody td .deletelink {
+            padding: 5px 12px;
+            font-size: 0.75rem;
+        }
+
+        .paginator {
+            padding: 12px 15px;
+            font-size: 0.85rem;
+        }
+
+        .paginator a {
+            padding: 6px 10px;
+            margin: 2px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #content-main {
+            padding: 10px !important;
+        }
+
+        .toolbar-wrapper {
+            padding: 12px 15px;
+            gap: 12px;
+        }
+
+        .toolbar-buttons {
+            gap: 8px;
+        }
+
+        .toolbar-buttons .addlink,
+        .toolbar-buttons .historylink,
+        .toolbar-buttons .viewsitelink,
+        .toolbar-buttons .button {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        .toolbar-search {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
+        }
+
+        .toolbar-search form,
+        #changelist-search {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
+        }
+
+        .toolbar-search input[type="text"] {
+            width: 100% !important;
+            max-width: 100% !important;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            box-sizing: border-box;
+        }
+
+        .toolbar-search input[type="submit"] {
+            font-size: 0.85rem;
+            padding: 8px 16px;
+            flex-shrink: 0;
+        }
+
+        .actions-wrapper {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .actions-wrapper select {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .actions-wrapper button {
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+
+        .actions-filter-bar {
+            padding: 12px 15px;
+            gap: 12px;
+        }
+
+        .filter-button {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+
+        .table-container {
+            padding: 12px;
+            border-radius: var(--border-radius);
+        }
+
+        #result_list {
+            font-size: 0.8rem;
+            min-width: 500px;
+        }
+
+        #result_list thead th {
+            padding: 10px 12px;
+            font-size: 0.75rem;
+            border-radius: 18px;
+            margin: 2px 1px;
+        }
+
+        #result_list tbody td {
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+
+        #result_list tbody tr {
+            margin: 2px 0;
+        }
+
+        #result_list tbody td .addlink,
+        #result_list tbody td .changelink,
+        #result_list tbody td .viewlink,
+        #result_list tbody td .deletelink {
+            padding: 4px 10px;
+            font-size: 0.7rem;
+        }
+
+        .paginator {
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Tablet Design */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .main.shifted > #nav-sidebar + .content {
+            width: calc(100% - 280px) !important;
+        }
+
+        #content {
+            margin-right: 280px !important;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #result_list {
+            min-width: 100%;
+        }
+    }
+
+    /* Desktop Design */
+    @media (min-width: 1025px) {
+        .main.shifted > #nav-sidebar + .content {
+            width: calc(100% - 280px) !important;
+        }
+
+        #content {
+            margin-right: 280px !important;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        #result_list {
+            width: 100% !important;
         }
     }
 </style>
@@ -130,44 +1228,79 @@
 {% block content %}
     <div id="content-main">
         <div class="module" id="changelist">
-            {% block object-tools %}
-                <ul class="object-tools">
-                    {% block object-tools-items %}
-                        {% if has_add_permission %}
-                            <li>
+            <!-- Toolbar with search and buttons -->
+            <div class="toolbar-wrapper">
+                <div class="toolbar-search">
+                    {% block search %}{% search_form cl %}{% endblock %}
+                </div>
+                <div class="toolbar-buttons">
+                    {% block object-tools %}
+                        {% block object-tools-items %}
+                            {% if has_add_permission %}
                                 {% url cl.opts|admin_urlname:'add' as add_url %}
                                 <a href="{% add_preserved_filters add_url is_popup to_field %}" class="addlink">
-                                    {% blocktranslate with cl.opts.verbose_name as name %}Add {{ name }}{% endblocktranslate %}
+                                    {% blocktranslate with cl.opts.verbose_name as name %}أضف {{ name }}{% endblocktranslate %}
                                 </a>
-                            </li>
-                        {% endif %}
-                        {% if import_export_enabled %}
-                            {% if template_url %}
-                            <li>
+                            {% endif %}
+                            {% if import_export_enabled %}
+                                {% if template_url %}
                                 <a href="{{ template_url }}" class="historylink">تحميل القالب</a>
-                            </li>
-                            {% endif %}
-                            {% if import_excel_url %}
-                            <li>
+                                {% endif %}
+                                {% if import_excel_url %}
                                 <a href="{{ import_excel_url }}" class="viewsitelink">استيراد إكسل</a>
-                            </li>
-                            {% endif %}
-                            {% if export_excel_url %}
-                            <li>
+                                {% endif %}
+                                {% if export_excel_url %}
                                 <a href="{{ export_excel_url }}" class="viewsitelink">تصدير إكسل</a>
-                            </li>
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
+                        {% endblock %}
                     {% endblock %}
-                </ul>
-            {% endblock %}
-            
-            {% block search %}{% search_form cl %}{% endblock %}
+                </div>
+            </div>
+
             {% block date_hierarchy %}{% date_hierarchy cl %}{% endblock %}
 
-            <button type="button" class="filter-toggle" id="filter-toggle">
-                {% translate 'Toggle filters' %}
-            </button>
+            <!-- Actions and Filter Bar -->
+            <div class="actions-filter-bar">
+                <div class="actions-wrapper">
+                    {% if action_form and actions_on_top and cl.show_admin_actions %}
+                        {% admin_actions %}
+                    {% endif %}
+                </div>
+                {% if cl.has_filters %}
+                <button type="button" class="filter-button" id="filter-toggle-btn">
+                    <i class="fas fa-filter"></i>
+                    الفلتر
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Filter Popup -->
+            {% if cl.has_filters %}
+            <div class="filter-popup" id="filter-popup">
+                <div class="filter-popup-content">
+                    <div class="filter-popup-header">
+                        <h2>{% translate 'Filter' %}</h2>
+                        <button type="button" class="filter-popup-close" id="filter-popup-close">
+                            &times;
+                        </button>
+                    </div>
+                    <div class="filter-popup-body" id="filter-popup-body">
+                        {% for spec in cl.filter_specs %}
+                            {% admin_list_filter cl spec %}
+                        {% endfor %}
+                    </div>
+                    <div class="filter-popup-footer">
+                        <button type="button" class="cancel-btn" id="filter-popup-cancel">
+                            إلغاء
+                        </button>
+                        <button type="button" class="apply-btn" id="filter-popup-apply">
+                            تطبيق
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <form id="changelist-form" method="post" {% if cl.formset and cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>
                 {% csrf_token %}
@@ -176,23 +1309,28 @@
                 {% endif %}
 
                 {% block result_list %}
-                    {% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}
-                    {% result_list cl %}
-                    {% if action_form and actions_on_bottom and cl.show_admin_actions %}{% admin_actions %}{% endif %}
+                    <div class="table-container">
+                        {% result_list cl %}
+                    </div>
+                    {% if action_form and actions_on_bottom and cl.show_admin_actions %}
+                        <div class="actions-filter-bar" style="margin-top: 15px;">
+                            <div class="actions-wrapper">
+                                {% admin_actions %}
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endblock %}
                 {% block pagination %}{% pagination cl %}{% endblock %}
             </form>
 
-            {% block filters %}
-                {% if cl.has_filters %}
-                    <div id="changelist-filter">
-                        <h2>{% translate 'Filter' %}</h2>
-                        {% for spec in cl.filter_specs %}
-                            {% admin_list_filter cl spec %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endblock %}
+            <!-- Hidden filter for data -->
+            {% if cl.has_filters %}
+                <div id="changelist-filter" style="display: none;">
+                    {% for spec in cl.filter_specs %}
+                        {% admin_list_filter cl spec %}
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -201,34 +1339,205 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle filter visibility
-    const filterToggle = document.getElementById('filter-toggle');
-    const filterPanel = document.getElementById('changelist-filter');
-    
-    if (filterToggle && filterPanel) {
-        filterToggle.addEventListener('click', function() {
-            filterPanel.classList.toggle('visible');
+    // Filter Popup Toggle
+    const filterToggleBtn = document.getElementById('filter-toggle-btn');
+    const filterPopup = document.getElementById('filter-popup');
+    const filterPopupClose = document.getElementById('filter-popup-close');
+    const filterPopupCancel = document.getElementById('filter-popup-cancel');
+    const filterPopupApply = document.getElementById('filter-popup-apply');
+    const filterPopupBody = document.getElementById('filter-popup-body');
+    const hiddenFilter = document.getElementById('changelist-filter');
+
+    // Copy filter content from hidden filter to popup
+    if (hiddenFilter && filterPopupBody) {
+        filterPopupBody.innerHTML = hiddenFilter.innerHTML;
+    }
+
+    // Open popup
+    if (filterToggleBtn && filterPopup) {
+        filterToggleBtn.addEventListener('click', function() {
+            filterPopup.classList.add('active');
+            document.body.style.overflow = 'hidden';
         });
     }
-    
-    // Close filter when clicking outside on mobile
-    document.addEventListener('click', function(event) {
-        if (window.innerWidth <= 767 && 
-            !filterPanel.contains(event.target) && 
-            event.target !== filterToggle) {
-            filterPanel.classList.remove('visible');
+
+    // Close popup functions
+    function closeFilterPopup() {
+        if (filterPopup) {
+            filterPopup.classList.remove('active');
+            document.body.style.overflow = '';
         }
-    });
-    
-    // Close filter when a filter is selected on mobile
-    const filterLinks = document.querySelectorAll('#changelist-filter a');
-    filterLinks.forEach(link => {
-        link.addEventListener('click', function() {
-            if (window.innerWidth <= 767) {
-                filterPanel.classList.remove('visible');
+    }
+
+    if (filterPopupClose) {
+        filterPopupClose.addEventListener('click', closeFilterPopup);
+    }
+
+    if (filterPopupCancel) {
+        filterPopupCancel.addEventListener('click', closeFilterPopup);
+    }
+
+    // Close on outside click
+    if (filterPopup) {
+        filterPopup.addEventListener('click', function(e) {
+            if (e.target === filterPopup) {
+                closeFilterPopup();
             }
         });
-    });
+    }
+
+    // Apply filter
+    if (filterPopupApply) {
+        filterPopupApply.addEventListener('click', function() {
+            // Get selected filter links
+            const selectedLinks = filterPopupBody.querySelectorAll('a.selected');
+            const filterParams = new URLSearchParams();
+            const currentUrl = new URL(window.location.href);
+
+            // Keep existing search and other important params
+            currentUrl.searchParams.forEach(function(value, key) {
+                if (key !== 'p' && !key.startsWith('_changelistfilter')) {
+                    filterParams.append(key, value);
+                }
+            });
+
+            // Collect filter values from selected links
+            selectedLinks.forEach(function(link) {
+                const href = link.getAttribute('href');
+                if (href) {
+                    try {
+                        const linkUrl = new URL(href, window.location.origin);
+                        linkUrl.searchParams.forEach(function(value, key) {
+                            if (key.startsWith('_changelistfilter')) {
+                                filterParams.set(key, value);
+                            }
+                        });
+                    } catch (e) {
+                        // If href is relative, extract params manually
+                        const match = href.match(/\?([^#]+)/);
+                        if (match) {
+                            const params = new URLSearchParams(match[1]);
+                            params.forEach(function(value, key) {
+                                if (key.startsWith('_changelistfilter')) {
+                                    filterParams.set(key, value);
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Navigate to new URL
+            currentUrl.search = filterParams.toString();
+            window.location.href = currentUrl.toString();
+        });
+    }
+
+    // Handle filter link clicks in popup
+    if (filterPopupBody) {
+        filterPopupBody.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') {
+                e.preventDefault();
+                const link = e.target;
+                const parent = link.parentElement;
+
+                // Remove selected class from siblings
+                if (parent && parent.tagName === 'LI') {
+                    const siblings = parent.parentElement.querySelectorAll('a');
+                    siblings.forEach(function(sibling) {
+                        sibling.classList.remove('selected');
+                    });
+                    link.classList.add('selected');
+                } else {
+                    // Toggle selected class
+                    link.classList.toggle('selected');
+                }
+            }
+        });
+    }
+
+    // Update filter button state
+    function updateFilterButtonState() {
+        const currentUrl = new URL(window.location.href);
+        const filterButton = document.getElementById('filter-toggle-btn');
+        let hasActiveFilters = false;
+
+        currentUrl.searchParams.forEach(function(value, key) {
+            if (key.startsWith('_changelistfilter')) {
+                hasActiveFilters = true;
+            }
+        });
+
+        if (filterButton) {
+            if (hasActiveFilters) {
+                filterButton.classList.add('active');
+            } else {
+                filterButton.classList.remove('active');
+            }
+        }
+    }
+
+    // Mark currently selected filters
+    const currentUrl = new URL(window.location.href);
+    if (filterPopupBody) {
+        const filterLinks = filterPopupBody.querySelectorAll('a');
+        const currentFilterParams = {};
+        
+        // Collect current filter params
+        currentUrl.searchParams.forEach(function(value, key) {
+            if (key.startsWith('_changelistfilter')) {
+                currentFilterParams[key] = value;
+            }
+        });
+
+        filterLinks.forEach(function(link) {
+            const href = link.getAttribute('href');
+            if (href) {
+                try {
+                    const linkUrl = new URL(href, window.location.origin);
+                    let matches = true;
+                    
+                    linkUrl.searchParams.forEach(function(value, key) {
+                        if (key.startsWith('_changelistfilter')) {
+                            if (currentFilterParams[key] !== value) {
+                                matches = false;
+                            }
+                        }
+                    });
+
+                    // Also check if this is the "All" link (no filter params)
+                    if (linkUrl.searchParams.toString() === '' && Object.keys(currentFilterParams).length === 0) {
+                        link.classList.add('selected');
+                    } else if (matches && Object.keys(currentFilterParams).length > 0) {
+                        link.classList.add('selected');
+                    }
+                } catch (e) {
+                    // If href is relative, try to match manually
+                    const match = href.match(/\?([^#]+)/);
+                    if (match) {
+                        const params = new URLSearchParams(match[1]);
+                        let matches = true;
+                        params.forEach(function(value, key) {
+                            if (key.startsWith('_changelistfilter')) {
+                                if (currentFilterParams[key] !== value) {
+                                    matches = false;
+                                }
+                            }
+                        });
+                        if (matches) {
+                            link.classList.add('selected');
+                        }
+                    } else if (Object.keys(currentFilterParams).length === 0) {
+                        // "All" link
+                        link.classList.add('selected');
+                    }
+                }
+            }
+        });
+    }
+
+    // Update filter button state on page load
+    updateFilterButtonState();
 });
 </script>
 {% endblock %}

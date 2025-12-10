@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Chip, Button, IconButton, Divider, List, ListItem, ListItemText, ListItemSecondaryAction, Tooltip, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, FormControlLabel, Switch } from '@mui/material';
-import { Edit, Delete, Add, Assessment, Quiz } from '@mui/icons-material';
+import { Edit, Delete, Add, Assessment, Quiz, People } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { examAPI } from '../../../services/exam.service';
 
@@ -463,6 +463,21 @@ const ExamDetail = () => {
             <Button 
               variant="outlined" 
               onClick={() => navigate('/teacher/exams')}
+            >
+              رجوع
+            </Button>
+            <Button
+              variant="contained"
+              color="info"
+              startIcon={<Assessment />}
+              onClick={() => navigate(`/teacher/exams/${examId}/attempts`)}
+            >
+              محاولات الاختبار
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<Edit />}
+              onClick={() => navigate(`/teacher/exams/${examId}/edit`)}
               sx={{ 
                 borderColor: 'rgba(255,255,255,0.5)', 
                 color: 'white',
@@ -470,6 +485,18 @@ const ExamDetail = () => {
               }}
             >
               عودة للقائمة
+            </Button>
+            <Button 
+              variant="contained" 
+              onClick={() => navigate(`/teacher/exams/${examId}/attempts`)}
+              startIcon={<Assessment />}
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                color: 'white',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+              }}
+            >
+              محاولات الاختبار
             </Button>
             <Button 
               variant="contained" 

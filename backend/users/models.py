@@ -1,12 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 from django_ckeditor_5.fields import CKEditor5Field
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 import os
 
 # إعدادات التطبيق
@@ -23,8 +24,11 @@ class Profile(models.Model):
     status_choices = (
         ('Admin', 'Admin'),
         ('Student', 'Student'),
+        ('DiplomaStudent', 'طالب الدبلوم'),
         ('Instructor', 'Instructor'),
-        ('Organization', 'Organization')
+        ('Organization', 'المدرس (المنظمة)'), 
+        ('CustomerService', 'خدمة عملاء'),
+        ('CertificateStaff', 'موظفين شهادات')
     )
     status = models.CharField(max_length=2000, choices=status_choices, blank=True, null=True, default='Student')
     image_profile = models.ImageField(null=True, blank=True, default='blank.png', upload_to='user_profile/')
@@ -141,6 +145,47 @@ class Student(models.Model):
         return self.profile.name
 
 
+class StudentGPA(models.Model):
+    """نموذج GPA للطلاب"""
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gpa_records', verbose_name='الطالب')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='student_gpas', null=True, blank=True, verbose_name='الكورس')
+    gpa = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(4.0)], verbose_name='GPA')
+    semester = models.CharField(max_length=50, blank=True, null=True, verbose_name='الفصل الدراسي')
+    academic_year = models.CharField(max_length=20, blank=True, null=True, verbose_name='السنة الأكاديمية')
+    notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_gpas', verbose_name='تم الإنشاء بواسطة')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    
+    class Meta:
+        verbose_name = 'GPA الطالب'
+        verbose_name_plural = 'GPA الطلاب'
+        ordering = ['-created_at']
+        unique_together = ['student', 'course', 'semester', 'academic_year']
+    
+    def __str__(self):
+        course_name = self.course.title if self.course else 'عام'
+        return f"{self.student.username} - {course_name} - GPA: {self.gpa}"
+
+
+class GPAHistory(models.Model):
+    """سجل التحديثات على GPA"""
+    gpa = models.ForeignKey(StudentGPA, on_delete=models.CASCADE, related_name='history', verbose_name='GPA')
+    old_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='GPA السابق')
+    new_gpa = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='GPA الجديد')
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='gpa_changes', verbose_name='تم التغيير بواسطة')
+    change_reason = models.TextField(blank=True, null=True, verbose_name='سبب التغيير')
+    changed_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ التغيير')
+    
+    class Meta:
+        verbose_name = 'سجل GPA'
+        verbose_name_plural = 'سجلات GPA'
+        ordering = ['-changed_at']
+    
+    def __str__(self):
+        return f"{self.gpa.student.username} - {self.old_gpa} → {self.new_gpa} ({self.changed_at})"
+
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """
@@ -193,6 +238,24 @@ def update_user_profile(sender, instance, created, **kwargs):
             logger.error(f"Error updating profile for user {instance.username}: {str(e)}")
 
 
+@receiver(post_save, sender=StudentGPA)
+def track_gpa_changes(sender, instance, created, **kwargs):
+    """تسجيل تحديثات GPA في GPAHistory"""
+    if created:
+        # عند الإنشاء
+        GPAHistory.objects.create(
+            gpa=instance,
+            old_gpa=None,
+            new_gpa=instance.gpa,
+            changed_by=instance.created_by,
+            change_reason='إنشاء جديد'
+        )
+    else:
+        # عند التحديث - نحتاج لمقارنة القيم القديمة والجديدة
+        # هذا يتطلب استخدام pre_save أيضاً
+        pass
+
+
 @receiver(post_save, sender=Profile)
 def manage_student_instructor(sender, instance, created, **kwargs):
     """
@@ -208,8 +271,21 @@ def manage_student_instructor(sender, instance, created, **kwargs):
             # حذف Instructor إذا كان موجوداً
             Instructor.objects.filter(profile=instance).delete()
             
+        elif status == 'DiplomaStudent':
+            # طالب الدبلوم - نفس صلاحيات الطالب العادي
+            Student.objects.get_or_create(profile=instance)
+            # حذف Instructor إذا كان موجوداً
+            Instructor.objects.filter(profile=instance).delete()
+            
         elif status == 'Instructor':
             # إنشاء Instructor إذا لم يكن موجوداً
+            Instructor.objects.get_or_create(profile=instance)
+            # حذف Student إذا كان موجوداً
+            Student.objects.filter(profile=instance).delete()
+            
+        elif status == 'Teacher':
+            # المدرس (المنظمة) - ليس له صلاحية إضافة/تعديل الدورة
+            # إنشاء Instructor لكن بصلاحيات محدودة
             Instructor.objects.get_or_create(profile=instance)
             # حذف Student إذا كان موجوداً
             Student.objects.filter(profile=instance).delete()
@@ -231,8 +307,60 @@ def manage_student_instructor(sender, instance, created, **kwargs):
             Student.objects.filter(profile=instance).delete()
             Instructor.objects.filter(profile=instance).delete()
             
+        elif status in ['CustomerService', 'CertificateStaff']:
+            # خدمة عملاء وموظفين شهادات - لا يحتاجون Student أو Instructor
+            Student.objects.filter(profile=instance).delete()
+            Instructor.objects.filter(profile=instance).delete()
+            
     except Exception as e:
         # تسجيل الخطأ دون إيقاف العملية
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error managing Student/Instructor for profile {instance.id}: {str(e)}")
+
+
+# Signal لتسجيل تحديثات GPA
+_gpa_old_values = {}
+
+@receiver(pre_save, sender=StudentGPA)
+def store_old_gpa(sender, instance, **kwargs):
+    """تخزين القيمة القديمة للـ GPA قبل التحديث"""
+    if instance.pk:
+        try:
+            old_instance = StudentGPA.objects.get(pk=instance.pk)
+            _gpa_old_values[instance.pk] = {
+                'gpa': old_instance.gpa,
+                'created_by': old_instance.created_by
+            }
+        except StudentGPA.DoesNotExist:
+            pass
+
+
+@receiver(post_save, sender=StudentGPA)
+def track_gpa_changes(sender, instance, created, **kwargs):
+    """تسجيل تحديثات GPA في GPAHistory"""
+    if created:
+        # عند الإنشاء
+        if instance.created_by:
+            GPAHistory.objects.create(
+                gpa=instance,
+                old_gpa=None,
+                new_gpa=instance.gpa,
+                changed_by=instance.created_by,
+                change_reason='إنشاء جديد'
+            )
+    else:
+        # عند التحديث
+        old_data = _gpa_old_values.get(instance.pk)
+        if old_data and old_data['gpa'] != instance.gpa:
+            # إنشاء سجل فقط إذا تغيرت القيمة
+            changed_by = instance.created_by if instance.created_by else old_data.get('created_by')
+            GPAHistory.objects.create(
+                gpa=instance,
+                old_gpa=old_data['gpa'],
+                new_gpa=instance.gpa,
+                changed_by=changed_by,
+                change_reason=instance.notes or 'تحديث GPA'
+            )
+        # تنظيف القيم المخزنة
+        _gpa_old_values.pop(instance.pk, None)

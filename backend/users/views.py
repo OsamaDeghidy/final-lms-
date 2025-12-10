@@ -1,5 +1,5 @@
-from rest_framework import generics, permissions, status, filters
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import generics, permissions, status, filters, viewsets
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth.models import User, Group
@@ -17,19 +17,19 @@ from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.utils import timezone
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import Profile, Student, Organization, Instructor
+from .models import Profile, Student, Organization, Instructor, StudentGPA, GPAHistory
 from courses.models import Enrollment, Course
 from .serializers import (
     ProfileSerializer, StudentSerializer, OrganizationSerializer,
     UserDetailSerializer, ProfileUpdateSerializer, UserListSerializer, UserRegistrationSerializer,
     UserLoginSerializer, PasswordChangeSerializer, CustomTokenObtainPairSerializer,
-    UserSerializer
+    UserSerializer, StudentGPASerializer, StudentGPACreateSerializer, GPAHistorySerializer
 )
 
 
@@ -714,4 +714,138 @@ def create_test_user(request):
         return Response({
             'success': False,
             'message': f'خطأ في إنشاء المستخدم: {str(e)}'
-        }) 
+        })
+
+
+# GPA Views
+class StudentGPAViewSet(viewsets.ModelViewSet):
+    """ViewSet لإدارة GPA الطلاب"""
+    queryset = StudentGPA.objects.select_related('student', 'course', 'created_by').prefetch_related('history').all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ['student', 'course', 'semester', 'academic_year']
+    search_fields = ['student__username', 'student__first_name', 'student__last_name', 'course__title']
+    ordering_fields = ['created_at', 'updated_at', 'gpa']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return StudentGPACreateSerializer
+        return StudentGPASerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        try:
+            profile = user.profile
+            if profile.status == 'Student':
+                # الطلاب يمكنهم رؤية GPA الخاص بهم فقط
+                queryset = queryset.filter(student=user)
+            elif profile.status in ['Instructor', 'Teacher', 'Organization']:
+                # المدرسون يمكنهم رؤية GPA لطلاب كورساتهم
+                courses = Course.objects.filter(instructors__profile=profile)
+                queryset = queryset.filter(course__in=courses)
+            # الأدمن يمكنهم رؤية كل شيء (لا حاجة للفلترة)
+        except AttributeError:
+            # Fallback للطريقة القديمة
+            if hasattr(user, 'student'):
+                queryset = queryset.filter(student=user)
+            elif hasattr(user, 'instructor'):
+                courses = Course.objects.filter(instructors=user.instructor)
+                queryset = queryset.filter(course__in=courses)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        user = self.request.user
+        
+        # التحقق من الصلاحيات
+        try:
+            profile = user.profile
+            is_instructor = profile.status in ['Instructor', 'Teacher', 'Organization']
+            is_admin = profile.status == 'Admin' or user.is_superuser
+            
+            if not (is_instructor or is_admin):
+                raise PermissionDenied('فقط المدرسون والأدمن يمكنهم إضافة GPA')
+            
+            # التحقق من أن المدرس يدرس الكورس
+            course = serializer.validated_data.get('course')
+            if course and is_instructor and not is_admin:
+                if not course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied('ليس لديك صلاحية لإضافة GPA لهذا الكورس')
+        except AttributeError:
+            if not (hasattr(user, 'instructor') or user.is_superuser):
+                raise PermissionDenied('فقط المدرسون والأدمن يمكنهم إضافة GPA')
+            
+            course = serializer.validated_data.get('course')
+            if course and hasattr(user, 'instructor') and not user.is_superuser:
+                if not course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied('ليس لديك صلاحية لإضافة GPA لهذا الكورس')
+        
+        # حفظ GPA مع تسجيل من أنشأه
+        gpa = serializer.save(created_by=user)
+        
+        # إنشاء سجل في GPAHistory
+        GPAHistory.objects.create(
+            gpa=gpa,
+            old_gpa=None,
+            new_gpa=gpa.gpa,
+            changed_by=user,
+            change_reason='إنشاء جديد'
+        )
+    
+    def perform_update(self, serializer):
+        instance = serializer.instance
+        old_gpa = instance.gpa
+        user = self.request.user
+        
+        # التحقق من الصلاحيات
+        try:
+            profile = user.profile
+            is_instructor = profile.status in ['Instructor', 'Teacher', 'Organization']
+            is_admin = profile.status == 'Admin' or user.is_superuser
+            
+            if not (is_instructor or is_admin):
+                raise PermissionDenied('فقط المدرسون والأدمن يمكنهم تحديث GPA')
+            
+            # التحقق من أن المدرس يدرس الكورس
+            if instance.course and is_instructor and not is_admin:
+                if not instance.course.instructors.filter(profile=profile).exists():
+                    raise PermissionDenied('ليس لديك صلاحية لتحديث GPA لهذا الكورس')
+        except AttributeError:
+            if not (hasattr(user, 'instructor') or user.is_superuser):
+                raise PermissionDenied('فقط المدرسون والأدمن يمكنهم تحديث GPA')
+            
+            if instance.course and hasattr(user, 'instructor') and not user.is_superuser:
+                if not instance.course.instructors.filter(id=user.instructor.id).exists():
+                    raise PermissionDenied('ليس لديك صلاحية لتحديث GPA لهذا الكورس')
+        
+        # تحديث GPA
+        new_gpa = serializer.validated_data.get('gpa', old_gpa)
+        serializer.save()
+        
+        # إنشاء سجل في GPAHistory إذا تغيرت القيمة
+        if old_gpa != new_gpa:
+            GPAHistory.objects.create(
+                gpa=instance,
+                old_gpa=old_gpa,
+                new_gpa=new_gpa,
+                changed_by=user,
+                change_reason=serializer.validated_data.get('notes', 'تحديث GPA')
+            )
+    
+    def perform_destroy(self, instance):
+        user = self.request.user
+        
+        # فقط الأدمن يمكنهم حذف GPA
+        try:
+            profile = user.profile
+            is_admin = profile.status == 'Admin' or user.is_superuser
+            if not is_admin:
+                raise PermissionDenied('فقط الأدمن يمكنهم حذف GPA')
+        except AttributeError:
+            if not user.is_superuser:
+                raise PermissionDenied('فقط الأدمن يمكنهم حذف GPA')
+        
+        instance.delete() 
