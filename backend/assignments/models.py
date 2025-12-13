@@ -17,17 +17,17 @@ class Quiz(models.Model):
         ('quick', 'كويز سريع'),
     ]
     
-    title = models.CharField(max_length=255, null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, null=True, blank=True, related_name='module_quizzes')
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, null=True, blank=True, related_name='course_quizzes')
-    quiz_type = models.CharField(max_length=20, choices=QUIZ_TYPE_CHOICES, default='video')
-    start_time = models.DurationField(default=timedelta(seconds=0), null=True, blank=True)
-    time_limit = models.PositiveIntegerField(help_text='Time limit in minutes', null=True, blank=True)
-    pass_mark = models.FloatField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-    is_active = models.BooleanField(default=True)
+    title = models.CharField(max_length=255, null=True, blank=True, verbose_name='العنوان')
+    description = models.TextField(null=True, blank=True, verbose_name='الوصف')
+    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, null=True, blank=True, related_name='module_quizzes', verbose_name='الوحدة')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, null=True, blank=True, related_name='course_quizzes', verbose_name='الدورة')
+    quiz_type = models.CharField(max_length=20, choices=QUIZ_TYPE_CHOICES, default='video', verbose_name='نوع الكويز')
+    start_time = models.DurationField(default=timedelta(seconds=0), null=True, blank=True, verbose_name='وقت البدء')
+    time_limit = models.PositiveIntegerField(help_text='الحد الزمني بالدقائق', null=True, blank=True, verbose_name='الحد الزمني')
+    pass_mark = models.FloatField(default=0, verbose_name='علامة النجاح')
+    created_at = models.DateTimeField(auto_now_add=True, null=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, null=True, verbose_name='تاريخ التحديث')
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
 
     def __str__(self):
         if self.module:
@@ -42,6 +42,10 @@ class Quiz(models.Model):
 
     def get_total_points(self):
         return sum(question.points for question in self.questions.all())
+    
+    class Meta:
+        verbose_name = 'كويز'
+        verbose_name_plural = 'كويزات'
 
 
 class Question(models.Model):
@@ -51,15 +55,17 @@ class Question(models.Model):
         ('short_answer', 'إجابة قصيرة'),
     ]
     
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
-    text = models.CharField(max_length=1000)
-    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='multiple_choice')
-    points = models.PositiveIntegerField(default=1)
-    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة الصحيحة')
-    image = models.ImageField(upload_to='question_images/', null=True, blank=True)
-    order = models.PositiveIntegerField(default=0)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions', verbose_name='الكويز')
+    text = models.CharField(max_length=1000, verbose_name='نص السؤال')
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='multiple_choice', verbose_name='نوع السؤال')
+    points = models.PositiveIntegerField(default=1, verbose_name='النقاط')
+    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة الصحيحة', verbose_name='الشرح')
+    image = models.ImageField(upload_to='question_images/', null=True, blank=True, verbose_name='الصورة')
+    order = models.PositiveIntegerField(default=0, verbose_name='الترتيب')
 
     class Meta:
+        verbose_name = 'سؤال'
+        verbose_name_plural = 'أسئلة'
         ordering = ['order']
 
     def __str__(self):
@@ -67,13 +73,15 @@ class Question(models.Model):
 
 
 class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
-    text = models.CharField(max_length=1000)
-    is_correct = models.BooleanField(default=False)
-    explanation = models.TextField(null=True, blank=True)
-    order = models.PositiveIntegerField(default=0)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers', verbose_name='السؤال')
+    text = models.CharField(max_length=1000, verbose_name='نص الإجابة')
+    is_correct = models.BooleanField(default=False, verbose_name='صحيحة')
+    explanation = models.TextField(null=True, blank=True, verbose_name='الشرح')
+    order = models.PositiveIntegerField(default=0, verbose_name='الترتيب')
 
     class Meta:
+        verbose_name = 'إجابة'
+        verbose_name_plural = 'إجابات'
         ordering = ['order']
 
     def __str__(self):
@@ -81,22 +89,24 @@ class Answer(models.Model):
 
 
 class QuizAttempt(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_attempts')
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
-    start_time = models.DateTimeField(auto_now_add=True)
-    end_time = models.DateTimeField(null=True, blank=True)
-    score = models.FloatField(null=True, blank=True)
-    passed = models.BooleanField(null=True, blank=True)
-    attempt_number = models.PositiveIntegerField(default=1)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_attempts', verbose_name='المستخدم')
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts', verbose_name='الكويز')
+    start_time = models.DateTimeField(auto_now_add=True, verbose_name='وقت البدء')
+    end_time = models.DateTimeField(null=True, blank=True, verbose_name='وقت الانتهاء')
+    score = models.FloatField(null=True, blank=True, verbose_name='النتيجة')
+    passed = models.BooleanField(null=True, blank=True, verbose_name='ناجح')
+    attempt_number = models.PositiveIntegerField(default=1, verbose_name='رقم المحاولة')
     
     # Manual grading fields
-    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس')
-    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟')
-    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟')
-    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_quiz_attempts', help_text='المدرس الذي عدل الدرجة')
-    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة')
+    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس', verbose_name='الدرجة المعدلة يدوياً')
+    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟', verbose_name='معدل يدوياً')
+    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟', verbose_name='الدرجة ظاهرة')
+    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_quiz_attempts', help_text='المدرس الذي عدل الدرجة', verbose_name='معدل بواسطة')
+    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة', verbose_name='تاريخ التعديل')
 
     class Meta:
+        verbose_name = 'محاولة كويز'
+        verbose_name_plural = 'محاولات الكويز'
         unique_together = ['user', 'quiz', 'attempt_number']
 
     def __str__(self):
@@ -141,38 +151,46 @@ class QuizAttempt(models.Model):
 
 
 class QuizUserAnswer(models.Model):
-    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_answer = models.ForeignKey(Answer, on_delete=models.CASCADE, null=True, blank=True)
-    text_answer = models.TextField(null=True, blank=True)  # للأسئلة ذات الإجابات القصيرة
-    is_correct = models.BooleanField(null=True, blank=True)
-    points_earned = models.FloatField(default=0)
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers', verbose_name='المحاولة')
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, verbose_name='السؤال')
+    selected_answer = models.ForeignKey(Answer, on_delete=models.CASCADE, null=True, blank=True, verbose_name='الإجابة المختارة')
+    text_answer = models.TextField(null=True, blank=True, verbose_name='الإجابة النصية')  # للأسئلة ذات الإجابات القصيرة
+    is_correct = models.BooleanField(null=True, blank=True, verbose_name='صحيحة')
+    points_earned = models.FloatField(default=0, verbose_name='النقاط المكتسبة')
+
+    class Meta:
+        verbose_name = 'إجابة كويز'
+        verbose_name_plural = 'إجابات الكويز'
 
     def __str__(self):
         return f"{self.attempt.user.username} - {self.question.text[:30]}..."
 
 
 class Exam(models.Model):
-    title = models.CharField(max_length=255)
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='exams')
-    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, null=True, blank=True, related_name='module_exams')
-    description = CKEditor5Field(null=True, blank=True)
-    time_limit = models.PositiveIntegerField(help_text='وقت الامتحان بالدقائق', null=True, blank=True)
-    pass_mark = models.FloatField(default=60.0, help_text='النسبة المئوية للنجاح')
-    is_final = models.BooleanField(default=False, help_text='هل هذا امتحان نهائي للدورة؟')
-    total_points = models.PositiveIntegerField(default=100)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    start_date = models.DateTimeField(null=True, blank=True)
-    end_date = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    allow_multiple_attempts = models.BooleanField(default=False)
-    max_attempts = models.PositiveIntegerField(default=1)
-    show_answers_after = models.BooleanField(default=False, help_text='إظهار الإجابات الصحيحة بعد الانتهاء')
-    randomize_questions = models.BooleanField(default=False)
+    title = models.CharField(max_length=255, verbose_name='العنوان')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='exams', verbose_name='الدورة')
+    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, null=True, blank=True, related_name='module_exams', verbose_name='الوحدة')
+    description = CKEditor5Field(null=True, blank=True, verbose_name='الوصف')
+    time_limit = models.PositiveIntegerField(help_text='وقت الامتحان بالدقائق', null=True, blank=True, verbose_name='الحد الزمني')
+    pass_mark = models.FloatField(default=60.0, help_text='النسبة المئوية للنجاح', verbose_name='علامة النجاح')
+    is_final = models.BooleanField(default=False, help_text='هل هذا امتحان نهائي للدورة؟', verbose_name='امتحان نهائي')
+    total_points = models.PositiveIntegerField(default=100, verbose_name='إجمالي النقاط')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    start_date = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ البدء')
+    end_date = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ الانتهاء')
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
+    allow_multiple_attempts = models.BooleanField(default=False, verbose_name='السماح بمحاولات متعددة')
+    max_attempts = models.PositiveIntegerField(default=1, verbose_name='الحد الأقصى للمحاولات')
+    show_answers_after = models.BooleanField(default=False, help_text='إظهار الإجابات الصحيحة بعد الانتهاء', verbose_name='إظهار الإجابات بعد الانتهاء')
+    randomize_questions = models.BooleanField(default=False, verbose_name='ترتيب الأسئلة عشوائياً')
 
     def __str__(self):
         return f"{self.course.title} - {self.title}"
+    
+    class Meta:
+        verbose_name = 'امتحان'
+        verbose_name_plural = 'امتحانات'
 
 
 class ExamQuestion(models.Model):
@@ -182,15 +200,17 @@ class ExamQuestion(models.Model):
         ('short_answer', 'إجابة قصيرة'),
     ]
     
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='questions')
-    text = models.TextField()
-    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='multiple_choice')
-    points = models.PositiveIntegerField(default=1)
-    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة الصحيحة')
-    image = models.ImageField(upload_to='exam_question_images/', null=True, blank=True)
-    order = models.PositiveIntegerField(default=0)
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='questions', verbose_name='الامتحان')
+    text = models.TextField(verbose_name='نص السؤال')
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='multiple_choice', verbose_name='نوع السؤال')
+    points = models.PositiveIntegerField(default=1, verbose_name='النقاط')
+    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة الصحيحة', verbose_name='الشرح')
+    image = models.ImageField(upload_to='exam_question_images/', null=True, blank=True, verbose_name='الصورة')
+    order = models.PositiveIntegerField(default=0, verbose_name='الترتيب')
 
     class Meta:
+        verbose_name = 'سؤال امتحان'
+        verbose_name_plural = 'أسئلة الامتحان'
         ordering = ['order']
 
     def __str__(self):
@@ -198,13 +218,15 @@ class ExamQuestion(models.Model):
 
 
 class ExamAnswer(models.Model):
-    question = models.ForeignKey(ExamQuestion, on_delete=models.CASCADE, related_name='answers')
-    text = models.CharField(max_length=1000)
-    is_correct = models.BooleanField(default=False)
-    explanation = models.TextField(null=True, blank=True)
-    order = models.PositiveIntegerField(default=0)
+    question = models.ForeignKey(ExamQuestion, on_delete=models.CASCADE, related_name='answers', verbose_name='السؤال')
+    text = models.CharField(max_length=1000, verbose_name='نص الإجابة')
+    is_correct = models.BooleanField(default=False, verbose_name='صحيحة')
+    explanation = models.TextField(null=True, blank=True, verbose_name='الشرح')
+    order = models.PositiveIntegerField(default=0, verbose_name='الترتيب')
 
     class Meta:
+        verbose_name = 'إجابة امتحان'
+        verbose_name_plural = 'إجابات الامتحان'
         ordering = ['order']
 
     def __str__(self):
@@ -212,22 +234,24 @@ class ExamAnswer(models.Model):
 
 
 class UserExamAttempt(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exam_attempts')
-    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts')
-    start_time = models.DateTimeField(auto_now_add=True)
-    end_time = models.DateTimeField(null=True, blank=True)
-    score = models.FloatField(null=True, blank=True)
-    passed = models.BooleanField(null=True, blank=True)
-    attempt_number = models.PositiveIntegerField(default=1)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exam_attempts', verbose_name='المستخدم')
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts', verbose_name='الامتحان')
+    start_time = models.DateTimeField(auto_now_add=True, verbose_name='وقت البدء')
+    end_time = models.DateTimeField(null=True, blank=True, verbose_name='وقت الانتهاء')
+    score = models.FloatField(null=True, blank=True, verbose_name='النتيجة')
+    passed = models.BooleanField(null=True, blank=True, verbose_name='ناجح')
+    attempt_number = models.PositiveIntegerField(default=1, verbose_name='رقم المحاولة')
     
     # Manual grading fields
-    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس')
-    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟')
-    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟')
-    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_exam_attempts', help_text='المدرس الذي عدل الدرجة')
-    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة')
+    manual_grade = models.FloatField(null=True, blank=True, help_text='الدرجة المعدلة يدوياً من المدرس', verbose_name='الدرجة المعدلة يدوياً')
+    is_manually_graded = models.BooleanField(default=False, help_text='هل تم تعديل الدرجة يدوياً؟', verbose_name='معدل يدوياً')
+    is_grade_visible = models.BooleanField(default=False, help_text='هل الدرجة ظاهرة للطالب؟', verbose_name='الدرجة ظاهرة')
+    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_exam_attempts', help_text='المدرس الذي عدل الدرجة', verbose_name='معدل بواسطة')
+    graded_at = models.DateTimeField(null=True, blank=True, help_text='تاريخ تعديل الدرجة', verbose_name='تاريخ التعديل')
 
     class Meta:
+        verbose_name = 'محاولة امتحان'
+        verbose_name_plural = 'محاولات الامتحان'
         unique_together = ['user', 'exam', 'attempt_number']
 
     def __str__(self):
@@ -272,38 +296,42 @@ class UserExamAttempt(models.Model):
 
 
 class UserExamAnswer(models.Model):
-    attempt = models.ForeignKey(UserExamAttempt, on_delete=models.CASCADE, related_name='answers')
-    question = models.ForeignKey(ExamQuestion, on_delete=models.CASCADE)
-    selected_answer = models.ForeignKey(ExamAnswer, on_delete=models.CASCADE, null=True, blank=True)
-    text_answer = models.TextField(null=True, blank=True)  # للأسئلة ذات الإجابات القصيرة
-    is_correct = models.BooleanField(null=True, blank=True)
-    points_earned = models.FloatField(default=0)
+    attempt = models.ForeignKey(UserExamAttempt, on_delete=models.CASCADE, related_name='answers', verbose_name='المحاولة')
+    question = models.ForeignKey(ExamQuestion, on_delete=models.CASCADE, verbose_name='السؤال')
+    selected_answer = models.ForeignKey(ExamAnswer, on_delete=models.CASCADE, null=True, blank=True, verbose_name='الإجابة المختارة')
+    text_answer = models.TextField(null=True, blank=True, verbose_name='الإجابة النصية')  # للأسئلة ذات الإجابات القصيرة
+    is_correct = models.BooleanField(null=True, blank=True, verbose_name='صحيحة')
+    points_earned = models.FloatField(default=0, verbose_name='النقاط المكتسبة')
+
+    class Meta:
+        verbose_name = 'إجابة امتحان'
+        verbose_name_plural = 'إجابات الامتحان'
 
     def __str__(self):
         return f"{self.attempt.user.username} - {self.question.text[:30]}..."
 
 
 class Assignment(models.Model):
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='assignments')
-    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, related_name='assignments', null=True, blank=True)
+    title = models.CharField(max_length=200, verbose_name='العنوان')
+    description = models.TextField(verbose_name='الوصف')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='assignments', verbose_name='الدورة')
+    module = models.ForeignKey('content.Module', on_delete=models.CASCADE, related_name='assignments', null=True, blank=True, verbose_name='الوحدة')
     
     # Assignment settings
-    due_date = models.DateTimeField()
-    points = models.DecimalField(max_digits=5, decimal_places=2, default=100)
-    allow_late_submissions = models.BooleanField(default=False)
-    late_submission_penalty = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    due_date = models.DateTimeField(verbose_name='تاريخ الاستحقاق')
+    points = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='النقاط')
+    allow_late_submissions = models.BooleanField(default=False, verbose_name='السماح بالتسليم المتأخر')
+    late_submission_penalty = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='عقوبة التسليم المتأخر')
     
     # Assignment type and content
-    has_questions = models.BooleanField(default=False, help_text='هل يحتوي الواجب على أسئلة؟')
-    has_file_upload = models.BooleanField(default=False, help_text='هل يسمح برفع ملفات؟')
-    assignment_file = models.FileField(upload_to='assignment_files/', null=True, blank=True, help_text='ملف الواجب المرفق')
+    has_questions = models.BooleanField(default=False, help_text='هل يحتوي الواجب على أسئلة؟', verbose_name='يحتوي على أسئلة')
+    has_file_upload = models.BooleanField(default=False, help_text='هل يسمح برفع ملفات؟', verbose_name='يسمح برفع ملفات')
+    assignment_file = models.FileField(upload_to='assignment_files/', null=True, blank=True, help_text='ملف الواجب المرفق', verbose_name='ملف الواجب')
     
     # Status and metadata
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
     
     def __str__(self):
         return f"{self.title} - {self.course.title}"
@@ -330,6 +358,8 @@ class Assignment(models.Model):
         return self.has_file_upload or any(q.question_type == 'file_upload' for q in self.questions.all())
     
     class Meta:
+        verbose_name = 'واجب'
+        verbose_name_plural = 'واجبات'
         ordering = ['-created_at']
 
 
@@ -342,16 +372,18 @@ class AssignmentQuestion(models.Model):
         ('file_upload', 'رفع ملف'),
     ]
     
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='questions')
-    text = models.TextField(help_text='نص السؤال')
-    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='essay')
-    points = models.PositiveIntegerField(default=1, help_text='الدرجة المخصصة لهذا السؤال')
-    explanation = models.TextField(null=True, blank=True, help_text='شرح السؤال أو الإجابة النموذجية')
-    image = models.ImageField(upload_to='assignment_question_images/', null=True, blank=True, help_text='صورة توضيحية للسؤال')
-    order = models.PositiveIntegerField(default=0, help_text='ترتيب السؤال')
-    is_required = models.BooleanField(default=True, help_text='هل السؤال إجباري؟')
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='questions', verbose_name='الواجب')
+    text = models.TextField(help_text='نص السؤال', verbose_name='نص السؤال')
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='essay', verbose_name='نوع السؤال')
+    points = models.PositiveIntegerField(default=1, help_text='الدرجة المخصصة لهذا السؤال', verbose_name='النقاط')
+    explanation = models.TextField(null=True, blank=True, help_text='شرح السؤال أو الإجابة النموذجية', verbose_name='الشرح')
+    image = models.ImageField(upload_to='assignment_question_images/', null=True, blank=True, help_text='صورة توضيحية للسؤال', verbose_name='الصورة')
+    order = models.PositiveIntegerField(default=0, help_text='ترتيب السؤال', verbose_name='الترتيب')
+    is_required = models.BooleanField(default=True, help_text='هل السؤال إجباري؟', verbose_name='إجباري')
     
     class Meta:
+        verbose_name = 'سؤال واجب'
+        verbose_name_plural = 'أسئلة الواجبات'
         ordering = ['order']
     
     def __str__(self):
@@ -359,13 +391,15 @@ class AssignmentQuestion(models.Model):
 
 
 class AssignmentAnswer(models.Model):
-    question = models.ForeignKey(AssignmentQuestion, on_delete=models.CASCADE, related_name='answers')
-    text = models.CharField(max_length=1000, help_text='نص الإجابة')
-    is_correct = models.BooleanField(default=False, help_text='هل هذه الإجابة صحيحة؟')
-    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة')
-    order = models.PositiveIntegerField(default=0, help_text='ترتيب الإجابة')
+    question = models.ForeignKey(AssignmentQuestion, on_delete=models.CASCADE, related_name='answers', verbose_name='السؤال')
+    text = models.CharField(max_length=1000, help_text='نص الإجابة', verbose_name='نص الإجابة')
+    is_correct = models.BooleanField(default=False, help_text='هل هذه الإجابة صحيحة؟', verbose_name='صحيحة')
+    explanation = models.TextField(null=True, blank=True, help_text='شرح الإجابة', verbose_name='الشرح')
+    order = models.PositiveIntegerField(default=0, help_text='ترتيب الإجابة', verbose_name='الترتيب')
     
     class Meta:
+        verbose_name = 'إجابة واجب'
+        verbose_name_plural = 'إجابات الواجبات'
         ordering = ['order']
     
     def __str__(self):
@@ -379,23 +413,23 @@ class AssignmentSubmission(models.Model):
         ('returned', 'مُعاد للمراجعة'),
     ]
     
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignment_submissions')
-    submission_text = models.TextField(blank=True, help_text='النص المكتوب للإجابة')
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions', verbose_name='الواجب')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assignment_submissions', verbose_name='المستخدم')
+    submission_text = models.TextField(blank=True, help_text='النص المكتوب للإجابة', verbose_name='نص التسليم')
     
     # File submission
-    submitted_file = models.FileField(upload_to='assignment_submissions/', null=True, blank=True, help_text='الملف المرفوع')
+    submitted_file = models.FileField(upload_to='assignment_submissions/', null=True, blank=True, help_text='الملف المرفوع', verbose_name='الملف المرفوع')
     
     # Grading
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
-    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    feedback = models.TextField(blank=True)
-    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_assignments')
-    graded_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted', verbose_name='الحالة')
+    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='الدرجة')
+    feedback = models.TextField(blank=True, verbose_name='التعليقات')
+    graded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='graded_assignments', verbose_name='معدل بواسطة')
+    graded_at = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ التقييم')
     
     # Submission tracking
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    is_late = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ التسليم')
+    is_late = models.BooleanField(default=False, verbose_name='متأخر')
     
     def save(self, *args, **kwargs):
         if not self.pk:  # Only on creation
@@ -406,18 +440,24 @@ class AssignmentSubmission(models.Model):
         return f"{self.assignment.title} - {self.user.username}"
     
     class Meta:
+        verbose_name = 'تسليم واجب'
+        verbose_name_plural = 'تسليمات الواجبات'
         unique_together = ['assignment', 'user']
         ordering = ['-submitted_at']
 
 
 class AssignmentQuestionResponse(models.Model):
-    submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='question_responses')
-    question = models.ForeignKey(AssignmentQuestion, on_delete=models.CASCADE)
-    text_answer = models.TextField(null=True, blank=True, help_text='الإجابة النصية')
-    selected_answer = models.ForeignKey(AssignmentAnswer, on_delete=models.CASCADE, null=True, blank=True, help_text='الإجابة المختارة')
-    file_answer = models.FileField(upload_to='assignment_question_files/', null=True, blank=True, help_text='الملف المرفوع كإجابة')
-    points_earned = models.FloatField(default=0, help_text='الدرجة المكتسبة')
-    feedback = models.TextField(blank=True, help_text='ملاحظات المدرس على الإجابة')
+    submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='question_responses', verbose_name='التسليم')
+    question = models.ForeignKey(AssignmentQuestion, on_delete=models.CASCADE, verbose_name='السؤال')
+    text_answer = models.TextField(null=True, blank=True, help_text='الإجابة النصية', verbose_name='الإجابة النصية')
+    selected_answer = models.ForeignKey(AssignmentAnswer, on_delete=models.CASCADE, null=True, blank=True, help_text='الإجابة المختارة', verbose_name='الإجابة المختارة')
+    file_answer = models.FileField(upload_to='assignment_question_files/', null=True, blank=True, help_text='الملف المرفوع كإجابة', verbose_name='الملف المرفوع')
+    points_earned = models.FloatField(default=0, help_text='الدرجة المكتسبة', verbose_name='الدرجة المكتسبة')
+    feedback = models.TextField(blank=True, help_text='ملاحظات المدرس على الإجابة', verbose_name='التعليقات')
+    
+    class Meta:
+        verbose_name = 'إجابة سؤال واجب'
+        verbose_name_plural = 'إجابات أسئلة الواجبات'
     
     def __str__(self):
         return f"{self.submission.user.username} - {self.question.text[:30]}..."

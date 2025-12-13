@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import Notification
-from users.models import Profile
+from .models import Notification, BannerNotification, AttendancePenalty, StudentAttendance
+from users.models import Profile, Student, Instructor
 from courses.models import Course
 from django.contrib.auth.models import User
 
@@ -243,4 +243,151 @@ class NotificationFilterSerializer(serializers.Serializer):
                 'date_to': "تاريخ النهاية يجب أن يكون بعد تاريخ البداية"
             })
         
-        return data 
+        return data
+
+
+class BannerNotificationSerializer(serializers.ModelSerializer):
+    """Serializer for BannerNotification"""
+    created_by_name = serializers.CharField(source='created_by.profile.name', read_only=True)
+    is_currently_active = serializers.SerializerMethodField()
+    target_students_count = serializers.SerializerMethodField()
+    target_divisions_count = serializers.SerializerMethodField()
+    target_instructors_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = BannerNotification
+        fields = [
+            'id', 'title', 'message', 'notification_type', 'target_pages',
+            'text_color', 'background_color', 'target_type',
+            'is_active', 'start_date', 'end_date', 'send_email',
+            'created_by', 'created_by_name', 'created_at', 'updated_at',
+            'is_currently_active', 'target_students_count', 'target_divisions_count',
+            'target_instructors_count'
+        ]
+        read_only_fields = ['created_by', 'created_at', 'updated_at']
+    
+    def get_is_currently_active(self, obj):
+        return obj.is_currently_active()
+    
+    def get_target_students_count(self, obj):
+        return obj.target_students.count()
+    
+    def get_target_divisions_count(self, obj):
+        return obj.target_divisions.count()
+    
+    def get_target_instructors_count(self, obj):
+        return obj.target_instructors.count()
+
+
+class BannerNotificationCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating BannerNotification"""
+    target_student_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True
+    )
+    target_division_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True
+    )
+    target_instructor_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        allow_empty=True
+    )
+    
+    class Meta:
+        model = BannerNotification
+        fields = [
+            'title', 'message', 'notification_type', 'target_pages',
+            'text_color', 'background_color', 'target_type',
+            'is_active', 'start_date', 'end_date', 'send_email',
+            'target_student_ids', 'target_division_ids', 'target_instructor_ids'
+        ]
+    
+    def validate_text_color(self, value):
+        """Validate hex color format"""
+        if not value.startswith('#'):
+            raise serializers.ValidationError('لون النص يجب أن يكون بصيغة HEX مثل #000000')
+        if len(value) != 7:
+            raise serializers.ValidationError('لون النص غير صحيح')
+        return value
+    
+    def validate_background_color(self, value):
+        """Validate hex color format"""
+        if not value.startswith('#'):
+            raise serializers.ValidationError('لون الخلفية يجب أن يكون بصيغة HEX مثل #FFFFFF')
+        if len(value) != 7:
+            raise serializers.ValidationError('لون الخلفية غير صحيح')
+        return value
+    
+    def create(self, validated_data):
+        target_student_ids = validated_data.pop('target_student_ids', [])
+        target_division_ids = validated_data.pop('target_division_ids', [])
+        target_instructor_ids = validated_data.pop('target_instructor_ids', [])
+        
+        validated_data['created_by'] = self.context['request'].user
+        banner = BannerNotification.objects.create(**validated_data)
+        
+        if target_student_ids:
+            banner.target_students.set(Student.objects.filter(id__in=target_student_ids))
+        if target_division_ids:
+            from divisions.models import Division
+            banner.target_divisions.set(Division.objects.filter(id__in=target_division_ids))
+        if target_instructor_ids:
+            banner.target_instructors.set(Instructor.objects.filter(id__in=target_instructor_ids))
+        
+        return banner
+
+
+class AttendancePenaltySerializer(serializers.ModelSerializer):
+    """Serializer for AttendancePenalty"""
+    instructor_name = serializers.CharField(source='instructor.profile.name', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    
+    class Meta:
+        model = AttendancePenalty
+        fields = [
+            'id', 'instructor', 'instructor_name', 'course', 'course_title',
+            'max_absences', 'warning_threshold', 'penalty_message', 'warning_message',
+            'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class AttendancePenaltyCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating AttendancePenalty"""
+    
+    class Meta:
+        model = AttendancePenalty
+        fields = [
+            'instructor', 'course', 'max_absences', 'warning_threshold',
+            'penalty_message', 'warning_message', 'is_active'
+        ]
+    
+    def validate(self, data):
+        warning_threshold = data.get('warning_threshold')
+        max_absences = data.get('max_absences')
+        
+        if warning_threshold and warning_threshold >= max_absences:
+            raise serializers.ValidationError({
+                'warning_threshold': 'عتبة التحذير يجب أن تكون أقل من الحد الأقصى للغيابات'
+            })
+        
+        return data
+
+
+class StudentAttendanceSerializer(serializers.ModelSerializer):
+    """Serializer for StudentAttendance"""
+    student_name = serializers.CharField(source='student.profile.name', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    
+    class Meta:
+        model = StudentAttendance
+        fields = [
+            'id', 'student', 'student_name', 'course', 'course_title',
+            'absences_count', 'last_absence_date', 'penalty_sent', 'warning_sent',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at', 'penalty_sent', 'warning_sent'] 

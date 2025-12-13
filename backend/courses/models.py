@@ -14,23 +14,23 @@ User = get_user_model()
 
 class Category(models.Model):
     """Course categories for organizing courses"""
-    name = models.CharField(max_length=255, verbose_name=_('Name'))
+    name = models.CharField(max_length=255, verbose_name='الاسم')
     slug = models.SlugField(max_length=255, unique=True, blank=True, null=True)
-    description = models.TextField(blank=True, null=True, verbose_name=_('Description'))
-    image = models.ImageField(upload_to='categories/', blank=True, null=True, verbose_name=_('Image'))
-    is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
-    is_default = models.BooleanField(default=False, verbose_name=_('Is Default Category'), help_text=_('Default categories cannot be deleted'))
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created At'))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Updated At'))
-    order = models.PositiveIntegerField(default=0, verbose_name=_('Order'))
+    description = models.TextField(blank=True, null=True, verbose_name='الوصف')
+    image = models.ImageField(upload_to='categories/', blank=True, null=True, verbose_name='الصورة')
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
+    is_default = models.BooleanField(default=False, verbose_name='فئة افتراضية', help_text='لا يمكن حذف الفئات الافتراضية')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    order = models.PositiveIntegerField(default=0, verbose_name='الترتيب')
 
     class Meta:
-        verbose_name = _('Category')
-        verbose_name_plural = _('Categories')
+        verbose_name = 'فئة'
+        verbose_name_plural = 'فئات'
         ordering = ['order', 'name']
 
     def __str__(self):
-        return self.name or _('Unnamed Category')
+        return self.name or 'فئة بدون اسم'
 
     def save(self, *args, **kwargs):
         if not self.slug and self.name:
@@ -146,15 +146,15 @@ class Course(models.Model):
     # Basic Information
     title = models.CharField(
         max_length=200, 
-        verbose_name=_('Title'),
+        verbose_name='العنوان',
         null=True, 
         blank=True,
-        default="Untitled Course"
+        default="دورة بدون عنوان"
     )
-    slug = models.SlugField(max_length=200, unique=True, blank=True, null=True, verbose_name=_('Slug'))
-    subtitle = models.CharField(max_length=255, blank=True, null=True, verbose_name=_('Subtitle'))
-    description = CKEditor5Field(verbose_name=_('Description'))
-    short_description = models.TextField(blank=True, null=True, verbose_name=_('Short Description'))
+    slug = models.SlugField(max_length=200, unique=True, blank=True, null=True, verbose_name='الرابط')
+    subtitle = models.CharField(max_length=255, blank=True, null=True, verbose_name='العنوان الفرعي')
+    description = CKEditor5Field(verbose_name='الوصف')
+    short_description = models.TextField(blank=True, null=True, verbose_name='الوصف المختصر')
     
     # Relationships
     category = models.ForeignKey(
@@ -163,24 +163,24 @@ class Course(models.Model):
         null=True,
         blank=True,
         related_name='courses',
-        verbose_name=_('Category')
+        verbose_name='الفئة'
     )
     tags = models.ManyToManyField(
         Tag,
         related_name='courses',
         blank=True,
-        verbose_name=_('Tags')
+        verbose_name='الوسوم'
     )
     instructors = models.ManyToManyField(
         'users.Instructor',
         related_name='courses_taught',
-        verbose_name=_('Instructors')
+        verbose_name='المدربون'
     )
     students = models.ManyToManyField(
         User,
         related_name='enrolled_courses',
         through='Enrollment',
-        verbose_name=_('Students')
+        verbose_name='الطلاب'
     )
     organization = models.ForeignKey(
         'users.Organization',
@@ -188,7 +188,7 @@ class Course(models.Model):
         null=True,
         blank=True,
         related_name='courses',
-        verbose_name=_('Organization')
+        verbose_name='المنظمة'
     )
     
     # Media
@@ -196,26 +196,26 @@ class Course(models.Model):
         upload_to='courses/images/',
         null=True,
         blank=True,
-        verbose_name=_('Course Image')
+        verbose_name='صورة الدورة'
     )
     promotional_video = models.URLField(
         blank=True,
         null=True,
-        verbose_name=_('Promotional Video URL')
+        verbose_name='رابط الفيديو الترويجي'
     )
     syllabus_pdf = models.FileField(
         upload_to='courses/syllabus/', 
         null=True, 
         blank=True, 
-        verbose_name=_('Syllabus PDF'),
-        help_text=_('Upload course syllabus PDF')
+        verbose_name='ملف المنهج PDF',
+        help_text='رفع ملف المنهج الدراسي PDF'
     )
     materials_pdf = models.FileField(
         upload_to='courses/materials/', 
         null=True, 
         blank=True, 
-        verbose_name=_('Course Materials'),
-        help_text=_('Upload additional course materials PDF')
+        verbose_name='مواد الدورة',
+        help_text='رفع مواد إضافية للدورة PDF'
     )
     
     # Course Details
@@ -224,7 +224,7 @@ class Course(models.Model):
         choices=LEVEL_CHOICES,
         blank=True,
         null=True,
-        verbose_name=_('Difficulty Level')
+        verbose_name='مستوى الصعوبة'
     )
     
     # Pricing
@@ -232,62 +232,62 @@ class Course(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name=_('Price')
+        verbose_name='السعر'
     )
     discount_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name=_('Discount Price')
+        verbose_name='سعر الخصم'
     )
-    is_free = models.BooleanField(default=False, verbose_name=_('Is Free'))
+    is_free = models.BooleanField(default=False, verbose_name='مجاني')
     
     # Status and Metadata
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='draft',
-        verbose_name=_('Status')
+        verbose_name='الحالة'
     )
     is_complete_course = models.BooleanField(
         default=True,
-        verbose_name=_('Is Complete Course'),
-        help_text='Check if this is a complete course with full content. Uncheck if this is just a course announcement/preview.'
+        verbose_name='دورة كاملة',
+        help_text='حدد إذا كانت هذه دورة كاملة بمحتوى كامل. ألغِ التحديد إذا كانت مجرد إعلان/معاينة للدورة.'
     )
-    is_featured = models.BooleanField(default=False, verbose_name=_('Is Featured'))
-    is_certified = models.BooleanField(default=False, verbose_name=_('Offers Certificate'))
-    is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
+    is_featured = models.BooleanField(default=False, verbose_name='مميز')
+    is_certified = models.BooleanField(default=False, verbose_name='يقدم شهادة')
+    is_active = models.BooleanField(default=True, verbose_name='نشط')
     
     # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_('Created At'))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_('Updated At'))
-    published_at = models.DateTimeField(null=True, blank=True, verbose_name=_('Published At'))
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    published_at = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ النشر')
     
     # Statistics (denormalized for performance)
     average_rating = models.FloatField(
         default=0.0,
         validators=[MinValueValidator(0.0), MaxValueValidator(5.0)],
-        verbose_name=_('Average Rating')
+        verbose_name='التقييم المتوسط'
     )
-    total_enrollments = models.PositiveIntegerField(default=0, verbose_name=_('Total Enrollments'))
+    total_enrollments = models.PositiveIntegerField(default=0, verbose_name='إجمالي التسجيلات')
     
     # SEO Fields
     meta_title = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        verbose_name=_('Meta Title')
+        verbose_name='عنوان SEO'
     )
     meta_description = models.TextField(
         blank=True,
         null=True,
-        verbose_name=_('Meta Description')
+        verbose_name='وصف SEO'
     )
     
     class Meta:
-        verbose_name = _('Course')
-        verbose_name_plural = _('Courses')
+        verbose_name = 'دورة'
+        verbose_name_plural = 'دورات'
         ordering = ['-created_at']
         permissions = [
             ('can_publish_course', 'Can publish course'),
@@ -410,64 +410,64 @@ class Enrollment(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='course_enrollments',
-        verbose_name=_('Student')
+        verbose_name='الطالب'
     )
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,
         related_name='enrollments',
-        verbose_name=_('Course')
+        verbose_name='الدورة'
     )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='active',
-        verbose_name=_('Status')
+        verbose_name='الحالة'
     )
     enrollment_date = models.DateTimeField(
         auto_now_add=True,
-        verbose_name=_('Enrollment Date')
+        verbose_name='تاريخ التسجيل'
     )
     completion_date = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name=_('Completion Date')
+        verbose_name='تاريخ الإكمال'
     )
     last_accessed = models.DateTimeField(
         auto_now=True,
-        verbose_name=_('Last Accessed')
+        verbose_name='آخر وصول'
     )
     progress = models.FloatField(
         default=0,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
-        verbose_name=_('Progress %')
+        verbose_name='التقدم %'
     )
     is_paid = models.BooleanField(
         default=False,
-        verbose_name=_('Is Paid')
+        verbose_name='مدفوع'
     )
     payment_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        verbose_name=_('Payment Amount')
+        verbose_name='مبلغ الدفع'
     )
     payment_date = models.DateTimeField(
         null=True,
         blank=True,
-        verbose_name=_('Payment Date')
+        verbose_name='تاريخ الدفع'
     )
     transaction_id = models.CharField(
         max_length=255,
         blank=True,
         null=True,
-        verbose_name=_('Transaction ID')
+        verbose_name='رقم المعاملة'
     )
     
     class Meta:
-        verbose_name = _('Enrollment')
-        verbose_name_plural = _('Enrollments')
+        verbose_name = 'تسجيل'
+        verbose_name_plural = 'التسجيلات'
         unique_together = ('student', 'course')
         ordering = ['-enrollment_date']
     

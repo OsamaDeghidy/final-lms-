@@ -32,7 +32,7 @@ class ModuleProgressInline(admin.StackedInline):
     
     def get_completion_percentage(self, obj):
         return f"{obj.get_completion_percentage()}%"
-    get_completion_percentage.short_description = 'Progress'
+    get_completion_percentage.short_description = 'التقدم'
 
 
 @admin.register(Module)
@@ -55,17 +55,17 @@ class ModuleAdmin(ImportExportAdminMixin, admin.ModelAdmin):
                 'name', 'course', 'description', 'status', 'is_active', 'order'
             ]
         }),
-        ('Content', {
+        ('المحتوى', {
             'fields': [
                 'video', 'video_duration', 'pdf', 'note'
             ]
         }),
-        ('Relations', {
+        ('العلاقات', {
             'fields': [
                 'prerequisites'
             ]
         }),
-        ('Timestamps', {
+        ('التواريخ', {
             'fields': [
                 'created_at', 'updated_at', 'published_at'
             ],
@@ -75,7 +75,7 @@ class ModuleAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     
     def lesson_count(self, obj):
         return obj.lessons.count()
-    lesson_count.short_description = 'Lessons'
+    lesson_count.short_description = 'الدروس'
 
 
 class LessonResourceInline(admin.TabularInline):
@@ -112,13 +112,13 @@ class LessonAdmin(ImportExportAdminMixin, admin.ModelAdmin):
                 'lesson_type', 'difficulty'
             ]
         }),
-        ('Settings', {
+        ('الإعدادات', {
             'fields': [
                 'order', 'is_active', 'is_free', 'requires_completion',
                 'duration_minutes', 'video_url'
             ]
         }),
-        ('Timestamps', {
+        ('التواريخ', {
             'fields': [
                 'created_at', 'updated_at', 'published_at'
             ],
@@ -128,7 +128,7 @@ class LessonAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     
     def resource_count(self, obj):
         return obj.lesson_resources.count()
-    resource_count.short_description = 'Resources'
+    resource_count.short_description = 'الموارد'
 
 
 @admin.register(UserProgress)
@@ -170,7 +170,7 @@ class ModuleProgressAdmin(admin.ModelAdmin):
                 'user', 'module', 'status'
             ]
         }),
-        ('Progress', {
+        ('التقدم', {
             'fields': [
                 'video_watched', 'video_progress', 'video_last_position',
                 'pdf_viewed', 'pdf_last_page',
@@ -178,13 +178,13 @@ class ModuleProgressAdmin(admin.ModelAdmin):
                 'quiz_completed', 'quiz_score'
             ]
         }),
-        ('Completion', {
+        ('الإكمال', {
             'fields': [
                 'is_completed', 'get_completion_percentage',
                 'started_at', 'last_accessed', 'completed_at'
             ]
         }),
-        ('Metadata', {
+        ('البيانات الوصفية', {
             'fields': [
                 'completion_requirements', 'metadata'
             ],
@@ -194,7 +194,7 @@ class ModuleProgressAdmin(admin.ModelAdmin):
     
     def completion_percentage(self, obj):
         return f"{obj.get_completion_percentage()}%"
-    completion_percentage.short_description = 'Progress'
+    completion_percentage.short_description = 'التقدم'
     completion_percentage.admin_order_field = 'get_completion_percentage'
 
 
@@ -244,4 +244,4 @@ class LessonResourceAdmin(admin.ModelAdmin):
     
     def file_extension(self, obj):
         return obj.file_extension.upper() if obj.file_extension else 'N/A'
-    file_extension.short_description = 'File Type'
+    file_extension.short_description = 'نوع الملف'

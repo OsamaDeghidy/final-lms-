@@ -56,6 +56,8 @@ class QuestionInline(admin.TabularInline):
     extra = 1
     fields = ('text', 'question_type', 'points', 'order')
     ordering = ('order',)
+    verbose_name = 'سؤال'
+    verbose_name_plural = 'أسئلة'
 
 
 class AnswerInline(admin.TabularInline):
@@ -63,6 +65,8 @@ class AnswerInline(admin.TabularInline):
     extra = 2
     fields = ('text', 'is_correct', 'order')
     ordering = ('order',)
+    verbose_name = 'إجابة'
+    verbose_name_plural = 'إجابات'
 
 
 class ExamQuestionInline(admin.TabularInline):
@@ -70,6 +74,8 @@ class ExamQuestionInline(admin.TabularInline):
     extra = 1
     fields = ('text', 'question_type', 'points', 'order')
     ordering = ('order',)
+    verbose_name = 'سؤال امتحان'
+    verbose_name_plural = 'أسئلة الامتحان'
 
 
 class ExamAnswerInline(admin.TabularInline):
@@ -77,6 +83,8 @@ class ExamAnswerInline(admin.TabularInline):
     extra = 2
     fields = ('text', 'is_correct', 'order')
     ordering = ('order',)
+    verbose_name = 'إجابة امتحان'
+    verbose_name_plural = 'إجابات الامتحان'
 
 
 class AssignmentQuestionInline(admin.TabularInline):
@@ -84,6 +92,8 @@ class AssignmentQuestionInline(admin.TabularInline):
     extra = 1
     fields = ('text', 'question_type', 'points', 'order', 'is_required')
     ordering = ('order',)
+    verbose_name = 'سؤال واجب'
+    verbose_name_plural = 'أسئلة الواجبات'
 
 
 class AssignmentAnswerInline(admin.TabularInline):
@@ -91,6 +101,8 @@ class AssignmentAnswerInline(admin.TabularInline):
     extra = 2
     fields = ('text', 'is_correct', 'order')
     ordering = ('order',)
+    verbose_name = 'إجابة واجب'
+    verbose_name_plural = 'إجابات الواجبات'
 
 
 @admin.register(Quiz)

@@ -10,13 +10,16 @@ from django.contrib.auth.models import User
 from django_filters.rest_framework import DjangoFilterBackend
 from datetime import timedelta
 
-from .models import Notification
+from .models import Notification, BannerNotification, AttendancePenalty, StudentAttendance
 from courses.models import Course
 from .serializers import (
     NotificationBasicSerializer, NotificationDetailSerializer, NotificationCreateSerializer,
     BulkNotificationSerializer, NotificationMarkReadSerializer, NotificationSettingsSerializer,
-    NotificationFilterSerializer
+    NotificationFilterSerializer, BannerNotificationSerializer, BannerNotificationCreateSerializer,
+    AttendancePenaltySerializer, AttendancePenaltyCreateSerializer, StudentAttendanceSerializer
 )
+from .utils import send_banner_notification
+from rest_framework.exceptions import PermissionDenied
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
@@ -444,4 +447,177 @@ def create_system_notification(request):
     return Response({
         'message': f'تم إرسال إشعار النظام إلى {len(created_notifications)} مستخدم',
         'recipients_count': len(created_notifications)
-    }, status=status.HTTP_201_CREATED) 
+    }, status=status.HTTP_201_CREATED)
+
+
+class BannerNotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing banner notifications"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['notification_type', 'is_active', 'target_type']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return BannerNotificationCreateSerializer
+        return BannerNotificationSerializer
+    
+    def get_queryset(self):
+        """Get banner notifications based on user role"""
+        user = self.request.user
+        now = timezone.now()
+        
+        # Filter active banner notifications
+        queryset = BannerNotification.objects.filter(
+            is_active=True,
+        ).filter(
+            Q(start_date__lte=now) | Q(start_date__isnull=True),
+            Q(end_date__gte=now) | Q(end_date__isnull=True)
+        )
+        
+        # For list view, check if user is admin/instructor or student
+        if hasattr(user, 'profile'):
+            profile = user.profile
+            
+            if profile.status == 'Admin' or user.is_staff:
+                # Admins see all banner notifications
+                return queryset.order_by('-created_at')
+            elif profile.status == 'Instructor':
+                # Instructors see instructor dashboard banners
+                instructor_banners = queryset.filter(
+                    Q(notification_type='banner_dashboard_instructor') |
+                    Q(notification_type='banner_top') |
+                    Q(target_type__in=['all_users', 'all_instructors']) |
+                    Q(target_instructors__profile__user=user) |
+                    Q(created_by=user)
+                ).distinct()
+                return instructor_banners.order_by('-created_at')
+            elif profile.status == 'Student':
+                # Students see student dashboard banners
+                from users.models import Student
+                try:
+                    student = Student.objects.get(profile=profile)
+                    student_banners = queryset.filter(
+                        Q(notification_type='banner_dashboard_student') |
+                        Q(notification_type='banner_top') |
+                        Q(target_type__in=['all_users', 'all_students']) |
+                        Q(target_students=student) |
+                        Q(target_divisions__students=student)
+                    ).distinct()
+                    return student_banners.order_by('-created_at')
+                except Student.DoesNotExist:
+                    return BannerNotification.objects.none()
+        
+        return BannerNotification.objects.none()
+    
+    def perform_create(self, serializer):
+        """Create banner notification with permissions check"""
+        user = self.request.user
+        if hasattr(user, 'profile'):
+            profile_status = user.profile.status
+            if profile_status not in ['Admin', 'Instructor'] and not user.is_staff:
+                raise PermissionDenied("فقط الأدمن والمعلمين يمكنهم إنشاء إشعارات البانر")
+        else:
+            raise PermissionDenied("المستخدم غير مصرح له بإنشاء إشعارات البانر")
+        
+        serializer.save()
+    
+    @action(detail=True, methods=['post'])
+    def send_now(self, request, pk=None):
+        """Send banner notification immediately"""
+        banner = self.get_object()
+        count = send_banner_notification(banner)
+        return Response({
+            'message': f'تم إرسال الإشعار إلى {count} مستخدم',
+            'recipients_count': count
+        })
+
+
+class AttendancePenaltyViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing attendance penalties"""
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['instructor', 'course', 'is_active']
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return AttendancePenaltyCreateSerializer
+        return AttendancePenaltySerializer
+    
+    def get_queryset(self):
+        """Get attendance penalties based on user role"""
+        user = self.request.user
+        
+        if hasattr(user, 'profile'):
+            profile = user.profile
+            
+            if profile.status == 'Admin' or user.is_staff:
+                # Admins see all penalties
+                return AttendancePenalty.objects.all().select_related('instructor__profile', 'course')
+            elif profile.status == 'Instructor':
+                # Instructors see their own penalties
+                from users.models import Instructor
+                try:
+                    instructor = Instructor.objects.get(profile=profile)
+                    return AttendancePenalty.objects.filter(instructor=instructor).select_related('instructor__profile', 'course')
+                except Instructor.DoesNotExist:
+                    return AttendancePenalty.objects.none()
+        
+        return AttendancePenalty.objects.none()
+    
+    def perform_create(self, serializer):
+        """Create attendance penalty with permissions check"""
+        user = self.request.user
+        if hasattr(user, 'profile'):
+            profile_status = user.profile.status
+            if profile_status not in ['Admin', 'Instructor'] and not user.is_staff:
+                raise PermissionDenied("فقط الأدمن والمعلمين يمكنهم إنشاء قواعد الحرمان")
+            
+            # If user is instructor, set instructor automatically
+            if profile_status == 'Instructor':
+                from users.models import Instructor
+                try:
+                    instructor = Instructor.objects.get(profile=user.profile)
+                    serializer.save(instructor=instructor)
+                    return
+                except Instructor.DoesNotExist:
+                    pass
+        
+        serializer.save()
+
+
+class StudentAttendanceViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for viewing student attendance records"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = StudentAttendanceSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['student', 'course']
+    
+    def get_queryset(self):
+        """Get student attendance records based on user role"""
+        user = self.request.user
+        
+        if hasattr(user, 'profile'):
+            profile = user.profile
+            
+            if profile.status == 'Admin' or user.is_staff:
+                # Admins see all attendance records
+                return StudentAttendance.objects.all().select_related('student__profile', 'course')
+            elif profile.status == 'Instructor':
+                # Instructors see attendance for their courses
+                from users.models import Instructor
+                try:
+                    instructor = Instructor.objects.get(profile=profile)
+                    courses = Course.objects.filter(instructors=instructor)
+                    return StudentAttendance.objects.filter(course__in=courses).select_related('student__profile', 'course')
+                except Instructor.DoesNotExist:
+                    return StudentAttendance.objects.none()
+            elif profile.status == 'Student':
+                # Students see their own attendance
+                from users.models import Student
+                try:
+                    student = Student.objects.get(profile=profile)
+                    return StudentAttendance.objects.filter(student=student).select_related('student__profile', 'course')
+                except Student.DoesNotExist:
+                    return StudentAttendance.objects.none()
+        
+        return StudentAttendance.objects.none() 

@@ -17,13 +17,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+} from '@mui/material';
+import {
   Timeline,
   TimelineItem,
   TimelineSeparator,
   TimelineConnector,
   TimelineContent,
   TimelineDot,
-} from '@mui/material';
+} from '@mui/lab';
 import { ExpandMore, TrendingUp, School, History } from '@mui/icons-material';
 import { gpaAPI } from '../../services/gpa.service';
 
@@ -45,7 +47,7 @@ const GPA = () => {
       setGpas(gpasList);
     } catch (err) {
       console.error('Error fetching GPAs:', err);
-      setError('حدث خطأ في تحميل بيانات GPA');
+      setError('حدث خطأ في تحميل بيانات الدرجات');
     } finally {
       setLoading(false);
     }
@@ -82,10 +84,24 @@ const GPA = () => {
     );
   }
 
+  // حساب المعدل الفصلي والتراكمي من السجلات
+  const getSemesterGPA = () => {
+    if (gpas.length === 0) return null;
+    // يمكن تحسين هذا ليعتمد على الفصل الدراسي الحالي
+    const latestGPA = gpas[0];
+    return latestGPA.semester_gpa || null;
+  };
+
+  const getCumulativeGPA = () => {
+    if (gpas.length === 0) return null;
+    const latestGPA = gpas[0];
+    return latestGPA.cumulative_gpa || null;
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        سجل GPA
+        درجات الطلاب
       </Typography>
 
       {error && (
@@ -94,29 +110,50 @@ const GPA = () => {
         </Alert>
       )}
 
-      {/* Average GPA Card */}
+      {/* GPA Cards */}
       {gpas.length > 0 && (
-        <Card sx={{ mb: 3, bgcolor: 'primary.main', color: 'white' }}>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+          {getSemesterGPA() !== null && (
+            <Card sx={{ flex: 1, minWidth: 200, bgcolor: 'info.main', color: 'white' }}>
+              <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  المعدل التراكمي العام
+                  المعدل الفصلي
                 </Typography>
                 <Typography variant="h3" fontWeight="bold">
-                  {calculateAverageGPA()}
+                  {getSemesterGPA()}
                 </Typography>
-              </Box>
-              <TrendingUp sx={{ fontSize: 60, opacity: 0.3 }} />
-            </Box>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+          {getCumulativeGPA() !== null && (
+            <Card sx={{ flex: 1, minWidth: 200, bgcolor: 'primary.main', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  المعدل التراكمي
+                </Typography>
+                <Typography variant="h3" fontWeight="bold">
+                  {getCumulativeGPA()}
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+          <Card sx={{ flex: 1, minWidth: 200, bgcolor: 'success.main', color: 'white' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                المعدل التراكمي العام
+              </Typography>
+              <Typography variant="h3" fontWeight="bold">
+                {calculateAverageGPA()}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
       )}
 
       {gpas.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary">
-            لا توجد سجلات GPA متاحة
+            لا توجد درجات متاحة
           </Typography>
         </Paper>
       ) : (
@@ -124,18 +161,38 @@ const GPA = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>اسم الدرجة</TableCell>
+                <TableCell>الدرجة</TableCell>
+                <TableCell>أصل الدرجة</TableCell>
                 <TableCell>الكورس</TableCell>
                 <TableCell>الفصل الدراسي</TableCell>
                 <TableCell>السنة الأكاديمية</TableCell>
-                <TableCell>GPA</TableCell>
-                <TableCell>تاريخ الإنشاء</TableCell>
-                <TableCell>آخر تحديث</TableCell>
-                <TableCell>التفاصيل</TableCell>
+                <TableCell>الملاحظات</TableCell>
+                <TableCell>سجل التحديثات</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {gpas.map((gpa) => (
                 <TableRow key={gpa.id}>
+                  <TableCell>
+                    <Typography fontWeight="medium">
+                      {gpa.grade_name || '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={gpa.gpa}
+                      color={getGPAColor(parseFloat(gpa.gpa))}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={gpa.gpa_scale || '4'}
+                      color="default"
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1}>
                       <School fontSize="small" />
@@ -145,14 +202,14 @@ const GPA = () => {
                   <TableCell>{gpa.semester || '-'}</TableCell>
                   <TableCell>{gpa.academic_year || '-'}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={gpa.gpa}
-                      color={getGPAColor(parseFloat(gpa.gpa))}
-                      size="small"
-                    />
+                    {gpa.notes ? (
+                      <Typography variant="body2" color="text.secondary">
+                        {gpa.notes.length > 50 ? `${gpa.notes.substring(0, 50)}...` : gpa.notes}
+                      </Typography>
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
-                  <TableCell>{formatDate(gpa.created_at)}</TableCell>
-                  <TableCell>{formatDate(gpa.updated_at)}</TableCell>
                   <TableCell>
                     <Accordion>
                       <AccordionSummary expandIcon={<ExpandMore />}>

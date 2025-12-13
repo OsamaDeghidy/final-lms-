@@ -62,13 +62,13 @@ class CategoryAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     course_count.short_description = 'عدد الدورات'
     
     def has_delete_permission(self, request, obj=None):
-        """Prevent deletion of default categories"""
+        """منع حذف الفئات الافتراضية"""
         if obj and obj.is_default:
             return False
         return super().has_delete_permission(request, obj)
     
     def get_actions(self, request):
-        """Remove delete action for default categories"""
+        """إزالة إجراء الحذف للفئات الافتراضية"""
         actions = super().get_actions(request)
         if 'delete_selected' in actions:
             del actions['delete_selected']
@@ -100,36 +100,36 @@ class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
         'total_enrollments', 'average_rating'
     )
     fieldsets = (
-        ('Basic Information', {
+        ('المعلومات الأساسية', {
             'fields': (
                 'title', 'slug', 'subtitle', 'description', 'short_description',
                 'category', 'tags', 'instructors', 'organization'
             )
         }),
-        ('Course Type', {
+        ('نوع الدورة', {
             'fields': ('is_complete_course',),
-            'description': 'Check if this is a complete course with full content. Uncheck if this is just a course announcement/preview.'
+            'description': 'حدد إذا كانت هذه دورة كاملة بمحتوى كامل. ألغِ التحديد إذا كانت مجرد إعلان/معاينة للدورة.'
         }),
-        ('Media & Content', {
+        ('الوسائط والمحتوى', {
             'fields': (
                 'image', 'promotional_video', 'syllabus_pdf', 'materials_pdf'
             )
         }),
-        ('Course Details', {
+        ('تفاصيل الدورة', {
             'fields': (
                 'level', 'status', 'is_active', 'is_featured',
                 'is_certified', 'is_free'
             )
         }),
-        ('Pricing', {
+        ('التسعير', {
             'fields': ('price', 'discount_price'),
             'classes': ('collapse',)
         }),
-        ('Statistics', {
+        ('الإحصائيات', {
             'fields': ('total_enrollments', 'average_rating'),
             'classes': ('collapse',)
         }),
-        ('Timestamps', {
+        ('التواريخ', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
@@ -137,24 +137,24 @@ class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     
     def get_instructors(self, obj):
         return ", ".join([i.profile.name for i in obj.instructors.all() if hasattr(i, 'profile')])
-    get_instructors.short_description = 'Instructors'
+    get_instructors.short_description = 'المدربون'
     
     def get_category_name(self, obj):
-        return obj.category.name if obj.category else 'N/A'
-    get_category_name.short_description = 'Category'
+        return obj.category.name if obj.category else 'غير محدد'
+    get_category_name.short_description = 'الفئة'
     get_category_name.admin_order_field = 'category__name'
     
     def get_course_type(self, obj):
         if obj.is_complete_course:
-            return format_html('<span style="color: green;">✓ Complete Course</span>')
+            return format_html('<span style="color: green;">✓ دورة كاملة</span>')
         else:
-            return format_html('<span style="color: orange;">📢 Announcement</span>')
-    get_course_type.short_description = 'Course Type'
+            return format_html('<span style="color: orange;">📢 إعلان</span>')
+    get_course_type.short_description = 'نوع الدورة'
     get_course_type.admin_order_field = 'is_complete_course'
     
     def enrollment_count_display(self, obj):
         return obj.students.count()
-    enrollment_count_display.short_description = 'Enrollments'
+    enrollment_count_display.short_description = 'التسجيلات'
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -167,20 +167,20 @@ class CourseAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     
     def total_enrollments(self, obj):
         return obj.students.count()
-    total_enrollments.short_description = 'Total Enrollments'
+    total_enrollments.short_description = 'إجمالي التسجيلات'
     
     def average_rating(self, obj):
         if hasattr(obj, 'avg_rating'):
-            return f"{obj.avg_rating:.1f}/5.0" if obj.avg_rating is not None else 'N/A'
-        return 'N/A'
-    average_rating.short_description = 'Average Rating'
+            return f"{obj.avg_rating:.1f}/5.0" if obj.avg_rating is not None else 'غير محدد'
+        return 'غير محدد'
+    average_rating.short_description = 'التقييم المتوسط'
 
 # Comment and SubComment admin classes moved to reviews app
 
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    """Keep Enrollment registered for reverse() compatibility but hide from admin UI."""
+    """الاحتفاظ بتسجيل Enrollment للتوافق مع reverse() ولكن إخفاؤه من واجهة الإدارة."""
 
     def has_module_permission(self, request):
         return False

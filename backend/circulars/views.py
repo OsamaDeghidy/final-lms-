@@ -59,32 +59,51 @@ class CircularViewSet(viewsets.ModelViewSet):
         created_notifications = []
 
         # Send in-app notifications
+        created_notifications = []
         if circular.send_notification and recipients:
-            created_notifications = Notification.bulk_notify(
-                recipients=recipients,
-                title=circular.title,
-                message=circular.content or '',
-                notification_type='system_announcement',
-                sender=request.user
-            )
-            # Log notification deliveries
-            for notif in created_notifications:
-                NotificationLog.objects.create(
-                    notification=notif,
-                    delivery_method='app',
-                    status='sent',
-                    sent_at=timezone.now()
-                )
-
-        # Simulate email sending by logging (actual email system can be integrated later)
-        if circular.send_email and recipients:
-            for notif in created_notifications or []:
-                NotificationLog.objects.create(
-                    notification=notif,
-                    delivery_method='email',
-                    status='sent',
-                    sent_at=timezone.now()
-                )
+            from notifications.services import EmailService
+            for user in recipients:
+                if user and hasattr(user, 'email') and user.email:
+                    try:
+                        notification = Notification.objects.create(
+                            recipient=user,
+                            sender=request.user,
+                            title=circular.title,
+                            message=circular.content or '',
+                            notification_type='system_announcement',
+                            priority='high',
+                        )
+                        created_notifications.append(notification)
+                        
+                        # Log notification delivery
+                        NotificationLog.objects.create(
+                            notification=notification,
+                            delivery_method='app',
+                            status='sent',
+                            sent_at=timezone.now()
+                        )
+                        
+                        # Send email if enabled
+                        if circular.send_email:
+                            try:
+                                attachment = circular.attachment if hasattr(circular, 'attachment') and circular.attachment else None
+                                EmailService.send_notification_email(notification, user, attachment=attachment)
+                                NotificationLog.objects.create(
+                                    notification=notification,
+                                    delivery_method='email',
+                                    status='sent',
+                                    sent_at=timezone.now()
+                                )
+                            except Exception as e:
+                                NotificationLog.objects.create(
+                                    notification=notification,
+                                    delivery_method='email',
+                                    status='failed',
+                                    error_message=str(e),
+                                    sent_at=timezone.now()
+                                )
+                    except Exception as e:
+                        continue
 
         # Update status and publish time
         circular.status = 'sent'

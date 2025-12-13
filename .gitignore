@@ -85,3 +85,11 @@ backend/venv
 venv
 backend/db.sqlite3
 backend/db.sqlite3
+
+# Django settings files (contain sensitive information)
+backend/settings.py
+backend/core/settings.py
+*.settings.py
+.env
+.env.local
+.env.*.local

@@ -41,16 +41,41 @@ class Circular(models.Model):
 
     def get_recipients(self):
         """إرجاع قائمة مستخدمي المستلمين بناءً على الشعب والطلاب المحددين"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         users = set()
+        
         # From explicit students
-        for st in self.target_students.select_related('profile__user'):
+        students = self.target_students.select_related('profile__user').all()
+        logger.info(f"عدد الطلاب المحددين مباشرة: {students.count()}")
+        for st in students:
             if st.profile and st.profile.user:
-                users.add(st.profile.user)
-        # From divisions' students
-        for div in self.target_divisions.prefetch_related('students__profile__user'):
-            for st in div.students.all():
-                if st.profile and st.profile.user:
+                if st.profile.user.email:
                     users.add(st.profile.user)
+                    logger.debug(f"إضافة طالب: {st.profile.user.email}")
+                else:
+                    logger.warning(f"الطالب {st.id} لا يمتلك بريد إلكتروني")
+            else:
+                logger.warning(f"الطالب {st.id} لا يمتلك profile أو user")
+        
+        # From divisions' students
+        divisions = self.target_divisions.prefetch_related('students__profile__user').all()
+        logger.info(f"عدد الشعب المحددة: {divisions.count()}")
+        for div in divisions:
+            div_students = div.students.select_related('profile__user').all()
+            logger.info(f"الشعبة '{div.name}' تحتوي على {div_students.count()} طالب")
+            for st in div_students:
+                if st.profile and st.profile.user:
+                    if st.profile.user.email:
+                        users.add(st.profile.user)
+                        logger.debug(f"إضافة طالب من الشعبة '{div.name}': {st.profile.user.email}")
+                    else:
+                        logger.warning(f"الطالب {st.id} من الشعبة '{div.name}' لا يمتلك بريد إلكتروني")
+                else:
+                    logger.warning(f"الطالب {st.id} من الشعبة '{div.name}' لا يمتلك profile أو user")
+        
+        logger.info(f"إجمالي المستلمين: {len(users)}")
         return list(users)
 
     @property

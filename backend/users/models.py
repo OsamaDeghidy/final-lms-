@@ -19,8 +19,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     email = models.CharField(max_length=2000, blank=True, null=True)
     phone = models.CharField(max_length=2000, blank=True, null=True)
-    national_id = models.CharField(max_length=100, blank=True, null=True, verbose_name=_('National ID'))
-    is_archived = models.BooleanField(default=False, verbose_name=_('Is Archived'))
+    national_id = models.CharField(max_length=100, blank=True, null=True, verbose_name='رقم الهوية')
+    is_archived = models.BooleanField(default=False, verbose_name='مؤرشف')
     status_choices = (
         ('Admin', 'Admin'),
         ('Student', 'Student'),
@@ -131,25 +131,39 @@ class Instructor(models.Model):
     research_interests = CKEditor5Field(blank=True, null=True)
     
     class Meta:
-        verbose_name = 'Instructor'
-        verbose_name_plural = 'Instructors'
+        verbose_name = 'مدرب'
+        verbose_name_plural = 'مدربون'
     
     def __str__(self):
         return self.profile.name if self.profile else 'Unnamed Instructor'
 
 class Student(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True)
-    department = models.CharField(max_length=2000, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True, verbose_name='الملف الشخصي')
+    department = models.CharField(max_length=2000, blank=True, null=True, verbose_name='القسم')
+    date_of_birth = models.DateField(blank=True, null=True, verbose_name='تاريخ الميلاد')
+    
+    class Meta:
+        verbose_name = 'طالب'
+        verbose_name_plural = 'طلاب'
+    
     def __str__(self):
-        return self.profile.name
+        return self.profile.name if self.profile else 'طالب بدون ملف شخصي'
 
 
 class StudentGPA(models.Model):
-    """نموذج GPA للطلاب"""
+    """نموذج درجات الطلاب"""
+    GPA_SCALE_CHOICES = [
+        (4, '4'),
+        (5, '5'),
+    ]
+    
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gpa_records', verbose_name='الطالب')
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='student_gpas', null=True, blank=True, verbose_name='الكورس')
-    gpa = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(4.0)], verbose_name='GPA')
+    gpa = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(5.0)], verbose_name='الدرجة')
+    gpa_scale = models.DecimalField(max_digits=2, decimal_places=0, default=4, choices=GPA_SCALE_CHOICES, verbose_name='أصل المعدل')
+    semester_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='المعدل الفصلي')
+    cumulative_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='المعدل التراكمي')
+    grade_name = models.CharField(max_length=50, blank=True, null=True, verbose_name='اسم الدرجة')
     semester = models.CharField(max_length=50, blank=True, null=True, verbose_name='الفصل الدراسي')
     academic_year = models.CharField(max_length=20, blank=True, null=True, verbose_name='السنة الأكاديمية')
     notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
@@ -158,8 +172,8 @@ class StudentGPA(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
     
     class Meta:
-        verbose_name = 'GPA الطالب'
-        verbose_name_plural = 'GPA الطلاب'
+        verbose_name = 'درجة الطالب'
+        verbose_name_plural = 'درجات الطلاب'
         ordering = ['-created_at']
         unique_together = ['student', 'course', 'semester', 'academic_year']
     
@@ -170,7 +184,7 @@ class StudentGPA(models.Model):
 
 class GPAHistory(models.Model):
     """سجل التحديثات على GPA"""
-    gpa = models.ForeignKey(StudentGPA, on_delete=models.CASCADE, related_name='history', verbose_name='GPA')
+    gpa = models.ForeignKey(StudentGPA, on_delete=models.CASCADE, related_name='history', verbose_name='الدرجة')
     old_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='GPA السابق')
     new_gpa = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='GPA الجديد')
     changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='gpa_changes', verbose_name='تم التغيير بواسطة')

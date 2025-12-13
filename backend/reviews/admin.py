@@ -9,6 +9,8 @@ class ReviewReplyInline(admin.StackedInline):
     extra = 0
     readonly_fields = ['created_at', 'updated_at']
     fields = ['user', 'reply_text', 'is_approved', 'created_at', 'updated_at']
+    verbose_name = 'رد على التقييم'
+    verbose_name_plural = 'ردود التقييمات'
 
 
 @admin.register(CourseReview)
@@ -27,7 +29,7 @@ class CourseReviewAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     
     def rating_stars(self, obj):
         return '★' * obj.rating + '☆' * (5 - obj.rating)
-    rating_stars.short_description = 'Rating'
+    rating_stars.short_description = 'التقييم'
     rating_stars.admin_order_field = 'rating'
 
 
@@ -78,12 +80,12 @@ class CommentAdmin(admin.ModelAdmin):
             if len(obj.content) > 50 
             else obj.content
         )
-    truncated_content.short_description = 'Content'
+    truncated_content.short_description = 'المحتوى'
     
     def is_reply(self, obj):
         return obj.parent is not None
     is_reply.boolean = True
-    is_reply.short_description = 'Is Reply?'
+    is_reply.short_description = 'رد؟'
 
 
 @admin.register(CommentLike)

@@ -48,29 +48,29 @@ class Module(models.Model):
     Each module can contain multiple lessons and resources.
     """
     class ModuleStatus(models.TextChoices):
-        DRAFT = 'draft', _('Draft')
-        PUBLISHED = 'published', _('Published')
-        ARCHIVED = 'archived', _('Archived')
+        DRAFT = 'draft', 'مسودة'
+        PUBLISHED = 'published', 'منشور'
+        ARCHIVED = 'archived', 'مؤرشف'
 
     name = models.CharField(
-        _('module name'),
+        'اسم الوحدة',
         max_length=2000,
-        help_text=_('Name of the module')
+        help_text='اسم الوحدة'
     )
     course = models.ForeignKey(
         'courses.Course',
         on_delete=models.CASCADE,
         related_name='modules',
-        verbose_name=_('course')
+        verbose_name='الدورة'
     )
     description = models.TextField(
-        _('description'),
+        'الوصف',
         blank=True,
         null=True,
-        help_text=_('Detailed description of the module')
+        help_text='وصف تفصيلي للوحدة'
     )
     video = models.FileField(
-        _('video file'),
+        'ملف الفيديو',
         upload_to=module_video_upload_path,
         null=True,
         blank=True,
@@ -78,15 +78,15 @@ class Module(models.Model):
             FileExtensionValidator(allowed_extensions=['mp4', 'webm', 'mov']),
             validate_file_size
         ],
-        help_text=_('Upload a video file (max 100MB, MP4/WebM/MOV)')
+        help_text='رفع ملف فيديو (حد أقصى 100MB، MP4/WebM/MOV)'
     )
     video_duration = models.PositiveIntegerField(
-        _('video duration in seconds'),
+        'مدة الفيديو بالثواني',
         default=0,
-        help_text=_('Duration of the video in seconds')
+        help_text='مدة الفيديو بالثواني'
     )
     pdf = models.FileField(
-        _('PDF file'),
+        'ملف PDF',
         upload_to=module_pdf_upload_path,
         null=True,
         blank=True,
@@ -94,45 +94,45 @@ class Module(models.Model):
             FileExtensionValidator(allowed_extensions=['pdf']),
             validate_file_size
         ],
-        help_text=_('Upload a PDF file (max 100MB)')
+        help_text='رفع ملف PDF (حد أقصى 100MB)'
     )
     note = models.TextField(
-        _('instructor notes'),
+        'ملاحظات المدرب',
         blank=True,
         null=True,
-        help_text=_('Private notes for instructors')
+        help_text='ملاحظات خاصة للمدربين'
     )
     status = models.CharField(
-        _('status'),
+        'الحالة',
         max_length=20,
         choices=ModuleStatus.choices,
         default=ModuleStatus.DRAFT,
-        help_text=_('Publication status of the module')
+        help_text='حالة نشر الوحدة'
     )
     is_active = models.BooleanField(
-        _('is active'),
+        'نشط',
         default=True,
-        help_text=_('Designates whether this module should be treated as active')
+        help_text='يحدد ما إذا كانت هذه الوحدة يجب أن تعامل كنشطة'
     )
     order = models.PositiveIntegerField(
-        _('order'),
+        'الترتيب',
         default=0,
-        help_text=_('The order in which the module appears in the course')
+        help_text='الترتيب الذي تظهر به الوحدة في الدورة'
     )
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
-    published_at = models.DateTimeField(_('published at'), null=True, blank=True)
+    created_at = models.DateTimeField('تاريخ الإنشاء', auto_now_add=True)
+    updated_at = models.DateTimeField('تاريخ التحديث', auto_now=True)
+    published_at = models.DateTimeField('تاريخ النشر', null=True, blank=True)
     prerequisites = models.ManyToManyField(
         'self',
         symmetrical=False,
         blank=True,
         related_name='is_prerequisite_for',
-        help_text=_('Modules that must be completed before this one')
+        help_text='الوحدات التي يجب إكمالها قبل هذه الوحدة'
     )
 
     class Meta:
-        verbose_name = _('module')
-        verbose_name_plural = _('modules')
+        verbose_name = 'وحدة'
+        verbose_name_plural = 'وحدات'
         ordering = ['order', 'created_at']
         unique_together = ('course', 'order')
         indexes = [
@@ -202,107 +202,107 @@ class Lesson(models.Model):
     Lessons are the primary content units that students interact with.
     """
     class LessonType(models.TextChoices):
-        VIDEO = 'video', _('Video')
-        ARTICLE = 'article', _('Article')
+        VIDEO = 'video', 'فيديو'
+        ARTICLE = 'article', 'مقال'
         
     class DifficultyLevel(models.TextChoices):
-        BEGINNER = 'beginner', _('Beginner')
-        INTERMEDIATE = 'intermediate', _('Intermediate')
-        ADVANCED = 'advanced', _('Advanced')
+        BEGINNER = 'beginner', 'مبتدئ'
+        INTERMEDIATE = 'intermediate', 'متوسط'
+        ADVANCED = 'advanced', 'متقدم'
 
     title = models.CharField(
-        _('title'),
+        'العنوان',
         max_length=200,
-        help_text=_('Title of the lesson')
+        help_text='عنوان الدرس'
     )
     module = models.ForeignKey(
         Module,
         on_delete=models.CASCADE,
         related_name='lessons',
-        verbose_name=_('module')
+        verbose_name='الوحدة'
     )
     slug = models.SlugField(
-        _('slug'),
+        'الرابط',
         max_length=250,
         unique=True,
         blank=True,
-        help_text=_('A short label containing only letters, numbers, underscores or hyphens for URLs')
+        help_text='تسمية قصيرة تحتوي فقط على أحرف وأرقام وشرطات سفلية أو شرطات للروابط'
     )
     description = models.TextField(
-        _('description'),
+        'الوصف',
         blank=True,
         null=True,
-        help_text=_('Brief description of the lesson')
+        help_text='وصف مختصر للدرس'
     )
     content = models.TextField(
-        _('content'),
+        'المحتوى',
         blank=True,
         null=True,
-        help_text=_('Main content of the lesson (HTML/Text)')
+        help_text='المحتوى الرئيسي للدرس (HTML/نص)'
     )
     lesson_type = models.CharField(
-        _('lesson type'),
+        'نوع الدرس',
         max_length=20,
         choices=LessonType.choices,
         default=LessonType.ARTICLE,
-        help_text=_('Type of the lesson')
+        help_text='نوع الدرس'
     )
     difficulty = models.CharField(
-        _('difficulty level'),
+        'مستوى الصعوبة',
         max_length=20,
         choices=DifficultyLevel.choices,
         default=DifficultyLevel.BEGINNER,
-        help_text=_('Difficulty level of the lesson')
+        help_text='مستوى صعوبة الدرس'
     )
     video_url = models.URLField(
-        _('video URL'),
+        'رابط الفيديو',
         blank=True,
         null=True,
-        help_text=_('URL to the video content (if any)')
+        help_text='رابط محتوى الفيديو (إن وجد)'
     )
     duration_minutes = models.PositiveIntegerField(
-        _('duration in minutes'),
+        'المدة بالدقائق',
         default=0,
         validators=[
-            MinValueValidator(0, message=_('Duration cannot be negative')),
-            MaxValueValidator(1440, message=_('Duration cannot be more than 24 hours'))
+            MinValueValidator(0, message='المدة لا يمكن أن تكون سالبة'),
+            MaxValueValidator(1440, message='المدة لا يمكن أن تكون أكثر من 24 ساعة')
         ],
-        help_text=_('Estimated time to complete in minutes')
+        help_text='الوقت المقدر للإكمال بالدقائق'
     )
     order = models.PositiveIntegerField(
-        _('order'),
+        'الترتيب',
         default=0,
-        help_text=_('The order in which the lesson appears in the module')
+        help_text='الترتيب الذي يظهر به الدرس في الوحدة'
     )
     is_active = models.BooleanField(
-        _('is active'),
+        'نشط',
         default=True,
-        help_text=_('Designates whether this lesson should be treated as active')
+        help_text='يحدد ما إذا كان هذا الدرس يجب أن يعامل كنشط'
     )
     is_free = models.BooleanField(
-        _('is free'),
+        'مجاني',
         default=False,
-        help_text=_('Designates whether this lesson is available for free')
+        help_text='يحدد ما إذا كان هذا الدرس متاحاً مجاناً'
     )
     requires_completion = models.BooleanField(
-        _('requires completion'),
+        'يتطلب الإكمال',
         default=True,
-        help_text=_('If True, user must complete this lesson to proceed to the next one')
+        help_text='إذا كان True، يجب على المستخدم إكمال هذا الدرس للمتابعة إلى التالي'
     )
-    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('updated at'), auto_now=True)
-    published_at = models.DateTimeField(_('published at'), null=True, blank=True)
+    created_at = models.DateTimeField('تاريخ الإنشاء', auto_now_add=True)
+    updated_at = models.DateTimeField('تاريخ التحديث', auto_now=True)
+    published_at = models.DateTimeField('تاريخ النشر', null=True, blank=True)
     resources = models.ManyToManyField(
         'LessonResource',
         blank=True,
         related_name='lessons',
-        verbose_name=_('resources'),
-        help_text=_('Additional resources for this lesson')
+        verbose_name='الموارد',
+        help_text='موارد إضافية لهذا الدرس'
     )
 
     class Meta:
-        verbose_name = _('lesson')
-        verbose_name_plural = _('lessons')
+        verbose_name = 'درس'
+        verbose_name_plural = 'دروس'
         ordering = ['order', 'created_at']
         unique_together = ('module', 'order')
         indexes = [
@@ -393,64 +393,64 @@ class UserProgress(models.Model):
     This includes completion status, time spent, and overall progress percentage.
     """
     class CompletionStatus(models.TextChoices):
-        NOT_STARTED = 'not_started', _('Not Started')
-        IN_PROGRESS = 'in_progress', _('In Progress')
-        COMPLETED = 'completed', _('Completed')
+        NOT_STARTED = 'not_started', 'لم يبدأ'
+        IN_PROGRESS = 'in_progress', 'قيد التنفيذ'
+        COMPLETED = 'completed', 'مكتمل'
         
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='course_progress',
-        verbose_name=_('user')
+        verbose_name='المستخدم'
     )
     course = models.ForeignKey(
         'courses.Course',
         on_delete=models.CASCADE,
         related_name='user_progress',
-        verbose_name=_('course')
+        verbose_name='الدورة'
     )
     enrolled_at = models.DateTimeField(
-        _('enrolled at'),
+        'تاريخ التسجيل',
         auto_now_add=True,
-        help_text=_('When the user enrolled in the course')
+        help_text='عندما سجل المستخدم في الدورة'
     )
     last_accessed = models.DateTimeField(
-        _('last accessed'),
+        'آخر وصول',
         auto_now=True,
-        help_text=_('When the user last accessed the course')
+        help_text='عندما وصل المستخدم آخر مرة للدورة'
     )
     started_at = models.DateTimeField(
-        _('started at'),
+        'تاريخ البدء',
         null=True,
         blank=True,
-        help_text=_('When the user first accessed the course content')
+        help_text='عندما وصل المستخدم أول مرة لمحتوى الدورة'
     )
     completed_at = models.DateTimeField(
-        _('completed at'),
+        'تاريخ الإكمال',
         null=True,
         blank=True,
-        help_text=_('When the user completed the course')
+        help_text='عندما أكمل المستخدم الدورة'
     )
     status = models.CharField(
-        _('status'),
+        'الحالة',
         max_length=20,
         choices=CompletionStatus.choices,
         default=CompletionStatus.NOT_STARTED,
-        help_text=_('Current status of the user in this course')
+        help_text='الحالة الحالية للمستخدم في هذه الدورة'
     )
     overall_progress = models.FloatField(
-        _('overall progress'),
+        'التقدم الإجمالي',
         default=0,
         validators=[
-            MinValueValidator(0, message=_('Progress cannot be negative')),
-            MaxValueValidator(100, message=_('Progress cannot exceed 100%'))
+            MinValueValidator(0, message='التقدم لا يمكن أن يكون سالباً'),
+            MaxValueValidator(100, message='التقدم لا يمكن أن يتجاوز 100%')
         ],
-        help_text=_('Overall progress percentage (0-100)')
+        help_text='نسبة التقدم الإجمالية (0-100)'
     )
     time_spent_minutes = models.PositiveIntegerField(
-        _('time spent (minutes)'),
+        'الوقت المستغرق (بالدقائق)',
         default=0,
-        help_text=_('Total time spent on the course in minutes')
+        help_text='إجمالي الوقت المستغرق على الدورة بالدقائق'
     )
     last_lesson_completed = models.ForeignKey(
         'Lesson',
@@ -458,19 +458,19 @@ class UserProgress(models.Model):
         null=True,
         blank=True,
         related_name='+',
-        verbose_name=_('last lesson completed'),
-        help_text=_('The last lesson the user completed')
+        verbose_name='آخر درس مكتمل',
+        help_text='آخر درس أكمل المستخدم'
     )
     notes = models.TextField(
-        _('notes'),
+        'ملاحظات',
         blank=True,
         null=True,
-        help_text=_('User notes for this course')
+        help_text='ملاحظات المستخدم لهذه الدورة'
     )
 
     class Meta:
-        verbose_name = _('user progress')
-        verbose_name_plural = _('user progress')
+        verbose_name = 'تقدم المستخدم'
+        verbose_name_plural = 'تقدم المستخدمين'
         unique_together = ('user', 'course')
         indexes = [
             models.Index(fields=['user', 'course']),
@@ -621,9 +621,9 @@ class ModuleProgress(models.Model):
     Records completion of various module components and calculates overall progress.
     """
     class ProgressStatus(models.TextChoices):
-        NOT_STARTED = 'not_started', _('Not Started')
-        IN_PROGRESS = 'in_progress', _('In Progress')
-        COMPLETED = 'completed', _('Completed')
+        NOT_STARTED = 'not_started', 'لم يبدأ'
+        IN_PROGRESS = 'in_progress', 'قيد التنفيذ'
+        COMPLETED = 'completed', 'مكتمل'
 
     user = models.ForeignKey(
         User,

@@ -38,6 +38,8 @@ import { logout } from '../../store/slices/authSlice';
 import { styled } from '@mui/material/styles';
 import logo from '../../assets/images/logo.png';
 import { courseAPI } from '../../services/api.service';
+import BannerNotification from '../notifications/BannerNotification';
+import notificationAPI from '../../services/notification.service';
 
 // Animation
 const fadeIn = keyframes`
@@ -234,6 +236,8 @@ const Header = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownAnchors, setDropdownAnchors] = useState({});
+  const [bannerNotifications, setBannerNotifications] = useState([]);
+  const [closedBanners, setClosedBanners] = useState(new Set());
 
   // Fetch categories from API
   useEffect(() => {
@@ -257,6 +261,38 @@ const Header = () => {
 
     fetchCategories();
   }, []);
+
+  // Fetch banner notifications
+  const fetchBannerNotifications = async () => {
+    try {
+      // Get current page identifier
+      const currentPath = location.pathname;
+      let page = 'home';
+      if (currentPath.startsWith('/dashboard')) {
+        page = 'dashboard';
+      } else if (currentPath.startsWith('/courses')) {
+        page = 'courses';
+      } else if (currentPath.startsWith('/my-courses')) {
+        page = 'my-courses';
+      }
+      
+      const response = await notificationAPI.getBannerNotifications(page, null);
+      setBannerNotifications(response.results || response || []);
+    } catch (error) {
+      console.error('Error fetching banner notifications:', error);
+      setBannerNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBannerNotifications();
+    }
+  }, [location.pathname, isAuthenticated]);
+
+  const handleBannerClose = (bannerId) => {
+    setClosedBanners(prev => new Set([...prev, bannerId]));
+  };
 
   // Navigation items with dynamic categories
   const navItems = [
@@ -599,6 +635,17 @@ const Header = () => {
 
   return (
     <>
+      {/* Banner Notifications */}
+      {bannerNotifications
+        .filter(banner => !closedBanners.has(banner.id))
+        .map(banner => (
+          <BannerNotification
+            key={banner.id}
+            notification={banner}
+            onClose={handleBannerClose}
+          />
+        ))}
+      
       <StyledAppBar position="fixed" scrolled={scrolled}>
         <Container maxWidth="xl">
           <Toolbar disableGutters>

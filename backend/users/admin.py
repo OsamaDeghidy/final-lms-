@@ -176,7 +176,7 @@ class CustomUserAdmin(BaseUserAdmin):
         if Workbook:
             wb = Workbook()
             ws = wb.active
-            ws.title = 'Users'
+            ws.title = 'المستخدمون'
             ws.append(headers)
             output = io.BytesIO()
             wb.save(output)
@@ -305,7 +305,7 @@ class CustomUserAdmin(BaseUserAdmin):
         if Workbook:
             wb = Workbook()
             ws = wb.active
-            ws.title = 'Users'
+            ws.title = 'المستخدمون'
             ws.append(headers)
             for u in queryset:
                 ws.append([
@@ -976,26 +976,51 @@ class ArchivedUserAdmin(admin.ModelAdmin):
         return False
 
 
+class GPAHistoryInline(admin.TabularInline):
+    """Inline لعرض سجل التحديثات داخل صفحة الدرجة"""
+    model = GPAHistory
+    extra = 0
+    can_delete = False
+    readonly_fields = ('old_gpa', 'new_gpa', 'changed_by', 'changed_at', 'change_reason')
+    fields = ('old_gpa', 'new_gpa', 'changed_by', 'changed_at', 'change_reason')
+    verbose_name = 'سجل التحديثات'
+    verbose_name_plural = 'سجل التحديثات'
+    
+    def has_add_permission(self, request, obj=None):
+        return False  # لا يمكن إضافة سجلات يدوياً
+    
+    def has_change_permission(self, request, obj=None):
+        return False  # لا يمكن تعديل السجلات
+
+
 @admin.register(StudentGPA)
 class StudentGPAAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    list_display = ('student', 'course', 'gpa', 'semester', 'academic_year', 'created_by', 'created_at', 'updated_at')
-    list_filter = ('semester', 'academic_year', 'course', 'created_at')
-    search_fields = ('student__username', 'student__email', 'student__first_name', 'student__last_name', 'course__title')
+    list_display = ('student_name_display', 'course', 'grade_name', 'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 'semester', 'academic_year', 'created_by', 'created_at')
+    list_filter = ('semester', 'academic_year', 'course', 'gpa_scale', 'created_at')
+    search_fields = ('student__username', 'student__email', 'student__first_name', 'student__last_name', 'course__title', 'grade_name')
     readonly_fields = ('created_at', 'updated_at', 'created_by')
     date_hierarchy = 'created_at'
+    inlines = [GPAHistoryInline]
     
     fieldsets = (
         ('معلومات الطالب', {
             'fields': ('student', 'course')
         }),
-        ('معلومات GPA', {
-            'fields': ('gpa', 'semester', 'academic_year', 'notes')
+        ('معلومات الدرجة', {
+            'fields': ('grade_name', 'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 'semester', 'academic_year', 'notes')
         }),
         ('معلومات النظام', {
             'fields': ('created_by', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
+    
+    def student_name_display(self, obj):
+        """عرض اسم الطالب بدلاً من الإيميل"""
+        name = f"{obj.student.first_name} {obj.student.last_name}".strip()
+        return name if name else obj.student.username
+    student_name_display.short_description = 'اسم الطالب'
+    student_name_display.admin_order_field = 'student__first_name'
     
     def save_model(self, request, obj, form, change):
         if not change:  # عند الإنشاء

@@ -130,7 +130,7 @@
         white-space: nowrap;
         animation: fadeInUp 0.4s ease;
     }
-
+    
     .toolbar-buttons .addlink:hover,
     .toolbar-buttons .historylink:hover,
     .toolbar-buttons .viewsitelink:hover,
@@ -362,7 +362,7 @@
         padding-bottom: 15px;
         border-bottom: 1px solid var(--gray-200);
     }
-
+    
     .filter-popup-header h2 {
         margin: 0;
         color: var(--gray-800);
@@ -453,7 +453,7 @@
         font-size: 0.9rem;
         border: none;
     }
-
+    
     .filter-popup-footer .apply-btn {
         background: var(--blue-medium);
         color: white;
@@ -495,7 +495,7 @@
         overflow-y: visible;
         box-sizing: border-box;
     }
-    
+
     /* Make the results table take full width */
     #changelist .results {
         width: 100%;
@@ -745,7 +745,7 @@
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
     }
-
+    
     .paginator .this-page {
         background: var(--primary-dark);
         color: white;
@@ -847,8 +847,8 @@
             justify-content: space-between;
             width: 100%;
             margin-bottom: 0;
-            display: flex;
-        }
+        display: flex;
+    }
 
         .toolbar-search {
             flex: 1;
@@ -857,12 +857,12 @@
             order: 1;
             display: flex;
             justify-content: flex-start;
-        }
+    }
 
         .toolbar-buttons {
             flex-shrink: 0;
             order: 2;
-        }
+    }
 
         /* Part 2: Actions and Filter Bar */
         .actions-filter-bar {
@@ -876,12 +876,12 @@
         .actions-wrapper {
             order: 1;
             justify-content: flex-start;
-        }
+    }
 
         .filter-button {
             order: 2;
             flex-shrink: 0;
-        }
+    }
 
         /* Part 3: Table Container */
         .table-container {
@@ -905,7 +905,7 @@
 
         #content-main {
             padding: 15px !important;
-        }
+    }
 
         /* Part 1: Toolbar - Mobile */
         .toolbar-wrapper {
@@ -918,7 +918,7 @@
             box-sizing: border-box;
             overflow: hidden;
             padding: 15px !important;
-        }
+    }
 
         .toolbar-search {
             width: 100% !important;
@@ -933,10 +933,10 @@
             max-width: 100% !important;
             justify-content: flex-start;
             order: 2;
-            flex-wrap: wrap;
+        flex-wrap: wrap;
             box-sizing: border-box;
             overflow: hidden;
-        }
+    }
 
         .toolbar-buttons .addlink,
         .toolbar-buttons .historylink,
@@ -961,12 +961,12 @@
             max-width: 100% !important;
             flex: 1 1 auto;
             box-sizing: border-box;
-        }
+    }
 
         .toolbar-search input[type="submit"] {
             flex-shrink: 0;
             white-space: nowrap;
-        }
+    }
 
         /* Part 2: Actions and Filter - Mobile */
         .actions-filter-bar {
@@ -1045,8 +1045,8 @@
 
         #result_list tbody tr {
             margin: 3px 0;
-        }
-
+    }
+    
         #result_list tbody td .addlink,
         #result_list tbody td .changelink,
         #result_list tbody td .viewlink,
@@ -1266,7 +1266,7 @@
                     {% if action_form and actions_on_top and cl.show_admin_actions %}
                         {% admin_actions %}
                     {% endif %}
-                </div>
+                    </div>
                 {% if cl.has_filters %}
                 <button type="button" class="filter-button" id="filter-toggle-btn">
                     <i class="fas fa-filter"></i>
@@ -1276,8 +1276,8 @@
             </div>
 
             <!-- Filter Popup -->
-            {% if cl.has_filters %}
-            <div class="filter-popup" id="filter-popup">
+                {% if cl.has_filters %}
+                        <div class="filter-popup" id="filter-popup">
                 <div class="filter-popup-content">
                     <div class="filter-popup-header">
                         <h2>{% translate 'Filter' %}</h2>
@@ -1286,10 +1286,10 @@
                         </button>
                     </div>
                     <div class="filter-popup-body" id="filter-popup-body">
-                        {% for spec in cl.filter_specs %}
-                            {% admin_list_filter cl spec %}
-                        {% endfor %}
-                    </div>
+                            {% for spec in cl.filter_specs %}
+                                    {% admin_list_filter cl spec %}
+                            {% endfor %}
+                        </div>
                     <div class="filter-popup-footer">
                         <button type="button" class="cancel-btn" id="filter-popup-cancel">
                             إلغاء
@@ -1298,7 +1298,7 @@
                             تطبيق
                         </button>
                     </div>
-                </div>
+            </div>
             </div>
             {% endif %}
 
@@ -1310,7 +1310,7 @@
 
                 {% block result_list %}
                     <div class="table-container">
-                        {% result_list cl %}
+                    {% result_list cl %}
                     </div>
                     {% if action_form and actions_on_bottom and cl.show_admin_actions %}
                         <div class="actions-filter-bar" style="margin-top: 15px;">
@@ -1356,15 +1356,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open popup
     if (filterToggleBtn && filterPopup) {
         filterToggleBtn.addEventListener('click', function() {
-            filterPopup.classList.add('active');
+                filterPopup.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-    }
+            }
 
     // Close popup functions
     function closeFilterPopup() {
         if (filterPopup) {
-            filterPopup.classList.remove('active');
+                filterPopup.classList.remove('active');
             document.body.style.overflow = '';
         }
     }
@@ -1424,8 +1424,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             });
                         }
                     }
-                }
-            });
+            }
+        });
 
             // Navigate to new URL
             currentUrl.search = filterParams.toString();

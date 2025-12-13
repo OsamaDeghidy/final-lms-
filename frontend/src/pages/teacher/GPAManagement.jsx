@@ -42,6 +42,10 @@ const GPAManagement = () => {
     student: '',
     course: '',
     gpa: '',
+    gpa_scale: '4',
+    semester_gpa: '',
+    cumulative_gpa: '',
+    grade_name: '',
     semester: '',
     academic_year: '',
     notes: '',
@@ -61,7 +65,7 @@ const GPAManagement = () => {
       setGpas(gpasList);
     } catch (err) {
       console.error('Error fetching GPAs:', err);
-      setError('حدث خطأ في تحميل بيانات GPA');
+      setError('حدث خطأ في تحميل بيانات الدرجات');
     } finally {
       setLoading(false);
     }
@@ -84,6 +88,10 @@ const GPAManagement = () => {
         student: gpa.student,
         course: gpa.course || '',
         gpa: gpa.gpa,
+        gpa_scale: gpa.gpa_scale || '4',
+        semester_gpa: gpa.semester_gpa || '',
+        cumulative_gpa: gpa.cumulative_gpa || '',
+        grade_name: gpa.grade_name || '',
         semester: gpa.semester || '',
         academic_year: gpa.academic_year || '',
         notes: gpa.notes || '',
@@ -94,6 +102,10 @@ const GPAManagement = () => {
         student: '',
         course: '',
         gpa: '',
+        gpa_scale: '4',
+        semester_gpa: '',
+        cumulative_gpa: '',
+        grade_name: '',
         semester: '',
         academic_year: '',
         notes: '',
@@ -118,12 +130,22 @@ const GPAManagement = () => {
   const handleSubmit = async () => {
     try {
       if (!gpaData.student || !gpaData.gpa) {
-        setError('الطالب والـ GPA مطلوبان');
+        setError('الطالب والدرجة مطلوبان');
         return;
       }
 
-      if (gpaData.gpa < 0 || gpaData.gpa > 4.0) {
-        setError('GPA يجب أن يكون بين 0 و 4.0');
+      if (gpaData.gpa < 0 || gpaData.gpa > 5.0) {
+        setError('الدرجة يجب أن تكون بين 0 و 5.0');
+        return;
+      }
+
+      if (gpaData.semester_gpa && (gpaData.semester_gpa < 0 || gpaData.semester_gpa > 5.0)) {
+        setError('المعدل الفصلي يجب أن يكون بين 0 و 5.0');
+        return;
+      }
+
+      if (gpaData.cumulative_gpa && (gpaData.cumulative_gpa < 0 || gpaData.cumulative_gpa > 5.0)) {
+        setError('المعدل التراكمي يجب أن يكون بين 0 و 5.0');
         return;
       }
 
@@ -138,7 +160,7 @@ const GPAManagement = () => {
       setError(null);
     } catch (err) {
       console.error('Error saving GPA:', err);
-      setError(err.response?.data?.error || 'حدث خطأ في حفظ GPA');
+      setError(err.response?.data?.error || 'حدث خطأ في حفظ الدرجة');
     }
   };
 
@@ -151,7 +173,7 @@ const GPAManagement = () => {
       setError(null);
     } catch (err) {
       console.error('Error deleting GPA:', err);
-      setError(err.response?.data?.error || 'حدث خطأ في حذف GPA');
+      setError(err.response?.data?.error || 'حدث خطأ في حذف الدرجة');
     }
   };
 
@@ -184,14 +206,14 @@ const GPAManagement = () => {
     <Box sx={{ p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1">
-          إدارة GPA
+          إدارة درجات الطلاب
         </Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => handleOpenDialog()}
         >
-          إضافة GPA جديد
+          إضافة درجة جديدة
         </Button>
       </Box>
 
@@ -204,7 +226,7 @@ const GPAManagement = () => {
       {gpas.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Typography variant="h6" color="text.secondary">
-            لا توجد سجلات GPA
+            لا توجد درجات
           </Typography>
         </Paper>
       ) : (
@@ -212,13 +234,15 @@ const GPAManagement = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>الطالب</TableCell>
+                <TableCell>اسم الطالب</TableCell>
+                <TableCell>اسم الدرجة</TableCell>
+                <TableCell>الدرجة</TableCell>
+                <TableCell>أصل الدرجة</TableCell>
                 <TableCell>الكورس</TableCell>
                 <TableCell>الفصل الدراسي</TableCell>
                 <TableCell>السنة الأكاديمية</TableCell>
-                <TableCell>GPA</TableCell>
-                <TableCell>تاريخ الإنشاء</TableCell>
-                <TableCell>آخر تحديث</TableCell>
+                <TableCell>المعدل الفصلي</TableCell>
+                <TableCell>المعدل التراكمي</TableCell>
                 <TableCell>الإجراءات</TableCell>
               </TableRow>
             </TableHead>
@@ -226,9 +250,7 @@ const GPAManagement = () => {
               {gpas.map((gpa) => (
                 <TableRow key={gpa.id}>
                   <TableCell>{gpa.student_name || gpa.student}</TableCell>
-                  <TableCell>{gpa.course_title || 'عام'}</TableCell>
-                  <TableCell>{gpa.semester || '-'}</TableCell>
-                  <TableCell>{gpa.academic_year || '-'}</TableCell>
+                  <TableCell>{gpa.grade_name || '-'}</TableCell>
                   <TableCell>
                     <Chip
                       label={gpa.gpa}
@@ -236,8 +258,18 @@ const GPAManagement = () => {
                       size="small"
                     />
                   </TableCell>
-                  <TableCell>{formatDate(gpa.created_at)}</TableCell>
-                  <TableCell>{formatDate(gpa.updated_at)}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={gpa.gpa_scale || '4'}
+                      color="default"
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{gpa.course_title || 'عام'}</TableCell>
+                  <TableCell>{gpa.semester || '-'}</TableCell>
+                  <TableCell>{gpa.academic_year || '-'}</TableCell>
+                  <TableCell>{gpa.semester_gpa || '-'}</TableCell>
+                  <TableCell>{gpa.cumulative_gpa || '-'}</TableCell>
                   <TableCell>
                     <IconButton
                       color="primary"
@@ -265,7 +297,7 @@ const GPAManagement = () => {
       {/* Dialog لإضافة/تعديل GPA */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedGPA ? 'تعديل GPA' : 'إضافة GPA جديد'}
+          {selectedGPA ? 'تعديل الدرجة' : 'إضافة درجة جديدة'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -296,13 +328,53 @@ const GPAManagement = () => {
 
             <TextField
               fullWidth
-              label="GPA"
+              label="الدرجة"
               type="number"
               value={gpaData.gpa}
               onChange={(e) => setGpaData({ ...gpaData, gpa: e.target.value })}
               required
-              inputProps={{ min: 0, max: 4.0, step: 0.01 }}
-              helperText="GPA يجب أن يكون بين 0 و 4.0"
+              inputProps={{ min: 0, max: 5.0, step: 0.01 }}
+              helperText="الدرجة يجب أن تكون بين 0 و 5.0"
+            />
+
+            <FormControl fullWidth>
+              <InputLabel>أصل المعدل</InputLabel>
+              <Select
+                value={gpaData.gpa_scale}
+                onChange={(e) => setGpaData({ ...gpaData, gpa_scale: e.target.value })}
+                label="أصل المعدل"
+              >
+                <MenuItem value="4">4</MenuItem>
+                <MenuItem value="5">5</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              fullWidth
+              label="المعدل الفصلي (اختياري)"
+              type="number"
+              value={gpaData.semester_gpa}
+              onChange={(e) => setGpaData({ ...gpaData, semester_gpa: e.target.value })}
+              inputProps={{ min: 0, max: 5.0, step: 0.01 }}
+              helperText="المعدل الفصلي يجب أن يكون بين 0 و 5.0"
+            />
+
+            <TextField
+              fullWidth
+              label="المعدل التراكمي (اختياري)"
+              type="number"
+              value={gpaData.cumulative_gpa}
+              onChange={(e) => setGpaData({ ...gpaData, cumulative_gpa: e.target.value })}
+              inputProps={{ min: 0, max: 5.0, step: 0.01 }}
+              helperText="المعدل التراكمي يجب أن يكون بين 0 و 5.0"
+            />
+
+            <TextField
+              fullWidth
+              label="اسم الدرجة (اختياري)"
+              value={gpaData.grade_name}
+              onChange={(e) => setGpaData({ ...gpaData, grade_name: e.target.value })}
+              helperText="مثل: امتياز، جيد جداً، جيد، مقبول"
             />
 
             <TextField
@@ -342,7 +414,7 @@ const GPAManagement = () => {
         <DialogTitle>تأكيد الحذف</DialogTitle>
         <DialogContent>
           <Typography>
-            هل أنت متأكد من حذف GPA للطالب {selectedGPA?.student_name}؟
+            هل أنت متأكد من حذف الدرجة للطالب {selectedGPA?.student_name}؟
           </Typography>
         </DialogContent>
         <DialogActions>

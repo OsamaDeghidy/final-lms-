@@ -5,7 +5,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Count, Q
 from django.utils import timezone
-from .models import Notification, NotificationSettings, NotificationTemplate, NotificationLog
+from .models import Notification, NotificationSettings, NotificationTemplate, NotificationLog, BannerNotification, AttendancePenalty, StudentAttendance
 
 
 class NotificationTypeFilter(SimpleListFilter):
@@ -475,4 +475,264 @@ class NotificationLogAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related('notification__recipient') 
+        return queryset.select_related('notification__recipient')
+
+
+@admin.register(BannerNotification)
+class BannerNotificationAdmin(admin.ModelAdmin):
+    list_display = (
+        'title', 'notification_type', 'target_type', 'is_active_display',
+        'status_display', 'target_counts', 'created_by', 'created_at'
+    )
+    list_filter = ('notification_type', 'target_type', 'is_active', 'created_at')
+    search_fields = ('title', 'message', 'created_by__username', 'created_by__profile__name')
+    readonly_fields = ('created_at', 'updated_at', 'status_display', 'target_counts', 'send_info')
+    
+    def send_info(self, obj):
+        if obj.pk:
+            if obj.send_immediately:
+                return format_html('<span style="color: #28a745;">⚡ سيتم الإرسال فوراً بعد الحفظ</span>')
+            elif obj.start_date:
+                return format_html('<span style="color: #ffc107;">⏰ سيتم الإرسال في: {}</span>', obj.start_date.strftime("%Y-%m-%d %H:%M"))
+            else:
+                return format_html('<span style="color: #6c757d;">❌ لن يتم الإرسال (send_immediately=False وبدون جدولة)</span>')
+        return 'سيتم تحديد الحالة بعد الحفظ'
+    send_info.short_description = 'معلومات الإرسال'
+    
+    fieldsets = (
+        ('معلومات أساسية', {
+            'fields': ('title', 'message', 'notification_type', 'created_by')
+        }),
+        ('الألوان', {
+            'fields': ('text_color', 'background_color'),
+            'description': 'استخدم صيغة HEX للألوان مثل #000000 أو #FFFFFF'
+        }),
+        ('الاستهداف', {
+            'fields': ('target_type', 'target_students', 'target_divisions', 'target_instructors')
+        }),
+        ('الصفحات المستهدفة', {
+            'fields': ('target_pages',),
+            'description': 'أدخل قائمة بصفحات المستهدفة مثل: ["home", "my-courses"]'
+        }),
+        ('الحالة والجدولة', {
+            'fields': ('is_active', 'start_date', 'end_date', 'send_email', 'send_immediately')
+        }),
+        ('معلومات الإرسال', {
+            'fields': ('send_info',),
+            'description': 'معلومات حول وقت إرسال الإشعار'
+        }),
+        ('التواريخ', {
+            'fields': ('created_at', 'updated_at', 'status_display', 'target_counts'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    filter_horizontal = ('target_students', 'target_divisions', 'target_instructors')
+    
+    def is_active_display(self, obj):
+        if obj.is_currently_active():
+            return format_html('<span style="color: #28a745;">✅ نشط</span>')
+        return format_html('<span style="color: #dc3545;">❌ غير نشط</span>')
+    is_active_display.short_description = 'الحالة'
+    
+    def status_display(self, obj):
+        now = timezone.now()
+        if not obj.is_active:
+            return format_html('<span style="color: #6c757d;">⏸ معطل</span>')
+        if obj.start_date and now < obj.start_date:
+            return format_html('<span style="color: #ffc107;">⏳ مجدول</span>')
+        if obj.end_date and now > obj.end_date:
+            return format_html('<span style="color: #6c757d;">⏰ منتهي</span>')
+        return format_html('<span style="color: #28a745;">✅ نشط</span>')
+    status_display.short_description = 'الحالة الحالية'
+    
+    def target_counts(self, obj):
+        counts = []
+        if obj.target_students.exists():
+            counts.append(f'طلاب: {obj.target_students.count()}')
+        if obj.target_divisions.exists():
+            counts.append(f'شعب: {obj.target_divisions.count()}')
+        if obj.target_instructors.exists():
+            counts.append(f'معلمين: {obj.target_instructors.count()}')
+        return ', '.join(counts) if counts else 'الكل'
+    target_counts.short_description = 'عدد المستهدفين'
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+        # حفظ الإشارة للكائن لاستخدامها في save_related
+        self._saved_obj = obj
+    
+    def save_related(self, request, form, formsets, change):
+        """حفظ العلاقات المرتبطة ثم إرسال الإشعارات"""
+        super().save_related(request, form, formsets, change)
+        
+        # بعد حفظ جميع العلاقات، إعادة تحميل الكائن من قاعدة البيانات للتأكد من الحصول على العلاقات المحدثة
+        obj = getattr(self, '_saved_obj', form.instance)
+        # إعادة تحميل الكائن مع العلاقات ManyToMany
+        from .models import BannerNotification
+        obj = BannerNotification.objects.prefetch_related(
+            'target_students__profile__user',
+            'target_divisions__students__profile__user',
+            'target_instructors__profile__user'
+        ).get(pk=obj.pk)
+        
+        if obj.is_active and obj.send_immediately:
+            try:
+                from .utils import send_banner_notification
+                import logging
+                logger = logging.getLogger(__name__)
+                
+                # التحقق من المستخدمين المستهدفين قبل الإرسال
+                target_users = obj.get_target_users()
+                logger.info(f"عدد المستخدمين المستهدفين بعد الحفظ: {len(target_users)}")
+                if target_users:
+                    logger.info(f"أمثلة للمستخدمين: {[u.email for u in target_users[:3]]}")
+                
+                # force=True لإرسال حتى لو لم يكن نشطاً حالياً (إذا كان send_immediately=True)
+                count = send_banner_notification(obj, force=True)
+                if count > 0:
+                    email_status = f' مع {len([n for n, u in getattr(obj, "_last_sent_notifications", []) if n.email_sent])} بريد إلكتروني' if obj.send_email else ''
+                    self.message_user(
+                        request,
+                        f'✅ تم إرسال الإشعار إلى {count} مستخدم{email_status}',
+                        level='success'
+                    )
+                else:
+                    # التحقق من السبب
+                    if not target_users:
+                        self.message_user(
+                            request,
+                            '⚠️ لم يتم العثور على مستخدمين مستهدفين لإرسال الإشعار. تحقق من إعدادات الاستهداف',
+                            level='warning'
+                        )
+                    else:
+                        self.message_user(
+                            request,
+                            '⚠️ تم إنشاء الإشعارات ولكن قد تكون مكررة من رسالة سابقة',
+                            level='info'
+                        )
+            except Exception as e:
+                import traceback
+                error_detail = traceback.format_exc()
+                error_msg = f'❌ حدث خطأ عند إرسال الإشعار: {str(e)}'
+                self.message_user(
+                    request,
+                    error_msg,
+                    level='error'
+                )
+                # طباعة تفاصيل الخطأ في السيرفر للتصحيح
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error sending banner notification: {error_detail}")
+        elif obj.is_active and not obj.send_immediately:
+            # إذا كان مجدولاً وليس فوري، إعلام المستخدم
+            if obj.start_date and obj.start_date > timezone.now():
+                self.message_user(
+                    request,
+                    f'⏳ سيتم إرسال الإشعار في تاريخ البدء: {obj.start_date.strftime("%Y-%m-%d %H:%M")}',
+                    level='info'
+                )
+    
+    actions = ['send_notifications_action']
+    
+    def send_notifications_action(self, request, queryset):
+        """إرسال الإشعارات المحددة للمستهدفين"""
+        from .utils import send_banner_notification
+        
+        total_sent = 0
+        errors = []
+        
+        for banner in queryset:
+            try:
+                if banner.is_active:
+                    # force=True لإرسال حتى لو لم يكن نشطاً حالياً
+                    count = send_banner_notification(banner, force=True)
+                    total_sent += count
+                else:
+                    errors.append(f'إشعار "{banner.title}" غير مفعّل')
+            except Exception as e:
+                import traceback
+                error_detail = traceback.format_exc()
+                errors.append(f'خطأ في إشعار "{banner.title}": {str(e)}')
+                print(f"Error details: {error_detail}")  # للتصحيح
+        
+        if total_sent > 0:
+            self.message_user(
+                request,
+                f'تم إرسال {total_sent} إشعار بنجاح',
+                level='success'
+            )
+        
+        if errors:
+            self.message_user(
+                request,
+                'الأخطاء: ' + '; '.join(errors[:5]),  # عرض أول 5 أخطاء فقط
+                level='warning'
+            )
+    
+    send_notifications_action.short_description = 'إرسال الإشعارات للمستهدفين'
+
+
+@admin.register(AttendancePenalty)
+class AttendancePenaltyAdmin(admin.ModelAdmin):
+    list_display = (
+        'instructor', 'course', 'max_absences', 'warning_threshold',
+        'is_active', 'created_at'
+    )
+    list_filter = ('is_active', 'instructor', 'course', 'created_at')
+    search_fields = (
+        'instructor__profile__name', 'course__title',
+        'penalty_message', 'warning_message'
+    )
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('المعلم والدورة', {
+            'fields': ('instructor', 'course')
+        }),
+        ('قواعد الحرمان', {
+            'fields': ('max_absences', 'warning_threshold', 'penalty_message', 'warning_message')
+        }),
+        ('الحالة', {
+            'fields': ('is_active',)
+        }),
+        ('التواريخ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(StudentAttendance)
+class StudentAttendanceAdmin(admin.ModelAdmin):
+    list_display = (
+        'student', 'course', 'absences_count', 'last_absence_date',
+        'penalty_sent', 'warning_sent', 'updated_at'
+    )
+    list_filter = ('penalty_sent', 'warning_sent', 'course', 'updated_at')
+    search_fields = (
+        'student__profile__name', 'course__title'
+    )
+    readonly_fields = ('created_at', 'updated_at', 'penalty_sent', 'warning_sent')
+    
+    fieldsets = (
+        ('الطالب والدورة', {
+            'fields': ('student', 'course')
+        }),
+        ('الحضور', {
+            'fields': ('absences_count', 'last_absence_date')
+        }),
+        ('حالة الإشعارات', {
+            'fields': ('penalty_sent', 'warning_sent')
+        }),
+        ('التواريخ', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('student__profile', 'course') 

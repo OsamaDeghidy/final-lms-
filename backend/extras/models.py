@@ -8,9 +8,9 @@ from courses.models import Course
 class Banner(models.Model):
     """Model for managing banners on the website"""
     BANNER_TYPES = [
-        ('main', 'Main Banner'),
-        ('sidebar', 'Sidebar Banner'),
-        ('promo', 'Promotional Banner'),
+        ('main', 'بانر رئيسي'),
+        ('sidebar', 'بانر جانبي'),
+        ('promo', 'بانر ترويجي'),
     ]
     
     title = models.CharField(max_length=200, verbose_name='عنوان البانر')
@@ -33,8 +33,8 @@ class Banner(models.Model):
     display_order = models.PositiveIntegerField(default=0, verbose_name='ترتيب العرض')
     start_date = models.DateTimeField(default=timezone.now, verbose_name='تاريخ البدء')
     end_date = models.DateTimeField(blank=True, null=True, verbose_name='تاريخ الانتهاء')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
     
     class Meta:
         verbose_name = 'بانر'
@@ -69,8 +69,8 @@ class CourseCollection(models.Model):
     )
     is_featured = models.BooleanField(default=False, verbose_name='مميز')
     display_order = models.PositiveIntegerField(default=0, verbose_name='ترتيب العرض')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
     
     class Meta:
         verbose_name = 'مجموعة كورسات'

@@ -303,7 +303,7 @@ class CertificateAdmin(admin.ModelAdmin):
         if Workbook:
             wb = Workbook()
             ws = wb.active
-            ws.title = 'Certificates'
+            ws.title = 'الشهادات'
             ws.append(headers)
             output = io.BytesIO()
             wb.save(output)
@@ -335,7 +335,7 @@ class CertificateAdmin(admin.ModelAdmin):
         if Workbook:
             wb = Workbook()
             ws = wb.active
-            ws.title = 'Certificates'
+            ws.title = 'الشهادات'
             ws.append(headers)
 
             for cert in queryset:

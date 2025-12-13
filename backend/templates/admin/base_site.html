@@ -3070,6 +3070,36 @@ function toggleMobileSidebar(event) {
             </a>
         </li>
         
+        <!-- Notifications Section -->
+        <li class="menu-section">
+            <span>الإشعارات</span>
+        </li>
+        <li>
+            <a href="{% url 'admin:notifications_bannernotification_changelist' %}" class="{% if '/admin/notifications/bannernotification/' in request.path %}active{% endif %}">
+                <i class="fas fa-bell"></i>
+                <span>إشعارات البانر</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'admin:notifications_notification_changelist' %}" class="{% if '/admin/notifications/notification/' in request.path %}active{% endif %}">
+                <i class="fas fa-envelope"></i>
+                <span>الإشعارات</span>
+                {% if request.user.is_authenticated %}
+                    {% load notifications_tags %}
+                    {% get_unread_notifications_count request.user as unread_count %}
+                    {% if unread_count > 0 %}
+                        <span class="notification-badge" style="background: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 11px; margin-right: 5px; display: inline-block; min-width: 18px; text-align: center;">{{ unread_count }}</span>
+                    {% endif %}
+                {% endif %}
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'admin:notifications_attendancepenalty_changelist' %}" class="{% if '/admin/notifications/attendancepenalty/' in request.path %}active{% endif %}">
+                <i class="fas fa-user-times"></i>
+                <span>قواعد الحرمان</span>
+            </a>
+        </li>
+        
         <!-- Divisions & Circulars Section -->
         <li class="menu-section">
             <span>الشعب والتعاميم</span>
@@ -3131,6 +3161,55 @@ function toggleMobileSidebar(event) {
 
 <!-- Sidebar Overlay for Mobile -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- JavaScript for Circular Admin Actions -->
+<script>
+// Function to send circular
+function sendCircular(circularId) {
+    if (confirm('هل أنت متأكد من إرسال هذا التعميم؟ سيتم تغيير الحالة إلى "مرسل" وإرساله فوراً للمستهدفين.')) {
+        // Navigate to change page and set status to sent
+        const url = '/admin/circulars/circular/' + circularId + '/change/';
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        
+        // Add CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        // Create hidden inputs to set status to sent
+        const statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = 'sent';
+        form.appendChild(statusInput);
+        
+        // Add _save button to trigger save
+        const saveInput = document.createElement('input');
+        saveInput.type = 'hidden';
+        saveInput.name = '_save';
+        saveInput.value = '1';
+        form.appendChild(saveInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Function to schedule circular
+function scheduleCircular(circularId) {
+    const dateStr = prompt('أدخل تاريخ الجدولة (YYYY-MM-DD HH:MM):');
+    if (dateStr) {
+        window.location.href = '/admin/circulars/circular/' + circularId + '/change/?schedule=' + encodeURIComponent(dateStr);
+    }
+}
+</script>
 
 <style>
 /* Hide default Django admin sidebar */

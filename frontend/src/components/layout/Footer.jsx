@@ -134,12 +134,14 @@ const Footer = () => {
 
   const contactInfo = [
     { icon: <PhoneIcon />, text: '+966 12 345 6789' },
-    { icon: <EmailIcon />, text: 'info@academy.edu.sa' },
+    { icon: <EmailIcon />, text: 'profrssionaldev.sa@gmail.com' },
     { icon: <LocationIcon />, text: 'المملكة العربية السعودية' },
   ];
 
 
 
+
+  
 
   const importantLinks = [
     { text: 'من نحن', to: '/about-us' },

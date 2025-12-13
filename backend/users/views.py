@@ -714,7 +714,7 @@ def create_test_user(request):
         return Response({
             'success': False,
             'message': f'خطأ في إنشاء المستخدم: {str(e)}'
-        })
+        }) 
 
 
 # GPA Views

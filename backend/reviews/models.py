@@ -11,23 +11,25 @@ User = get_user_model()
 class CourseReview(models.Model):
     """User reviews for courses"""
     RATING_CHOICES = [
-        (1, '1 - Poor'),
-        (2, '2 - Fair'),
-        (3, '3 - Good'),
-        (4, '4 - Very Good'),
-        (5, '5 - Excellent'),
+        (1, '1 - ضعيف'),
+        (2, '2 - مقبول'),
+        (3, '3 - جيد'),
+        (4, '4 - جيد جداً'),
+        (5, '5 - ممتاز'),
     ]
     
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='reviews')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_reviews')
-    rating = models.IntegerField(choices=RATING_CHOICES, validators=[MinValueValidator(1), MaxValueValidator(5)])
-    review_text = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_approved = models.BooleanField(default=True)
-    likes = models.ManyToManyField(User, through='ReviewLike', related_name='liked_reviews')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='reviews', verbose_name='الدورة')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_reviews', verbose_name='المستخدم')
+    rating = models.IntegerField(choices=RATING_CHOICES, validators=[MinValueValidator(1), MaxValueValidator(5)], verbose_name='التقييم')
+    review_text = models.TextField(null=True, blank=True, verbose_name='نص التقييم')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    is_approved = models.BooleanField(default=True, verbose_name='موافق عليه')
+    likes = models.ManyToManyField(User, through='ReviewLike', related_name='liked_reviews', verbose_name='الإعجابات')
     
     class Meta:
+        verbose_name = 'تقييم دورة'
+        verbose_name_plural = 'تقييمات الدورات'
         unique_together = ('course', 'user')
         ordering = ['-created_at']
     
@@ -65,15 +67,16 @@ class CourseReview(models.Model):
 
 class ReviewReply(models.Model):
     """Replies to course reviews"""
-    review = models.ForeignKey(CourseReview, on_delete=models.CASCADE, related_name='replies')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review_replies')
-    reply_text = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_approved = models.BooleanField(default=True)
+    review = models.ForeignKey(CourseReview, on_delete=models.CASCADE, related_name='replies', verbose_name='التقييم')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review_replies', verbose_name='المستخدم')
+    reply_text = models.TextField(verbose_name='نص الرد')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    is_approved = models.BooleanField(default=True, verbose_name='موافق عليه')
     
     class Meta:
-        verbose_name_plural = 'Review Replies'
+        verbose_name = 'رد على التقييم'
+        verbose_name_plural = 'ردود التقييمات'
         ordering = ['created_at']
     
     def __str__(self):
