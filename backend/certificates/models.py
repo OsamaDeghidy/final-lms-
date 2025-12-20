@@ -164,6 +164,7 @@ class Certificate(models.Model):
     # Metadata
     issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_certificates', verbose_name="أصدرت بواسطة")
     pdf_file = models.FileField(upload_to='certificates/pdfs/', null=True, blank=True, verbose_name="ملف PDF")
+    image_file = models.ImageField(upload_to='certificates/images/', null=True, blank=True, verbose_name="صورة الشهادة")
     qr_code_image = models.ImageField(upload_to='certificates/qr_codes/', null=True, blank=True, verbose_name="صورة رمز QR")
     
     # Digital signature
@@ -235,6 +236,11 @@ class Certificate(models.Model):
         # توحيد مسار صفحة التحقق ليتطابق مع صفحة الـ QR المستعملة في الواجهة
         return f"https://{domain}/certificates/verify/{self.verification_code}/"
 
+    def get_pdf_preview_url(self):
+        """الحصول على رابط معاينة PDF للشهادة"""
+        domain = getattr(settings, 'DOMAIN_NAME', '127.0.0.1:8000')
+        return f"https://{domain}/certificates/pdf-preview/{self.verification_code}/"
+
     def get_download_url(self):
         """الحصول على رابط تحميل الشهادة"""
         if self.pdf_file:
@@ -252,8 +258,8 @@ class Certificate(models.Model):
         if not self.verification_code or not QRCODE_AVAILABLE:
             return
         
-        # إنشاء رمز QR يحتوي على رابط التحقق
-        qr_data = self.get_verification_url()
+        # إنشاء رمز QR يحتوي على رابط معاينة PDF
+        qr_data = self.get_pdf_preview_url()
         qr = qrcode.QRCode(  # type: ignore
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,  # type: ignore

@@ -3,6 +3,9 @@
 {% block object-tools-items %}
   {{ block.super }}
   <li>
+    <a href="{% url 'bulk_certificates_download' %}" class="button" target="_blank" style="background: #28a745; color: white;">📥 تحميل جماعي</a>
+  </li>
+  <li>
     <a href="{% url 'admin:certificates_certificate_import_excel' %}" class="button">استيراد إكسل</a>
   </li>
   <li>

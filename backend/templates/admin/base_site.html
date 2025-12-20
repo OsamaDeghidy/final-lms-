@@ -54,6 +54,30 @@
         font-family: 'Tajawal', sans-serif;
     }
 
+    /* Remove marker styling from all elements */
+    *::marker {
+        unicode-bidi: normal !important;
+        font-variant-numeric: normal !important;
+        text-transform: none !important;
+        text-indent: 0 !important;
+        text-align: start !important;
+        text-align-last: auto !important;
+    }
+
+    /* Remove marker from list items in toolbar and buttons */
+    .toolbar-buttons li::marker,
+    .toolbar-buttons li::before,
+    .object-tools li::marker,
+    .object-tools li::before {
+        display: none !important;
+        content: none !important;
+    }
+
+    .toolbar-buttons li,
+    .object-tools li {
+        list-style: none !important;
+    }
+
     body {
         background-color: var(--content-bg);
         direction: rtl;
@@ -1654,6 +1678,166 @@
         border: 1px solid #fcc;
     }
 
+    /* Admin Messages Popup - Bottom Right */
+    .messagelist {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 10001;
+        max-width: 400px;
+        width: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        animation: slideInUp 0.3s ease;
+    }
+
+    .messagelist .success,
+    .messagelist .info,
+    .messagelist .warning,
+    .messagelist .error {
+        background: var(--white);
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        position: relative;
+        border-right: 4px solid;
+        animation: slideInRight 0.3s ease;
+        min-width: 300px;
+        max-width: 400px;
+    }
+
+    .messagelist .success {
+        border-right-color: #28a745;
+        background: linear-gradient(to left, #d4edda 0%, #ffffff 10%);
+    }
+
+    .messagelist .info {
+        border-right-color: #17a2b8;
+        background: linear-gradient(to left, #d1ecf1 0%, #ffffff 10%);
+    }
+
+    .messagelist .warning {
+        border-right-color: #ffc107;
+        background: linear-gradient(to left, #fff3cd 0%, #ffffff 10%);
+    }
+
+    .messagelist .error {
+        border-right-color: #dc3545;
+        background: linear-gradient(to left, #f8d7da 0%, #ffffff 10%);
+    }
+
+    .messagelist .success::before,
+    .messagelist .info::before,
+    .messagelist .warning::before,
+    .messagelist .error::before {
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .messagelist .success::before {
+        content: "\f00c";
+        color: #28a745;
+    }
+
+    .messagelist .info::before {
+        content: "\f05a";
+        color: #17a2b8;
+    }
+
+    .messagelist .warning::before {
+        content: "\f071";
+        color: #ffc107;
+    }
+
+    .messagelist .error::before {
+        content: "\f06a";
+        color: #dc3545;
+    }
+
+    .messagelist .success,
+    .messagelist .info,
+    .messagelist .warning,
+    .messagelist .error {
+        padding-right: 45px;
+    }
+
+    .messagelist .message-text {
+        flex: 1;
+        color: var(--gray-800);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        font-weight: 500;
+    }
+
+    .messagelist .message-close {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: transparent;
+        border: none;
+        color: var(--gray-600);
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 1rem;
+        transition: all 0.2s;
+        opacity: 0.7;
+    }
+
+    .messagelist .message-close:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.1);
+        color: var(--gray-800);
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+
+    .messagelist .fade-out {
+        animation: fadeOut 0.3s ease forwards;
+    }
+
+    /* Hide default messages location */
+    #content-main > .messagelist {
+        display: none !important;
+    }
+
     /* Required Field Indicator */
     .required {
         color: #dc3545;
@@ -2062,11 +2246,32 @@
         padding: 15px;
         background: var(--white);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        width: 100% !important;
+        max-width: 100% !important;
+        float: none !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 15px;
+        box-sizing: border-box;
+        overflow-x: auto;
+        direction: rtl;
+    }
+
+    .selector-available, .selector-chosen {
+        flex: 1 1 300px !important;
+        min-width: 250px;
+        max-width: 100%;
+        display: flex !important;
+        flex-direction: column;
+        box-sizing: border-box;
     }
 
     .selector select {
         border-radius: var(--border-radius);
         min-height: 200px;
+        width: 100% !important;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .selector-chooser {
@@ -2075,6 +2280,8 @@
         gap: 10px;
         align-items: center;
         justify-content: center;
+        flex: 0 0 auto;
+        padding: 0 10px;
     }
 
     .selector-chooser a {
@@ -2087,12 +2294,34 @@
         font-weight: 500;
         transition: all 0.3s ease;
         border: none;
+        white-space: nowrap;
     }
 
     .selector-chooser a:hover {
         background: var(--blue-dark);
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Responsive adjustments for selector */
+    @media (max-width: 768px) {
+        .selector {
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .selector-available, .selector-chosen {
+            flex: 1 1 auto !important;
+            min-width: 100%;
+            max-width: 100%;
+        }
+        
+        .selector-chooser {
+            flex-direction: row;
+            justify-content: center;
+            width: 100%;
+            padding: 10px 0;
+        }
     }
 
     /* Add Another Link */
@@ -3057,6 +3286,30 @@ function toggleMobileSidebar(event) {
                 <span>محاولات الاختبارات</span>
             </a>
         </li>
+        
+        <!-- Questions Section -->
+        <li class="menu-section">
+            <span>الأسئلة</span>
+        </li>
+        <li>
+            <a href="{% url 'admin:assignments_assignmentquestion_changelist' %}" class="{% if '/admin/assignments/assignmentquestion/' in request.path %}active{% endif %}">
+                <i class="fas fa-question"></i>
+                <span>أسئلة الواجبات</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'admin:assignments_question_changelist' %}" class="{% if '/admin/assignments/question/' in request.path %}active{% endif %}">
+                <i class="fas fa-question-circle"></i>
+                <span>أسئلة الكويزات</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'admin:assignments_examquestion_changelist' %}" class="{% if '/admin/assignments/examquestion/' in request.path %}active{% endif %}">
+                <i class="fas fa-question-circle"></i>
+                <span>أسئلة الامتحانات</span>
+            </a>
+        </li>
+        
         <li>
             <a href="{% url 'admin:certificates_certificate_changelist' %}" class="{% if '/admin/certificates/certificate/' in request.path %}active{% endif %}">
                 <i class="fas fa-certificate"></i>
@@ -3821,5 +4074,126 @@ document.addEventListener('DOMContentLoaded', function() {
         subtree: true
     });
 });
+
+// Admin Messages as Popup - Bottom Right
+(function() {
+    function convertMessagesToPopup() {
+        // Find all messages (Django admin uses .messagelist)
+        const messageLists = document.querySelectorAll('.messagelist:not(#admin-messages-popup)');
+        
+        if (messageLists.length === 0) return;
+
+        // Create popup container if it doesn't exist
+        let popupContainer = document.getElementById('admin-messages-popup');
+        if (!popupContainer) {
+            popupContainer = document.createElement('div');
+            popupContainer.id = 'admin-messages-popup';
+            popupContainer.className = 'messagelist';
+            document.body.appendChild(popupContainer);
+        }
+
+        messageLists.forEach(function(messageList) {
+            const messages = messageList.querySelectorAll('li, .success, .info, .warning, .error');
+            
+            if (messages.length === 0) return;
+
+            messages.forEach(function(message) {
+                // Get message type and text
+                let messageType = 'info';
+                let messageText = '';
+                
+                if (message.classList.contains('success')) {
+                    messageType = 'success';
+                    messageText = message.textContent.trim();
+                } else if (message.classList.contains('info')) {
+                    messageType = 'info';
+                    messageText = message.textContent.trim();
+                } else if (message.classList.contains('warning')) {
+                    messageType = 'warning';
+                    messageText = message.textContent.trim();
+                } else if (message.classList.contains('error')) {
+                    messageType = 'error';
+                    messageText = message.textContent.trim();
+                } else {
+                    // Check parent for class
+                    const parent = message.closest('.success, .info, .warning, .error');
+                    if (parent) {
+                        if (parent.classList.contains('success')) messageType = 'success';
+                        else if (parent.classList.contains('info')) messageType = 'info';
+                        else if (parent.classList.contains('warning')) messageType = 'warning';
+                        else if (parent.classList.contains('error')) messageType = 'error';
+                    }
+                    messageText = message.textContent.trim();
+                }
+                
+                if (!messageText) return;
+
+                // Create popup message element
+                const popupMessage = document.createElement('div');
+                popupMessage.className = messageType + ' popup-message';
+                popupMessage.innerHTML = '<span class="message-text">' + messageText + '</span>';
+                
+                // Add close button
+                const closeBtn = document.createElement('button');
+                closeBtn.className = 'message-close';
+                closeBtn.innerHTML = '×';
+                closeBtn.setAttribute('aria-label', 'إغلاق');
+                popupMessage.appendChild(closeBtn);
+                
+                // Add to popup container
+                popupContainer.appendChild(popupMessage);
+                
+                // Auto hide after 3 seconds
+                const timeout = setTimeout(function() {
+                    popupMessage.classList.add('fade-out');
+                    setTimeout(function() {
+                        if (popupMessage.parentNode) {
+                            popupMessage.remove();
+                        }
+                    }, 300);
+                }, 3000);
+                
+                // Close button click
+                closeBtn.addEventListener('click', function() {
+                    clearTimeout(timeout);
+                    popupMessage.classList.add('fade-out');
+                    setTimeout(function() {
+                        if (popupMessage.parentNode) {
+                            popupMessage.remove();
+                        }
+                    }, 300);
+                });
+            });
+
+            // Hide original message list
+            messageList.style.display = 'none';
+        });
+    }
+
+    // Run on DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', convertMessagesToPopup);
+    } else {
+        convertMessagesToPopup();
+    }
+
+    // Also watch for dynamically added messages
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && (node.classList.contains('messagelist') || node.querySelector('.messagelist'))) {
+                        setTimeout(convertMessagesToPopup, 100);
+                    }
+                });
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
 </script>
 {% endblock %}

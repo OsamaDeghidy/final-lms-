@@ -30,5 +30,6 @@ urlpatterns = [
     # Public verification via API (JSON)
     path('verify-code/<str:verification_code>/', views.verify_certificate, name='verify-certificate-code'),
     path('download/<int:certificate_id>/', views.download_certificate_pdf, name='download-certificate'),
+    path('download-image/<int:certificate_id>/', views.download_certificate_image, name='download-certificate-image'),
     path('check-completion/<int:course_id>/', views.check_course_completion, name='check-course-completion'),
 ]

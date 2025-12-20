@@ -130,6 +130,19 @@
         white-space: nowrap;
         animation: fadeInUp 0.4s ease;
     }
+
+    /* Remove marker styling from toolbar buttons */
+    .toolbar-buttons li::marker,
+    .toolbar-buttons li::before {
+        display: none !important;
+        content: none !important;
+    }
+
+    .toolbar-buttons li {
+        list-style: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
     
     .toolbar-buttons .addlink:hover,
     .toolbar-buttons .historylink:hover,
@@ -479,6 +492,124 @@
     /* Hide default filter sidebar */
     #changelist-filter {
         display: none !important;
+    }
+    
+    /* Filter Popup */
+    .filter-popup {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .filter-popup.active {
+        display: flex;
+    }
+
+    .filter-popup-content {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 25px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideUp 0.3s ease;
+        position: relative;
+    }
+
+    .filter-popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .filter-popup-header h2 {
+        margin: 0;
+        color: var(--gray-800);
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .filter-popup-close {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray-600);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .filter-popup-close:hover {
+        background: var(--gray-100);
+        color: var(--gray-800);
+        transform: rotate(90deg);
+    }
+
+    .filter-popup-body {
+        margin-bottom: 20px;
+    }
+
+    .filter-popup-body h3 {
+        color: var(--gray-700);
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .filter-popup-body h3:first-child {
+        margin-top: 0;
+    }
+
+    .filter-popup-body ul {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 15px 0;
+    }
+
+    .filter-popup-body li {
+        margin-bottom: 6px;
+    }
+
+    .filter-popup-body a {
+        color: var(--gray-600);
+        text-decoration: none;
+        padding: 8px 12px;
+        display: block;
+        border-radius: var(--border-radius);
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+
+    .filter-popup-body a:hover {
+        background: var(--blue-light);
+        color: var(--blue-dark);
+    }
+
+    .filter-popup-body a.selected {
+        background: var(--blue-medium);
+        color: white;
+        font-weight: 600;
+        border-radius: 25px;
     }
     
     /* Table Container - Full Width - Part 3 */
@@ -1260,52 +1391,44 @@
 
             {% block date_hierarchy %}{% date_hierarchy cl %}{% endblock %}
 
-            <!-- Actions and Filter Bar -->
-            <div class="actions-filter-bar">
-                <div class="actions-wrapper">
-                    {% if action_form and actions_on_top and cl.show_admin_actions %}
-                        {% admin_actions %}
-                    {% endif %}
-                    </div>
-                {% if cl.has_filters %}
-                <button type="button" class="filter-button" id="filter-toggle-btn">
-                    <i class="fas fa-filter"></i>
-                    الفلتر
-                </button>
-                {% endif %}
-            </div>
-
-            <!-- Filter Popup -->
-                {% if cl.has_filters %}
-                        <div class="filter-popup" id="filter-popup">
-                <div class="filter-popup-content">
-                    <div class="filter-popup-header">
-                        <h2>{% translate 'Filter' %}</h2>
-                        <button type="button" class="filter-popup-close" id="filter-popup-close">
-                            &times;
-                        </button>
-                    </div>
-                    <div class="filter-popup-body" id="filter-popup-body">
-                            {% for spec in cl.filter_specs %}
-                                    {% admin_list_filter cl spec %}
-                            {% endfor %}
-                        </div>
-                    <div class="filter-popup-footer">
-                        <button type="button" class="cancel-btn" id="filter-popup-cancel">
-                            إلغاء
-                        </button>
-                        <button type="button" class="apply-btn" id="filter-popup-apply">
-                            تطبيق
-                        </button>
-                    </div>
-            </div>
-            </div>
-            {% endif %}
-
             <form id="changelist-form" method="post" {% if cl.formset and cl.formset.is_multipart %} enctype="multipart/form-data"{% endif %} novalidate>
                 {% csrf_token %}
                 {% if cl.formset %}
                     <div>{{ cl.formset.management_form }}</div>
+                {% endif %}
+
+                <!-- Actions and Filter Bar -->
+                <div class="actions-filter-bar">
+                    <div class="actions-wrapper">
+                        {% if action_form and actions_on_top and cl.show_admin_actions %}
+                            {% admin_actions %}
+                        {% endif %}
+                    </div>
+                    {% if cl.has_filters %}
+                    <button type="button" class="filter-button" id="filter-toggle-btn">
+                        <i class="fas fa-filter"></i>
+                        الفلتر
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Filter Popup -->
+                {% if cl.has_filters %}
+                <div class="filter-popup" id="filter-popup">
+                    <div class="filter-popup-content">
+                        <div class="filter-popup-header">
+                            <h2>{% translate 'Filter' %}</h2>
+                            <button type="button" class="filter-popup-close" id="filter-popup-close">
+                                &times;
+                            </button>
+                        </div>
+                        <div class="filter-popup-body">
+                            {% for spec in cl.filter_specs %}
+                                {% admin_list_filter cl spec %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
 
                 {% block result_list %}
@@ -1322,15 +1445,6 @@
                 {% endblock %}
                 {% block pagination %}{% pagination cl %}{% endblock %}
             </form>
-
-            <!-- Hidden filter for data -->
-            {% if cl.has_filters %}
-                <div id="changelist-filter" style="display: none;">
-                    {% for spec in cl.filter_specs %}
-                        {% admin_list_filter cl spec %}
-                    {% endfor %}
-                </div>
-            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -1343,38 +1457,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterToggleBtn = document.getElementById('filter-toggle-btn');
     const filterPopup = document.getElementById('filter-popup');
     const filterPopupClose = document.getElementById('filter-popup-close');
-    const filterPopupCancel = document.getElementById('filter-popup-cancel');
-    const filterPopupApply = document.getElementById('filter-popup-apply');
-    const filterPopupBody = document.getElementById('filter-popup-body');
-    const hiddenFilter = document.getElementById('changelist-filter');
-
-    // Copy filter content from hidden filter to popup
-    if (hiddenFilter && filterPopupBody) {
-        filterPopupBody.innerHTML = hiddenFilter.innerHTML;
-    }
+    const filterPopupBody = document.querySelector('.filter-popup-body');
 
     // Open popup
     if (filterToggleBtn && filterPopup) {
         filterToggleBtn.addEventListener('click', function() {
-                filterPopup.classList.add('active');
+            filterPopup.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-            }
+    }
 
-    // Close popup functions
+    // Close popup function
     function closeFilterPopup() {
         if (filterPopup) {
-                filterPopup.classList.remove('active');
+            filterPopup.classList.remove('active');
             document.body.style.overflow = '';
         }
     }
 
     if (filterPopupClose) {
         filterPopupClose.addEventListener('click', closeFilterPopup);
-    }
-
-    if (filterPopupCancel) {
-        filterPopupCancel.addEventListener('click', closeFilterPopup);
     }
 
     // Close on outside click
@@ -1386,71 +1488,78 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Apply filter
-    if (filterPopupApply) {
-        filterPopupApply.addEventListener('click', function() {
-            // Get selected filter links
-            const selectedLinks = filterPopupBody.querySelectorAll('a.selected');
-            const filterParams = new URLSearchParams();
-            const currentUrl = new URL(window.location.href);
+    // Close on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && filterPopup && filterPopup.classList.contains('active')) {
+            closeFilterPopup();
+        }
+    });
 
-            // Keep existing search and other important params
-            currentUrl.searchParams.forEach(function(value, key) {
-                if (key !== 'p' && !key.startsWith('_changelistfilter')) {
-                    filterParams.append(key, value);
-                }
-            });
-
-            // Collect filter values from selected links
-            selectedLinks.forEach(function(link) {
-                const href = link.getAttribute('href');
-                if (href) {
-                    try {
-                        const linkUrl = new URL(href, window.location.origin);
-                        linkUrl.searchParams.forEach(function(value, key) {
-                            if (key.startsWith('_changelistfilter')) {
-                                filterParams.set(key, value);
-                            }
-                        });
-                    } catch (e) {
-                        // If href is relative, extract params manually
-                        const match = href.match(/\?([^#]+)/);
-                        if (match) {
-                            const params = new URLSearchParams(match[1]);
-                            params.forEach(function(value, key) {
-                                if (key.startsWith('_changelistfilter')) {
-                                    filterParams.set(key, value);
-                                }
-                            });
-                        }
-                    }
+    // Mark currently active filter links
+    if (filterPopupBody) {
+        const currentUrl = new URL(window.location.href);
+        const currentFilterParams = {};
+        
+        // Collect current filter params from URL
+        currentUrl.searchParams.forEach(function(value, key) {
+            if (key.startsWith('_changelistfilter')) {
+                currentFilterParams[key] = value;
             }
         });
 
-            // Navigate to new URL
-            currentUrl.search = filterParams.toString();
-            window.location.href = currentUrl.toString();
-        });
-    }
-
-    // Handle filter link clicks in popup
-    if (filterPopupBody) {
-        filterPopupBody.addEventListener('click', function(e) {
-            if (e.target.tagName === 'A') {
-                e.preventDefault();
-                const link = e.target;
-                const parent = link.parentElement;
-
-                // Remove selected class from siblings
-                if (parent && parent.tagName === 'LI') {
-                    const siblings = parent.parentElement.querySelectorAll('a');
-                    siblings.forEach(function(sibling) {
-                        sibling.classList.remove('selected');
+        // Mark active filter links
+        const filterLinks = filterPopupBody.querySelectorAll('a');
+        filterLinks.forEach(function(link) {
+            const href = link.getAttribute('href');
+            if (href) {
+                try {
+                    const linkUrl = new URL(href, window.location.origin);
+                    let matches = true;
+                    let hasFilterParams = false;
+                    
+                    // Check if this link matches current filters
+                    linkUrl.searchParams.forEach(function(value, key) {
+                        if (key.startsWith('_changelistfilter')) {
+                            hasFilterParams = true;
+                            if (currentFilterParams[key] !== value) {
+                                matches = false;
+                            }
+                        }
                     });
-                    link.classList.add('selected');
-                } else {
-                    // Toggle selected class
-                    link.classList.toggle('selected');
+
+                    // Check if this is the "All" link (no filter params)
+                    if (!hasFilterParams && Object.keys(currentFilterParams).length === 0) {
+                        link.classList.add('selected');
+                    } else if (matches && hasFilterParams && Object.keys(currentFilterParams).length > 0) {
+                        link.classList.add('selected');
+                    }
+                } catch (e) {
+                    // If href is relative, try to match manually
+                    const queryIndex = href.indexOf('?');
+                    if (queryIndex !== -1) {
+                        const queryString = href.substring(queryIndex + 1);
+                        const params = new URLSearchParams(queryString);
+                        let matches = true;
+                        let hasFilterParams = false;
+                        
+                        params.forEach(function(value, key) {
+                            if (key.startsWith('_changelistfilter')) {
+                                hasFilterParams = true;
+                                if (currentFilterParams[key] !== value) {
+                                    matches = false;
+                                }
+                            }
+                        });
+                        
+                        if (!hasFilterParams && Object.keys(currentFilterParams).length === 0) {
+                            link.classList.add('selected');
+                        } else if (matches && hasFilterParams) {
+                            link.classList.add('selected');
+                        }
+                    } else if (Object.keys(currentFilterParams).length === 0) {
+                        // "All" link (no query params)
+                        link.classList.add('selected');
+                    }
                 }
             }
         });
@@ -1475,65 +1584,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 filterButton.classList.remove('active');
             }
         }
-    }
-
-    // Mark currently selected filters
-    const currentUrl = new URL(window.location.href);
-    if (filterPopupBody) {
-        const filterLinks = filterPopupBody.querySelectorAll('a');
-        const currentFilterParams = {};
-        
-        // Collect current filter params
-        currentUrl.searchParams.forEach(function(value, key) {
-            if (key.startsWith('_changelistfilter')) {
-                currentFilterParams[key] = value;
-            }
-        });
-
-        filterLinks.forEach(function(link) {
-            const href = link.getAttribute('href');
-            if (href) {
-                try {
-                    const linkUrl = new URL(href, window.location.origin);
-                    let matches = true;
-                    
-                    linkUrl.searchParams.forEach(function(value, key) {
-                        if (key.startsWith('_changelistfilter')) {
-                            if (currentFilterParams[key] !== value) {
-                                matches = false;
-                            }
-                        }
-                    });
-
-                    // Also check if this is the "All" link (no filter params)
-                    if (linkUrl.searchParams.toString() === '' && Object.keys(currentFilterParams).length === 0) {
-                        link.classList.add('selected');
-                    } else if (matches && Object.keys(currentFilterParams).length > 0) {
-                        link.classList.add('selected');
-                    }
-                } catch (e) {
-                    // If href is relative, try to match manually
-                    const match = href.match(/\?([^#]+)/);
-                    if (match) {
-                        const params = new URLSearchParams(match[1]);
-                        let matches = true;
-                        params.forEach(function(value, key) {
-                            if (key.startsWith('_changelistfilter')) {
-                                if (currentFilterParams[key] !== value) {
-                                    matches = false;
-                                }
-                            }
-                        });
-                        if (matches) {
-                            link.classList.add('selected');
-                        }
-                    } else if (Object.keys(currentFilterParams).length === 0) {
-                        // "All" link
-                        link.classList.add('selected');
-                    }
-                }
-            }
-        });
     }
 
     // Update filter button state on page load

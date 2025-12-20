@@ -87,13 +87,21 @@ class ExamAnswerInline(admin.TabularInline):
     verbose_name_plural = 'إجابات الامتحان'
 
 
-class AssignmentQuestionInline(admin.TabularInline):
+class AssignmentQuestionInline(admin.StackedInline):
     model = AssignmentQuestion
     extra = 1
     fields = ('text', 'question_type', 'points', 'order', 'is_required')
     ordering = ('order',)
     verbose_name = 'سؤال واجب'
     verbose_name_plural = 'أسئلة الواجبات'
+    
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        # إضافة help_text ديناميكي
+        formset.form.base_fields['question_type'].help_text = (
+            'ملاحظة: بعد حفظ الواجب، افتح كل سؤال على حدة لإضافة الإجابات (صح/خطأ أو خيارات متعددة)'
+        )
+        return formset
 
 
 class AssignmentAnswerInline(admin.TabularInline):
@@ -643,10 +651,19 @@ class AssignmentSubmissionAdmin(admin.ModelAdmin):
 
 @admin.register(AssignmentQuestion)
 class AssignmentQuestionAdmin(admin.ModelAdmin):
-    list_display = ('text_preview', 'assignment', 'question_type', 'points', 'answers_count', 'order', 'is_required')
+    list_display = ('text_preview', 'assignment', 'question_type', 'points', 'answers_count', 'manage_answers', 'order', 'is_required')
     list_filter = ('question_type', 'is_required', 'assignment__course')
     search_fields = ('text', 'assignment__title', 'explanation')
     inlines = [AssignmentAnswerInline]
+    
+    def manage_answers(self, obj):
+        """رابط مباشر لإدارة الإجابات"""
+        url = reverse('admin:assignments_assignmentquestion_change', args=[obj.pk])
+        return format_html(
+            '<a href="{}" class="button" style="padding: 4px 8px; background-color: #417690; color: white; text-decoration: none; border-radius: 3px; font-size: 11px;">📝 إدارة الإجابات</a>',
+            url
+        )
+    manage_answers.short_description = 'إدارة الإجابات'
     
     fieldsets = (
         ('السؤال', {

@@ -60,16 +60,22 @@ class Meeting(models.Model):
     @property
     def end_time(self):
         """حساب وقت انتهاء الاجتماع"""
+        if self.start_time is None:
+            return None
         return self.start_time + self.duration
 
     @property
     def is_past(self):
         """فحص إذا كان الاجتماع قد انتهى"""
+        if self.start_time is None or self.end_time is None:
+            return False
         return timezone.now() > self.end_time
 
     @property
     def is_ongoing(self):
         """فحص إذا كان الاجتماع جارٍ حالياً"""
+        if self.start_time is None or self.end_time is None:
+            return False
         now = timezone.now()
         return self.start_time <= now <= self.end_time
 
@@ -123,7 +129,7 @@ class Meeting(models.Model):
     @property
     def can_join_live(self):
         """فحص إمكانية الانضمام للاجتماع المباشر"""
-        if self.meeting_type != 'LIVE':
+        if self.meeting_type != 'LIVE' or self.start_time is None:
             return False
         
         now = timezone.now()
@@ -146,6 +152,9 @@ class Meeting(models.Model):
 
     def setup_notifications(self):
         """إعداد الإشعارات التلقائية"""
+        if self.start_time is None:
+            return
+        
         # إشعار قبل يوم واحد
         day_before = self.start_time - timedelta(days=1)
         if day_before > timezone.now():

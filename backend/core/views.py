@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse, Http404
 from django.db.models import Count, Avg, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
@@ -62,9 +62,15 @@ def _format_certificate_lines(certificate):
 
     lines = [line.strip() for line in formatted_text.split('\n') if line.strip()]
     formatted_lines = []
-    for line in lines:
+    for idx, line in enumerate(lines):
         is_highlight = (student_name and student_name in line) or (course_name and course_name in line)
-        formatted_lines.append({'text': line, 'highlight': is_highlight})
+        # تحديد إذا كان هذا السطر الأول الذي يحتوي على "يشهد"
+        is_first_line = idx == 0 and 'يشهد' in line
+        formatted_lines.append({
+            'text': line, 
+            'highlight': is_highlight,
+            'is_first_line': is_first_line
+        })
 
     # خلفية القالب والشعار
     bg_image_url = getattr(template, 'template_file', None).url if getattr(template, 'template_file', None) else None
@@ -83,8 +89,10 @@ def certificate_verify_page(request, verification_code):
         certificate = get_object_or_404(Certificate, verification_code=verification_code)
         # تجهيز النص والخلفية والشعار مثل صفحة المعاينة في الفرونت
         fmt = _format_certificate_lines(certificate)
+        verification_url = certificate.get_verification_url()
         context = {
             'certificate': certificate,
+            'verification_url': verification_url,
             **fmt,
         }
         return render(request, 'certificates/verify.html', context)
@@ -94,6 +102,113 @@ def certificate_verify_page(request, verification_code):
             'certificate': None,
             'error': 'حدث خطأ أثناء عرض الشهادة. الرجاء المحاولة لاحقًا.'
         })
+
+
+def certificate_pdf_preview(request, verification_code):
+    """صفحة معاينة PDF قبل التحميل"""
+    try:
+        certificate = get_object_or_404(Certificate, verification_code=verification_code)
+        # تجهيز النص والخلفية والشعار مثل صفحة المعاينة في الفرونت
+        fmt = _format_certificate_lines(certificate)
+        verification_url = certificate.get_verification_url()
+        context = {
+            'certificate': certificate,
+            'verification_url': verification_url,
+            **fmt,
+        }
+        return render(request, 'certificates/pdf_preview.html', context)
+    except Exception:
+        # في حال حدوث خطأ غير متوقع
+        return render(request, 'certificates/pdf_preview.html', {
+            'certificate': None,
+            'error': 'حدث خطأ أثناء عرض الشهادة. الرجاء المحاولة لاحقًا.'
+        })
+
+
+@login_required
+def bulk_certificates_download(request):
+    """صفحة تحميل الشهادات بشكل جماعي"""
+    from django.core.paginator import Paginator
+    import json
+    
+    # الحصول على جميع الشهادات المتاحة للمستخدم
+    certificates = Certificate.objects.select_related('course', 'user', 'template').all().order_by('-date_issued')
+    
+    # إذا كان المستخدم ليس superuser، نعرض فقط شهاداته
+    if not request.user.is_superuser:
+        certificates = certificates.filter(user=request.user)
+    
+    # Pagination - 50 شهادة في الصفحة
+    paginator = Paginator(certificates, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # تجهيز بيانات كل شهادة في الصفحة الحالية فقط
+    certificates_data = []
+    for cert in page_obj:
+        fmt = _format_certificate_lines(cert)
+        certificates_data.append({
+            'certificate': cert,
+            **fmt,
+        })
+    
+    # تجهيز JSON للشهادات المحددة فقط (للأداء)
+    certificates_json = {}
+    for cert_data in certificates_data:
+        cert = cert_data['certificate']
+        certificates_json[cert.id] = {
+            'id': cert.id,
+            'student_name': cert.student_name,
+            'course_title': cert.course_title,
+            'verification_code': cert.verification_code,
+            'formatted_lines': cert_data['formatted_lines'],
+            'bg_image_url': cert_data.get('bg_image_url'),
+            'logo_url': cert_data.get('logo_url'),
+        }
+    
+    context = {
+        'certificates_data': certificates_data,
+        'page_obj': page_obj,
+        'certificates_json': json.dumps(certificates_json, ensure_ascii=False),
+        'base_url': request.build_absolute_uri('/').rstrip('/'),
+    }
+    return render(request, 'certificates/bulk_download.html', context)
+
+
+def download_certificate_pdf(request, certificate_id):
+    """تحميل الشهادة كملف PDF"""
+    try:
+        certificate = get_object_or_404(Certificate, id=certificate_id)
+        
+        # إنشاء PDF مباشرة من القالب HTML
+        from certificates.utils import generate_certificate_pdf, REPORTLAB_AVAILABLE
+        
+        if not REPORTLAB_AVAILABLE:
+            return HttpResponse(
+                'خطأ: مكتبة ReportLab غير مثبتة. يرجى تثبيتها باستخدام: pip install reportlab',
+                status=500,
+                content_type='text/plain; charset=utf-8'
+            )
+        
+        try:
+            # إنشاء PDF مباشرة
+            pdf_buffer = generate_certificate_pdf(certificate)
+            response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+            safe_name = certificate.student_name.replace('/', '_').replace('\\', '_') if certificate.student_name else 'unknown'
+            response['Content-Disposition'] = f'attachment; filename="certificate_{certificate.certificate_id}_{safe_name}.pdf"'
+            return response
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating PDF for certificate {certificate.id}: {str(e)}")
+            return HttpResponse(
+                f'حدث خطأ أثناء إنشاء PDF: {str(e)}',
+                status=500,
+                content_type='text/plain; charset=utf-8'
+            )
+            
+    except Certificate.DoesNotExist:
+        raise Http404("الشهادة غير موجودة")
 
 @login_required
 def student_dashboard_stats(request):
@@ -582,3 +697,4 @@ def recent_announcements(request):
         return JsonResponse(announcements_data, safe=False)
     
     return JsonResponse([], safe=False)
+

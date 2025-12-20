@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>معاينة وتحميل PDF</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #0e5181;
+      --text: #2c3e50;
+      --muted: #666;
+      --green: #0e7a2f;
+    }
+    * { box-sizing: border-box; }
+    html, body { 
+      height: 100%; 
+      margin: 0;
+      padding: 0;
+    }
+    body { 
+      font-family: 'Amiri', 'Noto Naskh Arabic', 'Tajawal', serif; 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: var(--text);
+      direction: rtl;
+    }
+    .wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+    .header-section {
+      text-align: center;
+      margin-bottom: 30px;
+      width: 100%;
+      max-width: 900px;
+    }
+    .header-section h1 {
+      color: var(--primary);
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+    .header-section p {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+    .download-pdf-btn {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-family: 'Tajawal', sans-serif;
+      margin-top: 20px;
+    }
+    .download-pdf-btn:hover {
+      background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+      box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+      transform: translateY(-2px);
+    }
+    .download-pdf-btn:active {
+      transform: translateY(0);
+    }
+    .download-pdf-btn.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+    .download-pdf-btn.loading::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .certificate-card {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 4 / 3;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(14, 81, 129, 0.25);
+      border: 2px solid #e0e0e0;
+      margin-bottom: 30px;
+    }
+    .certificate-card.bg-image {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .content {
+      position: relative;
+      height: 100%;
+      padding: 40px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+      background: transparent;
+      overflow: hidden;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: center;
+      padding: 20px 0;
+      margin-top: 180px;
+      max-width: 100%;
+      overflow-wrap: break-word;
+      transition: all 0.3s ease;
+    }
+    .certificate-title {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: clamp(1.1rem, 3vw, 1.3rem);
+      margin: 5px 0 30px 0;
+      text-decoration: underline;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 8px;
+      visibility: hidden;
+      height: 0;
+      margin: 0;
+    }
+    .line { 
+      margin: 10px 0; 
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      line-height: 1.8; 
+      color: var(--text);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .first-line {
+      font-weight: 700;
+      color: #000000;
+      font-size: clamp(1.2rem, 4vw, 1.5rem);
+      margin: 10px 0;
+      line-height: 1.8;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .highlight { 
+      color: var(--primary); 
+      font-weight: 700; 
+      font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+      margin: 10px 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .muted { 
+      color: var(--muted);
+      font-size: clamp(0.95rem, 2.8vw, 1.1rem);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      margin: 8px 0;
+      transition: all 0.3s ease;
+    }
+    .info-line {
+      margin: 8px 0;
+      font-size: clamp(0.95rem, 2.8vw, 1.1rem);
+      color: var(--text);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transition: all 0.3s ease;
+    }
+    .footer-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 5;
+    }
+    .qr-box { 
+      padding: 8px; 
+      border-radius: 8px; 
+      background: rgba(255,255,255,0.95); 
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .qr-box img { 
+      width: 100px; 
+      height: 100px; 
+      min-width: 100px;
+      min-height: 100px;
+      display: block;
+      object-fit: contain;
+    }
+    .qr-code-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 5px;
+      font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .main-content {
+        margin-top: 150px;
+      }
+    }
+    @media (max-width: 600px) {
+      .header-section h1 {
+        font-size: 1.4rem;
+      }
+      .main-content {
+        margin-top: 100px;
+        padding: 5px 0;
+      }
+      .certificate-card {
+        padding: 20px;
+      }
+      .content {
+        padding: 20px 30px;
+      }
+      .qr-box img { 
+        width: 50px; 
+        height: 50px; 
+        min-width: 50px;
+        min-height: 50px;
+      }
+      .qr-code-label {
+        font-size: 0.55rem;
+      }
+      .footer-section {
+        margin-top: 10px;
+        padding-top: 8px;
+      }
+    }
+    @media (max-width: 400px) {
+      .main-content {
+        margin-top: 80px;
+        padding: 5px 0;
+      }
+    }
+
+    /* PDF Preview Modal */
+    .preview-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    .preview-modal.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .preview-modal-content {
+      background: white;
+      border-radius: 12px;
+      max-width: 90vw;
+      max-height: 90vh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    .preview-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .preview-modal-header h3 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 1.3rem;
+    }
+    .preview-modal-close {
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+    .preview-modal-close:hover {
+      background: #f0f0f0;
+      color: var(--text);
+    }
+    .preview-modal-body {
+      flex: 1;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-pdf-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-pdf-container iframe {
+      width: 100%;
+      min-height: 600px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+    }
+    .preview-modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .preview-btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+      font-family: 'Tajawal', sans-serif;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-btn-cancel {
+      background: #f0f0f0;
+      color: var(--text);
+    }
+    .preview-btn-cancel:hover {
+      background: #e0e0e0;
+    }
+    .preview-btn-download {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+    .preview-btn-download:hover {
+      background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+      box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    {% if certificate %}
+      <div class="header-section">
+        <h1>📄 معاينة وتحميل PDF</h1>
+        <p>قم بمراجعة الشهادة أدناه ثم اضغط على زر التحميل</p>
+      </div>
+
+      <div id="certificateCard" class="certificate-card {% if bg_image_url %}bg-image{% endif %}"
+           {% if bg_image_url %}
+             style="background-image:url('{{ bg_image_url }}')"
+           {% endif %}>
+        <div class="content">
+          <div class="main-content">
+            <h2 class="certificate-title">حضور برنامج تدريبي</h2>
+            
+            {% if formatted_lines %}
+              {% for item in formatted_lines %}
+                {% if item.is_first_line %}
+                  <div class="first-line">{{ item.text }}</div>
+                {% else %}
+                  <div class="line {% if item.highlight %}highlight{% else %}muted{% endif %}">{{ item.text }}</div>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <div class="line muted">يشهد {{ certificate.institution_name|default:"مركز التطوير المهني" }} بأن</div>
+              <div class="line highlight">المتدرب(ة) ({{ certificate.student_name|default:certificate.user.get_full_name }})</div>
+              {% if certificate.national_id %}
+                <div class="line muted">رقم الهوية: {{ certificate.national_id }}</div>
+              {% endif %}
+              <div class="line muted">قد حضر(ت) برنامجًا تدريبيًا بعنوان</div>
+              <div class="line highlight">{{ certificate.course_title|default:certificate.course.title }}</div>
+              
+              {% if certificate.duration_days or certificate.course_duration_hours %}
+                <div class="line info-line">
+                  لمدة 
+                  {% if certificate.duration_days %}({{ certificate.duration_days }}) أيام{% endif %}
+                  {% if certificate.duration_days and certificate.course_duration_hours %} بمعدل {% endif %}
+                  {% if certificate.course_duration_hours %}({{ certificate.course_duration_hours }}) ساعة تدريبية{% endif %}
+                </div>
+              {% endif %}
+              
+              {% if certificate.start_date and certificate.end_date %}
+                <div class="line info-line">
+                  من {{ certificate.start_date|date:"Y-m-d" }} إلى {{ certificate.end_date|date:"Y-m-d" }}
+                </div>
+                {% if certificate.start_date_hijri and certificate.end_date_hijri %}
+                  <div class="line info-line muted">
+                    الموافق {{ certificate.start_date_hijri }} إلى {{ certificate.end_date_hijri }}
+                  </div>
+                {% endif %}
+              {% elif certificate.completion_date %}
+                <div class="line info-line muted">
+                  بتاريخ {{ certificate.completion_date|date:"Y-m-d" }}
+                </div>
+              {% endif %}
+            {% endif %}
+            
+            {% if include_grade and certificate.final_grade %}
+              <div class="line highlight" style="color:#2e7d32; margin-top: 20px;">
+                بدرجة: {{ certificate.final_grade }}%
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="footer-section">
+            {% if certificate.verification_code %}
+              <div class="qr-section">
+                <div class="qr-box">
+                  {% if certificate.qr_code_image %}
+                    <img alt="رمز QR للتحقق" src="{{ certificate.qr_code_image.url }}" />
+                  {% else %}
+                    <img alt="رمز QR للتحقق" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data={{ verification_url }}" />
+                  {% endif %}
+                </div>
+                <div class="qr-code-label">CPDES23</div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <button id="downloadPdfBtn" class="download-pdf-btn" onclick="downloadCertificateAsPDF()">
+        <span>📄</span>
+        <span>تحميل كـ PDF</span>
+      </button>
+    {% else %}
+      <div class="certificate-card">
+        <div class="content">
+          <div class="line" style="color:#a8071a; font-weight:700; font-size:1.2rem;">تعذر تحميل الشهادة</div>
+          {% if error %}
+            <div class="line muted">{{ error }}</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- PDF Preview Modal -->
+  <div id="previewModal" class="preview-modal">
+    <div class="preview-modal-content">
+      <div class="preview-modal-header">
+        <h3>معاينة PDF</h3>
+        <button class="preview-modal-close" onclick="closePreview()">×</button>
+      </div>
+      <div class="preview-modal-body">
+        <div class="preview-pdf-container">
+          <iframe id="previewPdfFrame" src="" frameborder="0"></iframe>
+        </div>
+      </div>
+      <div class="preview-modal-footer">
+        <button class="preview-btn preview-btn-cancel" onclick="closePreview()">إلغاء</button>
+        <button class="preview-btn preview-btn-download" onclick="downloadPreviewPDF()">
+          <span>📥</span>
+          <span>تحميل PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pdfBlob = null;
+    let pdfUrl = null;
+
+    function downloadCertificateAsPDF() {
+      const btn = document.getElementById('downloadPdfBtn');
+      const certificateCard = document.getElementById('certificateCard');
+      
+      if (!certificateCard) {
+        alert('لم يتم العثور على الشهادة');
+        return;
+      }
+
+      // التحقق من وجود jsPDF
+      if (typeof window.jspdf === 'undefined') {
+        alert('مكتبة PDF غير متاحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+        return;
+      }
+
+      // إضافة حالة التحميل
+      btn.classList.add('loading');
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>جاري التحويل...</span>';
+
+      // الحصول على الموقع الفعلي للشهادة
+      const rect = certificateCard.getBoundingClientRect();
+      
+      // تحويل HTML إلى صورة أولاً - فقط الشهادة بدون المساحات البيضاء
+      html2canvas(certificateCard, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        x: 0,
+        y: 0,
+        width: certificateCard.offsetWidth,
+        height: certificateCard.offsetHeight,
+        windowWidth: certificateCard.offsetWidth,
+        windowHeight: certificateCard.offsetHeight,
+        removeContainer: true,
+        onclone: function(clonedDoc) {
+          const clonedCard = clonedDoc.getElementById('certificateCard');
+          if (clonedCard) {
+            // إزالة أي padding أو margin أو border-radius أو box-shadow من العنصر
+            clonedCard.style.margin = '0';
+            clonedCard.style.padding = '0';
+            clonedCard.style.borderRadius = '0';
+            clonedCard.style.boxShadow = 'none';
+            clonedCard.style.border = 'none';
+            clonedCard.style.position = 'absolute';
+            clonedCard.style.top = '0';
+            clonedCard.style.left = '0';
+            clonedCard.style.fontFamily = "'Amiri', 'Noto Naskh Arabic', 'Tajawal', serif";
+            
+            // إزالة padding من الـ wrap أيضاً إذا كان موجود
+            const clonedWrap = clonedDoc.querySelector('.wrap');
+            if (clonedWrap) {
+              clonedWrap.style.padding = '0';
+              clonedWrap.style.margin = '0';
+              clonedWrap.style.background = 'transparent';
+            }
+            
+            if (clonedCard.classList.contains('bg-image')) {
+              const bgImage = clonedCard.style.backgroundImage;
+              if (bgImage) {
+                clonedCard.style.backgroundImage = bgImage;
+              }
+            }
+            const clonedMainContent = clonedCard.querySelector('.main-content');
+            if (clonedMainContent) {
+              clonedMainContent.style.marginTop = '180px';
+            }
+          }
+        }
+      }).then(function(canvas) {
+        try {
+          // قص Canvas لإزالة المساحات البيضاء الزائدة
+          const ctx = canvas.getContext('2d');
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          // البحث عن الحدود الفعلية للصورة (بدون مساحات بيضاء)
+          let top = 0, bottom = canvas.height, left = 0, right = canvas.width;
+          let found = false;
+          
+          // البحث من الأعلى
+          for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+              const idx = (y * canvas.width + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              // إذا لم تكن بكسل أبيض تماماً أو شفاف
+              if (!(r === 255 && g === 255 && b === 255 && a === 255) && a > 0) {
+                top = y;
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          
+          found = false;
+          // البحث من الأسفل
+          for (let y = canvas.height - 1; y >= 0; y--) {
+            for (let x = 0; x < canvas.width; x++) {
+              const idx = (y * canvas.width + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              if (!(r === 255 && g === 255 && b === 255 && a === 255) && a > 0) {
+                bottom = y + 1;
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          
+          found = false;
+          // البحث من اليسار
+          for (let x = 0; x < canvas.width; x++) {
+            for (let y = 0; y < canvas.height; y++) {
+              const idx = (y * canvas.width + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              if (!(r === 255 && g === 255 && b === 255 && a === 255) && a > 0) {
+                left = x;
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          
+          found = false;
+          // البحث من اليمين
+          for (let x = canvas.width - 1; x >= 0; x--) {
+            for (let y = 0; y < canvas.height; y++) {
+              const idx = (y * canvas.width + x) * 4;
+              const r = data[idx];
+              const g = data[idx + 1];
+              const b = data[idx + 2];
+              const a = data[idx + 3];
+              if (!(r === 255 && g === 255 && b === 255 && a === 255) && a > 0) {
+                right = x + 1;
+                found = true;
+                break;
+              }
+            }
+            if (found) break;
+          }
+          
+          // إنشاء canvas جديد بالمقاسات الصحيحة (بدون المساحات البيضاء)
+          const croppedCanvas = document.createElement('canvas');
+          const croppedWidth = right - left;
+          const croppedHeight = bottom - top;
+          croppedCanvas.width = croppedWidth;
+          croppedCanvas.height = croppedHeight;
+          const croppedCtx = croppedCanvas.getContext('2d');
+          
+          // نسخ الجزء المطلوب فقط (الشهادة بدون المساحات البيضاء)
+          croppedCtx.drawImage(canvas, left, top, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+          
+          // تحويل Canvas المقطوع إلى صورة
+          const imgData = croppedCanvas.toDataURL('image/png', 1.0);
+          
+          // حساب أبعاد PDF (A4 Landscape)
+          const pdfWidth = 297; // mm (A4 landscape width)
+          const pdfHeight = 210; // mm (A4 landscape height)
+          
+          // حساب أبعاد الصورة بناءً على نسبة العرض إلى الارتفاع
+          const imgWidth = croppedWidth;
+          const imgHeight = croppedHeight;
+          const ratio = imgWidth / imgHeight;
+          
+          let finalWidth = pdfWidth;
+          let finalHeight = pdfWidth / ratio;
+          
+          // إذا كانت الصورة أطول من ارتفاع A4، نضبط الحجم بناءً على الارتفاع
+          if (finalHeight > pdfHeight) {
+            finalHeight = pdfHeight;
+            finalWidth = pdfHeight * ratio;
+          }
+          
+          // إنشاء PDF
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: finalWidth > finalHeight ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: [finalWidth, finalHeight]
+          });
+          
+          // إضافة الصورة إلى PDF
+          pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight, undefined, 'FAST');
+          
+          // تحويل PDF إلى Blob
+          const pdfBlobData = pdf.output('blob');
+          pdfBlob = pdfBlobData;
+          
+          // إنشاء URL للمعاينة
+          if (pdfUrl) {
+            URL.revokeObjectURL(pdfUrl);
+          }
+          pdfUrl = URL.createObjectURL(pdfBlob);
+          
+          // عرض المعاينة
+          const previewPdfFrame = document.getElementById('previewPdfFrame');
+          previewPdfFrame.src = pdfUrl;
+          
+          // إظهار Modal
+          const previewModal = document.getElementById('previewModal');
+          previewModal.classList.add('active');
+          
+          // استعادة الزر
+          btn.classList.remove('loading');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        } catch (error) {
+          console.error('خطأ في تحويل PDF:', error);
+          alert('حدث خطأ أثناء تحويل الشهادة إلى PDF. يرجى المحاولة مرة أخرى.');
+          
+          // استعادة الزر
+          btn.classList.remove('loading');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+      }).catch(function(error) {
+        console.error('خطأ في تحويل الشهادة:', error);
+        alert('حدث خطأ أثناء تحويل الشهادة. يرجى المحاولة مرة أخرى.');
+        
+        // استعادة الزر
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      });
+    }
+
+    function closePreview() {
+      const previewModal = document.getElementById('previewModal');
+      previewModal.classList.remove('active');
+    }
+
+    function downloadPreviewPDF() {
+      if (!pdfBlob) {
+        alert('لم يتم العثور على ملف PDF');
+        return;
+      }
+
+      // إنشاء رابط التحميل
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      const studentName = '{{ certificate.student_name|default:certificate.user.get_full_name|default:"شهادة" }}';
+      const courseTitle = '{{ certificate.course_title|default:certificate.course.title|default:"دورة" }}';
+      const fileName = 'شهادة_' + studentName.replace(/\s+/g, '_') + '_' + courseTitle.replace(/\s+/g, '_') + '.pdf';
+      link.download = fileName;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // إغلاق المعاينة
+      closePreview();
+    }
+
+    // إغلاق المعاينة عند الضغط خارجها
+    document.addEventListener('click', function(e) {
+      const previewModal = document.getElementById('previewModal');
+      if (e.target === previewModal) {
+        closePreview();
+      }
+    });
+
+    // إغلاق المعاينة عند الضغط على ESC
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closePreview();
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -99,6 +99,15 @@ urlpatterns = [
     # Public certificate verification pages (for QR codes)
     path('certificates/verify/<str:verification_code>/', views.certificate_verify_page, name='certificate_verify_page'),
     path('verify-certificate/<str:verification_code>/', views.certificate_verify_page, name='public_verify_certificate'),
+    
+    # PDF preview page
+    path('certificates/pdf-preview/<str:verification_code>/', views.certificate_pdf_preview, name='certificate_pdf_preview'),
+    
+    # Certificate PDF download
+    path('certificates/download/<int:certificate_id>/', views.download_certificate_pdf, name='download_certificate_pdf'),
+    
+    # Bulk certificates download page
+    path('certificates/bulk-download/', views.bulk_certificates_download, name='bulk_certificates_download'),
 ]
 
 # Add debug toolbar in development

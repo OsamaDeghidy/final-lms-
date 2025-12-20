@@ -11,6 +11,8 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 from datetime import datetime
 import io
+import zipfile
+from io import BytesIO
 try:
     from openpyxl import load_workbook, Workbook
 except Exception:  # Graceful fallback if openpyxl missing at runtime
@@ -200,7 +202,7 @@ class CertificateAdmin(admin.ModelAdmin):
     change_list_template = 'admin/certificates/certificate/change_list.html'
     list_display = (
         'certificate_id', 'student_name', 'national_id', 'course_title', 'final_grade_display',
-        'status_display', 'verification_display', 'date_issued', 'actions_column'
+        'status_display', 'verification_display', 'date_issued', 'preview_link', 'actions_column'
     )
     list_filter = (
         CertificateStatusFilter, VerificationStatusFilter, 'date_issued',
@@ -610,6 +612,18 @@ class CertificateAdmin(admin.ModelAdmin):
         return format_html('<a href="{}" target="_blank">{}</a>', url, url)
     verification_url_display.short_description = 'رابط التحقق'
     
+    def preview_link(self, obj):
+        """عرض رابط المعاينة للشهادة"""
+        if obj.verification_code:
+            url = obj.get_verification_url()
+            return format_html(
+                '<a href="{}" target="_blank" style="color: #0e5181; font-weight: 600; text-decoration: none; padding: 4px 8px; background: #e3f2fd; border-radius: 4px; display: inline-block;">👁️ معاينة</a>',
+                url
+            )
+        return format_html('<span style="color: #999;">لا يوجد</span>')
+    preview_link.short_description = 'معاينة'
+    preview_link.admin_order_field = 'verification_code'
+    
     def actions_column(self, obj):
         actions = []
         
@@ -618,15 +632,15 @@ class CertificateAdmin(admin.ModelAdmin):
                 f'<a href="#" onclick="revokeCertificate({obj.id})" style="color: #dc3545;">إلغاء</a>'
             )
         
-        if obj.pdf_file:
+        # رابط معاينة PDF بدلاً من صفحة التحقق العادية
+        if obj.verification_code:
+            pdf_preview_url = reverse('certificate_pdf_preview', args=[obj.verification_code])
             actions.append(
-                f'<a href="{obj.pdf_file.url}" target="_blank" style="color: #007bff;">تحميل PDF</a>'
+                format_html(
+                    '<a href="{}" target="_blank" style="color: #28a745;">تحقق</a>',
+                    pdf_preview_url
+                )
             )
-        
-        verification_url = obj.get_verification_url()
-        actions.append(
-            f'<a href="{verification_url}" target="_blank" style="color: #28a745;">تحقق</a>'
-        )
         
         return format_html(' | '.join(actions))
     actions_column.short_description = 'الإجراءات'
@@ -635,39 +649,105 @@ class CertificateAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         return queryset.select_related('user', 'course', 'template', 'issued_by')
     
-    actions = ['revoke_certificates', 'verify_certificates', 'regenerate_qr_codes']
+    actions = ['delete_selected', 'download_certificates_images']
     
-    def revoke_certificates(self, request, queryset):
-        revoked_count = 0
-        for certificate in queryset.filter(status='active'):
-            certificate.revoke("تم الإلغاء من لوحة الإدارة")
-            revoked_count += 1
-        
-        if revoked_count:
-            self.message_user(request, f'تم إلغاء {revoked_count} شهادة.')
-        else:
-            self.message_user(request, 'لا توجد شهادات نشطة للإلغاء.', level='warning')
-    revoke_certificates.short_description = "إلغاء الشهادات المحددة"
     
-    def verify_certificates(self, request, queryset):
-        verified_count = queryset.filter(verification_status__in=['pending', 'failed']).update(
-            verification_status='verified'
-        )
+    def download_certificates_images(self, request, queryset):
+        """تحميل الشهادات المحددة كصور PNG مضغوطة في ZIP"""
+        # التحقق من وجود شهادات محددة
+        if queryset.count() == 0:
+            self.message_user(request, 'لم يتم تحديد أي شهادات للتحميل.', level='warning')
+            return
         
-        if verified_count:
-            self.message_user(request, f'تم التحقق من {verified_count} شهادة.')
-        else:
-            self.message_user(request, 'لا توجد شهادات تحتاج للتحقق.', level='warning')
-    verify_certificates.short_description = "التحقق من الشهادات المحددة"
-    
-    def regenerate_qr_codes(self, request, queryset):
-        regenerated_count = 0
-        for certificate in queryset:
-            certificate.generate_qr_code()
-            regenerated_count += 1
-        
-        self.message_user(request, f'تم إعادة إنشاء رموز QR لـ {regenerated_count} شهادة.')
-    regenerate_qr_codes.short_description = "إعادة إنشاء رموز QR"
+        try:
+            from .utils import generate_certificate_image_from_url, PLAYWRIGHT_AVAILABLE
+            
+            if not PLAYWRIGHT_AVAILABLE:
+                self.message_user(
+                    request,
+                    'خطأ: مكتبة Playwright غير مثبتة. يرجى تثبيتها باستخدام: pip install playwright && playwright install chromium',
+                    level='error'
+                )
+                return
+            
+            # إنشاء ملف ZIP في الذاكرة
+            zip_buffer = BytesIO()
+            errors = []
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                count = 0
+                total = queryset.count()
+                
+                for index, certificate in enumerate(queryset, 1):
+                    try:
+                        if not certificate.verification_code:
+                            errors.append(f"الشهادة {certificate.certificate_id}: لا يوجد رمز تحقق")
+                            continue
+                        
+                        # الحصول على رابط التحقق
+                        verify_url = certificate.get_verification_url()
+                        
+                        # تحويل صفحة التحقق إلى صورة
+                        image_data = generate_certificate_image_from_url(verify_url)
+                        
+                        if image_data:
+                            # إضافة الصورة إلى ZIP
+                            safe_name = certificate.student_name.replace('/', '_').replace('\\', '_') if certificate.student_name else 'unknown'
+                            filename = f"certificate_{certificate.certificate_id}_{safe_name}.png"
+                            # تنظيف اسم الملف من الأحرف غير المسموحة
+                            filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).strip()
+                            zip_file.writestr(filename, image_data)
+                            count += 1
+                        else:
+                            errors.append(f"الشهادة {certificate.certificate_id}: فشل إنشاء الصورة")
+                    except Exception as e:
+                        # تخطي الشهادات التي فشل إنشاء الصورة لها
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Error generating image for certificate {certificate.certificate_id}: {str(e)}")
+                        errors.append(f"الشهادة {certificate.certificate_id}: {str(e)}")
+                        continue
+            
+            if count == 0:
+                error_msg = 'لم يتم إنشاء أي صورة.'
+                if errors:
+                    error_msg += f' الأخطاء: {"; ".join(errors[:5])}'
+                self.message_user(
+                    request,
+                    error_msg,
+                    level='warning'
+                )
+                return
+            
+            # إرجاع ملف ZIP
+            zip_buffer.seek(0)
+            response = HttpResponse(
+                zip_buffer.read(),
+                content_type='application/zip'
+            )
+            response['Content-Disposition'] = f'attachment; filename="certificates_images_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip"'
+            
+            success_msg = f'تم تحميل {count} صورة شهادة بنجاح.'
+            if errors:
+                success_msg += f' (فشل {len(errors)} شهادة)'
+            self.message_user(request, success_msg)
+            return response
+            
+        except ImportError as e:
+            self.message_user(
+                request,
+                f'خطأ: {str(e)}',
+                level='error'
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Error in download_certificates_images")
+            self.message_user(
+                request,
+                f'حدث خطأ أثناء إنشاء ملف ZIP: {str(e)}',
+                level='error'
+            )
+    download_certificates_images.short_description = "تحميل الشهادات المحددة كصور"
 
 
 @admin.register(UserSignature)
@@ -714,3 +794,5 @@ class UserSignatureAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         return queryset.select_related('user')
+
+

@@ -604,6 +604,43 @@ def download_certificate_pdf(request, certificate_id):
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
+def download_certificate_image(request, certificate_id):
+    """Download certificate as PNG image"""
+    try:
+        user = request.user
+        certificate = get_object_or_404(Certificate, id=certificate_id, user=user)
+        
+        from .utils import generate_certificate_image_file, PLAYWRIGHT_AVAILABLE
+        
+        # Check if playwright is available
+        if not PLAYWRIGHT_AVAILABLE:
+            return Response({
+                'error': 'مكتبة Playwright غير مثبتة. يرجى تثبيتها: pip install playwright && playwright install chromium'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
+        # Generate image if not exists
+        if not certificate.image_file:
+            try:
+                certificate = generate_certificate_image_file(certificate, width=1200, height=900)
+            except Exception as e:
+                return Response({
+                    'error': f'حدث خطأ أثناء إنشاء صورة الشهادة: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Return file URL for download
+        return Response({
+            'download_url': certificate.image_file.url,
+            'message': 'تم إنشاء صورة الشهادة بنجاح'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ أثناء تحميل صورة الشهادة: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
 def check_course_completion(request, course_id):
     """Check if course is completed and certificate can be generated"""
     try:

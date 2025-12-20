@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تحميل الشهادات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Tajawal:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --primary: #0e5181;
+      --text: #2c3e50;
+      --muted: #666;
+      --green: #0e7a2f;
+    }
+    * { box-sizing: border-box; }
+    html, body { 
+      height: 100%; 
+      margin: 0;
+      padding: 0;
+    }
+    body { 
+      font-family: 'Tajawal', sans-serif; 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: var(--text);
+      direction: rtl;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 1.5rem;
+    }
+    .header a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+      background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    }
+    @media (max-width: 600px) {
+      .header > div {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch !important;
+      }
+      .header a {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    .certificates-list {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 20px;
+    }
+    .certificates-selection {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+    .certificate-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .certificate-item:hover {
+      border-color: var(--primary);
+      background: #f5f7fa;
+    }
+    .certificate-item input[type="checkbox"] {
+      margin-left: 10px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .certificate-item.selected {
+      border-color: var(--primary);
+      background: #e3f2fd;
+    }
+    .certificate-item-info {
+      flex: 1;
+    }
+    .certificate-item-info strong {
+      display: block;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+    .certificate-item-info small {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .certificate-preview-area {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .preview-placeholder {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .preview-placeholder svg {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    /* Certificate Card Styles - نفس verify.html */
+    .certificate-card {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 4 / 3;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(14, 81, 129, 0.25);
+      border: 2px solid #e0e0e0;
+      margin: 0 auto;
+    }
+    .certificate-card.bg-image {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .content {
+      position: relative;
+      height: 100%;
+      padding: 40px 50px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+      background: transparent;
+      overflow: hidden;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      text-align: center;
+      padding: 20px 0;
+      margin-top: 180px;
+      max-width: 100%;
+      overflow-wrap: break-word;
+      transition: all 0.3s ease;
+    }
+    .certificate-title {
+      visibility: hidden;
+      height: 0;
+      margin: 0;
+    }
+    .line { 
+      margin: 10px 0; 
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      line-height: 1.8; 
+      color: var(--text);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .first-line {
+      font-weight: 700;
+      color: #000000;
+      font-size: clamp(1.2rem, 4vw, 1.5rem);
+      margin: 10px 0;
+      line-height: 1.8;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .highlight { 
+      color: var(--primary); 
+      font-weight: 700; 
+      font-size: clamp(1.1rem, 3.5vw, 1.4rem);
+      margin: 10px 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+      padding: 0 5px;
+      transition: all 0.3s ease;
+    }
+    .muted { 
+      color: var(--muted);
+      font-size: clamp(0.95rem, 2.8vw, 1.1rem);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      margin: 8px 0;
+      transition: all 0.3s ease;
+    }
+    .info-line {
+      margin: 8px 0;
+      font-size: clamp(0.95rem, 2.8vw, 1.1rem);
+      color: var(--text);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      transition: all 0.3s ease;
+    }
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 5;
+    }
+    .qr-box { 
+      padding: 8px; 
+      border-radius: 8px; 
+      background: rgba(255,255,255,0.95); 
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .qr-box img { 
+      width: 100px; 
+      height: 100px; 
+      min-width: 100px;
+      min-height: 100px;
+      display: block;
+      object-fit: contain;
+    }
+    /* Controls Panel - نفس verify.html */
+    .controls-panel {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      z-index: 1000;
+      min-width: 280px;
+      max-width: 320px;
+      border: 1px solid #e0e0e0;
+    }
+    .controls-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .controls-panel-header h4 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .controls-panel-toggle {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 5px;
+      transition: all 0.3s;
+    }
+    .controls-panel-toggle:hover {
+      color: var(--primary);
+    }
+    .controls-panel-body {
+      display: block;
+    }
+    .controls-panel-body.hidden {
+      display: none;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    .control-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .control-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .control-btn {
+      flex: 1;
+      min-width: 60px;
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.3s;
+      text-align: center;
+    }
+    .control-btn:hover {
+      background: #f5f5f5;
+      border-color: var(--primary);
+    }
+    .control-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .control-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .control-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .control-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(14, 81, 129, 0.1);
+    }
+    .control-btn-small {
+      padding: 8px 12px;
+      min-width: 50px;
+    }
+    /* Download Buttons */
+    .download-buttons-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+      flex-direction: column;
+    }
+    .download-image-btn, .download-pdf-btn {
+      background: linear-gradient(135deg, #0e5181 0%, #0a3d63 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(14, 81, 129, 0.3);
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-family: 'Tajawal', sans-serif;
+    }
+    .download-pdf-btn {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+    .download-image-btn:hover, .download-pdf-btn:hover {
+      transform: translateY(-2px);
+    }
+    .download-image-btn:hover {
+      background: linear-gradient(135deg, #0a3d63 0%, #082a4a 100%);
+      box-shadow: 0 6px 16px rgba(14, 81, 129, 0.4);
+    }
+    .download-pdf-btn:hover {
+      background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+      box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+    }
+    .download-image-btn.loading, .download-pdf-btn.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+    .download-image-btn.loading::after, .download-pdf-btn.loading::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .selection-actions {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+    }
+    .selection-actions button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .select-all-btn {
+      background: var(--primary);
+      color: white;
+    }
+    .select-all-btn:hover {
+      background: #0a3d63;
+    }
+    .deselect-all-btn {
+      background: #f0f0f0;
+      color: var(--text);
+    }
+    .deselect-all-btn:hover {
+      background: #e0e0e0;
+    }
+    @media (max-width: 1200px) {
+      .certificates-list {
+        grid-template-columns: 1fr;
+      }
+      .certificate-preview-area {
+        position: relative;
+        top: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 style="margin: 0;">📜 تحميل الشهادات</h1>
+        <a href="/admin/certificates/certificate/" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; font-family: 'Tajawal', sans-serif;">
+          <span>➕</span>
+          <span>إضافة شهادة</span>
+        </a>
+      </div>
+    </div>
+    
+    <div class="certificates-list">
+      <!-- Certificates Selection List -->
+      <div class="certificates-selection">
+        <div class="selection-actions">
+          <button class="select-all-btn" onclick="selectAll()">تحديد الكل</button>
+          <button class="deselect-all-btn" onclick="deselectAll()">إلغاء التحديد</button>
+        </div>
+        {% for cert_data in certificates_data %}
+          <div class="certificate-item" data-cert-id="{{ cert_data.certificate.id }}">
+            <input type="checkbox" id="cert_{{ cert_data.certificate.id }}" value="{{ cert_data.certificate.id }}" onchange="handleCertificateCheckbox(this, {{ cert_data.certificate.id }})">
+            <div class="certificate-item-info" onclick="handleCertificateClick({{ cert_data.certificate.id }})" style="cursor: pointer; flex: 1;">
+              <strong>{{ cert_data.certificate.student_name }}</strong>
+              <small>{{ cert_data.certificate.course_title }}</small>
+              <small style="display: block; margin-top: 3px;">{{ cert_data.certificate.date_issued|date:"Y-m-d" }}</small>
+            </div>
+          </div>
+        {% empty %}
+          <p style="text-align: center; color: var(--muted); padding: 40px;">لا توجد شهادات متاحة</p>
+        {% endfor %}
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination-container" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; text-align: center;">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="pagination-btn" style="margin: 0 5px; padding: 8px 16px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; display: inline-block;">السابق</a>
+          {% endif %}
+          
+          <span style="margin: 0 10px; color: var(--text);">
+            صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+          </span>
+          
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pagination-btn" style="margin: 0 5px; padding: 8px 16px; background: var(--primary); color: white; text-decoration: none; border-radius: 6px; display: inline-block;">التالي</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- Certificate Preview Area -->
+      <div class="certificate-preview-area">
+        <div id="previewPlaceholder" class="preview-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <p>اختر شهادة للمعاينة</p>
+        </div>
+        <div id="certificatePreview" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Panel -->
+  <div class="controls-panel" id="controlsPanel">
+    <div class="controls-panel-header">
+      <h4>⚙️ إعدادات الشهادة</h4>
+      <button class="controls-panel-toggle" onclick="toggleControlsPanel()">−</button>
+    </div>
+    <div class="controls-panel-body" id="controlsPanelBody">
+      <!-- Font Size Control -->
+      <div class="control-group">
+        <label>حجم الخط:</label>
+        <div class="control-input-group">
+          <button class="control-btn control-btn-small" onclick="adjustFontSize(-2)">−</button>
+          <input type="number" id="fontSizeInput" class="control-input" value="106" min="50" max="200" step="5" onchange="applyFontSize()">
+          <span style="font-size: 0.85rem; color: var(--muted);">%</span>
+          <button class="control-btn control-btn-small" onclick="adjustFontSize(2)">+</button>
+        </div>
+      </div>
+      
+      <!-- Text Alignment Control -->
+      <div class="control-group">
+        <label>محاذاة النص:</label>
+        <div class="control-buttons">
+          <button class="control-btn" onclick="setTextAlign('right')" id="alignRightBtn">→ يمين</button>
+          <button class="control-btn active" onclick="setTextAlign('center')" id="alignCenterBtn">↔ وسط</button>
+          <button class="control-btn" onclick="setTextAlign('left')" id="alignLeftBtn">← يسار</button>
+        </div>
+      </div>
+      
+      <!-- Vertical Position Control -->
+      <div class="control-group">
+        <label>الموضع العمودي:</label>
+        <div class="control-input-group">
+          <button class="control-btn control-btn-small" onclick="adjustVerticalPosition(-10)">↑</button>
+          <input type="number" id="verticalPositionInput" class="control-input" value="180" min="0" max="300" step="5" onchange="applyVerticalPosition()">
+          <span style="font-size: 0.85rem; color: var(--muted);">px</span>
+          <button class="control-btn control-btn-small" onclick="adjustVerticalPosition(10)">↓</button>
+        </div>
+      </div>
+      
+      <!-- Reset Button -->
+      <div class="control-group">
+        <button class="control-btn" onclick="resetControls()" style="width: 100%; background: #f0f0f0; color: var(--text);">
+          🔄 إعادة تعيين
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download Buttons -->
+  <div class="download-buttons-container">
+    <button id="downloadImageBtn" class="download-image-btn" onclick="downloadSelectedAsImages()">
+      <span>📷</span>
+      <span>تحميل المحدد كصور</span>
+    </button>
+    <button id="downloadPdfBtn" class="download-pdf-btn" onclick="downloadSelectedAsPDFs()">
+      <span>📄</span>
+      <span>تحميل المحدد كـ PDF</span>
+    </button>
+  </div>
+
+  <script>
+    // Certificates data from server - استخدام JSON مباشرة
+    const certificatesData = {{ certificates_json|safe }};
+    const baseUrl = "{{ base_url }}";
+
+    let selectedCertificates = new Set();
+    let currentPreviewId = null;
+    let currentFontSize = 106;
+    let currentTextAlign = 'center';
+    let currentVerticalPosition = 180;
+
+    function handleCertificateCheckbox(checkbox, certId) {
+      const item = document.querySelector('[data-cert-id="' + certId + '"]');
+      
+      if (checkbox.checked) {
+        selectedCertificates.add(certId);
+        item.classList.add('selected');
+        // عرض المعاينة تلقائياً
+        showPreview(certId);
+      } else {
+        selectedCertificates.delete(certId);
+        item.classList.remove('selected');
+        // إذا كانت هذه الشهادة معروضة، اعرض أخرى أو اخفي المعاينة
+        if (currentPreviewId === certId) {
+          if (selectedCertificates.size > 0) {
+            showPreview(Array.from(selectedCertificates)[0]);
+          } else {
+            hidePreview();
+          }
+        }
+      }
+    }
+
+    function handleCertificateClick(certId) {
+      const checkbox = document.getElementById('cert_' + certId);
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        handleCertificateCheckbox(checkbox, certId);
+      }
+    }
+
+    function selectAll() {
+      document.querySelectorAll('.certificate-item input[type="checkbox"]').forEach(cb => {
+        if (!cb.checked) {
+          const certId = parseInt(cb.value);
+          cb.checked = true;
+          handleCertificateCheckbox(cb, certId);
+        }
+      });
+    }
+
+    function deselectAll() {
+      document.querySelectorAll('.certificate-item input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) {
+          const certId = parseInt(cb.value);
+          cb.checked = false;
+          handleCertificateCheckbox(cb, certId);
+        }
+      });
+      hidePreview();
+    }
+
+    function showPreview(certId) {
+      const certData = certificatesData[certId];
+      if (!certData) {
+        console.error('Certificate data not found for ID:', certId);
+        return;
+      }
+
+      currentPreviewId = certId;
+      const previewArea = document.getElementById('certificatePreview');
+      const placeholder = document.getElementById('previewPlaceholder');
+      
+      if (!previewArea || !placeholder) {
+        console.error('Preview elements not found');
+        return;
+      }
+      
+      placeholder.style.display = 'none';
+      previewArea.style.display = 'block';
+      
+      // Build certificate HTML
+      let bgStyle = '';
+      if (certData.bg_image_url) {
+        bgStyle = `style="background-image:url('${certData.bg_image_url}')"`;
+      }
+      
+      // التحقق من أن formatted_lines موجودة ومصفوفة
+      const formattedLines = Array.isArray(certData.formatted_lines) ? certData.formatted_lines : [];
+      
+      let html = `
+        <div id="certificateCard_${certId}" class="certificate-card ${certData.bg_image_url ? 'bg-image' : ''}" ${bgStyle}>
+          <div class="content">
+            <div class="main-content">
+              <h2 class="certificate-title">حضور برنامج تدريبي</h2>
+              ${formattedLines.map(item => {
+                if (item.is_first_line) {
+                  return `<div class="first-line">${item.text || ''}</div>`;
+                } else {
+                  const className = item.highlight ? 'highlight' : 'muted';
+                  return `<div class="line ${className}">${item.text || ''}</div>`;
+                }
+              }).join('')}
+            </div>
+            <div class="qr-section">
+              <div class="qr-box">
+                <img alt="رمز QR للتحقق" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${baseUrl}/certificates/verify/${certData.verification_code}/" />
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      previewArea.innerHTML = html;
+      
+      // Apply current settings
+      setTimeout(() => {
+        applyFontSize();
+        setTextAlign(currentTextAlign);
+        applyVerticalPosition();
+      }, 100);
+    }
+
+    function hidePreview() {
+      currentPreviewId = null;
+      document.getElementById('previewPlaceholder').style.display = 'block';
+      document.getElementById('certificatePreview').style.display = 'none';
+    }
+
+    // Controls functions - نفس verify.html
+    function toggleControlsPanel() {
+      const panelBody = document.getElementById('controlsPanelBody');
+      const toggleBtn = document.querySelector('.controls-panel-toggle');
+      if (panelBody.classList.contains('hidden')) {
+        panelBody.classList.remove('hidden');
+        toggleBtn.textContent = '−';
+      } else {
+        panelBody.classList.add('hidden');
+        toggleBtn.textContent = '+';
+      }
+    }
+
+    function adjustFontSize(change) {
+      currentFontSize = Math.max(50, Math.min(200, currentFontSize + change));
+      document.getElementById('fontSizeInput').value = currentFontSize;
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const fontSize = parseInt(document.getElementById('fontSizeInput').value) || 106;
+      currentFontSize = Math.max(50, Math.min(200, fontSize));
+      document.getElementById('fontSizeInput').value = currentFontSize;
+      
+      if (currentPreviewId) {
+        const card = document.getElementById('certificateCard_' + currentPreviewId);
+        if (card) {
+          const mainContent = card.querySelector('.main-content');
+          if (mainContent) {
+            const lines = mainContent.querySelectorAll('.line, .highlight, .muted, .info-line, .first-line');
+            lines.forEach(function(line) {
+              const currentSize = parseFloat(window.getComputedStyle(line).fontSize);
+              const newSize = (currentSize * currentFontSize) / 106;
+              line.style.fontSize = newSize + 'px';
+            });
+          }
+        }
+      }
+    }
+
+    function setTextAlign(align) {
+      currentTextAlign = align;
+      
+      document.querySelectorAll('[id^="align"]').forEach(btn => btn.classList.remove('active'));
+      if (align === 'right') {
+        document.getElementById('alignRightBtn').classList.add('active');
+      } else if (align === 'center') {
+        document.getElementById('alignCenterBtn').classList.add('active');
+      } else if (align === 'left') {
+        document.getElementById('alignLeftBtn').classList.add('active');
+      }
+      
+      if (currentPreviewId) {
+        const card = document.getElementById('certificateCard_' + currentPreviewId);
+        if (card) {
+          const mainContent = card.querySelector('.main-content');
+          if (mainContent) {
+            mainContent.style.textAlign = align;
+            const lines = mainContent.querySelectorAll('.line, .highlight, .muted, .info-line, .first-line');
+            lines.forEach(function(line) {
+              line.style.textAlign = align;
+            });
+          }
+        }
+      }
+    }
+
+    function adjustVerticalPosition(change) {
+      currentVerticalPosition = Math.max(0, Math.min(300, currentVerticalPosition + change));
+      document.getElementById('verticalPositionInput').value = currentVerticalPosition;
+      applyVerticalPosition();
+    }
+
+    function applyVerticalPosition() {
+      const position = parseInt(document.getElementById('verticalPositionInput').value) || 180;
+      currentVerticalPosition = Math.max(0, Math.min(300, position));
+      document.getElementById('verticalPositionInput').value = currentVerticalPosition;
+      
+      if (currentPreviewId) {
+        const card = document.getElementById('certificateCard_' + currentPreviewId);
+        if (card) {
+          const mainContent = card.querySelector('.main-content');
+          if (mainContent) {
+            mainContent.style.marginTop = currentVerticalPosition + 'px';
+          }
+        }
+      }
+    }
+
+    function resetControls() {
+      currentFontSize = 106;
+      currentTextAlign = 'center';
+      currentVerticalPosition = 180;
+      
+      document.getElementById('fontSizeInput').value = currentFontSize;
+      document.getElementById('verticalPositionInput').value = currentVerticalPosition;
+      
+      document.querySelectorAll('[id^="align"]').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('alignCenterBtn').classList.add('active');
+      
+      if (currentPreviewId) {
+        const card = document.getElementById('certificateCard_' + currentPreviewId);
+        if (card) {
+          const mainContent = card.querySelector('.main-content');
+          if (mainContent) {
+            mainContent.style.marginTop = currentVerticalPosition + 'px';
+            mainContent.style.textAlign = currentTextAlign;
+            
+            const lines = mainContent.querySelectorAll('.line, .highlight, .muted, .info-line, .first-line');
+            lines.forEach(function(line) {
+              line.style.fontSize = '';
+              line.style.textAlign = '';
+            });
+          }
+        }
+        setTimeout(applyFontSize, 100);
+      }
+    }
+
+    // Download functions
+    async function downloadSelectedAsImages() {
+      if (selectedCertificates.size === 0) {
+        alert('يرجى اختيار شهادة واحدة على الأقل');
+        return;
+      }
+
+      const btn = document.getElementById('downloadImageBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        if (selectedCertificates.size === 1) {
+          // Single download
+          const certId = Array.from(selectedCertificates)[0];
+          await downloadCertificateAsImage(certId);
+        } else {
+          // Multiple download - use JSZip
+          const zip = new JSZip();
+          let processed = 0;
+          const total = selectedCertificates.size;
+
+          for (const certId of selectedCertificates) {
+            try {
+              const imageData = await generateCertificateImage(certId);
+              const certData = certificatesData[certId];
+              const fileName = `شهادة_${certData.student_name.replace(/\s+/g, '_')}_${certData.course_title.replace(/\s+/g, '_')}.png`;
+              zip.file(fileName, imageData);
+              processed++;
+              btn.innerHTML = `<span>جاري التحويل... ${processed}/${total}</span>`;
+            } catch (error) {
+              console.error('Error processing certificate', certId, error);
+            }
+          }
+
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(zipBlob);
+          const link = document.createElement('a');
+          link.download = 'الشهادات.zip';
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        console.error('Error downloading certificates:', error);
+        alert('حدث خطأ أثناء تحميل الشهادات');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.innerHTML = '<span>📷</span><span>تحميل المحدد كصور</span>';
+      }
+    }
+
+    async function downloadSelectedAsPDFs() {
+      if (selectedCertificates.size === 0) {
+        alert('يرجى اختيار شهادة واحدة على الأقل');
+        return;
+      }
+
+      if (typeof window.jspdf === 'undefined') {
+        alert('مكتبة PDF غير متاحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+        return;
+      }
+
+      const btn = document.getElementById('downloadPdfBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        if (selectedCertificates.size === 1) {
+          // Single download
+          const certId = Array.from(selectedCertificates)[0];
+          await downloadCertificateAsPDF(certId);
+        } else {
+          // Multiple download - use JSZip
+          const zip = new JSZip();
+          let processed = 0;
+          const total = selectedCertificates.size;
+
+          for (const certId of selectedCertificates) {
+            try {
+              const pdfBlob = await generateCertificatePDF(certId);
+              const certData = certificatesData[certId];
+              const fileName = `شهادة_${certData.student_name.replace(/\s+/g, '_')}_${certData.course_title.replace(/\s+/g, '_')}.pdf`;
+              zip.file(fileName, pdfBlob);
+              processed++;
+              btn.innerHTML = `<span>جاري التحويل... ${processed}/${total}</span>`;
+            } catch (error) {
+              console.error('Error processing certificate', certId, error);
+            }
+          }
+
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          const url = URL.createObjectURL(zipBlob);
+          const link = document.createElement('a');
+          link.download = 'الشهادات.pdf.zip';
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        console.error('Error downloading certificates:', error);
+        alert('حدث خطأ أثناء تحميل الشهادات');
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.innerHTML = '<span>📄</span><span>تحميل المحدد كـ PDF</span>';
+      }
+    }
+
+    async function generateCertificateImage(certId) {
+      // Create temporary certificate card - نفس بنية المعاينة
+      const certData = certificatesData[certId];
+      if (!certData) {
+        throw new Error('Certificate data not found for ID: ' + certId);
+      }
+      
+      let bgStyle = '';
+      if (certData.bg_image_url) {
+        bgStyle = `style="background-image:url('${certData.bg_image_url}')"`;
+      }
+      
+      const formattedLines = Array.isArray(certData.formatted_lines) ? certData.formatted_lines : [];
+      
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '0';
+      tempDiv.style.width = '900px';
+      tempDiv.style.fontFamily = "'Amiri', 'Noto Naskh Arabic', 'Tajawal', serif";
+      tempDiv.innerHTML = `
+        <div id="temp_cert_${certId}" class="certificate-card ${certData.bg_image_url ? 'bg-image' : ''}" ${bgStyle}>
+          <div class="content">
+            <div class="main-content" style="margin-top: ${currentVerticalPosition}px; text-align: ${currentTextAlign};">
+              <h2 class="certificate-title">حضور برنامج تدريبي</h2>
+              ${formattedLines.map(item => {
+                if (item.is_first_line) {
+                  return `<div class="first-line">${item.text || ''}</div>`;
+                } else {
+                  const className = item.highlight ? 'highlight' : 'muted';
+                  return `<div class="line ${className}">${item.text || ''}</div>`;
+                }
+              }).join('')}
+            </div>
+            <div class="qr-section">
+              <div class="qr-box">
+                <img alt="رمز QR" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${baseUrl}/certificates/verify/${certData.verification_code}/" />
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(tempDiv);
+      
+      const card = document.getElementById('temp_cert_' + certId);
+      if (!card) {
+        document.body.removeChild(tempDiv);
+        throw new Error('Could not create certificate card');
+      }
+      
+      // انتظار تحميل الصور والخطوط
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // تطبيق نفس الإعدادات المستخدمة في المعاينة - نفس منطق applyFontSize
+      const mainContent = card.querySelector('.main-content');
+      if (mainContent) {
+        // تطبيق الموضع العمودي والمحاذاة
+        mainContent.style.marginTop = currentVerticalPosition + 'px';
+        mainContent.style.textAlign = currentTextAlign;
+        
+        // تطبيق حجم الخط - نفس منطق applyFontSize بالضبط
+        const lines = mainContent.querySelectorAll('.line, .highlight, .muted, .info-line, .first-line');
+        lines.forEach(function(line) {
+          // الحصول على الحجم الحالي من CSS (بعد تطبيق clamp)
+          // نفس الكود المستخدم في applyFontSize
+          const currentSize = parseFloat(window.getComputedStyle(line).fontSize);
+          
+          if (currentSize && !isNaN(currentSize)) {
+            // تطبيق حجم الخط الحالي (نسبة من القيمة الافتراضية 106%)
+            // نفس الحساب المستخدم في applyFontSize
+            const newSize = (currentSize * currentFontSize) / 106;
+            line.style.fontSize = newSize + 'px';
+          }
+          line.style.textAlign = currentTextAlign;
+        });
+      }
+      
+      // انتظار إضافي للتأكد من تطبيق الأنماط والخطوط (مثل verify.html)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // التأكد من تحميل الخطوط
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      
+      try {
+        const canvas = await html2canvas(card, {
+          backgroundColor: '#ffffff',
+          scale: 3,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          width: card.offsetWidth,
+          height: card.offsetHeight,
+          onclone: function(clonedDoc) {
+            // التأكد من تطبيق الخطوط في المستند المستنسخ
+            const clonedCard = clonedDoc.getElementById('temp_cert_' + certId);
+            if (clonedCard) {
+              clonedCard.style.fontFamily = "'Amiri', 'Noto Naskh Arabic', 'Tajawal', serif";
+              if (clonedCard.classList.contains('bg-image')) {
+                const bgImage = clonedCard.style.backgroundImage;
+                if (bgImage) {
+                  clonedCard.style.backgroundImage = bgImage;
+                }
+              }
+              const clonedMainContent = clonedCard.querySelector('.main-content');
+              if (clonedMainContent) {
+                clonedMainContent.style.marginTop = currentVerticalPosition + 'px';
+                clonedMainContent.style.textAlign = currentTextAlign;
+              }
+            }
+          }
+        });
+        
+        document.body.removeChild(tempDiv);
+        
+        return new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/png', 0.95);
+        });
+      } catch (error) {
+        document.body.removeChild(tempDiv);
+        throw error;
+      }
+    }
+
+    async function generateCertificatePDF(certId) {
+      const imageBlob = await generateCertificateImage(certId);
+      const imgData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(imageBlob);
+      });
+      
+      const pdfWidth = 297;
+      const pdfHeight = 210;
+      const img = new Image();
+      img.src = imgData;
+      
+      return new Promise((resolve) => {
+        img.onload = () => {
+          const ratio = img.width / img.height;
+          let finalWidth = pdfWidth;
+          let finalHeight = pdfWidth / ratio;
+          
+          if (finalHeight > pdfHeight) {
+            finalHeight = pdfHeight;
+            finalWidth = pdfHeight * ratio;
+          }
+          
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: finalWidth > finalHeight ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: [finalWidth, finalHeight]
+          });
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight, undefined, 'FAST');
+          
+          resolve(pdf.output('blob'));
+        };
+      });
+    }
+
+    async function downloadCertificateAsImage(certId) {
+      const imageBlob = await generateCertificateImage(certId);
+      const certData = certificatesData[certId];
+      const fileName = `شهادة_${certData.student_name.replace(/\s+/g, '_')}_${certData.course_title.replace(/\s+/g, '_')}.png`;
+      const url = URL.createObjectURL(imageBlob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    async function downloadCertificateAsPDF(certId) {
+      const pdfBlob = await generateCertificatePDF(certId);
+      const certData = certificatesData[certId];
+      const fileName = `شهادة_${certData.student_name.replace(/\s+/g, '_')}_${certData.course_title.replace(/\s+/g, '_')}.pdf`;
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('fontSizeInput').value = currentFontSize;
+      document.getElementById('verticalPositionInput').value = currentVerticalPosition;
+    });
+  </script>
+</body>
+</html>
+

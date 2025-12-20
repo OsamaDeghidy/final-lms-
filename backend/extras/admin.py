@@ -62,7 +62,7 @@ class CustomAdminSite(AdminSite):
         context = super().each_context(request)
         context['site_header'] = self.site_header
         context['site_title'] = self.site_title
-        context['site_url'] = '/'
+        context['site_url'] = 'https://final-lms-beryl.vercel.app/'
         context['has_permission'] = request.user.is_active and request.user.is_staff
         
         # Add stats for the dashboard

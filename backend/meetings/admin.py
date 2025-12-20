@@ -127,6 +127,8 @@ class MeetingAdmin(ImportExportAdminMixin, admin.ModelAdmin):
     duration_display.short_description = 'المدة'
     
     def end_time_display(self, obj):
+        if obj.end_time is None:
+            return "غير محدد"
         return obj.end_time
     end_time_display.short_description = 'وقت الانتهاء'
     
