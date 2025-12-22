@@ -3212,13 +3212,13 @@ function toggleMobileSidebar(event) {
         <li>
             <a href="{% url 'admin:users_studentgpa_changelist' %}" class="{% if '/admin/users/studentgpa/' in request.path %}active{% endif %}">
                 <i class="fas fa-chart-line"></i>
-                <span>GPA الطلاب</span>
+                <span>درجات الطلاب</span>
             </a>
         </li>
         <li>
             <a href="{% url 'admin:users_gpahistory_changelist' %}" class="{% if '/admin/users/gpahistory/' in request.path %}active{% endif %}">
                 <i class="fas fa-history"></i>
-                <span>سجل GPA</span>
+                <span>سجل الدرجات</span>
             </a>
         </li>
 

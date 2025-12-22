@@ -68,6 +68,49 @@ class ImportExportAdminMixin:
             fields = ['id'] + [x for x in fields if x != 'id']
         return fields
 
+    def _fix_arabic_encoding(self, text):
+        """إصلاح ترميز النص العربي بطرق متعددة"""
+        if not text:
+            return ''
+        
+        # تحويل إلى string إذا لم يكن string
+        if not isinstance(text, str):
+            try:
+                text = str(text)
+            except:
+                return ''
+        
+        # إذا كان النص يحتوي على رموز مثل Ø§Ø³Ø§، فهذا يعني أنه UTF-8 مخزن كـ Latin-1
+        if 'Ø' in text or '§' in text or '³' in text or 'Ù' in text:
+            try:
+                # الطريقة 1: تحويل من Latin-1 إلى bytes ثم decode كـ UTF-8
+                fixed = text.encode('latin-1').decode('utf-8')
+                # التحقق من أن الإصلاح نجح (لا يجب أن يحتوي على رموز غريبة)
+                if 'Ø' not in fixed and '§' not in fixed:
+                    return fixed
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                pass
+            
+            try:
+                # الطريقة 2: استخدام errors='replace' أو 'ignore'
+                fixed = text.encode('latin-1', errors='ignore').decode('utf-8', errors='ignore')
+                if 'Ø' not in fixed and '§' not in fixed:
+                    return fixed
+            except:
+                pass
+        
+        # إذا كان النص bytes، decodeه كـ UTF-8
+        if isinstance(text, bytes):
+            try:
+                return text.decode('utf-8')
+            except UnicodeDecodeError:
+                try:
+                    return text.decode('utf-8', errors='ignore')
+                except:
+                    return text.decode('latin-1', errors='ignore')
+        
+        return text
+
     def _get_value_for_export(self, obj, header):
         # If header is <field>_id, export related id
         if header.endswith('_id'):
@@ -85,14 +128,17 @@ class ImportExportAdminMixin:
             return str(val)
         # Convert file/image fields to a simple string (file name)
         if isinstance(val, FieldFile):
-            return val.name or ''
+            return self._fix_arabic_encoding(val.name) if val.name else ''
         # Fallback for any object with a file-like name/url attribute
         if hasattr(val, 'name') or hasattr(val, 'url'):
             try:
                 name = getattr(val, 'name', None) or getattr(val, 'url', None)
-                return name or ''
+                return self._fix_arabic_encoding(name) if name else ''
             except Exception:
                 return ''
+        # Apply Arabic encoding fix for string values
+        if isinstance(val, str):
+            return self._fix_arabic_encoding(val)
         return val if val is not None else ''
 
     def _parse_value(self, field_name, val):
@@ -193,13 +239,14 @@ class ImportExportAdminMixin:
             response['Content-Disposition'] = f'attachment; filename="{self.model._meta.model_name}_export.xlsx"'
             return response
         else:
-            rows = []
-            rows.append(','.join(headers))
+            import codecs
+            # CSV مع UTF-8 BOM لمساعدة Excel على قراءة النصوص العربية
+            csv_content = codecs.BOM_UTF8.decode('utf-8')
+            csv_content += ','.join(headers) + '\n'
             for obj in queryset:
                 row = [str(self._get_value_for_export(obj, h)) for h in headers]
-                rows.append(','.join(row))
-            csv_content = '\n'.join(rows)
-            return HttpResponse(csv_content, content_type='text/csv')
+                csv_content += ','.join(row) + '\n'
+            return HttpResponse(csv_content, content_type='text/csv; charset=utf-8')
 
     def import_excel_view(self, request):
         base_ctx = self.admin_site.each_context(request)

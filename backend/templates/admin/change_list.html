@@ -130,7 +130,7 @@
         white-space: nowrap;
         animation: fadeInUp 0.4s ease;
     }
-
+    
     /* Remove marker styling from toolbar buttons */
     .toolbar-buttons li::marker,
     .toolbar-buttons li::before {
@@ -1397,38 +1397,38 @@
                     <div>{{ cl.formset.management_form }}</div>
                 {% endif %}
 
-                <!-- Actions and Filter Bar -->
-                <div class="actions-filter-bar">
-                    <div class="actions-wrapper">
-                        {% if action_form and actions_on_top and cl.show_admin_actions %}
-                            {% admin_actions %}
-                        {% endif %}
-                    </div>
-                    {% if cl.has_filters %}
-                    <button type="button" class="filter-button" id="filter-toggle-btn">
-                        <i class="fas fa-filter"></i>
-                        الفلتر
-                    </button>
+            <!-- Actions and Filter Bar -->
+            <div class="actions-filter-bar">
+                <div class="actions-wrapper">
+                    {% if action_form and actions_on_top and cl.show_admin_actions %}
+                        {% admin_actions %}
                     {% endif %}
-                </div>
-
-                <!-- Filter Popup -->
+                    </div>
                 {% if cl.has_filters %}
-                <div class="filter-popup" id="filter-popup">
-                    <div class="filter-popup-content">
-                        <div class="filter-popup-header">
-                            <h2>{% translate 'Filter' %}</h2>
-                            <button type="button" class="filter-popup-close" id="filter-popup-close">
-                                &times;
-                            </button>
-                        </div>
+                <button type="button" class="filter-button" id="filter-toggle-btn">
+                    <i class="fas fa-filter"></i>
+                    الفلتر
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Filter Popup -->
+                {% if cl.has_filters %}
+                        <div class="filter-popup" id="filter-popup">
+                <div class="filter-popup-content">
+                    <div class="filter-popup-header">
+                        <h2>{% translate 'Filter' %}</h2>
+                        <button type="button" class="filter-popup-close" id="filter-popup-close">
+                            &times;
+                        </button>
+                    </div>
                         <div class="filter-popup-body">
                             {% for spec in cl.filter_specs %}
-                                {% admin_list_filter cl spec %}
+                                    {% admin_list_filter cl spec %}
                             {% endfor %}
-                        </div>
                     </div>
-                </div>
+            </div>
+            </div>
                 {% endif %}
 
                 {% block result_list %}
@@ -1462,15 +1462,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Open popup
     if (filterToggleBtn && filterPopup) {
         filterToggleBtn.addEventListener('click', function() {
-            filterPopup.classList.add('active');
+                filterPopup.classList.add('active');
             document.body.style.overflow = 'hidden';
         });
-    }
+            }
 
     // Close popup function
     function closeFilterPopup() {
         if (filterPopup) {
-            filterPopup.classList.remove('active');
+                filterPopup.classList.remove('active');
             document.body.style.overflow = '';
         }
     }
@@ -1492,8 +1492,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && filterPopup && filterPopup.classList.contains('active')) {
             closeFilterPopup();
-        }
-    });
+            }
+        });
 
     // Mark currently active filter links
     if (filterPopupBody) {

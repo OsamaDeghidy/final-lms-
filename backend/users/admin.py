@@ -177,15 +177,17 @@ class CustomUserAdmin(BaseUserAdmin):
             wb = Workbook()
             ws = wb.active
             ws.title = 'المستخدمون'
-            ws.append(headers)
+            # إضافة الرؤوس كـ strings صريحة
+            ws.append([str(h) for h in headers])
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
             response = HttpResponse(
                 output.read(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8'
             )
             response['Content-Disposition'] = 'attachment; filename="users_import_template.xlsx"'
+            response['Content-Encoding'] = 'utf-8'
             return response
         else:
             csv_content = ','.join(headers) + '\n'
@@ -302,18 +304,80 @@ class CustomUserAdmin(BaseUserAdmin):
         ]
         queryset = self.get_queryset(request)
 
+        # دالة شاملة لإصلاح ترميز النصوص العربية (يجب تعريفها خارج if/else لاستخدامها في كلا الحالتين)
+        def fix_arabic_encoding(text):
+                """إصلاح ترميز النص العربي بطرق متعددة"""
+                if not text:
+                    return ''
+                
+                # تحويل إلى string إذا لم يكن string
+                if not isinstance(text, str):
+                    try:
+                        text = str(text)
+                    except:
+                        return ''
+                
+                # إذا كان النص يحتوي على رموز مثل Ø§Ø³Ø§، فهذا يعني أنه UTF-8 مخزن كـ Latin-1
+                if 'Ø' in text or '§' in text or '³' in text or 'Ù' in text:
+                    try:
+                        # الطريقة 1: تحويل من Latin-1 إلى bytes ثم decode كـ UTF-8
+                        fixed = text.encode('latin-1').decode('utf-8')
+                        # التحقق من أن الإصلاح نجح (لا يجب أن يحتوي على رموز غريبة)
+                        if 'Ø' not in fixed and '§' not in fixed:
+                            return fixed
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        pass
+                    
+                    try:
+                        # الطريقة 2: استخدام errors='replace' أو 'ignore'
+                        fixed = text.encode('latin-1', errors='ignore').decode('utf-8', errors='ignore')
+                        if 'Ø' not in fixed and '§' not in fixed:
+                            return fixed
+                    except:
+                        pass
+                
+                # إذا كان النص bytes، decodeه كـ UTF-8
+                if isinstance(text, bytes):
+                    try:
+                        return text.decode('utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            return text.decode('utf-8', errors='ignore')
+                        except:
+                            return text.decode('latin-1', errors='ignore')
+                
+                return text
+
         if Workbook:
             wb = Workbook()
             ws = wb.active
             ws.title = 'المستخدمون'
+            
+            # إضافة الرؤوس
             ws.append(headers)
+            
+            # إضافة البيانات مع إصلاح الترميز
             for u in queryset:
-                ws.append([
-                    u.id, u.username, u.email or '', u.first_name or '', u.last_name or '',
-                    u.is_active, u.is_staff, u.is_superuser,
+                # قراءة القيم مباشرة
+                first_name = fix_arabic_encoding(u.first_name) if u.first_name else ''
+                last_name = fix_arabic_encoding(u.last_name) if u.last_name else ''
+                username = fix_arabic_encoding(u.username) if u.username else ''
+                email = fix_arabic_encoding(u.email) if u.email else ''
+                
+                row_data = [
+                    u.id,
+                    username,
+                    email,
+                    first_name,
+                    last_name,
+                    u.is_active,
+                    u.is_staff,
+                    u.is_superuser,
                     u.date_joined.isoformat() if u.date_joined else '',
                     u.last_login.isoformat() if u.last_login else ''
-                ])
+                ]
+                ws.append(row_data)
+            
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
@@ -324,19 +388,26 @@ class CustomUserAdmin(BaseUserAdmin):
             response['Content-Disposition'] = 'attachment; filename="users_export.xlsx"'
             return response
         else:
-            rows = []
-            rows.append(','.join(headers))
+            # Fallback: CSV مع UTF-8 BOM لمساعدة Excel على قراءة النصوص العربية
+            import codecs
+            # إضافة BOM للـ UTF-8
+            csv_content = codecs.BOM_UTF8.decode('utf-8')
+            csv_content += ','.join(headers) + '\n'
             for u in queryset:
+                # استخدام fix_arabic_encoding للنصوص
+                first_name = fix_arabic_encoding(u.first_name) if u.first_name else ''
+                last_name = fix_arabic_encoding(u.last_name) if u.last_name else ''
+                username = fix_arabic_encoding(u.username) if u.username else ''
+                email = fix_arabic_encoding(u.email) if u.email else ''
+                
                 row = [
-                    str(u.id), u.username,
-                    str(u.email or ''), str(u.first_name or ''), str(u.last_name or ''),
+                    str(u.id), username, email, first_name, last_name,
                     '1' if u.is_active else '0', '1' if u.is_staff else '0', '1' if u.is_superuser else '0',
                     str(u.date_joined.isoformat() if u.date_joined else ''),
                     str(u.last_login.isoformat() if u.last_login else '')
                 ]
-                rows.append(','.join(row))
-            csv_content = '\n'.join(rows)
-            return HttpResponse(csv_content, content_type='text/csv')
+                csv_content += ','.join(row) + '\n'
+            return HttpResponse(csv_content.encode('utf-8'), content_type='text/csv; charset=utf-8')
     
     def status_dropdown(self, obj):
         """عرض dropdown قابل للتعديل للحالة"""
@@ -995,8 +1066,8 @@ class GPAHistoryInline(admin.TabularInline):
 
 @admin.register(StudentGPA)
 class StudentGPAAdmin(ImportExportAdminMixin, admin.ModelAdmin):
-    list_display = ('student_name_display', 'course', 'grade_name', 'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 'semester', 'academic_year', 'created_by', 'created_at')
-    list_filter = ('semester', 'academic_year', 'course', 'gpa_scale', 'created_at')
+    list_display = ('student_name_display', 'course', 'grade_name', 'gpa', 'semester', 'academic_year', 'created_by', 'created_at')
+    list_filter = ('semester', 'academic_year', 'course', 'created_at')
     search_fields = ('student__username', 'student__email', 'student__first_name', 'student__last_name', 'course__title', 'grade_name')
     readonly_fields = ('created_at', 'updated_at', 'created_by')
     date_hierarchy = 'created_at'
@@ -1007,7 +1078,7 @@ class StudentGPAAdmin(ImportExportAdminMixin, admin.ModelAdmin):
             'fields': ('student', 'course')
         }),
         ('معلومات الدرجة', {
-            'fields': ('grade_name', 'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 'semester', 'academic_year', 'notes')
+            'fields': ('grade_name', 'gpa', 'semester', 'academic_year', 'notes')
         }),
         ('معلومات النظام', {
             'fields': ('created_by', 'created_at', 'updated_at'),

@@ -80,10 +80,10 @@ class BannerViewSet(viewsets.ModelViewSet):
         
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = self.get_serializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
             
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
@@ -101,7 +101,7 @@ class BannerViewSet(viewsets.ModelViewSet):
         # Order by display_order and then by creation date
         queryset = queryset.order_by('display_order', '-created_at')
         
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
 

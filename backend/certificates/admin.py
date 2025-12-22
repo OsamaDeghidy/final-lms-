@@ -306,15 +306,17 @@ class CertificateAdmin(admin.ModelAdmin):
             wb = Workbook()
             ws = wb.active
             ws.title = 'الشهادات'
-            ws.append(headers)
+            # إضافة الرؤوس كـ strings صريحة
+            ws.append([str(h) for h in headers])
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
             response = HttpResponse(
                 output.read(),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; charset=utf-8'
             )
             response['Content-Disposition'] = 'attachment; filename="certificates_import_template.xlsx"'
+            response['Content-Encoding'] = 'utf-8'
             return response
         else:
             # Fallback CSV template
@@ -334,33 +336,97 @@ class CertificateAdmin(admin.ModelAdmin):
 
         queryset = self.get_queryset(request)
 
+        # دالة شاملة لإصلاح ترميز النصوص العربية (يجب تعريفها خارج if/else)
+        def fix_arabic_encoding(text):
+            """إصلاح ترميز النص العربي بطرق متعددة"""
+            if not text:
+                return ''
+            
+            # تحويل إلى string إذا لم يكن string
+            if not isinstance(text, str):
+                try:
+                    text = str(text)
+                except:
+                    return ''
+            
+            # إذا كان النص يحتوي على رموز مثل Ø§Ø³Ø§، فهذا يعني أنه UTF-8 مخزن كـ Latin-1
+            if 'Ø' in text or '§' in text or '³' in text or 'Ù' in text:
+                try:
+                    # الطريقة 1: تحويل من Latin-1 إلى bytes ثم decode كـ UTF-8
+                    fixed = text.encode('latin-1').decode('utf-8')
+                    # التحقق من أن الإصلاح نجح (لا يجب أن يحتوي على رموز غريبة)
+                    if 'Ø' not in fixed and '§' not in fixed:
+                        return fixed
+                except (UnicodeEncodeError, UnicodeDecodeError):
+                    pass
+                
+                try:
+                    # الطريقة 2: استخدام errors='replace' أو 'ignore'
+                    fixed = text.encode('latin-1', errors='ignore').decode('utf-8', errors='ignore')
+                    if 'Ø' not in fixed and '§' not in fixed:
+                        return fixed
+                except:
+                    pass
+            
+            # إذا كان النص bytes، decodeه كـ UTF-8
+            if isinstance(text, bytes):
+                try:
+                    return text.decode('utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        return text.decode('utf-8', errors='ignore')
+                    except:
+                        return text.decode('latin-1', errors='ignore')
+            
+            return text
+        
+        def safe_str(value):
+            """تحويل القيمة إلى string بشكل آمن مع دعم العربية"""
+            if value is None:
+                return ''
+            text = str(value) if not isinstance(value, str) else value
+            return fix_arabic_encoding(text)
+
         if Workbook:
             wb = Workbook()
             ws = wb.active
             ws.title = 'الشهادات'
+            
+            # إضافة الرؤوس
             ws.append(headers)
 
+            # إضافة البيانات مع التأكد من الترميز الصحيح للنصوص العربية
+            from openpyxl.styles import Font
+            
+            # تعيين خط يدعم العربية للرؤوس
+            header_font = Font(name='Arial', size=11, bold=True)
+            for col_num, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.value = str(header)
+                cell.font = header_font
+            
             for cert in queryset:
-                ws.append([
-                    cert.certificate_id,
-                    cert.user.email if cert.user else '',
-                    cert.student_name or '',
-                    cert.national_id or '',
+                row_data = [
+                    safe_str(cert.certificate_id),
+                    safe_str(cert.user.email if cert.user and cert.user.email else ''),
+                    safe_str(cert.student_name),
+                    safe_str(cert.national_id),
                     cert.course.id if cert.course else '',
-                    cert.course_title or (cert.course.title if cert.course and hasattr(cert.course, 'title') else ''),
+                    safe_str(cert.course_title if cert.course_title else (cert.course.title if cert.course and hasattr(cert.course, 'title') else '')),
                     cert.duration_days if cert.duration_days is not None else '',
                     cert.course_duration_hours if cert.course_duration_hours is not None else '',
                     cert.start_date.isoformat() if cert.start_date else '',
                     cert.end_date.isoformat() if cert.end_date else '',
-                    cert.start_date_hijri or '',
-                    cert.end_date_hijri or '',
+                    safe_str(cert.start_date_hijri),
+                    safe_str(cert.end_date_hijri),
                     cert.completion_date.isoformat() if cert.completion_date else '',
                     cert.final_grade if cert.final_grade is not None else '',
                     cert.completion_percentage if cert.completion_percentage is not None else '',
-                    cert.status or '',
-                    cert.verification_status or '',
+                    safe_str(cert.status),
+                    safe_str(cert.verification_status),
                     cert.template.id if cert.template else ''
-                ])
+                ]
+                ws.append(row_data)
 
             output = io.BytesIO()
             wb.save(output)
@@ -370,35 +436,37 @@ class CertificateAdmin(admin.ModelAdmin):
                 content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
             response['Content-Disposition'] = 'attachment; filename="certificates_export.xlsx"'
+            # Excel يتعامل مع UTF-8 تلقائياً في ملفات .xlsx، لا حاجة لـ Content-Encoding
             return response
         else:
-            # Fallback CSV export
-            rows = []
-            rows.append(','.join(headers))
+            # Fallback CSV export مع UTF-8 BOM
+            import codecs
+            # إضافة BOM للـ UTF-8
+            csv_content = codecs.BOM_UTF8.decode('utf-8')
+            csv_content += ','.join(headers) + '\n'
             for cert in queryset:
                 row = [
-                    str(cert.certificate_id or ''),
-                    str(cert.user.email if cert.user else ''),
-                    str(cert.student_name or ''),
-                    str(cert.national_id or ''),
+                    safe_str(cert.certificate_id),
+                    safe_str(cert.user.email if cert.user and cert.user.email else ''),
+                    safe_str(cert.student_name),
+                    safe_str(cert.national_id),
                     str(cert.course.id if cert.course else ''),
-                    str(cert.course_title or (cert.course.title if cert.course and hasattr(cert.course, 'title') else '')),
+                    safe_str(cert.course_title if cert.course_title else (cert.course.title if cert.course and hasattr(cert.course, 'title') else '')),
                     str(cert.duration_days if cert.duration_days is not None else ''),
                     str(cert.course_duration_hours if cert.course_duration_hours is not None else ''),
                     str(cert.start_date.isoformat() if cert.start_date else ''),
                     str(cert.end_date.isoformat() if cert.end_date else ''),
-                    str(cert.start_date_hijri or ''),
-                    str(cert.end_date_hijri or ''),
+                    safe_str(cert.start_date_hijri),
+                    safe_str(cert.end_date_hijri),
                     str(cert.completion_date.isoformat() if cert.completion_date else ''),
                     str(cert.final_grade if cert.final_grade is not None else ''),
                     str(cert.completion_percentage if cert.completion_percentage is not None else ''),
-                    str(cert.status or ''),
-                    str(cert.verification_status or ''),
+                    safe_str(cert.status),
+                    safe_str(cert.verification_status),
                     str(cert.template.id if cert.template else '')
                 ]
-                rows.append(','.join(row))
-            csv_content = '\n'.join(rows)
-            return HttpResponse(csv_content, content_type='text/csv')
+                csv_content += ','.join(row) + '\n'
+            return HttpResponse(csv_content.encode('utf-8'), content_type='text/csv; charset=utf-8')
 
     def import_excel_view(self, request):
         """Handle Excel upload to update or create certificate records.

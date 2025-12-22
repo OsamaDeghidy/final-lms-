@@ -4,6 +4,8 @@ import { useDispatch } from 'react-redux';
 import { logout as logoutAction } from '../../store/slices/authSlice';
 import { useAuth } from '../../contexts/AuthContext';
 import profileImage from '../../assets/images/profile.jpg';
+import notificationAPI from '../../services/notification.service';
+import BannerNotification from '../notifications/BannerNotification';
 import {
   Box, Drawer, AppBar, Toolbar, Typography, IconButton, List, ListItemButton, ListItemIcon, ListItemText,
   Avatar, Divider, Badge, InputBase, Paper
@@ -68,15 +70,98 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [bannerNotifications, setBannerNotifications] = useState([]);
+  const [closedBanners, setClosedBanners] = useState(new Set());
 
-  // Sample notifications data
-  const notifications = [
-    { id: 1, text: 'لديك واجب جديد في مادة الرياضيات', time: 'منذ 10 دقائق', read: false },
-    { id: 2, text: 'تم إضافة درجات الاختبار النصفي', time: 'منذ ساعة', read: false },
-    { id: 3, text: 'محاضرة جديدة متاحة', time: 'منذ يوم', read: true },
-  ];
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return; // Only fetch if user is authenticated
+      
+      try {
+        const [notificationsData, unreadData] = await Promise.all([
+          notificationAPI.getNotifications({ page_size: 10 }),
+          notificationAPI.getUnreadCount()
+        ]);
+        
+        // Handle paginated or direct array response
+        const notificationsList = Array.isArray(notificationsData) 
+          ? notificationsData 
+          : (notificationsData.results || []);
+        
+        // Transform notifications to match expected format
+        const formattedNotifications = notificationsList.map(notif => ({
+          id: notif.id,
+          text: notif.message || notif.title,
+          time: notif.time_since || 'الآن',
+          read: notif.is_read || false,
+          title: notif.title,
+          type: notif.notification_type
+        }));
+        
+        setNotifications(formattedNotifications);
+        setUnreadCount(unreadData.unread_count || 0);
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        setNotifications([]);
+        setUnreadCount(0);
+      }
+    };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+    fetchNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Fetch banner notifications
+  useEffect(() => {
+    const fetchBannerNotifications = async () => {
+      try {
+        // Determine page and dashboard type based on current path
+        const currentPath = location.pathname;
+        let page = 'home';
+        let dashboardType = null;
+        
+        if (currentPath.includes('/student/dashboard') || currentPath.includes('/student/')) {
+          page = 'dashboard';
+          dashboardType = 'student';
+        } else if (currentPath.includes('/teacher/dashboard') || currentPath.includes('/teacher/')) {
+          page = 'dashboard';
+          dashboardType = 'instructor';
+        } else if (currentPath.includes('/dashboard')) {
+          page = 'dashboard';
+          dashboardType = userRole === 'instructor' ? 'instructor' : 'student';
+        }
+        
+        const response = await notificationAPI.getBannerNotifications(page, dashboardType);
+        const banners = Array.isArray(response) ? response : (response.results || []);
+        setBannerNotifications(banners);
+      } catch (error) {
+        console.error('Error fetching banner notifications:', error);
+        setBannerNotifications([]);
+      }
+    };
+
+    fetchBannerNotifications();
+  }, [location.pathname, userRole]);
+
+  const handleBannerClose = (bannerId) => {
+    setClosedBanners(prev => new Set([...prev, bannerId]));
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationAPI.markAllAsRead();
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
 
   // Get user data with fallbacks
   const getUserData = () => {
@@ -329,6 +414,24 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
       }}>
         {/* AppBar Wrapper */}
         <Box sx={{ position: 'relative', zIndex: 1000 }}>
+        {/* Banner Notifications */}
+        {bannerNotifications
+          .filter(banner => !closedBanners.has(banner.id))
+          .map(banner => (
+            <BannerNotification
+              key={banner.id}
+              notification={{
+                id: banner.id,
+                title: banner.title,
+                message: banner.message,
+                text_color: banner.text_color || '#000000',
+                background_color: banner.background_color || '#f5f5f5',
+                action_url: banner.action_url,
+                action_text: banner.action_text
+              }}
+              onClose={handleBannerClose}
+            />
+          ))}
         {/* AppBar */}
         <AppBar position="static" elevation={0} sx={{
           background: 'rgba(255,255,255,0.85)', boxShadow: '0 2px 10px 0 rgba(14,81,129,0.04)', mb: 3, borderRadius: 3
@@ -374,40 +477,73 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, p: 1 }}>
                       <Typography variant="subtitle1" fontWeight={600}>الإشعارات</Typography>
-                      <Typography variant="caption" color="primary" sx={{ cursor: 'pointer' }}>تمييز الكل كمقروء</Typography>
+                      {unreadCount > 0 && (
+                        <Typography 
+                          variant="caption" 
+                          color="primary" 
+                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                          onClick={handleMarkAllAsRead}
+                        >
+                          تمييز الكل كمقروء
+                        </Typography>
+                      )}
                     </Box>
                     <Divider />
                     <List sx={{ p: 0 }}>
-                      {notifications.map((notification) => (
-                        <ListItemButton 
-                          key={notification.id}
-                          sx={{
-                            borderRadius: 1,
-                            mb: 0.5,
-                            bgcolor: !notification.read ? 'rgba(14,81,129,0.05)' : 'transparent',
-                            '&:hover': { bgcolor: 'rgba(229,151,139,0.05)' }
-                          }}
-                        >
-                          <Box sx={{ width: '100%' }}>
-                            <Typography variant="body2" sx={{ fontWeight: notification.read ? 400 : 600 }}>
-                              {notification.text}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {notification.time}
-                            </Typography>
-                          </Box>
-                        </ListItemButton>
-                      ))}
+                      {notifications.length > 0 ? (
+                        notifications.map((notification) => (
+                          <ListItemButton 
+                            key={notification.id}
+                            onClick={async () => {
+                              if (!notification.read) {
+                                try {
+                                  await notificationAPI.markAsRead(notification.id);
+                                  setNotifications(prev => 
+                                    prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+                                  );
+                                  setUnreadCount(prev => Math.max(0, prev - 1));
+                                } catch (error) {
+                                  console.error('Error marking notification as read:', error);
+                                }
+                              }
+                            }}
+                            sx={{
+                              borderRadius: 1,
+                              mb: 0.5,
+                              bgcolor: !notification.read ? 'rgba(14,81,129,0.05)' : 'transparent',
+                              '&:hover': { bgcolor: 'rgba(229,151,139,0.05)' }
+                            }}
+                          >
+                            <Box sx={{ width: '100%' }}>
+                              <Typography variant="body2" sx={{ fontWeight: notification.read ? 400 : 600 }}>
+                                {notification.text}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {notification.time}
+                              </Typography>
+                            </Box>
+                          </ListItemButton>
+                        ))
+                      ) : (
+                        <Box sx={{ p: 2, textAlign: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            لا توجد إشعارات
+                          </Typography>
+                        </Box>
+                      )}
                     </List>
-                    <Box sx={{ textAlign: 'center', mt: 1 }}>
-                      <Typography 
-                        variant="body2" 
-                        color="primary" 
-                        sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
-                      >
-                        عرض الكل
-                      </Typography>
-                    </Box>
+                    {notifications.length > 0 && (
+                      <Box sx={{ textAlign: 'center', mt: 1 }}>
+                        <Typography 
+                          variant="body2" 
+                          color="primary" 
+                          sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                          onClick={() => navigate('/notifications')}
+                        >
+                          عرض الكل
+                        </Typography>
+                      </Box>
+                    )}
                   </Paper>
                 )}
               </Box>

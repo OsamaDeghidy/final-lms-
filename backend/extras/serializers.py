@@ -6,7 +6,7 @@ from courses.serializers import CourseBasicSerializer
 class BannerSerializer(serializers.ModelSerializer):
     """Serializer for Banner model"""
     image_url = serializers.SerializerMethodField()
-    is_active = serializers.BooleanField(read_only=True)
+    is_active = serializers.SerializerMethodField()
     
     class Meta:
         model = Banner
@@ -19,8 +19,16 @@ class BannerSerializer(serializers.ModelSerializer):
     
     def get_image_url(self, obj):
         if obj.image:
-            return self.context['request'].build_absolute_uri(obj.image.url)
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            # Fallback if no request context (shouldn't happen in normal API usage)
+            return obj.image.url
         return None
+    
+    def get_is_active(self, obj):
+        """Check if banner is currently active based on dates"""
+        return obj.is_active_now()
 
 
 class CourseCollectionListSerializer(serializers.ModelSerializer):

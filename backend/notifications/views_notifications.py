@@ -33,10 +33,10 @@ class NotificationListView(generics.ListAPIView):
 class BannerNotificationListView(generics.ListAPIView):
     """List active banner notifications for current page"""
     serializer_class = BannerNotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # Allow public access for banner notifications
     
     def get_queryset(self):
-        user = self.request.user
+        user = self.request.user if self.request.user.is_authenticated else None
         target_page = self.request.query_params.get('page', 'home')
         dashboard_type = self.request.query_params.get('dashboard_type')  # 'student' or 'instructor'
         now = timezone.now()
@@ -67,8 +67,8 @@ class BannerNotificationListView(generics.ListAPIView):
             Q(target_pages__contains=[target_page]) | Q(target_pages=[])
         )
         
-        # Filter by target users
-        if hasattr(user, 'profile'):
+        # Filter by target users (only if user is authenticated)
+        if user and hasattr(user, 'profile'):
             profile = user.profile
             
             if profile.status == 'Student':
@@ -96,6 +96,9 @@ class BannerNotificationListView(generics.ListAPIView):
             elif profile.status == 'Admin' or user.is_staff:
                 # Admins see all
                 pass
+        else:
+            # For unauthenticated users, show only 'all_users' target type
+            queryset = queryset.filter(target_type='all_users')
         
         return queryset.order_by('-created_at')
 

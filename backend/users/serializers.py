@@ -451,9 +451,8 @@ class StudentGPASerializer(serializers.ModelSerializer):
         model = StudentGPA
         fields = [
             'id', 'student', 'student_name', 'student_email', 'course', 'course_title',
-            'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 'grade_name',
-            'semester', 'academic_year', 'notes', 'created_by', 'created_by_name',
-            'created_at', 'updated_at', 'history'
+            'grade_name', 'gpa', 'semester', 'academic_year', 'notes', 
+            'created_by', 'created_by_name', 'created_at', 'updated_at', 'history'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'history']
     
@@ -477,21 +476,11 @@ class StudentGPACreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentGPA
         fields = [
-            'student', 'course', 'gpa', 'gpa_scale', 'semester_gpa', 'cumulative_gpa', 
-            'grade_name', 'semester', 'academic_year', 'notes'
+            'student', 'course', 'grade_name', 'gpa', 
+            'semester', 'academic_year', 'notes'
         ]
     
     def validate_gpa(self, value):
-        if value < 0 or value > 5.0:
-            raise serializers.ValidationError("الدرجة يجب أن تكون بين 0 و 5.0")
-        return value
-    
-    def validate_semester_gpa(self, value):
-        if value is not None and (value < 0 or value > 5.0):
-            raise serializers.ValidationError("المعدل الفصلي يجب أن يكون بين 0 و 5.0")
-        return value
-    
-    def validate_cumulative_gpa(self, value):
-        if value is not None and (value < 0 or value > 5.0):
-            raise serializers.ValidationError("المعدل التراكمي يجب أن يكون بين 0 و 5.0")
+        if value < 0:
+            raise serializers.ValidationError("الدرجة يجب أن تكون أكبر من أو تساوي 0")
         return value

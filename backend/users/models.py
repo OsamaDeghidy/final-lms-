@@ -152,18 +152,11 @@ class Student(models.Model):
 
 class StudentGPA(models.Model):
     """نموذج درجات الطلاب"""
-    GPA_SCALE_CHOICES = [
-        (4, '4'),
-        (5, '5'),
-    ]
     
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='gpa_records', verbose_name='الطالب')
     course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='student_gpas', null=True, blank=True, verbose_name='الكورس')
-    gpa = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(5.0)], verbose_name='الدرجة')
-    gpa_scale = models.DecimalField(max_digits=2, decimal_places=0, default=4, choices=GPA_SCALE_CHOICES, verbose_name='أصل المعدل')
-    semester_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='المعدل الفصلي')
-    cumulative_gpa = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='المعدل التراكمي')
     grade_name = models.CharField(max_length=50, blank=True, null=True, verbose_name='اسم الدرجة')
+    gpa = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name='الدرجة')
     semester = models.CharField(max_length=50, blank=True, null=True, verbose_name='الفصل الدراسي')
     academic_year = models.CharField(max_length=20, blank=True, null=True, verbose_name='السنة الأكاديمية')
     notes = models.TextField(blank=True, null=True, verbose_name='ملاحظات')
@@ -192,8 +185,8 @@ class GPAHistory(models.Model):
     changed_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ التغيير')
     
     class Meta:
-        verbose_name = 'سجل GPA'
-        verbose_name_plural = 'سجلات GPA'
+        verbose_name = 'سجل الدرجة'
+        verbose_name_plural = 'سجل الدرجات'
         ordering = ['-changed_at']
     
     def __str__(self):
