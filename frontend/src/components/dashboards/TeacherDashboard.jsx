@@ -305,7 +305,7 @@ const TeacherDashboard = () => {
 
         {/* Stats Cards - 4 بطاقات إحصائيات بحجم كامل وارتفاع أقل */}
         <Box sx={{ mb: 5, px: 2 }}>
-          <Grid container spacing={4} sx={{ gap: '5px !important' }}>
+          <Grid container spacing={4}>
             <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ mx: 1, my: 1 }}>
               <motion.div variants={item}>
                 <Card
