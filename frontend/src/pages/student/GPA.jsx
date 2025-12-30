@@ -137,16 +137,6 @@ const GPA = () => {
               </CardContent>
             </Card>
           )}
-          <Card sx={{ flex: 1, minWidth: 200, bgcolor: 'success.main', color: 'white' }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                المعدل التراكمي العام
-              </Typography>
-              <Typography variant="h3" fontWeight="bold">
-                {calculateAverageGPA()}
-              </Typography>
-            </CardContent>
-          </Card>
         </Box>
       )}
 
@@ -168,7 +158,6 @@ const GPA = () => {
                 <TableCell>الفصل الدراسي</TableCell>
                 <TableCell>السنة الأكاديمية</TableCell>
                 <TableCell>الملاحظات</TableCell>
-                <TableCell>سجل التحديثات</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -209,62 +198,6 @@ const GPA = () => {
                     ) : (
                       '-'
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Accordion>
-                      <AccordionSummary expandIcon={<ExpandMore />}>
-                        <Typography variant="body2">
-                          <History fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                          سجل التحديثات
-                        </Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        {gpa.history && gpa.history.length > 0 ? (
-                          <Timeline>
-                            {gpa.history.map((historyItem, index) => (
-                              <TimelineItem key={historyItem.id}>
-                                <TimelineSeparator>
-                                  <TimelineDot color={getGPAColor(parseFloat(historyItem.new_gpa))} />
-                                  {index < gpa.history.length - 1 && <TimelineConnector />}
-                                </TimelineSeparator>
-                                <TimelineContent>
-                                  <Typography variant="body2" fontWeight="bold">
-                                    {historyItem.old_gpa !== null
-                                      ? `${historyItem.old_gpa} → ${historyItem.new_gpa}`
-                                      : `إنشاء جديد: ${historyItem.new_gpa}`}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {historyItem.changed_by_name || 'نظام'}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    {formatDate(historyItem.changed_at)}
-                                  </Typography>
-                                  {historyItem.change_reason && (
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      {historyItem.change_reason}
-                                    </Typography>
-                                  )}
-                                </TimelineContent>
-                              </TimelineItem>
-                            ))}
-                          </Timeline>
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            لا توجد تحديثات
-                          </Typography>
-                        )}
-                        {gpa.notes && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              ملاحظات:
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {gpa.notes}
-                            </Typography>
-                          </Box>
-                        )}
-                      </AccordionDetails>
-                    </Accordion>
                   </TableCell>
                 </TableRow>
               ))}

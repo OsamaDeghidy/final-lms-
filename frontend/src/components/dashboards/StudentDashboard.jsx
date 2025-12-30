@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Button, Grid, Avatar, LinearProgress, useTheme, Chip, Skeleton, Card, CardContent, IconButton, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Button, Grid, Avatar, LinearProgress, useTheme, Chip, Skeleton, Card, CardContent, IconButton, Tabs, Tab, Alert } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { DashboardCard, StatCard, DashboardSection, ProgressCard, ActivityItem, pulse } from './DashboardLayout';
 import { 
@@ -25,6 +25,7 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import dashboardService from '../../services/dashboard.service';
+import { gpaAPI } from '../../services/gpa.service';
 import { 
   EnhancedStatCard, 
   EnhancedCourseCard, 
@@ -55,6 +56,8 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState(0);
+  const [gpas, setGpas] = useState([]);
+  const [gpaError, setGpaError] = useState(null);
   const [stats, setStats] = useState({
     enrolledCourses: 0,
     completedLessons: 0,
@@ -86,17 +89,25 @@ const StudentDashboard = () => {
         achievementsData,
         activityData,
         assignmentsData,
-        meetingsData
+        meetingsData,
+        gpaData
       ] = await Promise.all([
         dashboardService.getStudentStats(),
         dashboardService.getStudentCourses(),
         dashboardService.getAchievements(),
         dashboardService.getRecentActivity(),
         dashboardService.getUpcomingAssignments(),
-        dashboardService.getUpcomingMeetings()
+        dashboardService.getUpcomingMeetings(),
+        gpaAPI.getGPAs().catch(err => {
+          console.error('GPA loading error:', err);
+          return null;
+        })
       ]);
 
       setStats(statsData);
+      if (gpaData) {
+        setGpas(gpaData.results || gpaData || []);
+      }
       
       // Process and validate course data from API
       const processedCourses = Array.isArray(coursesData) && coursesData.length > 0
@@ -135,6 +146,25 @@ const StudentDashboard = () => {
     navigate(`/courses/${courseId}`);
   };
 
+  // GPA calculation functions
+  const getSemesterGPA = () => {
+    if (gpas.length === 0) return null;
+    const latestGPA = gpas[0];
+    return latestGPA.semester_gpa || null;
+  };
+
+  const getCumulativeGPA = () => {
+    if (gpas.length === 0) return null;
+    const latestGPA = gpas[0];
+    return latestGPA.cumulative_gpa || null;
+  };
+
+  const calculateAverageGPA = () => {
+    if (gpas.length === 0) return 0;
+    const sum = gpas.reduce((acc, gpa) => acc + parseFloat(gpa.gpa), 0);
+    return (sum / gpas.length).toFixed(2);
+  };
+
   const formatGrade = (grade) => {
     if (grade >= 90) return 'A+';
     if (grade >= 85) return 'A';
@@ -143,7 +173,8 @@ const StudentDashboard = () => {
     if (grade >= 70) return 'C+';
     if (grade >= 65) return 'C';
     if (grade >= 60) return 'D+';
-    return 'D';
+    if (grade >= 55) return 'D';
+    return 'F';
   };
 
   const getGradeColor = (grade) => {
@@ -233,6 +264,60 @@ const StudentDashboard = () => {
             </Typography>
           </motion.div>
         </Box>
+
+        {/* GPA Notification Section */}
+        {gpas.length > 0 && (
+          <Box sx={{ mb: 4, px: 2 }}>
+            <motion.div variants={item}>
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: 2,
+                  background: 'linear-gradient(135deg, #2e7d32 0%, #43a047 100%)',
+                  color: 'white',
+                  '& .MuiAlert-icon': {
+                    color: 'white'
+                  }
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  📊 إشعار المعدل الدراسي
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  {getSemesterGPA() !== null && (
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                        المعدل الفصلي
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                        {getSemesterGPA()}
+                      </Typography>
+                    </Box>
+                  )}
+                  {getCumulativeGPA() !== null && (
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                        المعدل التراكمي
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                        {getCumulativeGPA()}
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                      المعدل العام
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                      {calculateAverageGPA()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Alert>
+            </motion.div>
+          </Box>
+        )}
 
         {/* Stats Cards - مطابقة لشكل المعلم */}
         <Box sx={{ mb: 5, px: 2 }}>
