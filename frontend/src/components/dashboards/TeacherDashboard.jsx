@@ -304,20 +304,20 @@ const TeacherDashboard = () => {
         </Box>
 
         {/* Stats Cards - 4 بطاقات إحصائيات بحجم كامل وارتفاع أقل */}
-        <Box sx={{ mb: 5, px: 1 }}>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+        <Box sx={{ mb: 5, px: 2 }}>
+          <Grid container spacing={4} sx={{ gap: '5px !important' }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ mx: 1, my: 1 }}>
               <motion.div variants={item}>
                 <Card
                   sx={{ 
                     height: 100,
                     borderRadius: 3,
-                    background: 'white',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                     border: 'none',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 4px 20px rgba(25, 118, 210, 0.25)',
                     '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 30px rgba(25, 118, 210, 0.35)',
                     },
                     transition: 'all 0.3s ease',
                   }}
@@ -332,8 +332,9 @@ const TeacherDashboard = () => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: '#9c27b0',
+                          background: 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
+                          backdropFilter: 'blur(10px)',
                           '& svg': {
                             fontSize: '1.5rem'
                           }
@@ -342,10 +343,10 @@ const TeacherDashboard = () => {
                         <GroupIcon />
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 500, mb: 0.5 }}>
                           عدد الطلاب
                         </Typography>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: 'white', lineHeight: 1 }}>
                           {stats.totalStudents || 0}
                         </Typography>
                       </Box>
@@ -355,18 +356,18 @@ const TeacherDashboard = () => {
               </motion.div>
             </Grid>
             
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ mx: 1, my: 1 }}>
               <motion.div variants={item}>
                 <Card
                   sx={{ 
                     height: 100,
                     borderRadius: 3,
-                    background: 'white',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                     border: 'none',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 4px 20px rgba(25, 118, 210, 0.25)',
                     '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 30px rgba(25, 118, 210, 0.35)',
                     },
                     transition: 'all 0.3s ease',
                   }}
@@ -381,8 +382,9 @@ const TeacherDashboard = () => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: '#0e5181',
+                          background: 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
+                          backdropFilter: 'blur(10px)',
                           '& svg': {
                             fontSize: '1.5rem'
                           }
@@ -391,10 +393,10 @@ const TeacherDashboard = () => {
                         <SchoolIcon />
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 500, mb: 0.5 }}>
                           المقررات
                         </Typography>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: 'white', lineHeight: 1 }}>
                           {stats.totalCourses || 0}
                         </Typography>
                       </Box>
@@ -404,18 +406,18 @@ const TeacherDashboard = () => {
               </motion.div>
             </Grid>
             
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ mx: 1, my: 1 }}>
               <motion.div variants={item}>
                 <Card
                   sx={{ 
                     height: 100,
                     borderRadius: 3,
-                    background: 'white',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                     border: 'none',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 4px 20px rgba(25, 118, 210, 0.25)',
                     '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 30px rgba(25, 118, 210, 0.35)',
                     },
                     transition: 'all 0.3s ease',
                   }}
@@ -430,8 +432,9 @@ const TeacherDashboard = () => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: '#ff9800',
+                          background: 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
+                          backdropFilter: 'blur(10px)',
                           '& svg': {
                             fontSize: '1.5rem'
                           }
@@ -440,10 +443,10 @@ const TeacherDashboard = () => {
                         <AssignmentIcon />
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 500, mb: 0.5 }}>
                           الواجبات المعلقة
                         </Typography>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: 'white', lineHeight: 1 }}>
                           {stats.pendingAssignments || 0}
                         </Typography>
                       </Box>
@@ -453,18 +456,18 @@ const TeacherDashboard = () => {
               </motion.div>
             </Grid>
             
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} sx={{ mx: 1, my: 1 }}>
               <motion.div variants={item}>
                 <Card
                   sx={{ 
                     height: 100,
                     borderRadius: 3,
-                    background: 'white',
+                    background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
                     border: 'none',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: '0 4px 20px rgba(25, 118, 210, 0.25)',
                     '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 30px rgba(25, 118, 210, 0.35)',
                     },
                     transition: 'all 0.3s ease',
                   }}
@@ -479,8 +482,9 @@ const TeacherDashboard = () => {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: '#4caf50',
+                          background: 'rgba(255, 255, 255, 0.2)',
                           color: 'white',
+                          backdropFilter: 'blur(10px)',
                           '& svg': {
                             fontSize: '1.5rem'
                           }
@@ -489,10 +493,10 @@ const TeacherDashboard = () => {
                         <StarIcon />
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500, mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 500, mb: 0.5 }}>
                           متوسط التقييم
                         </Typography>
-                        <Typography variant="h4" fontWeight={700} sx={{ color: '#333', lineHeight: 1 }}>
+                        <Typography variant="h4" fontWeight={700} sx={{ color: 'white', lineHeight: 1 }}>
                           {stats.averageRating.toFixed(1)}★
                         </Typography>
                       </Box>
