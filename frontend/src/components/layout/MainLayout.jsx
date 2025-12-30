@@ -66,6 +66,7 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { getUserRole, user } = useAuth(); // Get user data from auth context
+  const userRole = getUserRole ? getUserRole() : 'student';
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifAnchorEl, setNotifAnchorEl] = useState(null);
   const profileRef = useRef(null);
@@ -165,24 +166,43 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
 
   // Get user data with fallbacks
   const getUserData = () => {
-    if (user) {
+    try {
+      if (user && typeof user === 'object') {
+        let name = 'مستخدم';
+        if (user.first_name && user.last_name) {
+          name = `${user.first_name} ${user.last_name}`;
+        } else if (user.username) {
+          name = user.username;
+        }
+        
+        const userRole = getUserRole && getUserRole();
+        const isInstructor = userRole === 'instructor';
+        
+        return {
+          name: name,
+          email: user.email || '',
+          avatar: user.profile_picture || profileImage,
+          role: isInstructor ? 'مدرس' : 'طالب',
+          description: user.bio || (isInstructor ? 'مدرس في المنصة' : 'طالب في المنصة')
+        };
+      }
       return {
-        name: user.first_name && user.last_name 
-          ? `${user.first_name} ${user.last_name}` 
-          : user.username || 'مستخدم',
-        email: user.email || '',
-        avatar: user.profile_picture || profileImage,
-        role: getUserRole() === 'instructor' ? 'مدرس' : 'طالب',
-        description: user.bio || (getUserRole() === 'instructor' ? 'مدرس في المنصة' : 'طالب في المنصة')
+        name: 'مستخدم',
+        email: '',
+        avatar: profileImage,
+        role: 'طالب',
+        description: 'طالب في المنصة'
+      };
+    } catch (error) {
+      console.error('Error in getUserData:', error);
+      return {
+        name: 'مستخدم',
+        email: '',
+        avatar: profileImage,
+        role: 'طالب',
+        description: 'طالب في المنصة'
       };
     }
-    return {
-      name: 'مستخدم',
-      email: '',
-      avatar: profileImage,
-      role: 'طالب',
-      description: 'طالب في المنصة'
-    };
   };
 
   const userData = getUserData();
@@ -222,9 +242,6 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  
-  // Get user role from useAuth hook
-  const userRole = getUserRole();
   
   // Select navigation items based on user role
   const getNavItems = () => {
