@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Card, CardContent, CardMedia, Container, IconButton, Rating, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { KeyboardArrowLeft, KeyboardArrowRight, PlayCircleOutline, BookmarkBorder, Bookmark } from '@mui/icons-material';
+import { KeyboardArrowLeft, KeyboardArrowRight, BookmarkBorder, Bookmark } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import { courseAPI } from '../../services/courseService';
 
@@ -291,38 +291,7 @@ const DiscountBadge = styled(Box)(({ theme }) => ({
 const CourseMedia = styled(CardMedia)({
   position: 'relative',
   paddingTop: '56.25%', // 16:9 aspect ratio
-  '&:hover .play-button': {
-    opacity: 1,
-    transform: 'scale(1.1)',
-  },
 });
-
-const PlayButton = styled(Box)(({ theme }) => ({
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%) scale(1)',
-  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  width: 60,
-  height: 60,
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  opacity: 0,
-  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-  backdropFilter: 'blur(10px)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-  '&:hover': {
-    backgroundColor: theme.palette.primary.main,
-    transform: 'translate(-50%, -50%) scale(1.1)',
-    boxShadow: '0 12px 40px rgba(14, 81, 129, 0.3)',
-    '& .MuiSvgIcon-root': {
-      color: theme.palette.primary.contrastText,
-    },
-  },
-}));
 
 const CourseCardContent = styled(CardContent)(({ theme }) => ({
   padding: theme.spacing(2),
@@ -937,11 +906,7 @@ const CourseCollections = () => {
                         <CourseMedia
                           image={course.image_url || 'https://via.placeholder.com/300x180'}
                           title={course.title}
-                        >
-                          <PlayButton className="play-button">
-                            <PlayCircleOutline fontSize="large" color="primary" />
-                          </PlayButton>
-                        </CourseMedia>
+                        />
                                                  {course.discount_price && course.price && course.discount_price !== course.price && (
                            <DiscountBadge>
                              {Math.round((1 - parseFloat(course.discount_price) / parseFloat(course.price)) * 100)}% خصم
