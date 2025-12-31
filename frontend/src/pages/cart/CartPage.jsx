@@ -166,8 +166,9 @@ const CartPage = () => {
             </Button>
           </Box>
         ) : (
-          <Grid container spacing={4}>
-            <Grid xs={12} lg={8}>
+          <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', lg: 'row' } }}>
+            {/* الدورات المضافة Section */}
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <StyledCard>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -230,9 +231,10 @@ const CartPage = () => {
                   ))}
                 </CardContent>
               </StyledCard>
-            </Grid>
+            </Box>
 
-            <Grid xs={12} lg={4}>
+            {/* ملخص الطلب Section */}
+            <Box sx={{ width: { xs: '100%', lg: '400px' } }}>
               <StyledCard>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -271,7 +273,6 @@ const CartPage = () => {
                   <PaymentButton
                     variant="contained"
                     onClick={handleCheckout}
-                    startIcon={processingPayment ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
                     disabled={cartItems.length === 0 || processingPayment}
                   >
                     {processingPayment ? 'جاري التوجيه...' : 'إتمام الشراء'}
@@ -287,8 +288,8 @@ const CartPage = () => {
                   </Button>
                 </CardContent>
               </StyledCard>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         )}
       </Container>
 

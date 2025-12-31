@@ -262,8 +262,9 @@ const PaymentPage = () => {
           </Typography>
         </Box>
 
-        <Grid container spacing={4}>
-          <Grid xs={12} lg={8}>
+        <Box sx={{ display: 'flex', gap: 6, flexDirection: { xs: 'column', lg: 'row' } }}>
+          {/* معلومات الدورة Section */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <StyledCard>
               <CardContent>
                 <Typography 
@@ -361,9 +362,10 @@ const PaymentPage = () => {
                 </Alert>
               </CardContent>
             </StyledCard>
-          </Grid>
+          </Box>
 
-          <Grid xs={12} lg={4}>
+          {/* ملخص الطلب Section */}
+          <Box sx={{ width: { xs: '100%', lg: '400px' } }}>
             <Box sx={{ position: 'sticky', top: 24 }}>
             <StyledCard>
               <CardContent>
@@ -451,7 +453,6 @@ const PaymentPage = () => {
                   variant="contained"
                   onClick={handlePaymentSubmit}
                   disabled={processingPayment}
-                  startIcon={processingPayment ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
                 >
                     {processingPayment ? 'جاري التوجيه...' : 'إتمام الدفع الآمن'}
                 </PaymentButton>
@@ -522,8 +523,8 @@ const PaymentPage = () => {
               </CardContent>
             </StyledCard>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Container>
 
       <Footer />
