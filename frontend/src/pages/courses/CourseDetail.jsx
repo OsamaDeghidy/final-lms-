@@ -1854,228 +1854,268 @@ const CourseDetail = () => {
       <HeroSection>
         <CourseHeader>
           <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }} dir="rtl">
-            {/* Top header like screenshots: centered title, icon on right, meta pills, CTA */}
+            {/* Professional Header Layout with Course Image */}
             <Grid container spacing={4} alignItems="center">
               <Grid xs={12} lg={9} sx={{ mx: 'auto' }}>
-              {/* Breadcrumb */}
-              <StyledBreadcrumb sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-                <Breadcrumbs aria-label="breadcrumb" sx={{ color: 'rgba(255,255,255,0.95)' }}>
-                  <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
-                    <HomeIcon sx={{ mr: 1, fontSize: 20 }} />
-                    الرئيسية
-                  </Link>
-                  <Link to="/courses" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    الدورات
-                  </Link>
-                  <Typography color="primary.contrastText">{course.category}</Typography>
-                </Breadcrumbs>
-              </StyledBreadcrumb>
+                {/* Breadcrumb */}
+                <StyledBreadcrumb sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <Breadcrumbs aria-label="breadcrumb" sx={{ color: 'rgba(255,255,255,0.95)' }}>
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+                      <HomeIcon sx={{ mr: 1, fontSize: 20 }} />
+                      الرئيسية
+                    </Link>
+                    <Link to="/courses" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                      الدورات
+                    </Link>
+                    <Typography color="primary.contrastText">{course.category}</Typography>
+                  </Breadcrumbs>
+                </StyledBreadcrumb>
 
-                {/* Course Title and Subtitle + actions */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr auto' }, alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <CourseTitle variant="h3" component="h1" sx={{ textAlign: 'right', mb: 1 }}>
-                {course.title}
-              </CourseTitle>
-                    <CourseSubtitle variant="subtitle1" component="h2" sx={{ textAlign: 'right', opacity: 0.85 }}>
-                {course.subtitle}
-              </CourseSubtitle>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                    <IconButton onClick={handleAddToWishlist} sx={{ 
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      color: isInWishlist ? '#0e5181' : 'rgba(255,255,255,0.8)',
-                      '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.2)',
-                        transform: 'scale(1.1)'
-                      }
-                    }}>
-                      {isInWishlist ? <BookmarkAdded /> : <BookmarkBorder />}
-                    </IconButton>
-                    <IconButton onClick={handleOpenShare} sx={{ 
-                      bgcolor: 'rgba(255,255,255,0.12)',
-                      color: 'rgba(255,255,255,0.8)',
-                      '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.2)',
-                        transform: 'scale(1.1)'
-                      }
-                    }}>
-                      <ShareIcon />
-                    </IconButton>
-                  </Box>
-                </Box>
-                <Menu anchorEl={shareAnchorEl} open={Boolean(shareAnchorEl)} onClose={handleCloseShare}>
-                  <MenuItem onClick={handleCloseShare}><WhatsApp sx={{ mr: 1 }} /> واتساب</MenuItem>
-                  <MenuItem onClick={handleCloseShare}><Facebook sx={{ mr: 1 }} /> فيسبوك</MenuItem>
-                  <MenuItem onClick={handleCloseShare}><Twitter sx={{ mr: 1 }} /> تويتر</MenuItem>
-                  <MenuItem onClick={handleCloseShare}><LinkedIn sx={{ mr: 1 }} /> لينكدإن</MenuItem>
-                </Menu>
-
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1.25, mt: 1.5 }}>
-                  <StatsPill>
-                    <StarIcon fontSize="small" sx={{ ml: 0.5 }} />
-                    {(() => {
-                      const rating = course.rating;
-                      const val = typeof rating === 'number' ? rating.toFixed(1) : (isNaN(parseFloat(rating)) ? '0.0' : parseFloat(rating).toFixed(1));
-                      return `${val}`;
-                    })()} • {Array.isArray(course.reviews) ? course.reviews.length : 0} تقييم
-                  </StatsPill>
-                  <StatsPill>
-                    <GroupIcon fontSize="small" sx={{ ml: 0.5 }} />
-                    {(() => {
-                          const students = course.students;
-                      if (typeof students === 'number') return students.toLocaleString();
-                      const n = parseFloat(students);
-                      return isNaN(n) ? '0' : n.toLocaleString();
-                    })()} مشترك
-                  </StatsPill>
-                  <StatsPill>
-                    <AccessTime fontSize="small" sx={{ ml: 0.5 }} /> {course.duration}
-                  </StatsPill>
-                  <StatsPill>
-                    <TrendingUpIcon fontSize="small" sx={{ ml: 0.5 }} /> {(() => {
-                      if (!course.level) {
-                        return 'غير محدد';
-                      }
-                      const levelValue = typeof course.level === 'string' ? course.level.toLowerCase() : '';
-                      if (levelValue === 'beginner') return 'مبتدئ';
-                      if (levelValue === 'intermediate') return 'متوسط';
-                      if (levelValue === 'advanced') return 'متقدم';
-                      return course.level;
-                    })()}
-                  </StatsPill>
-                  <StatsPill>
-                    <ClosedCaptionIcon fontSize="small" sx={{ ml: 0.5 }} /> CC: {Array.isArray(course.captions) ? course.captions.join(', ') : 'غير متوفر'}
-                  </StatsPill>
-                  </Box>
-
-                 {/* Instructor Info plus reviews count */}
-                 <Box sx={{ display: 'flex', alignItems: 'center', mt: 3, mb: 2, justifyContent: 'space-between', gap: 2 }}>
-                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar 
-                  src={course.instructorAvatar} 
-                  alt={course.instructor}
-                  sx={{ 
-                    width: 50, 
-                    height: 50, 
-                    mr: 2.5,
-                    border: '2px solid white',
-                    boxShadow: 2
-                  }}
-                />
-                <Box sx={{ mr: 0.5 }}>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {course.instructor}
-                  </Typography>
-                  <Typography variant="body2" color="rgba(255,255,255,0.8)" fontSize="0.8rem" >
-                    {course.instructorTitle}
-                  </Typography>
-                </Box>
-                   </Box>
-                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                     <Rating 
-                       value={course.rating} 
-                       precision={0.1} 
-                       readOnly 
-                       size="small"
-                       emptyIcon={<StarBorder fontSize="inherit" />}
-                       sx={{ ml: 3 }}
-                     />
-                     <Typography variant="body2" color="primary.contrastText">
-                       {(() => {
-                         const rating = course.rating;
-                         if (typeof rating === 'number') {
-                           return rating.toFixed(1);
-                         } else if (typeof rating === 'string') {
-                           const numRating = parseFloat(rating);
-                           return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
-                         } else {
-                           return '0.0';
-                         }
-                       })()} ({Array.isArray(course.reviews) ? course.reviews.length : 0})
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Last Updated */}
-              <Typography variant="caption" display="block" sx={{ opacity: 0.8, mb: 2 }}>
-                آخر تحديث {course.lastUpdated}
-              </Typography>
-
-              {/* Progress Bar (for enrolled students) */}
-              {isEnrolled && (
-                <Box sx={{ mt: 3, maxWidth: '600px' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography variant="body2" fontWeight={500}>
-                      تقدمك: {progress}% مكتمل
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {completedLessons} من {totalLessons} درس
-                    </Typography>
-                  </Box>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={progress} 
-                    sx={{ 
-                      height: 10, 
-                      borderRadius: 5,
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      '& .MuiLinearProgress-bar': {
-                        borderRadius: 5,
-                        background: (theme) => `linear-gradient(90deg, ${theme.palette.success.main} 0%, ${theme.palette.success.light} 100%)`
-                      }
-                    }} 
-                  />
-                </Box>
-              )}
-                {/* CTA buttons centered like screenshots with smaller height */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, mt: 2 }}>
-                  <Button 
-                    variant="outlined" 
-                    disabled={isAddingToCart}
-                    sx={{ 
-                      borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
-                      borderColor: 'rgba(255,255,255,0.8)', color: 'common.white', 
-                      background: 'rgba(255,255,255,0.1)',
-                      backdropFilter: 'blur(10px)',
-                      '&:hover': { 
-                        borderColor: 'common.white', 
-                        bgcolor: 'rgba(255,255,255,0.2)',
-                        transform: 'translateY(-2px)'
-                      },
-                      '& .MuiButton-startIcon': { ml: 1, mr: 0 }
-                    }} 
-                    onClick={handleAddToCart} 
-                    startIcon={isAddingToCart ? <CircularProgress size={20} color="inherit" /> : <ShoppingCart sx={{ color: 'common.white' }} />}
-                  >
-                    {isAddingToCart ? 'جاري الإضافة...' : 'أضف للسلة'}
-                  </Button>
-                  
-                  <Button 
-                    variant="contained" 
-                    disabled={isProcessingPayment}
-                    sx={{ 
-                      borderRadius: 999, 
-                      px: 4, 
-                      py: 1.25, 
-                      fontWeight: 700, 
+                {/* Course Header with Image and Info */}
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 4, alignItems: { xs: 'center', lg: 'flex-start' }, mt: 3 }}>
+                  {/* Course Image */}
+                  <Box sx={{ 
+                    flexShrink: 0,
+                    position: 'relative',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    border: '3px solid rgba(255,255,255,0.2)',
+                    width: { xs: '100%', lg: '450px' },
+                    height: { xs: '250px', lg: '320px' }
+                  }}>
+                    <img 
+                      src={course.bannerImage || course.thumbnail || 'https://source.unsplash.com/random/400x200?programming'}
+                      alt={course.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.5s ease'
+                      }}
+                    />
+                    {/* Price Badge on Image */}
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 12,
+                      left: 12,
                       background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
-                      boxShadow: '0 8px 25px rgba(14, 81, 129, 0.3)',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
-                        boxShadow: '0 12px 35px rgba(14, 81, 129, 0.4)',
-                        transform: 'translateY(-2px)'
-                      },
-                      '& .MuiButton-startIcon': { ml: 1, mr: 0 }
-                    }} 
-                    onClick={handleDirectPayment} 
-                    startIcon={isProcessingPayment ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
-                  >
-                    {isProcessingPayment ? 'جاري التوجيه...' : 'اشترك الآن'}
-                  </Button>
+                      color: 'white',
+                      px: 2,
+                      py: 1,
+                      borderRadius: 2,
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                      backdropFilter: 'blur(10px)'
+                    }}>
+                      {course.discount > 0 ? (
+                        <Box>
+                          <Typography variant="span" sx={{ textDecoration: 'line-through', opacity: 0.8, fontSize: '0.9rem', mr: 1 }}>
+                            {course.originalPrice?.toFixed(2) || '0.00'} ر.س
+                          </Typography>
+                          <Typography variant="span">
+                            {course.price?.toFixed(2) || '0.00'} ر.س
+                          </Typography>
+                        </Box>
+                      ) : (
+                        `${course.price?.toFixed(2) || '0.00'} ر.س`
+                      )}
+                    </Box>
+                  </Box>
+
+                  {/* Course Info - Full Height Container */}
+                  <Box sx={{ 
+                    flex: 1, 
+                    textAlign: { xs: 'center', lg: 'right' },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    height: { lg: '320px' }
+                  }}>
+                    {/* Top Section: Title and Actions */}
+                    <Box>
+                      {/* Title and Actions */}
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, alignItems: { xs: 'center', lg: 'flex-start' }, justifyContent: 'space-between', gap: 2 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <CourseTitle variant="h3" component="h1" sx={{ textAlign: { xs: 'center', lg: 'right' }, mb: 1 }}>
+                            {course.title}
+                          </CourseTitle>
+                          <CourseSubtitle variant="subtitle1" component="h2" sx={{ textAlign: { xs: 'center', lg: 'right' }, opacity: 0.85 }}>
+                            {course.subtitle}
+                          </CourseSubtitle>
+                        </Box>
+                      </Box>
+
+                      {/* Instructor Info */}
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        mt: 3, 
+                        justifyContent: { xs: 'center', lg: 'flex-start' },
+                        gap: 2.5,
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                        backdropFilter: 'blur(10px)'
+                      }}>
+                        <Avatar 
+                          src={course.instructorAvatar} 
+                          alt={course.instructor}
+                          sx={{ 
+                            width: 56, 
+                            height: 56, 
+                            border: '3px solid rgba(255,255,255,0.3)',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                        <Box sx={{ flex: 1, textAlign: { xs: 'center', lg: 'right' } }}>
+                          <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'white', mb: 0.5 }}>
+                            {course.instructor}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1, justifyContent: { xs: 'center', lg: 'flex-start' } }}>
+                            <Chip 
+                              label={course.isAdvertisement || course.is_ad ? 'إعلان' : 'دورة كاملة'} 
+                              size="small" 
+                              sx={{ 
+                                bgcolor: course.isAdvertisement || course.is_ad ? 'rgba(255, 152, 0, 0.3)' : 'rgba(14, 81, 129, 0.3)', 
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.75rem'
+                              }} 
+                            />
+                            <Chip 
+                              label={course.category} 
+                              size="small" 
+                              sx={{ 
+                                bgcolor: 'rgba(229, 151, 139, 0.3)', 
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.75rem'
+                              }} 
+                            />
+                            <Chip 
+                              label={`${(() => {
+                                const students = course.students;
+                                if (typeof students === 'number') return students.toLocaleString('ar-SA');
+                                const n = parseFloat(students);
+                                return isNaN(n) ? '0' : n.toLocaleString('ar-SA');
+                              })()} عملية شراء`} 
+                              size="small" 
+                              sx={{ 
+                                bgcolor: 'rgba(76, 175, 80, 0.3)', 
+                                color: 'white',
+                                fontWeight: 600,
+                                fontSize: '0.75rem'
+                              }} 
+                            />
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', lg: 'flex-start' }, gap: 1 }}>
+                            <Rating 
+                              value={course.rating} 
+                              precision={0.1} 
+                              readOnly 
+                              size="small"
+                              emptyIcon={<StarBorder fontSize="inherit" sx={{ color: 'rgba(255,255,255,0.5)' }} />}
+                              sx={{ 
+                                '& .MuiRating-iconFilled': { color: '#ffd700' },
+                                '& .MuiRating-iconHover': { color: '#ffed4e' }
+                              }}
+                            />
+                            <Typography variant="body2" color="rgba(255,255,255,0.95)" sx={{ fontWeight: 500 }}>
+                              {(() => {
+                                const rating = course.rating;
+                                if (typeof rating === 'number') {
+                                  return rating.toFixed(1);
+                                } else if (typeof rating === 'string') {
+                                  const numRating = parseFloat(rating);
+                                  return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
+                                } else {
+                                  return '0.0';
+                                }
+                              })()} ({Array.isArray(course.reviews) ? course.reviews.length : 0} تقييم)
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Middle Section: Progress Bar (for enrolled students) */}
+                    {isEnrolled && (
+                      <Box sx={{ my: 3, maxWidth: { xs: '100%', lg: '600px' } }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                          <Typography variant="body2" fontWeight={500}>
+                            تقدمك: {progress}% مكتمل
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {completedLessons} من {totalLessons} درس
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={progress} 
+                          sx={{ 
+                            height: 10, 
+                            borderRadius: 5,
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: 5,
+                              background: (theme) => `linear-gradient(90deg, ${theme.palette.success.main} 0%, ${theme.palette.success.light} 100%)`
+                            }
+                          }} 
+                        />
+                      </Box>
+                    )}
+
+                    {/* Bottom Section: CTA Buttons */}
+                    <Box sx={{ display: 'flex', justifyContent: { xs: 'center', lg: 'flex-end' }, gap: 1.5, mt: { xs: 2, lg: 'auto' } }}>
+                      <Button 
+                        variant="outlined" 
+                        disabled={isAddingToCart}
+                        sx={{ 
+                          borderRadius: 999, px: 4, py: 1.25, fontWeight: 700, 
+                          borderColor: 'rgba(255,255,255,0.8)', color: 'common.white', 
+                          background: 'rgba(255,255,255,0.1)',
+                          backdropFilter: 'blur(10px)',
+                          '&:hover': { 
+                            borderColor: 'common.white', 
+                            bgcolor: 'rgba(255,255,255,0.2)',
+                            transform: 'translateY(-2px)'
+                          },
+                          '& .MuiButton-startIcon': { ml: 1, mr: 0 }
+                        }} 
+                        onClick={handleAddToCart} 
+                        startIcon={isAddingToCart ? <CircularProgress size={20} color="inherit" /> : <ShoppingCart sx={{ color: 'common.white' }} />}
+                      >
+                        {isAddingToCart ? 'جاري الإضافة...' : 'أضف للسلة'}
+                      </Button>
+                      
+                      <Button 
+                        variant="contained" 
+                        disabled={isProcessingPayment}
+                        sx={{ 
+                          borderRadius: 999, 
+                          px: 4, 
+                          py: 1.25, 
+                          fontWeight: 700, 
+                          background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+                          boxShadow: '0 8px 25px rgba(14, 81, 129, 0.3)',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
+                            boxShadow: '0 12px 35px rgba(14, 81, 129, 0.4)',
+                            transform: 'translateY(-2px)'
+                          },
+                          '& .MuiButton-startIcon': { ml: 1, mr: 0 }
+                        }} 
+                        onClick={handleDirectPayment} 
+                        startIcon={isProcessingPayment ? <CircularProgress size={20} color="inherit" /> : <PaymentIcon />}
+                      >
+                        {isProcessingPayment ? 'جاري التوجيه...' : 'اشترك الآن'}
+                      </Button>
+                    </Box>
+                  </Box>
                 </Box>
               </Grid>
-    
             </Grid>
           </Container>
         </CourseHeader>
