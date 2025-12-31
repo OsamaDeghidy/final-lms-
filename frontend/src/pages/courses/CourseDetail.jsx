@@ -3033,13 +3033,21 @@ const CourseDetail = () => {
                               >
                                 {review.user.name.charAt(0)}
                               </Avatar>
-                              <Typography variant="body1" sx={{ 
-                                fontWeight: 500, 
-                                color: '#333',
-                                fontSize: '0.95rem'
-                              }}>
-                                {review.user.name}
-                              </Typography>
+                              <Box>
+                                <Typography variant="body1" sx={{ 
+                                  fontWeight: 500, 
+                                  color: '#333',
+                                  fontSize: '0.95rem'
+                                }}>
+                                  {review.user.name}
+                                </Typography>
+                                <Typography variant="caption" sx={{ 
+                                  color: '#999',
+                                  fontSize: '0.8rem'
+                                }}>
+                                  {review.date}
+                                </Typography>
+                              </Box>
                             </Box>
                             
                             {/* Right: Rating */}
@@ -3063,16 +3071,6 @@ const CourseDetail = () => {
                               </Typography>
                             </Box>
                           </Box>
-                          
-                          {/* Date */}
-                          <Typography variant="caption" sx={{ 
-                            color: '#999',
-                            fontSize: '0.8rem',
-                            mb: 2,
-                            display: 'block'
-                          }}>
-                            {review.date}
-                          </Typography>
                           
                           {/* Title */}
                           {review.title && (
