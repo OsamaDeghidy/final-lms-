@@ -1308,8 +1308,8 @@ const CourseDetail = () => {
       subtitle: apiCourse.subtitle || apiCourse.short_description || apiCourse.description?.substring(0, 100) || '',
       description: apiCourse.description || '',
       longDescription: apiCourse.description || apiCourse.long_description || apiCourse.content || '',
-      instructor: apiCourse.instructors?.[0]?.name || apiCourse.instructor?.name || apiCourse.teacher?.name || 'مدرس محترف',
-      instructorTitle: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.title || apiCourse.teacher?.title || 'مدرس محترف',
+      instructor: apiCourse.instructors?.[0]?.name || apiCourse.instructor?.name || apiCourse.teacher?.name || 'معهد التطوير المهني العالي',
+      instructorTitle: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.title || apiCourse.teacher?.title || 'معهد التطوير المهني العالي',
       instructorBio: apiCourse.instructors?.[0]?.bio || apiCourse.instructor?.bio || apiCourse.teacher?.bio || '',
       instructorAvatar: getImageUrl(apiCourse.instructors?.[0]?.profile_pic || apiCourse.instructor?.profile_pic || apiCourse.teacher?.profile_pic),
       instructorRating: apiCourse.instructor?.rating || apiCourse.teacher?.rating || 4.9,
@@ -1880,7 +1880,6 @@ const CourseDetail = () => {
                     borderRadius: 4,
                     overflow: 'hidden',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                    border: '3px solid rgba(255,255,255,0.2)',
                     width: { xs: '100%', lg: '450px' },
                     height: { xs: '250px', lg: '320px' }
                   }}>
@@ -3215,7 +3214,7 @@ const CourseDetail = () => {
                         }}
                       />
                       <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                        {relatedCourse.instructor || 'مدرس محترف'}
+                        {relatedCourse.instructor || 'معهد التطوير المهني العالي'}
                       </Typography>
                     </Box>
                     
