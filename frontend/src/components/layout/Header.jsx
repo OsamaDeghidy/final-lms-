@@ -21,7 +21,6 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import SchoolIcon from '@mui/icons-material/School';
@@ -37,7 +36,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { styled } from '@mui/material/styles';
 import logo from '../../assets/images/logo.png';
-import { courseAPI } from '../../services/api.service';
+import { courseAPI, cartAPI } from '../../services/api.service';
 import BannerNotification from '../notifications/BannerNotification';
 import notificationAPI from '../../services/notification.service';
 
@@ -238,6 +237,8 @@ const Header = () => {
   const [dropdownAnchors, setDropdownAnchors] = useState({});
   const [bannerNotifications, setBannerNotifications] = useState([]);
   const [closedBanners, setClosedBanners] = useState(new Set());
+  const [cartItems, setCartItems] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
 
   // Fetch categories from API
   useEffect(() => {
@@ -287,8 +288,22 @@ const Header = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchBannerNotifications();
+      fetchCartItems();
     }
   }, [location.pathname, isAuthenticated]);
+
+  // Fetch cart items
+  const fetchCartItems = async () => {
+    try {
+      const response = await cartAPI.getCart();
+      setCartItems(response.items || []);
+      setCartCount(response.items?.length || 0);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      setCartItems([]);
+      setCartCount(0);
+    }
+  };
 
   const handleBannerClose = (bannerId) => {
     setClosedBanners(prev => new Set([...prev, bannerId]));
@@ -886,29 +901,11 @@ const Header = () => {
                       },
                     }}
                   >
-                    <Badge badgeContent={0} color="error">
+                    <Badge badgeContent={cartCount} color="error">
                       <ShoppingCartIcon />
                     </Badge>
                   </IconButton>
                   
-                  <IconButton
-                    size="large"
-                    aria-label="show notifications"
-                    color="inherit"
-                    sx={{
-                      backgroundColor: 'rgba(14, 81, 129, 0.1)',
-                      marginLeft: 1,
-                      color: '#0e5181',
-                      '&:hover': {
-                        backgroundColor: 'rgba(14, 81, 129, 0.2)',
-                        color: '#e5978b',
-                      },
-                    }}
-                  >
-                    <Badge badgeContent={3} color="error">
-                      <NotificationsNoneIcon />
-                    </Badge>
-                  </IconButton>
                   <IconButton
                     onClick={handleProfileMenuOpen}
                     size="small"
