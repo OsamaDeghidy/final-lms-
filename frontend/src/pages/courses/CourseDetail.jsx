@@ -1890,8 +1890,9 @@ const CourseDetail = () => {
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.5s ease'
+                        objectFit: 'contain',
+                        transition: 'transform 0.5s ease',
+                        backgroundColor: 'rgba(0,0,0,0.1)'
                       }}
                     />
                     {/* Price Badge on Image */}
@@ -1971,7 +1972,7 @@ const CourseDetail = () => {
                         />
                         <Box sx={{ flex: 1, textAlign: { xs: 'center', lg: 'right' } }}>
                           <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'white', mb: 0.5 }}>
-                            {course.instructor}
+                            {course.instructor || 'معهد التطوير المهني العالي'}
                           </Typography>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1, justifyContent: { xs: 'center', lg: 'flex-start' } }}>
                             <Chip 
