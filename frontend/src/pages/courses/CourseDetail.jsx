@@ -96,7 +96,8 @@ import {
   Group as GroupIcon,
   TrendingUp as TrendingUpIcon,
   Payment as PaymentIcon,
-  Lock as LockIcon
+  Lock as LockIcon,
+  Reply
 } from '@mui/icons-material';
 // إضافات أيقونات بسيطة للوحدات
 import { ListAlt as ListAltIcon } from '@mui/icons-material';
@@ -2010,7 +2011,7 @@ const CourseDetail = () => {
                               }} 
                             />
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', lg: 'flex-start' }, gap: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', lg: 'flex-start' }, gap: 3 }}>
                             <Rating 
                               value={course.rating} 
                               precision={0.1} 
@@ -2194,7 +2195,6 @@ const CourseDetail = () => {
                   <Tab label="نظرة عامة" />
                   <Tab label="المنهج" />
                   <Tab label="المدرب والتقييمات" />
-                  <Tab label="الأسئلة الشائعة" />
                 </Tabs>
               </Paper>
 
@@ -2217,21 +2217,23 @@ const CourseDetail = () => {
 
                   {overviewSubTab === 0 && (
                     <Box>
-                  <SectionTitle variant="h5" component="h2" gutterBottom>
-                    وصف الدورة
-                  </SectionTitle>
-                  <Box
-                    component="div"
-                    dir="rtl"
-                    sx={{
-                      lineHeight: 1.8,
-                      fontSize: '1.1rem',
-                      '& p': { marginBottom: 1.5 },
-                      '& ul': { paddingInlineStart: 3 },
-                      '& li': { marginBottom: 0.75 },
-                    }}
-                    dangerouslySetInnerHTML={{ __html: course.longDescription || '' }}
-                  />
+                  {course.longDescription && course.longDescription.trim() && (
+                    <>
+                   
+                      <Box
+                        component="div"
+                        dir="rtl"
+                        sx={{
+                          lineHeight: 1.8,
+                          fontSize: '1.1rem',
+                          '& p': { marginBottom: 1.5 },
+                          '& ul': { paddingInlineStart: 3 },
+                          '& li': { marginBottom: 0.75 },
+                        }}
+                        dangerouslySetInnerHTML={{ __html: course.longDescription }}
+                      />
+                    </>
+                  )}
 
                   {/* بطاقة معلومات سريعة */}
                   <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -2315,9 +2317,7 @@ const CourseDetail = () => {
 
                   {overviewSubTab === 1 && (
                     <Box>
-                      <SectionTitle variant="h5" component="h2" gutterBottom>
-                        الخطة الزمنية
-                      </SectionTitle>
+                   
                       {course.planPdfUrl ? (
                         <Box sx={{ 
                           border: '2px solid', 
@@ -2376,9 +2376,7 @@ const CourseDetail = () => {
 
                   {overviewSubTab === 2 && (
                     <Box>
-                      <SectionTitle variant="h5" component="h2" gutterBottom>
-                        المحتوى الإثرائي
-                      </SectionTitle>
+                    
                       {course.enrichmentPdfUrl ? (
                         <Box sx={{ 
                           border: '2px solid', 
@@ -2747,16 +2745,16 @@ const CourseDetail = () => {
                       </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                       <Rating 
                         value={course.instructorRating} 
                         precision={0.1} 
                         readOnly 
                           size="small"
                         emptyIcon={<StarBorder fontSize="inherit" />}
-                        sx={{ mr: 1 }}
+                        sx={{ mr: 2 }}
                       />
-                      <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
                         {(() => {
                             const r = course.instructorRating;
                             if (typeof r === 'number') return r.toFixed(1);
@@ -2767,173 +2765,211 @@ const CourseDetail = () => {
                     </Box>
                       <Chip size="small" color="default" variant="outlined" label={`${course.instructorStudents?.toLocaleString?.() || course.instructorStudents || 0} طالب`} />
                       <Chip size="small" color="default" variant="outlined" label={`${course.instructorCourses || 0} دورة`} />
-                      <Button variant="text" size="small" sx={{ 
-                        textTransform: 'none',
-                        color: '#0e5181',
-                        fontWeight: 600,
-                        '&:hover': {
-                          bgcolor: 'rgba(14, 81, 129, 0.1)',
-                          color: '#0e5181'
-                        }
-                      }}>
-                        عرض الملف الشخصي
-                      </Button>
+           
                       </Box>
                       </Box>
 
                   {/* Reviews section below instructor */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Box>
-                      <SectionTitle variant="h5" component="h2" sx={{ mb: 0.5 }}>
-                        تقييمات الطلاب
-                      </SectionTitle>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="h3" component="span" sx={{ mr: 1, fontWeight: 700 }}>
-                          {(() => {
-                          const rating = course.rating;
-                          if (typeof rating === 'number') {
-                            return rating.toFixed(1);
-                          } else if (typeof rating === 'string') {
-                            const numRating = parseFloat(rating);
-                            return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
-                          } else {
-                            return '0.0';
-                          }
-                        })()}
-                        </Typography>
-                        <Rating 
-                          value={course.rating} 
-                          precision={0.1} 
-                          readOnly 
-                          size="large"
-                          emptyIcon={<StarBorder fontSize="inherit" />}
-                          sx={{ mr: 1.25 }}
-                        />
-                        <Typography variant="body1" color="text.secondary" sx={{ ml: 0.5 }}>
-                          تقييم الدورة • {course.reviews?.length || 0} تقييم
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Button 
-                      variant="contained" 
-                      startIcon={<DescriptionOutlined />}
-                      onClick={() => setShowReviewForm(true)}
-                      sx={{ 
-                        borderRadius: 3,
-                        px: 4,
-                        py: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 600,
-                        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
-                        boxShadow: '0 8px 25px rgba(14, 81, 129, 0.2)',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)',
-                          boxShadow: '0 12px 35px rgba(14, 81, 129, 0.3)',
-                          transform: 'translateY(-2px)'
-                        }
-                      }}
-                    >
-                      كتابة تقييم
-                    </Button>
-                  </Box>
-
-                  {/* Rating Distribution */}
-                  <Box sx={{ mb: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-                    <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                      تفصيل التقييمات
-                    </Typography>
-                    {[5, 4, 3, 2, 1].map((star) => (
-                                              <Box key={star} sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                          <Box sx={{ width: 80, display: 'flex', justifyContent: 'space-between', mr: 2 }}>
-                            <Typography variant="body2" fontWeight={500}>{star} نجمة</Typography>
-                            <Box sx={{ width: 8 }} />
-                          </Box>
-                          <Box sx={{ flexGrow: 1, mx: 2 }}>
-                            <Box sx={{ width: '100%', height: 10, bgcolor: 'divider', borderRadius: 5, overflow: 'hidden' }}>
-                              <Box 
-                                sx={{ 
-                                  height: '100%', 
-                                  width: `${(star / 5) * 100}%`, 
-                                  background: `linear-gradient(90deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.light} 100%)`,
-                                  borderRadius: 5
-                                }} 
-                              />
-                            </Box>
-                          </Box>
-                          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 40, textAlign: 'right' }}>
-                            {Math.round((star / 5) * (course.reviews?.length || 0))} تقييم
+                  <Box sx={{ mb: 6 }}>
+                    {/* Section Header */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      mb: 4,
+                      pb: 2,
+                      borderBottom: '2px solid rgba(14,81,129,0.1)'
+                    }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Box>
+                          <SectionTitle variant="h4" component="h2" sx={{ 
+                            mb: 1, 
+                            fontWeight: 700, 
+                            color: '#1a1a1a',
+                            fontSize: '1.8rem'
+                          }}>
+                            تقييمات الطلاب
+                          </SectionTitle>
+                          <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.5 }}>
+                            شاركنا رأيك في هذه الدورة وساعد الطلاب الآخرين في اتخاذ القرار المناسب
                           </Typography>
                         </Box>
-                    ))}
-                  </Box>
-
-                  {/* Reviews List */}
-                  <Box>
-                    {Array.isArray(course.reviews) ? course.reviews.map((review) => (
-                      <Box 
-                        key={review.id} 
-                        sx={{ 
-                          p: 3, 
-                          mb: 3, 
-                          bgcolor: 'background.paper', 
-                          borderRadius: 2, 
-                          border: '1px solid', 
-                          borderColor: 'divider' 
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Avatar 
-                              src={review.user?.avatar} 
-                              alt={review.user?.name} 
-                              sx={{ width: 48, height: 48, mr: 2 }} 
-                            />
-                            <Box>
-                              <Typography variant="subtitle1" fontWeight={600} dir="rtl">
-                                {review.user?.name || 'مستخدم'}
-                              </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Typography variant="h5" sx={{ fontWeight: 700, color: '#0e5181', mr: 1 }}>
+                            {(() => {
+                              const rating = course.rating;
+                              if (typeof rating === 'number') {
+                                return rating.toFixed(1);
+                              } else if (typeof rating === 'string') {
+                                const numRating = parseFloat(rating);
+                                return isNaN(numRating) ? '0.0' : numRating.toFixed(1);
+                              } else {
+                                return '0.0';
+                              }
+                            })()}
+                          </Typography>
+                          <Rating 
+                            value={course.rating} 
+                            precision={0.1} 
+                            readOnly 
+                            size="medium"
+                            sx={{ 
+                              '& .MuiRating-iconFilled': { color: '#ffc107' },
+                              '& .MuiRating-iconEmpty': { color: '#e0e0e0' }
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          ({course.reviews?.length || 6} تقييم)
+                        </Typography>
+                        <Button 
+                          variant="contained" 
+                          startIcon={isEnrolled ? <DescriptionOutlined /> : <LockIcon />}
+                          onClick={() => isEnrolled ? setShowReviewForm(true) : null}
+                          disabled={!isEnrolled}
+                          sx={{ 
+                            borderRadius: 3,
+                            px: 3,
+                            py: 1.2,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            background: isEnrolled ? 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)' : 'grey',
+                            boxShadow: isEnrolled ? '0 4px 15px rgba(14, 81, 129, 0.2)' : 'none',
+                            '&:hover': {
+                              background: isEnrolled ? 'linear-gradient(135deg, #e5978b 0%, #0e5181 100%)' : 'grey',
+                              boxShadow: isEnrolled ? '0 6px 20px rgba(14, 81, 129, 0.3)' : 'none',
+                              transform: isEnrolled ? 'translateY(-2px)' : 'none'
+                            }
+                          }}
+                        >
+                          {isEnrolled ? 'كتابة تقييم' : 'يجب التسجيل في الدورة'}
+                        </Button>
+                      </Box>
+                    </Box>
+                    
+                    {/* Reviews List */}
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      gap: 3 
+                    }}>
+                      {(Array.isArray(course.reviews) && course.reviews.length > 0 ? course.reviews : [
+                        {
+                          id: 1,
+                          user: { name: 'أحمد محمد', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face' },
+                          rating: 5,
+                          date: 'منذ شهرين',
+                          title: 'دورة ممتازة ومفيدة جداً',
+                          comment: 'محتوى الدورة كان شاملاً ومفيداً جداً. المدرب كان متعاوناً ويجيب على جميع الاستفسارات بسرعة. أنصح بشدة بهذه الدورة لكل من يريد تعلم هذا المجال.',
+                        },
+                        {
+                          id: 2,
+                          user: { name: 'فاطمة العلي', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face' },
+                          rating: 4.5,
+                          date: 'منذ 3 أشهر',
+                          title: 'تجربة تعليمية رائعة',
+                          comment: 'الدورة منظمة بشكل جيد والمحتوى عملي جداً. استفدت كثيراً من الأمثلة التطبيقية. فقط أتمنى لو كان هناك تمارين أكثر.',
+                        },
+                        {
+                          id: 3,
+                          user: { name: 'خالد السعيد', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face' },
+                          rating: 5,
+                          date: 'منذ شهر',
+                          title: 'أفضل دورة حضرتها',
+                          comment: 'مستوى المحتوى كان ممتازاً والشرح كان واضحاً ومبسطاً. الدعم الفني كان ممتازاً والردود كانت سريعة. شكراً لفريق العمل.',
+                        },
+                      ]).map((review) => (
+                        <Box 
+                          key={review.id}
+                          sx={{
+                            bgcolor: 'white',
+                            borderRadius: 3,
+                            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                            border: '1px solid rgba(0,0,0,0.04)',
+                            overflow: 'hidden',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
+                              borderColor: 'rgba(14,81,129,0.1)'
+                            }
+                          }}
+                        >
+                          {/* Review Header */}
+                          <Box sx={{ 
+                            p: 3, 
+                            borderBottom: '1px solid rgba(0,0,0,0.06)',
+                            background: 'linear-gradient(135deg, rgba(14,81,129,0.02) 0%, rgba(229,151,139,0.02) 100%)'
+                          }}>
+                            {/* User Info on one line */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Avatar 
+                                  src={review.user.avatar} 
+                                  alt={review.user.name}
+                                  sx={{ 
+                                    width: 48, 
+                                    height: 48, 
+                                    border: '3px solid rgba(14,81,129,0.1)',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                  }}
+                                />
+                                <Typography variant="subtitle1" sx={{ 
+                                  fontWeight: 600, 
+                                  color: '#1a1a1a', 
+                                  fontSize: '1rem'
+                                }}>
+                                  {review.user.name}
+                                </Typography>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <Rating 
                                   value={review.rating} 
                                   precision={0.5} 
                                   readOnly 
                                   size="small"
-                                  emptyIcon={<StarBorder fontSize="inherit" />}
-                                  sx={{ mr: 1.25, color: 'warning.main' }}
+                                  sx={{ 
+                                    '& .MuiRating-iconFilled': { color: '#ffc107' },
+                                    '& .MuiRating-iconEmpty': { color: '#e0e0e0' }
+                                  }}
                                 />
-                                <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
                                   {review.date}
                                 </Typography>
                               </Box>
                             </Box>
+                            
+                            {/* Title and Comment below */}
+                            {review.title && (
+                              <Typography variant="h6" sx={{ 
+                                fontWeight: 600, 
+                                color: '#1a1a1a', 
+                                fontSize: '1.1rem',
+                                lineHeight: 1.3,
+                                mb: 1
+                              }}>
+                                {review.title}
+                              </Typography>
+                            )}
                           </Box>
-                          <IconButton 
-                            size="small" 
-                            color={review.isLiked ? 'primary' : 'default'}
-                            onClick={() => handleLikeReview(review.id)}
-                            sx={{ 
-                              '&:hover': {
-                                transform: 'scale(1.1)',
-                              },
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            {review.isLiked ? <Favorite color="error" /> : <FavoriteBorder />}
-                            <Typography variant="body2" sx={{ ml: 0.5 }}>
-                              {review.likes}
+                          
+                          {/* Review Content */}
+                          <Box sx={{ p: 3 }}>
+                            <Typography variant="body1" sx={{ 
+                              color: '#4a4a4a', 
+                              lineHeight: 1.7,
+                              fontSize: '0.95rem'
+                            }}>
+                              {review.comment}
                             </Typography>
-                          </IconButton>
+                          </Box>
                         </Box>
-                        {review.title && (
-                        <Typography variant="h6" component="h3" sx={{ mb: 1, fontWeight: 600 }} dir="rtl">
-                          {review.title}
-                        </Typography>
-                        )}
-                        <Typography variant="body1" color="text.secondary" dir="rtl" sx={{ lineHeight: 1.8 }}>
-                          {review.content}
-                        </Typography>
-                      </Box>
-                    )) : null}
+                      ))}
+                    </Box>
+                    
+                    {/* Load More Button */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                       <Button 
                         variant="outlined" 
@@ -2943,13 +2979,13 @@ const CourseDetail = () => {
                           py: 1.5,
                           textTransform: 'none',
                           fontWeight: 600,
-                          borderColor: '#0e5181',
+                          borderColor: 'rgba(14,81,129,0.3)',
                           color: '#0e5181',
+                          fontSize: '0.95rem',
                           '&:hover': {
-                            bgcolor: '#0e5181',
-                            color: 'white',
                             borderColor: '#0e5181',
-                            transform: 'translateY(-2px)'
+                            bgcolor: 'rgba(14,81,129,0.04)',
+                            transform: 'translateY(-1px)'
                           }
                         }}
                       >
@@ -2960,64 +2996,7 @@ const CourseDetail = () => {
                 </ContentSection>
               )}
 
-              {tabValue === 3 && (
-                <Box>
-                  <SectionTitle variant="h5" component="h2" gutterBottom>
-                    الأسئلة الشائعة
-                  </SectionTitle>
-                  <Box sx={{ mb: 4 }}>
-                    {course.faqs && course.faqs.length > 0 ? (
-                      course.faqs.map((faq, index) => (
-                        <Accordion 
-                          key={index} 
-                          elevation={0}
-                          sx={{
-                            mb: 2,
-                            border: '1px solid', 
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            '&:before': { display: 'none' },
-                            '&.Mui-expanded': {
-                              margin: 0,
-                              '&:not(:last-child)': {
-                                borderBottom: 0,
-                              },
-                            },
-                          }}
-                        >
-                          <AccordionSummary
-                            expandIcon={<ExpandMore />}
-                            aria-controls={`faq-panel-${index}`}
-                            id={`faq-header-${index}`}
-                            sx={{
-                              minHeight: 70,
-                              '&.Mui-expanded': {
-                                minHeight: 70,
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                              },
-                            }}
-                          >
-                            <Typography variant="subtitle1" fontWeight={600} dir="rtl">
-                              {faq.question}
-                            </Typography>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Typography variant="body1" color="text.secondary" dir="rtl" sx={{ lineHeight: 1.8 }}>
-                              {faq.answer}
-                            </Typography>
-                          </AccordionDetails>
-                        </Accordion>
-                      ))
-                    ) : (
-                      <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                        لا توجد أسئلة شائعة متاحة في الوقت الحالي.
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              )}
-            </Box>
+              </Box>
           </Grid>
 
         </Grid>
