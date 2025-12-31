@@ -34,8 +34,8 @@ const drawerWidth = 270;
 
 // Navigation items for teacher
 const teacherNavItems = [
-  { text: 'الرئيسية', icon: <HomeIcon />, path: '/', exact: true },
-  { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/teacher/dashboard' },
+  { text: 'معهد التطوير المهني العالي', icon: <HomeIcon />, path: '/', exact: true },
+  { text: 'الرئيسية', icon: <DashboardIcon />, path: '/teacher/dashboard' },
   { text: 'الشعب', icon: <GroupIcon />, path: '/teacher/divisions' },
   { text: 'التعاميم', icon: <MessageIcon />, path: '/teacher/circulars' },
   { text: 'كورساتي', icon: <ClassIcon />, path: '/teacher/my-courses' },
@@ -49,8 +49,8 @@ const teacherNavItems = [
 
 // Navigation items for student
 const studentNavItems = [
-  { text: 'الرئيسية', icon: <HomeIcon />, path: '/', exact: true },
-  { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/student/dashboard' },
+  { text: 'معهد التطوير المهني العالي', icon: <HomeIcon />, path: '/', exact: true },
+  { text: 'الرئيسية', icon: <DashboardIcon />, path: '/student/dashboard' },
   { text: 'الشعب', icon: <GroupIcon />, path: '/student/divisions' },
   { text: 'التعاميم', icon: <MessageIcon />, path: '/student/circulars' },
   { text: 'كورساتي', icon: <ClassIcon />, path: '/student/my-courses' },
@@ -321,14 +321,15 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                   }
                 }}
               >
+                <ListItemText primary={item.text} sx={{ fontWeight: 600, textAlign: 'right' }} />
                 <ListItemIcon sx={{
                   minWidth: 36,
                   color: active ? '#0e5181' : '#bdbdbd',
-                  fontSize: 24
+                  fontSize: 24,
+                  marginLeft: 1
                 }}>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} sx={{ fontWeight: 600 }} />
                 {item.badge && (
-                  <Badge badgeContent={item.badge} color="secondary" sx={{ position: 'absolute', left: 16 }} />
+                  <Badge badgeContent={item.badge} color="secondary" sx={{ position: 'absolute', right: 16 }} />
                 )}
               </ListItemButton>
             </NavLink>
@@ -625,18 +626,19 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                     </Box>
                     <List sx={{ p: 0 }}>
                       <ListItemButton sx={{ '&:hover': { bgcolor: 'rgba(14,81,129,0.05)' } }}>
+                        <ListItemText primary="إعدادات الحساب" sx={{ textAlign: 'right' }} />
                         <ListItemIcon sx={{ minWidth: 36 }}><SettingsIcon fontSize="small" /></ListItemIcon>
-                        <ListItemText primary="إعدادات الحساب" />
                       </ListItemButton>
                       <ListItemButton sx={{ '&:hover': { bgcolor: 'rgba(14,81,129,0.05)' } }}>
+                        <ListItemText primary="الإشعارات" sx={{ textAlign: 'right' }} />
                         <ListItemIcon sx={{ minWidth: 36 }}><NotificationsIcon fontSize="small" /></ListItemIcon>
-                        <ListItemText primary="الإشعارات" />
                       </ListItemButton>
                       <Divider />
                       <ListItemButton 
                         onClick={handleLogout}
                         sx={{ color: '#f44336', '&:hover': { bgcolor: '#ffebee' } }}
                       >
+                        <ListItemText primary="تسجيل الخروج" sx={{ textAlign: 'right', color: 'inherit' }} />
                         <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
                           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -644,7 +646,6 @@ const MainLayout = ({ children, toggleDarkMode, isDarkMode }) => {
                             <line x1="21" y1="12" x2="9" y2="12"></line>
                           </svg>
                         </ListItemIcon>
-                        <ListItemText primary="تسجيل الخروج" />
                       </ListItemButton>
                     </List>
                   </Paper>
