@@ -810,24 +810,96 @@ const SkeletonPulse = styled(Box)(({ theme }) => ({
 const CourseSkeleton = () => (
   <Box sx={{ py: 4 }}>
     <Container maxWidth="lg">
+      {/* Hero Section Skeleton */}
+      <Box sx={{ 
+        mb: 6,
+        p: { xs: 3, md: 6 },
+        background: 'linear-gradient(135deg, #0e5181 0%, #e5978b 100%)',
+        borderRadius: 4,
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Grid container spacing={4} alignItems="center">
+          <Grid xs={12} md={6}>
+            <SkeletonPulse variant="rectangular" width="100%" height={320} sx={{ borderRadius: 4 }} />
+          </Grid>
+          <Grid xs={12} md={6}>
+            <Box sx={{ textAlign: { xs: 'center', md: 'right' } }}>
+              <SkeletonPulse variant="text" width="80%" height={48} sx={{ mb: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
+              <SkeletonPulse variant="text" width="90%" height={28} sx={{ mb: 3, bgcolor: 'rgba(255,255,255,0.15)' }} />
+              <Box sx={{ display: 'flex', gap: 2, mb: 3, justifyContent: { xs: 'center', md: 'flex-start' } }}>
+                <SkeletonPulse variant="rectangular" width={80} height={32} sx={{ borderRadius: 16, bgcolor: 'rgba(255,255,255,0.2)' }} />
+                <SkeletonPulse variant="rectangular" width={100} height={32} sx={{ borderRadius: 16, bgcolor: 'rgba(255,255,255,0.2)' }} />
+                <SkeletonPulse variant="rectangular" width={90} height={32} sx={{ borderRadius: 16, bgcolor: 'rgba(255,255,255,0.2)' }} />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4, justifyContent: { xs: 'center', md: 'flex-start' } }}>
+                <SkeletonPulse variant="circular" width={56} height={56} sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+                <Box>
+                  <SkeletonPulse variant="text" width={120} height={24} sx={{ mb: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
+                  <SkeletonPulse variant="text" width={100} height={20} sx={{ bgcolor: 'rgba(255,255,255,0.15)' }} />
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: { xs: 'center', md: 'flex-start' } }}>
+                <SkeletonPulse variant="rectangular" width={140} height={48} sx={{ borderRadius: 3, bgcolor: 'rgba(255,255,255,0.2)' }} />
+                <SkeletonPulse variant="rectangular" width={140} height={48} sx={{ borderRadius: 3, bgcolor: 'rgba(255,255,255,0.15)' }} />
+              </Box>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Content Tabs Skeleton */}
+      <Paper sx={{ mb: 4, borderRadius: 3, overflow: 'visible' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, py: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {['نظرة عامة', 'المنهج', 'المدرب والتقييمات'].map((tab) => (
+              <SkeletonPulse key={tab} variant="rectangular" width={100} height={40} sx={{ borderRadius: 2 }} />
+            ))}
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* Content Area Skeleton */}
       <Grid container spacing={4}>
         <Grid xs={12} lg={8}>
-          <SkeletonPulse variant="rectangular" width="100%" height={400} sx={{ mb: 3, borderRadius: 2 }} />
-          <Box sx={{ mb: 4 }}>
-            <SkeletonPulse variant="text" width="60%" height={40} sx={{ mb: 2 }} />
-            <SkeletonPulse variant="text" width="90%" height={24} sx={{ mb: 1 }} />
-            <SkeletonPulse variant="text" width="80%" height={24} sx={{ mb: 3 }} />
-            <SkeletonPulse variant="rectangular" width={120} height={40} sx={{ borderRadius: 2 }} />
+          <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 4, mb: 4 }}>
+            <SkeletonPulse variant="text" width="40%" height={32} sx={{ mb: 3 }} />
+            <SkeletonPulse variant="text" width="100%" height={20} sx={{ mb: 1 }} />
+            <SkeletonPulse variant="text" width="100%" height={20} sx={{ mb: 1 }} />
+            <SkeletonPulse variant="text" width="80%" height={20} sx={{ mb: 3 }} />
+            <SkeletonPulse variant="rectangular" width="100%" height={200} sx={{ borderRadius: 2 }} />
           </Box>
-          <Tabs value={0} sx={{ mb: 3 }}>
-            {['Overview', 'Curriculum', 'Instructor', 'Reviews', 'FAQs'].map((tab) => (
-              <Tab key={tab} label={tab} sx={{ minWidth: 'auto' }} />
+          
+          {/* Reviews Section Skeleton */}
+          <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+              <SkeletonPulse variant="text" width="30%" height={32} />
+              <SkeletonPulse variant="rectangular" width={120} height={40} sx={{ borderRadius: 2 }} />
+            </Box>
+            {[1, 2, 3].map((item) => (
+              <Box key={item} sx={{ bgcolor: 'white', borderRadius: 3, p: 3, mb: 3, border: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <SkeletonPulse variant="circular" width={48} height={48} />
+                    <SkeletonPulse variant="text" width={120} height={24} />
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <SkeletonPulse variant="rectangular" width={80} height={20} sx={{ borderRadius: 2 }} />
+                    <SkeletonPulse variant="text" width={60} height={16} />
+                  </Box>
+                </Box>
+                <SkeletonPulse variant="text" width="100%" height={16} sx={{ mb: 1 }} />
+                <SkeletonPulse variant="text" width="100%" height={16} sx={{ mb: 1 }} />
+                <SkeletonPulse variant="text" width="70%" height={16} />
+              </Box>
             ))}
-          </Tabs>
-          <SkeletonPulse variant="rectangular" width="100%" height={300} sx={{ borderRadius: 2 }} />
+          </Box>
         </Grid>
+        
         <Grid xs={12} lg={4}>
-          <SkeletonPulse variant="rectangular" width="100%" height={400} sx={{ borderRadius: 2 }} />
+          <Box sx={{ position: 'sticky', top: 100 }}>
+            <SkeletonPulse variant="rectangular" width="100%" height={400} sx={{ borderRadius: 3 }} />
+          </Box>
         </Grid>
       </Grid>
     </Container>
@@ -1534,8 +1606,22 @@ const CourseDetail = () => {
   };
 
   const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
+    // Validate tab value based on course type
+    const maxTabIndex = course?.category !== 'الدبلومات' && course?.category !== 'التدريب الالكتروني' ? 2 : 1;
+    if (newValue <= maxTabIndex) {
+      setTabValue(newValue);
+    }
   };
+
+  // Reset tab value when course type changes or if tab value is invalid
+  useEffect(() => {
+    if (course) {
+      const maxTabIndex = course.category !== 'الدبلومات' && course.category !== 'التدريب الالكتروني' ? 2 : 1;
+      if (tabValue > maxTabIndex) {
+        setTabValue(0); // Reset to first tab if current tab is invalid
+      }
+    }
+  }, [course, course?.category, tabValue]);
 
   // Review handlers
   const handleReviewFormChange = (field, value) => {
@@ -1750,12 +1836,72 @@ const CourseDetail = () => {
   // Show loading skeleton while loading
   if (loading) {
     return (
-      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ 
+        bgcolor: 'background.default', 
+        minHeight: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
         <Header />
-        <CourseSkeleton />
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center'
+        }}>
+          {/* Logo Loading Circle */}
+          <Box sx={{ 
+            position: 'relative',
+            width: 120,
+            height: 120,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            {/* Rotating Circle */}
+            <Box sx={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              border: '3px solid transparent',
+              borderTop: '3px solid #0e5181',
+              borderRight: '3px solid #e5978b',
+              borderRadius: '50%',
+              animation: 'spin 1.5s linear infinite'
+            }} />
+            {/* Logo */}
+            <Box
+              component="img"
+              src="/src/assets/images/logo.png"
+              alt="Loading..."
+              sx={{
+                width: 80,
+                height: 80,
+                objectFit: 'contain',
+                zIndex: 1
+              }}
+            />
+          </Box>
+        </Box>
+        
         <Box sx={{ mt: 'auto' }}>
           <Footer />
         </Box>
+        
+        {/* Add keyframes for animations */}
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+          }
+        `}</style>
       </Box>
     );
   }
@@ -1976,16 +2122,6 @@ const CourseDetail = () => {
                           </Typography>
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1, justifyContent: { xs: 'center', lg: 'flex-start' } }}>
                             <Chip 
-                              label={course.isAdvertisement || course.is_ad ? 'إعلان' : 'دورة كاملة'} 
-                              size="small" 
-                              sx={{ 
-                                bgcolor: course.isAdvertisement || course.is_ad ? 'rgba(255, 152, 0, 0.3)' : 'rgba(14, 81, 129, 0.3)', 
-                                color: 'white',
-                                fontWeight: 600,
-                                fontSize: '0.75rem'
-                              }} 
-                            />
-                            <Chip 
                               label={course.category} 
                               size="small" 
                               sx={{ 
@@ -2152,38 +2288,26 @@ const CourseDetail = () => {
                   variant="fullWidth"
                   centered
                   sx={{
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                    '& .MuiTabs-flexContainer': {
-                      '& .MuiButtonBase-root': {
-                        flex: 1,
-                        minWidth: 'auto',
-                        maxWidth: 'none',
-                        flexBasis: 0,
-                        width: 'auto',
-                        justifyContent: 'center',
-                        textAlign: 'center',
-                        py: 2,
-                        px: 2,
-                        minHeight: 56,
-                        fontSize: '1rem',
-                        textTransform: 'none',
-                        fontWeight: 500,
-                        borderRadius: 999,
-                        mx: 0.75,
-                        border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
-                        backgroundColor: 'background.paper',
-                        transition: 'all 0.3s ease',
-                        color: 'text.secondary',
-                        '&.Mui-selected': {
-                          color: 'primary.main',
-                          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
-                          fontWeight: 600,
-                          boxShadow: (theme) => `0 6px 16px ${alpha(theme.palette.primary.main, 0.18)}`,
-                        },
-                        '&:hover': {
-                          bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
-                        },
+                    '& .MuiTab-root': {
+                      minWidth: 'auto',
+                      px: 3,
+                      py: 2,
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      textTransform: 'none',
+                      color: 'text.secondary',
+                      borderRadius: 2,
+                      mx: 0.5,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04),
+                        color: 'primary.main',
+                      },
+                      '&.Mui-selected': {
+                        color: 'primary.main',
+                        bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
+                        fontWeight: 600,
+                        boxShadow: (theme) => `0 6px 16px ${alpha(theme.palette.primary.main, 0.18)}`,
                       },
                     },
                     '& .MuiTabs-indicator': {
@@ -2193,7 +2317,7 @@ const CourseDetail = () => {
                   }}
                 >
                   <Tab label="نظرة عامة" />
-                  <Tab label="المنهج" />
+                  {course.category !== 'الدبلومات' && course.category !== 'التدريب الالكتروني' && <Tab label="المنهج" />}
                   <Tab label="المدرب والتقييمات" />
                 </Tabs>
               </Paper>
@@ -2236,26 +2360,28 @@ const CourseDetail = () => {
                   )}
 
                   {/* بطاقة معلومات سريعة */}
-                  <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid xs={6} md={3}>
-                      <FeatureItem>
-                        <ScheduleIcon />
-                        <Typography variant="body2">المدة: {course.duration}</Typography>
-                      </FeatureItem>
+                  {course.category !== 'الدبلومات' && course.category !== 'التدريب الالكتروني' && (
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                      <Grid xs={6} md={3}>
+                        <FeatureItem>
+                          <ScheduleIcon />
+                          <Typography variant="body2">المدة: {course.duration}</Typography>
+                        </FeatureItem>
+                      </Grid>
+                      <Grid xs={6} md={3}>
+                        <FeatureItem>
+                          <VideoLibraryIcon />
+                          <Typography variant="body2">المحاضرات: {totalLessons}</Typography>
+                        </FeatureItem>
+                      </Grid>
+                      <Grid xs={6} md={3}>
+                        <FeatureItem>
+                          <WorkspacePremiumIcon />
+                          <Typography variant="body2">شهادة: نعم</Typography>
+                        </FeatureItem>
+                      </Grid>
                     </Grid>
-                    <Grid xs={6} md={3}>
-                      <FeatureItem>
-                        <VideoLibraryIcon />
-                        <Typography variant="body2">المحاضرات: {totalLessons}</Typography>
-                      </FeatureItem>
-                    </Grid>
-                    <Grid xs={6} md={3}>
-                      <FeatureItem>
-                        <WorkspacePremiumIcon />
-                        <Typography variant="body2">شهادة: نعم</Typography>
-                      </FeatureItem>
-                    </Grid>
-                  </Grid>
+                  )}
 
                   <SoftDivider sx={{ my: 3 }} />
 
@@ -2435,7 +2561,7 @@ const CourseDetail = () => {
                 </ContentSection>
               )}
 
-              {tabValue === 1 && (
+              {tabValue === 1 && course.category !== 'الدبلومات' && course.category !== 'التدريب الالكتروني' && (
                 <ContentSection>
                   {/* Alert for non-enrolled users */}
                   {!course.isEnrolled && (
@@ -2714,7 +2840,7 @@ const CourseDetail = () => {
                 </ContentSection>
               )}
 
-              {tabValue === 2 && (
+              {tabValue === (course.category !== 'الدبلومات' && course.category !== 'التدريب الالكتروني' ? 2 : 1) && (
                 <ContentSection>
                   {/* Compact horizontal instructor strip */}
                   <Box sx={{
@@ -2853,7 +2979,7 @@ const CourseDetail = () => {
                     <Box sx={{ 
                       display: 'flex', 
                       flexDirection: 'column',
-                      gap: 3 
+                      gap: 2 
                     }}>
                       {(Array.isArray(course.reviews) && course.reviews.length > 0 ? course.reviews : [
                         {
@@ -2885,86 +3011,90 @@ const CourseDetail = () => {
                           key={review.id}
                           sx={{
                             bgcolor: 'white',
-                            borderRadius: 3,
-                            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                            border: '1px solid rgba(0,0,0,0.04)',
-                            overflow: 'hidden',
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                              transform: 'translateY(-2px)',
-                              boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
-                              borderColor: 'rgba(14,81,129,0.1)'
-                            }
+                            borderRadius: 2,
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            p: 3
                           }}
                         >
-                          {/* Review Header */}
-                          <Box sx={{ 
-                            p: 3, 
-                            borderBottom: '1px solid rgba(0,0,0,0.06)',
-                            background: 'linear-gradient(135deg, rgba(14,81,129,0.02) 0%, rgba(229,151,139,0.02) 100%)'
-                          }}>
-                            {/* User Info on one line */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Avatar 
-                                  src={review.user.avatar} 
-                                  alt={review.user.name}
-                                  sx={{ 
-                                    width: 48, 
-                                    height: 48, 
-                                    border: '3px solid rgba(14,81,129,0.1)',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                                  }}
-                                />
-                                <Typography variant="subtitle1" sx={{ 
-                                  fontWeight: 600, 
-                                  color: '#1a1a1a', 
-                                  fontSize: '1rem'
-                                }}>
-                                  {review.user.name}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <Rating 
-                                  value={review.rating} 
-                                  precision={0.5} 
-                                  readOnly 
-                                  size="small"
-                                  sx={{ 
-                                    '& .MuiRating-iconFilled': { color: '#ffc107' },
-                                    '& .MuiRating-iconEmpty': { color: '#e0e0e0' }
-                                  }}
-                                />
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                                  {review.date}
-                                </Typography>
-                              </Box>
+                          {/* Top Row: User Info and Rating */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                            {/* Left: Avatar and Name */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Avatar 
+                                sx={{ 
+                                  width: 40, 
+                                  height: 40,
+                                  bgcolor: '#f5f5f5',
+                                  color: '#666',
+                                  fontSize: '1rem',
+                                  fontWeight: 500
+                                }}
+                              >
+                                {review.user.name.charAt(0)}
+                              </Avatar>
+                              <Typography variant="body1" sx={{ 
+                                fontWeight: 500, 
+                                color: '#333',
+                                fontSize: '0.95rem'
+                              }}>
+                                {review.user.name}
+                              </Typography>
                             </Box>
                             
-                            {/* Title and Comment below */}
-                            {review.title && (
-                              <Typography variant="h6" sx={{ 
-                                fontWeight: 600, 
-                                color: '#1a1a1a', 
-                                fontSize: '1.1rem',
-                                lineHeight: 1.3,
-                                mb: 1
+                            {/* Right: Rating */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Rating 
+                                value={review.rating} 
+                                precision={0.5} 
+                                readOnly 
+                                size="small"
+                                sx={{ 
+                                  '& .MuiRating-iconFilled': { color: '#ffa726' },
+                                  '& .MuiRating-iconEmpty': { color: '#e0e0e0' }
+                                }}
+                              />
+                              <Typography variant="body2" sx={{ 
+                                color: '#666',
+                                fontSize: '0.85rem',
+                                ml: 0.5
                               }}>
-                                {review.title}
+                                {review.rating}.0
                               </Typography>
-                            )}
+                            </Box>
                           </Box>
                           
-                          {/* Review Content */}
-                          <Box sx={{ p: 3 }}>
-                            <Typography variant="body1" sx={{ 
-                              color: '#4a4a4a', 
-                              lineHeight: 1.7,
-                              fontSize: '0.95rem'
+                          {/* Date */}
+                          <Typography variant="caption" sx={{ 
+                            color: '#999',
+                            fontSize: '0.8rem',
+                            mb: 2,
+                            display: 'block'
+                          }}>
+                            {review.date}
+                          </Typography>
+                          
+                          {/* Title */}
+                          {review.title && (
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 600, 
+                              color: '#333',
+                              fontSize: '1rem',
+                              lineHeight: 1.4,
+                              mb: 2
                             }}>
-                              {review.comment}
+                              {review.title}
                             </Typography>
-                          </Box>
+                          )}
+                          
+                          {/* Comment */}
+                          <Typography variant="body2" sx={{ 
+                            color: '#555',
+                            lineHeight: 1.6,
+                            fontSize: '0.9rem'
+                          }}>
+                            {review.comment}
+                          </Typography>
                         </Box>
                       ))}
                     </Box>
