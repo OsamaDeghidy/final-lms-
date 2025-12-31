@@ -649,7 +649,7 @@ const Profile = () => {
                   borderBottom: '2px solid',
                   borderColor: alpha('#0e5181', 0.1)
                 }}>
-                  <Typography variant="h5" fontWeight="bold" color="#0e5181">
+                  <Typography variant="h6" fontWeight="bold" color="#0e5181" sx={{ fontSize: '1.2rem' }}>
                     معلومات الملف الشخصي
                   </Typography>
                   <Button 
@@ -661,16 +661,16 @@ const Profile = () => {
                       '&:hover': {
                         backgroundColor: editMode ? '#0a3d5f' : alpha('#0e5181', 0.1),
                       },
-                      px: 3,
+                      px: 2,
                       py: 1.5,
                       borderRadius: 2,
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      minWidth: 'auto'
                     }}
-                    startIcon={editMode ? <Save /> : <Edit />}
                     onClick={editMode ? handleSaveProfile : handleEditToggle}
                     disabled={loading}
                   >
-                    {editMode ? 'حفظ التغييرات' : 'تعديل الملف الشخصي'}
+                    {editMode ? <Save /> : <Edit />}
                   </Button>
                 </Box>
 
@@ -680,13 +680,16 @@ const Profile = () => {
                     {/* Profile Picture Section */}
                     <Box sx={{ 
                       textAlign: 'center', 
-                      mb: 4,
+                      mb: 3,
                       p: 3,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
                       border: '1px solid',
                       borderColor: alpha('#0e5181', 0.08)
                     }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 2, color: '#0e5181' }}>
+                        الصورة الشخصية
+                      </Typography>
                       <Box sx={{ position: 'relative', display: 'inline-block' }}>
                         <Avatar 
                           src={profileData.avatar} 
@@ -722,7 +725,7 @@ const Profile = () => {
                       {editMode && (
                         <Button
                           variant="outlined"
-                          startIcon={<PhotoCamera />}
+                          startIcon={<PhotoCamera sx={{ mr: 1 }} />}
                           onClick={() => fileInputRef.current?.click()}
                           fullWidth
                           sx={{ 
@@ -749,479 +752,381 @@ const Profile = () => {
                     
                     {/* Password Change Section */}
                     <Box sx={{
-                      p: 3,
+                      p: 4,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
                       border: '1px solid',
-                      borderColor: alpha('#0e5181', 0.08)
+                      borderColor: alpha('#0e5181', 0.08),
+                      mt: 2
                     }}>
-                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 4, color: '#0e5181' }}>
                         تغيير كلمة المرور
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="كلمة المرور الحالية"
-                            type={showPassword ? 'text' : 'password'}
-                            variant="outlined"
-                            size="small"
-                            value={passwordData.current_password}
-                            onChange={(e) => setPasswordData(prev => ({
-                              ...prev,
-                              current_password: e.target.value
-                            }))}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
+                      <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'flex-end' }}>
+                        <TextField
+                          fullWidth
+                          label="كلمة المرور الحالية"
+                          type={showPassword ? 'text' : 'password'}
+                          variant="outlined"
+                          size="large"
+                          value={passwordData.current_password}
+                          onChange={(e) => setPasswordData(prev => ({
+                            ...prev,
+                            current_password: e.target.value
+                          }))}
+                          sx={{
+                            flex: 1,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
                               },
-                            }}
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                   <IconButton 
-                                    size="small" 
+                                    size="large" 
                                     onClick={() => setShowPassword(!showPassword)}
-                                    edge="end"
+                                    edge="start"
                                     sx={{ color: '#0e5181' }}
                                   >
-                                    {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                                    {showPassword ? <VisibilityOff fontSize="medium" /> : <Visibility fontSize="medium" />}
                                   </IconButton>
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="كلمة المرور الجديدة"
-                            type={showPassword ? 'text' : 'password'}
-                            variant="outlined"
-                            size="small"
-                            value={passwordData.new_password}
-                            onChange={(e) => setPasswordData(prev => ({
-                              ...prev,
-                              new_password: e.target.value
-                            }))}
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Button
-                            variant="contained"
-                            fullWidth
-                            startIcon={loading ? <CircularProgress size={20} /> : <Lock />}
-                            onClick={handlePasswordChange}
-                            disabled={loading}
-                            sx={{
-                              backgroundColor: '#0e5181',
-                              '&:hover': {
-                                backgroundColor: '#0a3d5f',
-                              },
-                              py: 1.5,
+                                </Box>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="كلمة المرور الجديدة"
+                          type={showPassword ? 'text' : 'password'}
+                          variant="outlined"
+                          size="large"
+                          value={passwordData.new_password}
+                          onChange={(e) => setPasswordData(prev => ({
+                            ...prev,
+                            new_password: e.target.value
+                          }))}
+                          sx={{
+                            flex: 1,
+                            '& .MuiOutlinedInput-root': {
                               borderRadius: 2,
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            تغيير كلمة المرور
-                          </Button>
-                        </Grid>
-                      </Grid>
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
+                              },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <IconButton 
+                                    size="large" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="start"
+                                    sx={{ color: '#0e5181' }}
+                                  >
+                                    {showPassword ? <VisibilityOff fontSize="medium" /> : <Visibility fontSize="medium" />}
+                                  </IconButton>
+                                </Box>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="تأكيد كلمة المرور الجديدة"
+                          type={showPassword ? 'text' : 'password'}
+                          variant="outlined"
+                          size="large"
+                          value={passwordData.confirm_password}
+                          onChange={(e) => setPasswordData(prev => ({
+                            ...prev,
+                            confirm_password: e.target.value
+                          }))}
+                          sx={{
+                            flex: 1,
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
+                              },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <IconButton 
+                                    size="large" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="start"
+                                    sx={{ color: '#0e5181' }}
+                                  >
+                                    {showPassword ? <VisibilityOff fontSize="medium" /> : <Visibility fontSize="medium" />}
+                                  </IconButton>
+                                </Box>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                        <Button
+                          variant="contained"
+                          size="large"
+                          onClick={handlePasswordChange}
+                          disabled={loading}
+                          sx={{
+                            backgroundColor: '#0e5181',
+                            '&:hover': {
+                              backgroundColor: '#0a3d5f',
+                            },
+                            px: 2,
+                            py: 1.5,
+                            borderRadius: 2,
+                            fontWeight: 'bold',
+                            minWidth: 'auto',
+                            height: 56
+                          }}
+                        >
+                          {loading ? <CircularProgress size={24} /> : <Lock />}
+                        </Button>
+                      </Box>
                     </Box>
-                  </Grid>
-
-                  {/* Right Side - Profile Information */}
-                  <Grid item xs={12} md={8}>
-                    {/* Profile Information Section */}
+                    
+                    {/* Personal Information Section */}
                     <Box sx={{
-                      p: 3,
+                      p: 4,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
                       border: '1px solid',
                       borderColor: alpha('#0e5181', 0.08),
-                      mb: 4
+                      mt: 2
                     }}>
-                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 4, color: '#0e5181' }}>
                         المعلومات الشخصية
                       </Typography>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="اسم المستخدم"
-                            name="username"
-                            value={user?.username || ''}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
+                      <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, flexWrap: 'wrap' }}>
+                        <TextField
+                          fullWidth
+                          label="اسم المستخدم"
+                          name="username"
+                          value={user?.username || ''}
+                          variant="outlined"
+                          size="large"
+                          sx={{
+                            flex: 1,
+                            minWidth: '250px',
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
                               },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="الاسم الأول"
-                            name="firstName"
-                            value={profileData.firstName}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
                               },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="الاسم المستعار"
-                            name="nickname"
-                            value={profileData.nickname || ''}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
                               },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="الدور"
-                            name="role"
-                            value={getUserRole() === 'instructor' ? 'مدرس' : 'طالب'}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: true,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="اسم العائلة"
-                            name="lastName"
-                            value={profileData.lastName}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="الاسم المعروض للجميع"
-                            name="displayName"
-                            value={profileData.displayName || `${profileData.firstName} ${profileData.lastName}`}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-                          
-                    {/* Contact Info Section */}
-                    <Box sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
-                      border: '1px solid',
-                      borderColor: alpha('#0e5181', 0.08),
-                      mb: 4
-                    }}>
-                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
-                        معلومات التواصل
-                      </Typography>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                          <TextField
-                            fullWidth
-                            label="البريد الإلكتروني (مطلوب)"
-                            name="email"
-                            type="email"
-                            value={profileData.email}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="واتساب"
-                            name="whatsapp"
-                            value={profileData.whatsapp || ''}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="الموقع الإلكتروني"
-                            name="website"
-                            value={profileData.website}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="تيليجرام"
-                            name="telegram"
-                            value={profileData.telegram || ''}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <TextField
-                            fullWidth
-                            label="رقم الجوال"
-                            name="phone"
-                            value={profileData.phone}
-                            onChange={handleProfileChange}
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                '& fieldset': {
-                                  borderColor: alpha('#0e5181', 0.2),
-                                },
-                                '&:hover fieldset': {
-                                  borderColor: alpha('#0e5181', 0.4),
-                                },
-                                '&.Mui-focused fieldset': {
-                                  borderColor: '#0e5181',
-                                },
-                              },
-                            }}
-                            InputProps={{
-                              readOnly: !editMode,
-                            }}
-                          />
-                        </Grid>
-                      </Grid>
-                    </Box>
-
-                    {/* About User Section */}
-                    <Box sx={{
-                      p: 3,
-                      borderRadius: 3,
-                      background: `linear-gradient(135deg, ${alpha('#0e5181', 0.02)} 0%, ${alpha('#e5978b', 0.02)} 100%)`,
-                      border: '1px solid',
-                      borderColor: alpha('#0e5181', 0.08)
-                    }}>
-                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mb: 3, color: '#0e5181' }}>
-                        نبذة عن المستخدم
-                      </Typography>
-                      <TextField
-                        fullWidth
-                        label="المعلومات السيرة الذاتية"
-                        name="bio"
-                        value={profileData.bio}
-                        onChange={handleProfileChange}
-                        multiline
-                        rows={6}
-                        variant="outlined"
-                        size="small"
-                        placeholder="أخبرنا عن نفسك، خبراتك، اهتماماتك..."
-                        sx={{
-                          '& .MuiOutlinedInput-root': {
-                            '& fieldset': {
-                              borderColor: alpha('#0e5181', 0.2),
                             },
-                            '&:hover fieldset': {
-                              borderColor: alpha('#0e5181', 0.4),
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
                             },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#0e5181',
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            readOnly: !editMode,
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="الاسم الأول"
+                          name="firstName"
+                          value={profileData.firstName}
+                          onChange={handleProfileChange}
+                          variant="outlined"
+                          size="large"
+                          sx={{
+                            flex: 1,
+                            minWidth: '250px',
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
+                              },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
                             },
-                          },
-                        }}
-                        InputProps={{
-                          readOnly: !editMode,
-                        }}
-                      />
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            readOnly: !editMode,
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="اسم العائلة"
+                          name="lastName"
+                          value={profileData.lastName}
+                          onChange={handleProfileChange}
+                          variant="outlined"
+                          size="large"
+                          sx={{
+                            flex: 1,
+                            minWidth: '250px',
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
+                              },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            readOnly: !editMode,
+                          }}
+                        />
+                        <TextField
+                          fullWidth
+                          label="الدور"
+                          name="role"
+                          value={getUserRole() === 'instructor' ? 'مدرس' : 'طالب'}
+                          variant="outlined"
+                          size="large"
+                          sx={{
+                            flex: 1,
+                            minWidth: '250px',
+                            '& .MuiOutlinedInput-root': {
+                              borderRadius: 2,
+                              fieldset: {
+                                borderColor: alpha('#0e5181', 0.3),
+                                borderWidth: 2,
+                              },
+                              '&:hover fieldset': {
+                                borderColor: alpha('#0e5181', 0.5),
+                                borderWidth: 2,
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: '#0e5181',
+                                borderWidth: 2,
+                              },
+                            },
+                            '& .MuiInputLabel-root': {
+                              fontSize: '1rem',
+                              fontWeight: 500,
+                              color: '#0e5181',
+                            },
+                            '& .MuiInputBase-input': {
+                              fontSize: '1.1rem',
+                              py: 1.5,
+                            }
+                          }}
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                        />
+                      </Box>
                     </Box>
                   </Grid>
+
+                 
                 </Grid>
             </CardContent>
             </ProfileCard>
