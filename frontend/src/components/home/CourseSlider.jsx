@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Box, Button, Card, CardContent, CardMedia, Container, IconButton, Rating, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { KeyboardArrowLeft, KeyboardArrowRight, BookmarkBorder, Bookmark } from '@mui/icons-material';
+import { Box, Button, Card, CardContent, CardMedia, Container, IconButton, Rating, Stack, Typography, useMediaQuery, useTheme, Snackbar, Alert } from '@mui/material';
+import { styled, keyframes } from '@mui/material/styles';
+import { KeyboardArrowLeft, KeyboardArrowRight, BookmarkBorder, Bookmark, ShoppingCart, AddShoppingCart, Check } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
-import { courseAPI } from '../../services/courseService';
+import { courseAPI } from '../../services/api.service';
+import { courseAPI as courseServiceAPI, cartAPI } from '../../services/courseService';
 
 const SliderContainer = styled(Box)(({ theme }) => ({
   position: 'relative',
@@ -532,6 +533,61 @@ const FloatingElements = styled(Box)(({ theme }) => ({
   },
 }));
 
+// Cart-related styled components
+const pulse = keyframes`
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+`;
+
+const CartButton = styled(IconButton)(({ theme, added }) => ({
+  position: 'absolute',
+  top: '16px',
+  right: '16px',
+  backgroundColor: added ? 'rgba(76, 175, 80, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+  color: added ? '#fff' : theme.palette.primary.main,
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  border: added ? '2px solid rgba(76, 175, 80, 0.3)' : '2px solid rgba(255, 255, 255, 0.5)',
+  zIndex: 2,
+  transition: 'all 0.3s ease',
+  animation: added ? `${pulse} 1.5s infinite` : 'none',
+  opacity: 0.9,
+  '& .cart-icon': {
+    transition: 'transform 0.3s ease',
+  },
+  '&:hover .cart-icon': {
+    transform: 'scale(1.2) rotate(-8deg)',
+  },
+}));
+
+const CartBadge = styled('span')(({ theme }) => ({
+  position: 'absolute',
+  top: '-6px',
+  right: '-6px',
+  backgroundColor: theme.palette.error.main,
+  color: '#fff',
+  borderRadius: '50%',
+  width: '20px',
+  height: '20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: '0.65rem',
+  fontWeight: 'bold',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+  animation: `${pulse} 2s infinite`,
+}));
+
 const CourseCollections = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -543,6 +599,8 @@ const CourseCollections = () => {
   const [error, setError] = useState(null);
   const [currentSlides, setCurrentSlides] = useState({});
   const [slidesPerView, setSlidesPerView] = useState(4);
+  const [cartItems, setCartItems] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   // Update slides per view based on screen size
   useEffect(() => {
@@ -574,14 +632,39 @@ const CourseCollections = () => {
     }
   }, [collections]);
   
+  // Fetch existing cart items when component loads
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await cartAPI.getCart();
+        const items = response.items || [];
+        // Convert cart items to object format for easy lookup
+        const cartItemsMap = {};
+        items.forEach(item => {
+          // Handle different item structures
+          const courseId = item.course?.id || item.course_id || item.id;
+          if (courseId) {
+            cartItemsMap[courseId] = true;
+          }
+        });
+        setCartItems(cartItemsMap);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+        setCartItems({});
+      }
+    };
+
+    fetchCartItems();
+  }, []);
+  
   // Fetch collections and promotional banners from API
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const [collectionsData, bannersData] = await Promise.all([
-          courseAPI.getCourseCollections(),
-          courseAPI.getPromotionalBanners()
+          courseServiceAPI.getCourseCollections(),
+          courseServiceAPI.getPromotionalBanners()
         ]);
         setCollections(collectionsData);
         setPromotionalBanners(bannersData);
@@ -702,6 +785,33 @@ const CourseCollections = () => {
       ...prev,
       [collectionId]: slideIndex
     }));
+  };
+
+  // Cart functionality
+  const toggleCartItem = async (courseId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      if (cartItems[courseId]) {
+        // Remove from cart
+        await cartAPI.removeFromCart(courseId);
+        setCartItems(prev => {
+          const newState = { ...prev };
+          delete newState[courseId];
+          return newState;
+        });
+        setSnackbar({ open: true, message: 'تم إزالة الدورة من السلة', severity: 'info' });
+      } else {
+        // Add to cart
+        await cartAPI.addToCart(courseId);
+        setCartItems(prev => ({ ...prev, [courseId]: true }));
+        setSnackbar({ open: true, message: 'تم إضافة الدورة إلى السلة', severity: 'success' });
+      }
+    } catch (error) {
+      console.error('Error toggling cart item:', error);
+      setSnackbar({ open: true, message: 'حدث خطأ أثناء تحديث السلة', severity: 'error' });
+    }
   };
 
   // Function to render promotional banner
@@ -906,7 +1016,20 @@ const CourseCollections = () => {
                         <CourseMedia
                           image={course.image_url || 'https://via.placeholder.com/300x180'}
                           title={course.title}
-                        />
+                        >
+                          <CartButton 
+                            className="cart-button"
+                            onClick={(e) => toggleCartItem(course.id, e)}
+                            added={cartItems[course.id]}
+                          >
+                            {cartItems[course.id] ? (
+                              <Check className="cart-icon" />
+                            ) : (
+                              <AddShoppingCart className="cart-icon" />
+                            )}
+                            {!cartItems[course.id] && <CartBadge>+</CartBadge>}
+                          </CartButton>
+                        </CourseMedia>
                                                  {course.discount_price && course.price && course.discount_price !== course.price && (
                            <DiscountBadge>
                              {Math.round((1 - parseFloat(course.discount_price) / parseFloat(course.price)) * 100)}% خصم
@@ -1134,6 +1257,22 @@ const CourseCollections = () => {
           )
         )}
       </Container>
+      
+      {/* Cart Notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </SliderContainer>
   );
 };

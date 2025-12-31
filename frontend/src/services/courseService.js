@@ -252,11 +252,24 @@ export const cartAPI = {
   // Add course to cart
   addToCart: async (courseId) => {
     try {
-      const response = await api.post('/api/store/cart/items/', { course_id: courseId });
+      // Try different data formats based on backend expectations
+      const response = await api.post('/api/store/cart/items/', { 
+        course: courseId,
+        course_id: courseId
+      });
       return response.data;
     } catch (error) {
       console.error('Error adding to cart:', error);
-      throw error;
+      // If the above fails, try with just course_id
+      try {
+        const fallbackResponse = await api.post('/api/store/cart/items/', { 
+          course_id: courseId 
+        });
+        return fallbackResponse.data;
+      } catch (fallbackError) {
+        console.error('Fallback cart add also failed:', fallbackError);
+        throw fallbackError;
+      }
     }
   },
 

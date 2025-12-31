@@ -277,10 +277,22 @@ const Header = () => {
         page = 'my-courses';
       }
       
-      const response = await notificationAPI.getBannerNotifications(page, null);
-      setBannerNotifications(response.results || response || []);
+      try {
+        const response = await notificationAPI.getBannerNotifications(page, null);
+        setBannerNotifications(response.results || response || []);
+      } catch (error) {
+        console.error('Error fetching banner notifications:', error);
+        // Try alternative endpoint or fallback
+        try {
+          const fallbackResponse = await notificationAPI.getBannerNotifications('home', null);
+          setBannerNotifications(fallbackResponse.results || fallbackResponse || []);
+        } catch (fallbackError) {
+          console.error('Fallback notification fetch also failed:', fallbackError);
+          setBannerNotifications([]);
+        }
+      }
     } catch (error) {
-      console.error('Error fetching banner notifications:', error);
+      console.error('Error in notification fetch process:', error);
       setBannerNotifications([]);
     }
   };
